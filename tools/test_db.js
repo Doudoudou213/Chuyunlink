@@ -1,7 +1,7 @@
 const { Client } = require('pg');
 
 // 1. 请在这里输入你确信正确的数据库密码
-const PASSWORD_TO_TEST = '密码'; 
+const PASSWORD_TO_TEST = '123456'; 
 
 const dbConfig = {
   host: 'localhost',
