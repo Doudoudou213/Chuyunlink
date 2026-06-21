@@ -355,19 +355,19 @@
           <!-- 2. 素材选择 -->
           <div>
             <label class="block text-xs font-bold text-stone-500 mb-2">2. 选择或拍摄素材</label>
-            <div class="border-2 border-dashed border-stone-300 hover:border-sandGold rounded-2xl p-6 bg-white text-center cursor-pointer relative" onclick="triggerMockFileSelect()">
-              <input type="file" id="real-file-input" class="hidden" accept="image/*,audio/*" onchange="previewFile(event)">
+            <div class="border-2 border-dashed border-stone-300 hover:border-sandGold rounded-2xl p-6 bg-white text-center cursor-pointer relative" onclick="triggerFileSelect()">
+              <input type="file" id="real-file-input" class="hidden" accept="image/*" onchange="previewFile(event)">
               <div id="upload-placeholder">
                 <i data-lucide="cloud-lightning" class="w-10 h-10 mx-auto text-sandGold animate-pulse"></i>
-                <p class="text-xs font-bold text-stone-700 mt-2">点击拍照、录音或上传本地素材</p>
-                <p class="text-[10px] text-stone-400 mt-1">大小限20MB内，支持JPG, PNG, MP3, WAV</p>
+                <p class="text-xs font-bold text-stone-700 mt-2">点击拍照或上传本地图片</p>
+                <p class="text-[10px] text-stone-400 mt-1">大小限20MB内，支持 JPG, PNG, WEBP, GIF</p>
               </div>
-              <!-- 模拟预览区域 -->
+              <!-- 本地图片预览区域 -->
               <div id="upload-preview" class="hidden flex flex-col items-center">
                 <div class="relative w-full max-h-36 overflow-hidden rounded-xl">
                   <img id="preview-img" src="" class="w-full h-32 object-cover">
                   <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-white">
-                    <p class="text-xs font-semibold">已选：mock_chuyun_photo.jpg</p>
+                    <p id="preview-file-name" class="text-xs font-semibold px-3 break-all">已选择本地图片</p>
                   </div>
                 </div>
                 <button type="button" onclick="resetFilePreview(event)" class="text-xs text-cinnabarRed font-bold mt-2 hover:underline">重新上传</button>
@@ -969,6 +969,7 @@
 
     // 7. 调试模式：切换本地 API / 仿真 Mock
     let localApiMode = false;
+    let selectedUploadFile = null;
     function toggleApiMode() {
       localApiMode = !localApiMode;
       const btn = document.getElementById('api-toggle-btn');
@@ -994,40 +995,58 @@
       }
     }
 
-    // 8. 采集表单：模拟文件选择与预览
-    function triggerMockFileSelect() {
-      document.getElementById('upload-placeholder').classList.add('hidden');
-      const preview = document.getElementById('upload-preview');
-      preview.classList.remove('hidden');
-      const previewImg = document.getElementById('preview-img');
-      previewImg.src = "https://images.unsplash.com/photo-1599839619722-3975141122a1?auto=format&fit=crop&q=80&w=400";
+    // 8. 采集表单：选择本地图片与预览
+    function triggerFileSelect() {
+      document.getElementById('real-file-input').click();
     }
 
     function resetFilePreview(event) {
       if (event && event.stopPropagation) event.stopPropagation();
+      selectedUploadFile = null;
+      document.getElementById('real-file-input').value = '';
+      document.getElementById('preview-img').src = '';
+      document.getElementById('preview-file-name').innerText = '已选择本地图片';
       document.getElementById('upload-placeholder').classList.remove('hidden');
       document.getElementById('upload-preview').classList.add('hidden');
     }
 
-    // 新增预览，支持真实文件预览（可选）
+    // 新增预览，支持真实文件预览
     function previewFile(event) {
       const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('upload-placeholder').classList.add('hidden');
-          const preview = document.getElementById('upload-preview');
-          preview.classList.remove('hidden');
-          const previewImg = document.getElementById('preview-img');
-          previewImg.src = e.target.result;
-        }
-        reader.readAsDataURL(file);
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('请上传 JPG、PNG、WEBP 或 GIF 图片文件', 'image');
+        resetFilePreview({stopPropagation: () => {}});
+        return;
       }
+
+      if (file.size > 20 * 1024 * 1024) {
+        showToast('图片大小不能超过 20MB', 'alert-circle');
+        resetFilePreview({stopPropagation: () => {}});
+        return;
+      }
+
+      selectedUploadFile = file;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('upload-placeholder').classList.add('hidden');
+        const preview = document.getElementById('upload-preview');
+        preview.classList.remove('hidden');
+        document.getElementById('preview-img').src = e.target.result;
+        document.getElementById('preview-file-name').innerText = `已选：${file.name}`;
+      }
+      reader.readAsDataURL(file);
     }
 
     // 9. 表单提交与双模式检测
     function handleUploadSubmit(event) {
       event.preventDefault();
+
+      if (localApiMode && !selectedUploadFile) {
+        showToast('本地 API 模式需要先选择一张真实本地图片', 'image');
+        return;
+      }
       
       // 显示 AI 处理弹窗
       const aiModal = document.getElementById('ai-check-modal');
@@ -1051,19 +1070,18 @@
         const payload = `${parseFloat(lon).toFixed(6)}|${parseFloat(lat).toFixed(6)}|${timestamp}|${deviceId}`;
         const signature = CryptoJS.HmacSHA256(payload, SECURE_KEY).toString(CryptoJS.enc.Hex);
 
-        // 2. 发送请求给本地 Node.js 服务器
-        fetch('http://localhost:3000/api/verify-location', {
+        const uploadForm = new FormData();
+        uploadForm.append('image', selectedUploadFile);
+        uploadForm.append('longitude', lon);
+        uploadForm.append('latitude', lat);
+        uploadForm.append('timestamp', timestamp);
+        uploadForm.append('deviceId', deviceId);
+        uploadForm.append('signature', signature);
+
+        // 2. 发送真实本地图片文件给 Node.js 服务器
+        fetch('http://localhost:3000/api/upload-image', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            longitude: lon,
-            latitude: lat,
-            timestamp: timestamp,
-            deviceId: deviceId,
-            signature: signature
-          })
+          body: uploadForm
         })
         .then(response => {
           return response.json().then(data => ({ status: response.status, data }));
@@ -1091,9 +1109,11 @@
                     resultEl.className = "bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1";
                     resultEl.innerHTML = `
                       <div class="flex items-center text-emerald-800 text-xs font-bold">
-                        <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 碰撞成功：地理围栏已放行！
+                        <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 上传成功：图片已入库暂存！
                       </div>
                       <p class="text-[10px] text-emerald-600 pl-5">识别区域: <strong class="font-bold">${data.regionName}</strong></p>
+                      <p class="text-[10px] text-emerald-600 pl-5">保存文件: <strong class="font-mono bg-emerald-100 px-1 rounded break-all">${data.file.storedName}</strong></p>
+                      <p class="text-[10px] text-emerald-600 pl-5">访问地址: <a class="font-mono bg-emerald-100 px-1 rounded break-all underline" href="${data.file.url}" target="_blank">${data.file.url}</a></p>
                       <p class="text-[10px] text-emerald-600 pl-5">接口响应: <span class="font-mono bg-emerald-100 px-1 rounded">${data.message}</span></p>
                       <p class="text-[10px] text-emerald-600 pl-5">积分奖励: <strong class="font-bold">+100 流光值已发放</strong></p>
                     `;
@@ -1130,6 +1150,10 @@
                 errorTip = "⚠️ 前后端签名安全认证失败！防篡改哈希被拒绝，请确认密钥配置。";
               } else if (status === 403) {
                 errorTip = "⚠️ 请求超时拒绝！服务器检测到时间戳差值过大，已防御重放虚拟定位。";
+              } else if (status === 413) {
+                errorTip = "⚠️ 图片文件超过 20MB，请压缩后重新上传。";
+              } else if (status === 415) {
+                errorTip = "⚠️ 文件类型不符合图片接口要求，请上传 JPG、PNG、WEBP 或 GIF。";
               } else if (status === 400 && locations[locIndex].short !== "北京天安门") {
                 errorTip = "⚠️ 该坐标点未能命中本地 PostGIS 行政边界，可能您的 boundaries 表尚未成功导入随州等市级数据。";
               }
@@ -1166,7 +1190,7 @@
               </div>
               <p class="text-[10px] text-stone-600 pl-5">请确保您已经在 HBuilderX 终端中运行：</p>
               <p class="text-[10px] font-mono bg-stone-100 p-1 rounded text-stone-800 pl-5">node tools/server.js</p>
-              <p class="text-[10px] text-amber-600 pl-5">接口地址: http://localhost:3000/api/verify-location</p>
+              <p class="text-[10px] text-amber-600 pl-5">接口地址: http://localhost:3000/api/upload-image</p>
             `;
             resultEl.classList.remove('hidden');
             lucide.createIcons();
