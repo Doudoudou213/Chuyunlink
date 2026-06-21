@@ -313,8 +313,23 @@
         </div>
 
         <form id="collect-form" onsubmit="handleUploadSubmit(event)" class="space-y-4">
-          
-          <!-- 🛡️ 本地 API 调试模式切换面板 (新增) -->
+          <!-- 🛡️ AIGC 防伪模拟器拦截开关 (方便演示现场随时控制) -->
+          <div class="bg-red-50 border border-red-200 rounded-2xl p-3 flex justify-between items-center text-xs">
+            <div>
+              <p class="font-bold text-red-800 flex items-center">
+                <i data-lucide="shield-alert" class="w-3.5 h-3.5 mr-1 text-red-700"></i> AIGC 拦截模拟器
+              </p>
+              <p class="text-[10px] text-stone-500">开启后将模拟检测到 AI 生成图并实施拦截</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span id="aigc-mock-label" class="font-semibold text-stone-500">正常实拍</span>
+              <button type="button" onclick="toggleAigcMockMode()" id="aigc-mock-btn" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-stone-300">
+                <span id="aigc-mock-span" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 🛡️ 本地 API 调试模式切换面板 -->
           <div class="bg-amber-50 border border-sandGold/30 rounded-2xl p-3 flex justify-between items-center text-xs">
             <div>
               <p class="font-bold text-stone-800 flex items-center">
@@ -535,7 +550,7 @@
         <!-- 个人卡片 -->
         <div class="bg-deepTeal rounded-2xl p-4 text-white flex items-center space-x-3 border-b-4 border-sandGold relative overflow-hidden shadow-lg">
           <div class="w-12 h-12 rounded-full border-2 border-sandGold overflow-hidden bg-stone-700 shrink-0">
-            <img src="https://36c6e2f.r3.cpolar.cn/" class="w-full h-full object-cover">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200" class="w-full h-full object-cover">
           </div>
           <div class="flex-1">
             <div class="flex items-center space-x-1.5">
@@ -665,7 +680,7 @@
 
   <!-- -------------------- 交互模态弹窗系统 -------------------- -->
 
-  <!-- 弹窗 1：AI双视角脉络图谱可视化模态 (High-Fidelity SVG) -->
+  <!-- 弹窗 1：AI双视角脉络图谱可视化模态 -->
   <div id="graph-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
     <div class="bg-parchment rounded-3xl p-5 max-w-sm w-full space-y-4 text-stone-800 border-2 border-sandGold">
       <div class="flex justify-between items-center border-b border-stone-200 pb-2">
@@ -853,32 +868,26 @@
 
     // 1. TabBar 路由切换控制
     function switchTab(tabId) {
-      // 隐藏所有视窗
       document.querySelectorAll('.page-view').forEach(view => {
         view.classList.add('hidden');
       });
-      // 取消激活所有 nav buttons
       document.querySelectorAll('.nav-item').forEach(btn => {
         btn.classList.remove('text-sandGold');
         btn.classList.add('text-stone-400');
       });
 
-      // 展现对应的 view
       const selectedView = document.getElementById(`view-${tabId}`);
       if (selectedView) {
         selectedView.classList.remove('hidden');
-        // 重设滚动到顶部
         document.getElementById('app-viewport').scrollTop = 0;
       }
 
-      // 激活当前的底部 Button (除了中间发布大圆圈按钮之外)
       const currentNav = document.getElementById(`nav-${tabId}`);
       if (currentNav && tabId !== 'collect') {
         currentNav.classList.remove('text-stone-400');
         currentNav.classList.add('text-sandGold');
       }
 
-      // 处理特殊页面动画/渲染
       if (tabId === 'map') {
         closeLandmarkDrawer();
       }
@@ -940,7 +949,7 @@
       showToast('提报成功！已进入众包质疑通道，专家在48h内完成复审。', 'shield-alert');
     }
 
-    // 6. 真实 GPS / 系统定位刷新
+    // 6. 真实 GPS / 系统定位刷新与抗篡改
     let currentLocation = {
       longitude: null,
       latitude: null,
@@ -1011,9 +1020,39 @@
       );
     }
 
+    // 🛡️ AIGC 模拟状态变量与文件名追踪
+    let forceAigcBlocked = false;
+    let currentFileName = ""; 
+    let selectedUploadFile = null;
+
+    // 切换 AIGC 拦截状态
+    function toggleAigcMockMode() {
+      forceAigcBlocked = !forceAigcBlocked;
+      const btn = document.getElementById('aigc-mock-btn');
+      const span = document.getElementById('aigc-mock-span');
+      const label = document.getElementById('aigc-mock-label');
+      
+      if (forceAigcBlocked) {
+        btn.classList.remove('bg-stone-300');
+        btn.classList.add('bg-red-600');
+        span.classList.remove('translate-x-0');
+        span.classList.add('translate-x-5');
+        label.innerText = "判定为AI图";
+        label.className = "font-semibold text-red-700";
+        showToast("已开启 AIGC 强行拦截模式，下次提交将触发防御报警！", "shield-alert");
+      } else {
+        btn.classList.remove('bg-red-600');
+        btn.classList.add('bg-stone-300');
+        span.classList.remove('translate-x-5');
+        span.classList.add('translate-x-0');
+        label.innerText = "正常实拍";
+        label.className = "font-semibold text-stone-500";
+        showToast("已恢复正常实拍通关模式", "check-circle");
+      }
+    }
+
     // 7. 调试模式：切换本地 API / 仿真 Mock
     let localApiMode = false;
-    let selectedUploadFile = null;
     function toggleApiMode() {
       localApiMode = !localApiMode;
       const btn = document.getElementById('api-toggle-btn');
@@ -1039,7 +1078,7 @@
       }
     }
 
-    // 8. 采集表单：选择本地图片与预览
+    // 8. 采集表单：选择本地图片与预览，并关联记录文件名
     function triggerFileSelect() {
       document.getElementById('real-file-input').click();
     }
@@ -1047,6 +1086,7 @@
     function resetFilePreview(event) {
       if (event && event.stopPropagation) event.stopPropagation();
       selectedUploadFile = null;
+      currentFileName = ""; 
       document.getElementById('real-file-input').value = '';
       document.getElementById('preview-img').src = '';
       document.getElementById('preview-file-name').innerText = '已选择本地图片';
@@ -1054,7 +1094,6 @@
       document.getElementById('upload-preview').classList.add('hidden');
     }
 
-    // 新增预览，支持真实文件预览
     function previewFile(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1072,6 +1111,7 @@
       }
 
       selectedUploadFile = file;
+      currentFileName = file.name; // 👈 动态抓取、标记文件名
       const reader = new FileReader();
       reader.onload = function(e) {
         document.getElementById('upload-placeholder').classList.add('hidden');
@@ -1083,7 +1123,32 @@
       reader.readAsDataURL(file);
     }
 
-    // 9. 表单提交与双模式检测
+    // 9. 渲染 AIGC 拦截警告红框卡片
+    function showAigcBlockedCard(fileName) {
+      updateStepStatus('step-watermark', 'waiting', '防伪未通过，注入动作被安全挂起');
+      updateStepStatus('step-milvus', 'waiting', '防伪未通过，馆藏关联已阻断');
+
+      const resultEl = document.getElementById('ai-success-result');
+      resultEl.className = "bg-red-50 rounded-xl p-3 border border-red-200 space-y-1.5";
+      resultEl.innerHTML = `
+        <div class="flex items-center text-red-800 text-xs font-bold">
+          <i data-lucide="shield-alert" class="w-4 h-4 mr-1 text-red-700"></i> AIGC 安全防御系统拦截！
+        </div>
+        <p class="text-[10px] text-stone-700 pl-5 leading-tight">检测文件: <strong class="font-mono text-cinnabarRed">${fileName}</strong></p>
+        <p class="text-[10px] text-red-600 pl-5 leading-tight">系统判定：此图片包含明显的 AI 算法生成/渲染特征，并非在湖北省非遗现场拍摄，涉嫌众包恶意刷单。</p>
+        <p class="text-[10px] text-red-500 pl-5">💡 提示：该数据已被拒绝入链，未发放积分。请上传真实的实拍素材！</p>
+      `;
+      resultEl.classList.remove('hidden');
+
+      const btn = document.getElementById('ai-btn-close');
+      btn.disabled = false;
+      btn.className = "flex-1 bg-cinnabarRed text-white py-2 rounded-xl text-xs font-bold w-full";
+      btn.innerText = '重新回到采集区';
+      btn.setAttribute('onclick', 'closeAiModalWithError()');
+      lucide.createIcons();
+    }
+
+    // 10. 表单提交与双模式检测
     function handleUploadSubmit(event) {
       event.preventDefault();
 
@@ -1097,11 +1162,9 @@
         return;
       }
       
-      // 显示 AI 处理弹窗
       const aiModal = document.getElementById('ai-check-modal');
       aiModal.classList.remove('hidden');
 
-      // 重置检测步骤
       updateStepStatus('step-gps', 'loading', '验证硬件GPS与抗防篡改合规性');
       updateStepStatus('step-deepfake', 'waiting', '扫描 AIGC / 深度伪造检测算力引擎');
       updateStepStatus('step-watermark', 'waiting', '注入防盗版权隐形声纹水印');
@@ -1113,98 +1176,105 @@
       const deviceId = "browser_geolocation_001";
       const SECURE_KEY = "ChuYunLianJi@2026_Secret";
 
-      // 🔴 模式 1: 连接本地真实 Express + PostGIS 数据库
+      // 判定特征名
+      const lowerName = (currentFileName || "mock_chuyun_photo.jpg").toLowerCase();
+      const isFileNameAi = lowerName.includes('ai') || lowerName.includes('fake') || lowerName.includes('sd') || lowerName.includes('midjourney');
+      const isAiDetected = isFileNameAi || forceAigcBlocked; 
+
+      // 🔴 模式 1: 连接本地真实 Express + PostGIS 数据库进行空间碰撞
       if (localApiMode) {
-        // 1. 计算 HMAC-SHA256 签名，完全还原真实硬件防篡改原理
         const payload = `${parseFloat(lon).toFixed(6)}|${parseFloat(lat).toFixed(6)}|${timestamp}|${deviceId}`;
         const signature = CryptoJS.HmacSHA256(payload, SECURE_KEY).toString(CryptoJS.enc.Hex);
 
-        const uploadForm = new FormData();
-        uploadForm.append('image', selectedUploadFile);
-        uploadForm.append('longitude', lon);
-        uploadForm.append('latitude', lat);
-        uploadForm.append('timestamp', timestamp);
-        uploadForm.append('deviceId', deviceId);
-        uploadForm.append('signature', signature);
+        const payloadData = {
+          longitude: parseFloat(lon),
+          latitude: parseFloat(lat),
+          timestamp: timestamp,
+          deviceId: deviceId,
+          signature: signature
+        };
 
-        // 2. 发送真实本地图片文件给 Node.js 服务器
-        fetch('http://localhost:3000/api/upload-image', {
+        // 完美对齐本地 server.js 的 /api/verify-location JSON 接收端
+        fetch('http://localhost:3000/api/verify-location', {
           method: 'POST',
-          body: uploadForm
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payloadData)
         })
         .then(response => {
           return response.json().then(data => ({ status: response.status, data }));
         })
         .then(({ status, data }) => {
           if (status === 200 && data.success) {
-            // 碰撞成功：点在湖北多边形内
+            // PostGIS 围栏判定放行！
             setTimeout(() => {
               updateStepStatus('step-gps', 'success', `GPS定位认证完成 (${data.regionName})`);
               updateStepStatus('step-deepfake', 'loading', '正在进行 AIGC 图像篡改深度特征对比...');
               
+              // 第二步：执行 AIGC 检测与分流
               setTimeout(() => {
-                updateStepStatus('step-deepfake', 'success', '防伪对比完成 (非AI合成真实率: 98.7%)');
-                updateStepStatus('step-watermark', 'loading', '正在为素材注入用户特征声纹隐形数字水印...');
-                
-                setTimeout(() => {
-                  updateStepStatus('step-watermark', 'success', '数字特征水印嵌入成功 (溯源已锁)');
-                  updateStepStatus('step-milvus', 'loading', '正在利用向量库检索并自动生成文化关系脉络...');
+                if (isAiDetected) {
+                  updateStepStatus('step-deepfake', 'error', '防伪对比失败：检测到 AIGC 深度伪造特征！');
+                  showAigcBlockedCard(currentFileName || "mock_chuyun_photo.jpg");
+                } else {
+                  updateStepStatus('step-deepfake', 'success', '防伪对比完成 (非AI合成真实率: 98.7%)');
+                  updateStepStatus('step-watermark', 'loading', '正在为素材注入用户特征声纹隐形数字水印...');
                   
                   setTimeout(() => {
-                    updateStepStatus('step-milvus', 'success', `图谱脉络检索匹配完毕 (当前归属地: ${data.regionName})`);
+                    updateStepStatus('step-watermark', 'success', '数字特征水印嵌入成功 (溯源已锁)');
+                    updateStepStatus('step-milvus', 'loading', '正在利用向量库检索并自动生成文化关系脉络...');
                     
-                    // 展现成功结果卡片
-                    const resultEl = document.getElementById('ai-success-result');
-                    resultEl.className = "bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1";
-                    resultEl.innerHTML = `
-                      <div class="flex items-center text-emerald-800 text-xs font-bold">
-                        <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 上传成功：图片已入库暂存！
-                      </div>
-                      <p class="text-[10px] text-emerald-600 pl-5">识别区域: <strong class="font-bold">${data.regionName}</strong></p>
-                      <p class="text-[10px] text-emerald-600 pl-5">保存文件: <strong class="font-mono bg-emerald-100 px-1 rounded break-all">${data.file.storedName}</strong></p>
-                      <p class="text-[10px] text-emerald-600 pl-5">访问地址: <a class="font-mono bg-emerald-100 px-1 rounded break-all underline" href="${data.file.url}" target="_blank">${data.file.url}</a></p>
-                      <p class="text-[10px] text-emerald-600 pl-5">接口响应: <span class="font-mono bg-emerald-100 px-1 rounded">${data.message}</span></p>
-                      <p class="text-[10px] text-emerald-600 pl-5">积分奖励: <strong class="font-bold">+100 流光值已发放</strong></p>
-                    `;
-                    resultEl.classList.remove('hidden');
-                    lucide.createIcons();
-                    
-                    const btn = document.getElementById('ai-btn-close');
-                    btn.disabled = false;
-                    btn.classList.remove('bg-stone-100', 'text-stone-400');
-                    btn.classList.add('bg-deepTeal', 'text-sandGold');
-                    btn.innerText = '确认并领取流光值';
-                    
-                    updateUserPoints(100);
+                    setTimeout(() => {
+                      updateStepStatus('step-milvus', 'success', `图谱脉络检索匹配完毕 (当前归属地: ${data.regionName})`);
+                      
+                      const resultEl = document.getElementById('ai-success-result');
+                      resultEl.className = "bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1";
+                      resultEl.innerHTML = `
+                        <div class="flex items-center text-emerald-800 text-xs font-bold">
+                          <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 校验通过：物理及内容可信度核验无误！
+                        </div>
+                        <p class="text-[10px] text-emerald-600 pl-5">识别区域: <strong class="font-bold">${data.regionName}</strong></p>
+                        <p class="text-[10px] text-emerald-600 pl-5">行政级别: <strong class="font-bold">${data.regionLevel === 'province' ? '省级' : data.regionLevel === 'city' ? '市级' : '县区级'}</strong></p>
+                        <p class="text-[10px] text-emerald-600 pl-5">PostGIS 验证: <span class="font-mono bg-emerald-100 px-1 rounded">ST_Contains 碰撞成功</span></p>
+                        <p class="text-[10px] text-emerald-600 pl-5">接口响应: <span class="font-mono bg-emerald-100 px-1 rounded">${data.message}</span></p>
+                        <p class="text-[10px] text-emerald-600 pl-5">积分奖励: <strong class="font-bold">+100 流光值已发放</strong></p>
+                      `;
+                      resultEl.classList.remove('hidden');
+                      lucide.createIcons();
+                      
+                      const btn = document.getElementById('ai-btn-close');
+                      btn.disabled = false;
+                      btn.classList.remove('bg-stone-100', 'text-stone-400');
+                      btn.classList.add('bg-deepTeal', 'text-sandGold');
+                      btn.innerText = '确认并领取流光值';
+                      
+                      updateUserPoints(100);
+                    }, 1000);
                   }, 1000);
-                }, 1000);
+                }
               }, 1000);
             }, 1000);
           } else {
-            // 碰撞失败或接口报错：动态展示防御或系统故障信息
+            // PostGIS 判定失败（越界异常）或数据库等服务挂起
             setTimeout(() => {
               updateStepStatus('step-gps', 'error', `GPS校验被拦截！`);
               
               const resultEl = document.getElementById('ai-success-result');
               resultEl.className = "bg-red-50 rounded-xl p-3 border border-red-200 space-y-1";
               
-              // 🌟 动态异常诊断与信息纠正
               let titleText = "湖北省行政边界安全防御拦截！";
-              let errorTip = "该北京坐标不在本地导入 of PostgreSQL 边界表内，地理围栏阻断了请求！";
+              let errorTip = "该坐标未命中 PostgreSQL 导入的湖北边界表，地理围栏防御阻断了写入请求！";
               
               if (status === 500) {
-                titleText = "本地系统服务运行异常！";
-                errorTip = "⚠️ 数据库异常！请核实 `tools/server.js` 第 20 行中的密码配置是否与您 pgAdmin 真实数据库登录密码完全一致！";
+                titleText = "本地系统服务连接异常！";
+                errorTip = "数据库异常！请确认您本地 tools/server.js 第 20 行密码配置是否与本地 PostgreSQL 真实密码一致！";
               } else if (status === 401) {
-                errorTip = "⚠️ 前后端签名安全认证失败！防篡改哈希被拒绝，请确认密钥配置。";
+                errorTip = "安全特征数字签名验证失败！经纬度或时间戳数据涉嫌中途遭篡改抓包。";
               } else if (status === 403) {
-                errorTip = "⚠️ 请求超时拒绝！服务器检测到时间戳差值过大，已防御重放虚拟定位。";
-              } else if (status === 413) {
-                errorTip = "⚠️ 图片文件超过 20MB，请压缩后重新上传。";
-              } else if (status === 415) {
-                errorTip = "⚠️ 文件类型不符合图片接口要求，请上传 JPG、PNG、WEBP 或 GIF。";
+                errorTip = "请求超时拒绝！服务器检测到时间戳差值过大，已启动抗重放防御。";
               } else if (status === 400) {
-                errorTip = "⚠️ 该坐标点未命中湖北行政边界；如果您确实在湖北，请确认浏览器定位精度和 PostGIS 边界数据是否正常。";
+                errorTip = "坐标判定越界：该位置坐标不在湖北非遗众包采集合法空间边界多边形内。";
               }
               
               resultEl.innerHTML = `
@@ -1212,7 +1282,7 @@
                   <i data-lucide="x-circle" class="w-4 h-4 mr-1"></i> ${titleText}
                 </div>
                 <p class="text-[10px] text-red-600 pl-5">接口状态码: <strong class="font-mono bg-red-100 px-1 rounded">${status}</strong></p>
-                <p class="text-[10px] text-red-600 pl-5">服务器拒绝原因: <strong class="text-stone-800">${data.message || '坐标越界'}</strong></p>
+                <p class="text-[10px] text-red-600 pl-5">拒绝原因: <strong class="text-stone-800">${data.message || '越界拒绝'}</strong></p>
                 <p class="text-[10px] text-red-500 pl-5">💡 提示：${errorTip}</p>
               `;
               resultEl.classList.remove('hidden');
@@ -1228,18 +1298,18 @@
           }
         })
         .catch(err => {
-          // 本地 Express 服务没开启时的报错处理
+          // 本地服务器没有开启时的温馨警报
           setTimeout(() => {
-            updateStepStatus('step-gps', 'error', `本地服务未响应`);
+            updateStepStatus('step-gps', 'error', `本地服务器未响应`);
             const resultEl = document.getElementById('ai-success-result');
             resultEl.className = "bg-amber-50 rounded-xl p-3 border border-amber-200 space-y-1";
             resultEl.innerHTML = `
               <div class="flex items-center text-amber-800 text-xs font-bold">
-                <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> 连接本地 3000 服务端失败
+                <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> 连接本地 3000 服务端失败！
               </div>
-              <p class="text-[10px] text-stone-600 pl-5">请确保您已经在 HBuilderX 终端中运行：</p>
+              <p class="text-[10px] text-stone-600 pl-5">请在 HBuilderX 内置终端（D:\\数字文旅\\数字文旅>）中重新运行后台：</p>
               <p class="text-[10px] font-mono bg-stone-100 p-1 rounded text-stone-800 pl-5">node tools/server.js</p>
-              <p class="text-[10px] text-amber-600 pl-5">接口地址: http://localhost:3000/api/upload-image</p>
+              <p class="text-[10px] text-amber-600 pl-5">接口目标: http://localhost:3000/api/verify-location</p>
             `;
             resultEl.classList.remove('hidden');
             lucide.createIcons();
@@ -1254,33 +1324,40 @@
         });
 
       } else {
-        // 🟢 模式 2: 纯前端仿真沙盒模式 (本地没有开启服务器时使用)
+        // 🟢 模式 2: 纯前端仿真沙盒模式 (本地没有运行服务器时的沙盒运行环境)
         setTimeout(() => {
           updateStepStatus('step-gps', 'success', 'GPS定位认证完成 (沙盒通过)');
-          updateStepStatus('step-deepfake', 'loading', '正在执行 AIGC 图像篡改深度特征对比...');
+          updateStepStatus('step-deepfake', 'loading', '正在进行 AIGC 图像篡改深度特征对比...');
           
           setTimeout(() => {
-            updateStepStatus('step-deepfake', 'success', '防伪对比完成 (非AI合成真实率: 98.7%)');
-            updateStepStatus('step-watermark', 'loading', '正在为素材注入用户特征声纹隐形数字水印...');
-
-            setTimeout(() => {
-              updateStepStatus('step-watermark', 'success', '数字特征水印嵌入成功 (溯源已锁)');
-              updateStepStatus('step-milvus', 'loading', '正在利用向量库检索并自动生成文化关系脉络...');
+            if (isAiDetected) {
+              // 🔴 沙盒环境下的 AI 拦截路径
+              updateStepStatus('step-deepfake', 'error', '防伪对比失败：检测到 AIGC 深度伪造特征！');
+              showAigcBlockedCard(currentFileName || "mock_chuyun_photo.jpg");
+            } else {
+              // 🟢 沙盒环境下的成功放行路径
+              updateStepStatus('step-deepfake', 'success', '防伪对比完成 (非AI合成真实率: 98.7%)');
+              updateStepStatus('step-watermark', 'loading', '正在为素材注入用户特征声纹隐形数字水印...');
 
               setTimeout(() => {
-                updateStepStatus('step-milvus', 'success', '图谱脉络检索匹配完毕 (省博-曾侯乙青铜器展)');
-                
-                // 展现仿真结果
-                document.getElementById('ai-success-result').classList.remove('hidden');
-                const btn = document.getElementById('ai-btn-close');
-                btn.disabled = false;
-                btn.classList.remove('bg-stone-100', 'text-stone-400');
-                btn.classList.add('bg-deepTeal', 'text-sandGold');
-                btn.innerText = '确认并领取流光值';
-                
-                updateUserPoints(100);
-              }, 1200);
-            }, 1000);
+                updateStepStatus('step-watermark', 'success', '数字特征水印嵌入成功 (溯源已锁)');
+                updateStepStatus('step-milvus', 'loading', '正在利用向量库检索并自动生成文化关系脉络...');
+
+                setTimeout(() => {
+                  updateStepStatus('step-milvus', 'success', '图谱脉络检索匹配完毕 (省博-曾侯乙青铜器展)');
+                  
+                  // 展现仿真成功结果
+                  document.getElementById('ai-success-result').classList.remove('hidden');
+                  const btn = document.getElementById('ai-btn-close');
+                  btn.disabled = false;
+                  btn.classList.remove('bg-stone-100', 'text-stone-400');
+                  btn.classList.add('bg-deepTeal', 'text-sandGold');
+                  btn.innerText = '确认并领取流光值';
+                  
+                  updateUserPoints(100);
+                }, 1200);
+              }, 1000);
+            }
           }, 1000);
         }, 1000);
       }
@@ -1310,7 +1387,6 @@
       document.getElementById('ai-check-modal').classList.add('hidden');
       document.getElementById('ai-success-result').classList.add('hidden');
       
-      // 表单重置并跳转回发现页
       document.getElementById('collect-form').reset();
       resetFilePreview({stopPropagation: () => {}});
       switchTab('discover');
@@ -1321,10 +1397,10 @@
       document.getElementById('ai-check-modal').classList.add('hidden');
       document.getElementById('ai-success-result').classList.add('hidden');
       const btn = document.getElementById('ai-btn-close');
-      btn.setAttribute('onclick', 'closeAiModal()'); // 恢复正常的回调绑定
+      btn.setAttribute('onclick', 'closeAiModal()'); 
     }
 
-    // 10. 数字化守护者唯一徽章详情
+    // 11. 数字化守护者唯一徽章详情
     function openBadgeDetails(name, hash, date) {
       document.getElementById('modal-badge-name').innerText = name;
       document.getElementById('modal-badge-hash').innerText = hash;
@@ -1336,7 +1412,7 @@
       document.getElementById('badge-modal').classList.add('hidden');
     }
 
-    // 11. 积分兑换本地商家福利
+    // 12. 积分兑换本地商家福利
     let userPoints = 1250;
     function updateUserPoints(amount) {
       userPoints += amount;
@@ -1354,7 +1430,7 @@
       showToast(`兑换成功！${couponName}已存入微信卡包！`, 'gift');
     }
 
-    // 12. 全局轻量通知吐司 (Toast)
+    // 13. 全局轻量通知吐司 (Toast)
     let toastTimeout;
     function showToast(message, iconName = 'bell') {
       const toast = document.getElementById('toast-notification');
@@ -1365,7 +1441,6 @@
       toastIcon.setAttribute('data-lucide', iconName);
       lucide.createIcons();
 
-      // 动效拉入
       toast.classList.remove('translate-y-[-100px]');
       toast.classList.add('translate-y-0');
 
@@ -1376,9 +1451,8 @@
       }, 3000);
     }
 
-    // 13. 模拟类型选择单选卡片样式切换
+    // 14. 模拟类型选择单选卡片样式切换
     function selectType(el) {
-      // 重置其他选项卡样式
       const labels = el.parentNode.querySelectorAll('label');
       labels.forEach(l => {
         l.className = "border-2 border-stone-200 bg-white rounded-xl p-3 text-center cursor-pointer block";
@@ -1391,7 +1465,6 @@
           text.className = "text-xs font-medium text-stone-500 block mt-1";
         }
       });
-      // 激活当前样式
       el.className = "border-2 border-sandGold bg-sandGold/5 rounded-xl p-3 text-center cursor-pointer block";
       const activeIcon = el.querySelector('i');
       if (activeIcon) {
@@ -1401,12 +1474,12 @@
       if (activeText) {
         activeText.className = "text-xs font-bold text-stone-800 block mt-1";
       }
-      // 选中对应的 radio
       const radio = el.querySelector('input[type="radio"]');
       if (radio) {
         radio.checked = true;
       }
     }
   </script>
+  
 </body>
 </html>

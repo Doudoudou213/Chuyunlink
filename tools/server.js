@@ -342,3 +342,43 @@ app.listen(PORT, () => {
   console.log(`本地图片上传 API 已就绪: http://localhost:${PORT}/api/upload-image`);
   console.log('=================================================');
 });
+// 引入 node-fetch (如果你使用的是低版本 node，可以使用内置 fetch)
+const fetch = require('node-fetch');
+
+// 免费 AIGC 图像识别接口
+app.post('/api/real-aigc-detect', async (req, res) => {
+  const { imageUrl } = req.body; // 传入要检测的图片公网链接
+  
+  const HF_TOKEN = "REMOVED_HF_TOKEN"; 
+  const MODEL_URL = "https://api-inference.huggingface.co/models/umm-maybe/AI-image-detector";
+
+  try {
+    // 1. 从公网下载图片并转为二进制 Buffer
+    const imageResponse = await fetch(imageUrl);
+    const imageBuffer = await imageResponse.buffer();
+
+    // 2. 调用 Hugging Face 免费 Serverless 端点进行检测
+    const response = await fetch(MODEL_URL, {
+      headers: { 
+        Authorization: `Bearer ${HF_TOKEN}`,
+        "Content-Type": "application/octet-stream"
+      },
+      method: "POST",
+      body: imageBuffer,
+    });
+
+    const result = await response.json();
+    // 3. 解析模型返回的标签概率 (一般会返回 label: artificial / human 及其置信度)
+    return res.json({
+      success: true,
+      data: result,
+      message: "Hugging Face 免费 AI 图像检测成功！"
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "连接免费检测服务超时: " + error.message
+    });
+  }
+});
