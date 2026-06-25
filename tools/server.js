@@ -210,6 +210,106 @@ function detectImageType(buffer) {
   return null;
 }
 
+function clampScore(value) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function analyzeSubmissionQuality({ image, fields, detectedType }) {
+  const description = (fields.description || '').trim();
+  const fileName = (image.originalName || fields.fileNameHint || '').toLowerCase();
+  const issues = [];
+  const suggestions = [];
+  let score = 88;
+  let highRisk = false;
+
+  if (image.size < 50 * 1024) {
+    score -= 22;
+    issues.push('image_too_small');
+    suggestions.push('图片文件过小，建议上传更清晰的现场原图。');
+  } else if (image.size < 200 * 1024) {
+    score -= 8;
+    issues.push('image_low_detail');
+    suggestions.push('图片细节可能不足，建议靠近主体再拍一张。');
+  }
+
+  if (image.size > 8 * 1024 * 1024) {
+    score -= 4;
+    issues.push('image_large');
+    suggestions.push('图片较大，后续可压缩后再进入正式存证流程。');
+  }
+
+  if (!description) {
+    score -= 12;
+    issues.push('description_missing');
+    suggestions.push('建议补充地点、年代、来源或现场观察说明。');
+  } else if (description.length < 12) {
+    score -= 7;
+    issues.push('description_too_short');
+    suggestions.push('描述略短，可以补充采集对象和文化背景。');
+  }
+
+  if (/ai|fake|midjourney|stable.?diffusion|sd-|generated|render/i.test(fileName)) {
+    score -= 55;
+    highRisk = true;
+    issues.push('suspected_aigc_filename');
+    suggestions.push('文件名存在疑似 AI 生成特征，请上传真实现场拍摄素材。');
+  }
+
+  if (fields.mockAigcBlocked === 'true') {
+    score -= 70;
+    highRisk = true;
+    issues.push('aigc_mock_blocked');
+    suggestions.push('演示拦截开关已开启，本次提交按风险素材处理。');
+  }
+
+  if (/https?:\/\/|www\.|微信|vx|qq|电话|手机号|\d{7,}/i.test(description)) {
+    score -= 28;
+    issues.push('possible_ad_or_contact');
+    suggestions.push('描述里不要放联系方式、广告链接或无关推广信息。');
+  }
+
+  if (!fields.regionName) {
+    score -= 4;
+    issues.push('region_context_missing');
+  }
+
+  if (detectedType === 'image/gif') {
+    score -= 6;
+    issues.push('gif_lower_confidence');
+    suggestions.push('GIF 动图不利于细节识别，建议补充一张静态清晰照片。');
+  }
+
+  const qualityScore = clampScore(score);
+  const decision = highRisk || qualityScore < 55
+    ? 'rejected'
+    : qualityScore < 75
+      ? 'needs_review'
+      : 'approved';
+
+  const approved = decision !== 'rejected';
+  const aiAuthenticity = clampScore(highRisk ? Math.min(45, qualityScore) : 92 + Math.min(6, Math.floor((qualityScore - 75) / 4)));
+  const category = description.includes('碑') || description.includes('刻')
+    ? '碑刻/题刻线索'
+    : description.includes('民俗') || description.includes('口述')
+      ? '民俗与口述线索'
+      : '湖北文化遗产实拍素材';
+
+  if (!suggestions.length) {
+    suggestions.push(decision === 'approved' ? '素材质量良好，可进入待审核内容池。' : '建议补充更清晰图片和更完整说明。');
+  }
+
+  return {
+    approved,
+    decision,
+    qualityScore,
+    aiAuthenticity,
+    category,
+    issues,
+    suggestions,
+    moderationLabels: issues.includes('possible_ad_or_contact') ? ['needs_manual_review'] : ['safe'],
+  };
+}
+
 async function findHubeiRegion(longitude, latitude) {
   const client = new Client(dbConfig);
 
@@ -334,11 +434,88 @@ app.post('/api/upload-image', async (req, res) => {
   }
 });
 
+app.post('/api/quality-check', async (req, res) => {
+  try {
+    const bodyBuffer = await readLimitedBody(req);
+    const { fields, files } = parseMultipartForm(req, bodyBuffer);
+    const image = files.image;
+
+    if (!image || image.size === 0) {
+      return res.status(400).json({
+        success: false,
+        approved: false,
+        decision: 'rejected',
+        qualityScore: 0,
+        issues: ['image_missing'],
+        suggestions: ['请先上传一张现场图片，再执行 AI 内容质检。'],
+        message: '缺少待检测图片。',
+      });
+    }
+
+    const detectedType = detectImageType(image.buffer);
+    if (!detectedType || !ALLOWED_IMAGE_TYPES.has(detectedType)) {
+      return res.status(415).json({
+        success: false,
+        approved: false,
+        decision: 'rejected',
+        qualityScore: 0,
+        issues: ['unsupported_image_type'],
+        suggestions: ['仅支持真实的 JPG、PNG、WEBP、GIF 图片。'],
+        message: '图片格式不支持或文件头异常。',
+      });
+    }
+
+    const signatureResult = verifySignedLocationPayload(fields);
+    if (!signatureResult.ok) {
+      return res.status(signatureResult.status).json({
+        success: false,
+        approved: false,
+        decision: 'rejected',
+        qualityScore: 0,
+        issues: ['location_signature_failed'],
+        suggestions: ['请刷新真实定位后重新提交。'],
+        message: signatureResult.message,
+      });
+    }
+
+    const quality = analyzeSubmissionQuality({ image, fields, detectedType });
+    const sha256 = crypto.createHash('sha256').update(image.buffer).digest('hex');
+    const status = quality.approved ? 200 : 422;
+
+    return res.status(status).json({
+      success: quality.approved,
+      ...quality,
+      file: {
+        originalName: image.originalName,
+        size: image.size,
+        mimeType: detectedType,
+        sha256,
+      },
+      message: quality.approved
+        ? 'AI 内容质检完成，素材可进入待审核内容池。'
+        : 'AI 内容质检发现明显风险，已暂缓本次提交。',
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    console.error('AI 内容质检接口异常:', error.message || error);
+    return res.status(status).json({
+      success: false,
+      approved: false,
+      decision: 'rejected',
+      qualityScore: 0,
+      issues: ['quality_check_api_error'],
+      suggestions: ['请确认本地后端服务正常运行后重试。'],
+      message: error.message || 'AI 内容质检失败，请检查本地服务状态。',
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log('=================================================');
   console.log('楚韵链迹本地后端安全服务器运行成功！');
   console.log(`监听本地端口: http://localhost:${PORT}`);
   console.log(`地理围栏验证 API 已就绪: http://localhost:${PORT}/api/verify-location`);
   console.log(`本地图片上传 API 已就绪: http://localhost:${PORT}/api/upload-image`);
+  console.log(`AI 内容质检 API 已就绪: http://localhost:${PORT}/api/quality-check`);
   console.log('=================================================');
 });
