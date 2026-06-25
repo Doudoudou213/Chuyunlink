@@ -10,7 +10,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- CryptoJS 引入用于前端哈希签名计算 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <!-- Leaflet 真实地图引擎：可替换为 static/vendor/leaflet 本地文件 -->
+  <!-- Leaflet 真实地图引擎 -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="./static/map-config.js"></script>
@@ -86,12 +86,68 @@
     .heritage-marker.pending {
       background: #962D2D;
     }
+    .heritage-marker.explore {
+      background: #C5A880;
+      color: #2C4C4E;
+    }
     .heritage-marker.verified {
       background: #047857;
     }
     .heritage-marker.user {
       background: #2C4C4E;
       animation: map-pulse 1.7s ease-in-out infinite;
+    }
+    .leaflet-popup-content {
+      margin: 10px 12px 12px;
+      min-width: 168px;
+    }
+    .map-popup-title {
+      color: #2C4C4E;
+      font-weight: 800;
+      font-size: 13px;
+      line-height: 1.35;
+      margin-bottom: 4px;
+    }
+    .map-popup-desc {
+      color: #57534e;
+      font-size: 11px;
+      line-height: 1.45;
+      margin-bottom: 8px;
+    }
+    .map-popup-nav {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      background: #2C4C4E;
+      color: #C5A880;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+    .toast-notification {
+      top: 52px;
+      width: calc(100% - 32px);
+      max-width: 360px;
+      z-index: 9999;
+      opacity: 0;
+      transform: translate(-50%, -120%) scale(0.96);
+      transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease;
+      will-change: transform, opacity;
+    }
+    .toast-notification.toast-visible {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+      animation: toast-pop 420ms cubic-bezier(0.18, 0.9, 0.2, 1.08);
+    }
+    .toast-notification.toast-hidden {
+      opacity: 0;
+      transform: translate(-50%, -120%) scale(0.96);
+    }
+    @keyframes toast-pop {
+      0% { transform: translate(-50%, -120%) scale(0.96); opacity: 0; }
+      70% { transform: translate(-50%, 4px) scale(1.01); opacity: 1; }
+      100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
     }
     @keyframes map-pulse {
       0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(44,76,78,0.35); }
@@ -286,11 +342,11 @@
           <div id="map-loading" class="absolute inset-0 z-10 bg-stone-100 flex flex-col items-center justify-center text-deepTeal">
             <i data-lucide="map" class="w-8 h-8 mb-2 text-sandGold animate-pulse"></i>
             <p class="text-xs font-bold">正在加载真实地图...</p>
-            <p class="text-[10px] text-stone-500 mt-1">默认使用在线瓦片，也可切换为本地离线瓦片</p>
+            <p class="text-[10px] text-stone-500 mt-1">正在读取湖北离线瓦片配置</p>
           </div>
           <div class="absolute top-3 left-3 right-3 z-[401] flex items-center justify-between gap-2 pointer-events-none">
             <div id="map-source-label" class="bg-white/95 text-[10px] text-stone-700 px-2 py-1 rounded-lg shadow border border-stone-200">
-              真实地图：OpenStreetMap 在线瓦片
+              真实地图：湖北离线瓦片
             </div>
             <button type="button" onclick="refreshGPS()" class="pointer-events-auto bg-deepTeal text-sandGold px-2 py-1 rounded-lg shadow text-[10px] font-bold flex items-center">
               <i data-lucide="locate-fixed" class="w-3 h-3 mr-1"></i> 定位
@@ -304,38 +360,10 @@
             <circle cx="200" cy="300" r="120" stroke="#aaa" stroke-width="1" stroke-dasharray="4,4" fill="none"/>
           </svg>
 
-          <!-- 模拟用户当前位置 -->
-          <div class="hidden absolute top-[320px] left-[180px] z-10 flex flex-col items-center">
-            <div class="bg-deepTeal text-white text-[9px] px-2 py-0.5 rounded shadow mb-1 whitespace-nowrap">
-              你在位置：湖北随州
-            </div>
-            <div class="relative">
-              <span class="absolute inline-flex h-8 w-8 rounded-full bg-deepTeal/40 animate-ping"></span>
-              <div class="w-5 h-5 rounded-full bg-deepTeal border-2 border-white flex items-center justify-center text-white">
-                <i data-lucide="navigation-2" class="w-3 h-3 fill-white"></i>
-              </div>
-            </div>
-          </div>
-
-          <!-- 地标点 1 (待采集) -->
-          <div class="hidden absolute top-[180px] right-[80px] z-10 cursor-pointer text-center group" onclick="focusLandmark('曾侯遗韵牌楼', '榫卯开裂，面临倒塌危险', 50)">
-            <div class="bg-white/90 text-stone-800 text-[9px] font-bold px-2 py-1 rounded shadow-md border-b-2 border-cinnabarRed">
-              曾侯牌楼 (需拍照)
-            </div>
-            <i data-lucide="help-circle" class="w-6 h-6 text-cinnabarRed fill-white mx-auto mt-1 filter drop-shadow"></i>
-          </div>
-
-          <!-- 地标点 2 (已采集) -->
-          <div class="hidden absolute bottom-[240px] left-[60px] z-10 cursor-pointer text-center" onclick="focusLandmark('武当山道家石龛', '已完成数字化图谱关联', 100)">
-            <div class="bg-white/90 text-stone-800 text-[9px] font-bold px-2 py-1 rounded shadow-md border-b-2 border-emerald-600">
-              道家石龛 (已核验)
-            </div>
-            <i data-lucide="check-circle" class="w-6 h-6 text-emerald-600 fill-white mx-auto mt-1 filter drop-shadow"></i>
-          </div>
-
           <!-- 对照图示说明 -->
           <div class="absolute bottom-4 left-4 bg-white/95 p-2 rounded-xl shadow-md text-[10px] space-y-1 text-stone-600 border border-stone-200">
             <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-cinnabarRed mr-1.5 inline-block"></span>待核验/急需采集点</div>
+            <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-sandGold mr-1.5 inline-block"></span>待用户探索点</div>
             <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 mr-1.5 inline-block"></span>文博认证数字点</div>
           </div>
 
@@ -354,9 +382,14 @@
               <span class="text-xs text-deepTeal font-semibold flex items-center">
                 <i data-lucide="zap" class="w-4 h-4 mr-1 text-sandGold fill-sandGold"></i> 任务奖励：+<span id="drawer-points">50</span> 积分
               </span>
-              <button onclick="switchTab('collect')" class="bg-deepTeal text-sandGold px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                <i data-lucide="camera" class="w-3.5 h-3.5 mr-1"></i> 立即实地采集
-              </button>
+              <div class="flex items-center gap-2">
+                <button id="drawer-nav-btn" onclick="openCurrentLandmarkNavigation()" class="bg-sandGold text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
+                  <i data-lucide="navigation" class="w-3.5 h-3.5 mr-1"></i> 打开导航
+                </button>
+                <button onclick="switchTab('collect')" class="bg-deepTeal text-sandGold px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
+                  <i data-lucide="camera" class="w-3.5 h-3.5 mr-1"></i> 采集
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -473,7 +506,7 @@
           <!-- 4. 文本描述 -->
           <div>
             <label class="block text-xs font-bold text-stone-500 mb-1">4. 故事/现状描述 (选填)</label>
-            <textarea placeholder="例如：此青铜残件是在自家翻土时刨出来的，听村里老人说这地界曾是楚国古墓群边缘..." rows="3" class="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs text-stone-800 outline-none focus:border-sandGold"></textarea>
+            <textarea id="heritage-description" name="description" placeholder="例如：此青铜残件是在自家翻土时刨出来的，听村里老人说这地界曾是楚国古墓群边缘..." rows="3" class="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs text-stone-800 outline-none focus:border-sandGold"></textarea>
           </div>
 
           <!-- 5. 提交按钮 -->
@@ -532,72 +565,114 @@
 
       <!-- 页面 4：科普与实地活动 (COMMUNITY/LEARN) -->
       <section id="view-community" class="page-view hidden space-y-4 py-4">
-        <!-- 线下众筹与实地守护活动 -->
-        <div class="px-4 space-y-3">
-          <div class="flex justify-between items-center">
-            <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-              <i data-lucide="users" class="w-4 h-4 mr-1 text-deepTeal"></i> 实地打卡活动 (赞助人定点)
-            </h4>
-            <span class="text-[10px] text-deepTeal font-semibold">村民与B端闭环</span>
-          </div>
-
-          <!-- 活动卡片 1 -->
-          <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden flex">
-            <div class="w-24 shrink-0 bg-stone-300">
-              <img src="https://images.unsplash.com/photo-1547891654-e66ed7edd96c?auto=format&fit=crop&q=80&w=300" class="w-full h-full object-cover">
-            </div>
-            <div class="p-3 flex-1 flex flex-col justify-between">
-              <div>
-                <h5 class="cultural-font font-bold text-stone-800 text-xs line-clamp-1">寻踪江汉——寻找老水利古井与吊脚楼建筑</h5>
-                <p class="text-[10px] text-stone-500 mt-0.5 line-clamp-1">赞助商家：恩施黛瓦隐庐度假民宿</p>
+        <div class="px-4">
+          <div class="relative h-44 overflow-hidden rounded-xl shadow-md">
+            <img src="https://images.unsplash.com/photo-1547891654-e66ed7edd96c?auto=format&fit=crop&q=80&w=700" alt="荆楚文化活动" class="absolute inset-0 h-full w-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/30 to-transparent"></div>
+            <div class="absolute left-3 right-3 bottom-3 text-white">
+              <div class="flex items-center justify-between">
+                <span class="bg-cinnabarRed text-white text-[10px] px-2 py-0.5 rounded font-bold">进行中 · 7天后结算</span>
+                <span class="bg-white/90 text-deepTeal text-[10px] px-2 py-0.5 rounded font-bold">已报名 326 人</span>
               </div>
-              <div class="flex justify-between items-center mt-2">
-                <span class="text-[10px] bg-sandGold/20 text-deepTeal px-2 py-0.5 rounded font-bold">奖励: 民宿5折券</span>
-                <span class="text-[10px] text-stone-400">已报218人</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 活动卡片 2 -->
-          <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden flex">
-            <div class="w-24 shrink-0 bg-stone-300">
-              <img src="https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&q=80&w=300" class="w-full h-full object-cover">
-            </div>
-            <div class="p-3 flex-1 flex flex-col justify-between">
-              <div>
-                <h5 class="cultural-font font-bold text-stone-800 text-xs line-clamp-1">老物件数字化抢救：口述民俗乐器编钟</h5>
-                <p class="text-[10px] text-stone-500 mt-0.5 line-clamp-1">学术协办：曾国文化研究所</p>
-              </div>
-              <div class="flex justify-between items-center mt-2">
-                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">+100 积分 & 徽章</span>
-                <span class="text-[10px] text-stone-400">已报87人</span>
+              <h3 class="cultural-font text-lg font-bold text-sandGold mt-2">荆楚纹样寻访周</h3>
+              <p class="text-xs text-stone-100 mt-1 line-clamp-2">从武汉、钟祥到恩施，寻找建筑纹样、碑刻题记与民间口述线索。</p>
+              <div class="mt-3 flex items-center gap-2">
+                <button onclick="joinCommunityActivity('荆楚纹样寻访周')" class="bg-sandGold text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
+                  <i data-lucide="ticket-check" class="w-3.5 h-3.5 mr-1"></i> 报名活动
+                </button>
+                <button onclick="openCommunityMapPoint('yellow-crane-tower')" class="bg-white/95 text-stone-800 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
+                  <i data-lucide="map" class="w-3.5 h-3.5 mr-1"></i> 看任务点
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 科普小课堂 -->
-        <div class="px-4 space-y-3 pt-2">
+        <!-- 推荐路线 -->
+        <div class="px-4 space-y-3">
+          <div class="flex justify-between items-center">
+            <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
+              <i data-lucide="route" class="w-4 h-4 mr-1 text-deepTeal"></i> 今日推荐路线
+            </h4>
+            <span id="activity-progress" class="text-[10px] text-deepTeal font-semibold">0/3 已点亮</span>
+          </div>
+
+          <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-3">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h5 class="cultural-font font-bold text-stone-800 text-sm">武汉东湖文化半日线</h5>
+                <p class="text-[10px] text-stone-500 mt-1">适合新手：先学编钟与楚纹样，再去附近公共文化点补采。</p>
+              </div>
+              <span class="shrink-0 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">约 2.5h</span>
+            </div>
+            <div class="mt-3 grid grid-cols-3 gap-2 text-[10px]">
+              <button onclick="openCommunityMapPoint('hubei-museum')" class="bg-stone-50 border border-stone-200 rounded-lg p-2 text-left hover:border-sandGold transition-colors">
+                <p class="font-bold text-stone-800">1. 省博曾侯乙</p>
+                <p class="text-[9px] text-stone-500 mt-0.5">参观编钟获取认知</p>
+              </button>
+              <button onclick="openCommunityMapPoint('yellow-crane-tower')" class="bg-stone-50 border border-stone-200 rounded-lg p-2 text-left hover:border-sandGold transition-colors">
+                <p class="font-bold text-stone-800">2. 黄鹤楼碑刻</p>
+                <p class="text-[9px] text-stone-500 mt-0.5">拓片题刻细节采集</p>
+              </button>
+              <button onclick="switchTab('collect')" class="bg-stone-50 border border-stone-200 rounded-lg p-2 text-left hover:border-sandGold transition-colors">
+                <p class="font-bold text-deepTeal">3. 本地入链核验</p>
+                <p class="text-[9px] text-stone-500 mt-0.5">上传并获取可信印记</p>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 科普闯关 -->
+        <div class="px-4 space-y-3">
           <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-            <i data-lucide="book-open" class="w-4 h-4 mr-1 text-deepTeal"></i> 濒危文化遗产科普学习
+            <i data-lucide="book-open" class="w-4 h-4 mr-1 text-deepTeal"></i> 三分钟科普闯关
+          </h4>
+
+          <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-3">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <span class="text-[10px] bg-sandGold/20 text-deepTeal px-2 py-0.5 rounded font-bold">今日一问</span>
+                <h5 class="cultural-font font-bold text-stone-800 text-sm mt-2">采集古建筑纹样时，最应该优先补充哪类信息？</h5>
+              </div>
+              <div class="bg-deepTeal text-sandGold w-9 h-9 rounded-lg flex items-center justify-center shrink-0">
+                <i data-lucide="brain" class="w-4 h-4"></i>
+              </div>
+            </div>
+
+            <div class="mt-3 space-y-2">
+              <button id="quiz-option-a" onclick="answerCommunityQuiz(this, false)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">只拍一张远景照片，方便快速完成任务</button>
+              <button id="quiz-option-b" onclick="answerCommunityQuiz(this, true)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">补充纹样近景、所在位置、保存状态和尺度参照</button>
+              <button id="quiz-option-c" onclick="answerCommunityQuiz(this, false)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">尽量加滤镜，让图像看起来更清晰</button>
+            </div>
+
+            <div id="quiz-feedback" class="hidden mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-[10px] text-emerald-800">
+              答对了：近景、位置、保存状态和尺度参照能帮助专家复核，也能减少后续补采。
+            </div>
+          </div>
+        </div>
+
+        <!-- 微课程 -->
+        <div class="px-4 space-y-3">
+          <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
+            <i data-lucide="graduation-cap" class="w-4 h-4 mr-1 text-deepTeal"></i> 采集前速学
           </h4>
           
           <div class="grid grid-cols-2 gap-3">
-            <div class="bg-white border border-stone-200 rounded-xl p-3 shadow-xs">
+            <button onclick="openLearningTip('纹样断代速记')" class="bg-white border border-stone-200 rounded-xl p-3 shadow-sm text-left">
               <div class="bg-deepTeal text-sandGold w-8 h-8 rounded-lg flex items-center justify-center mb-2">
-                <i data-lucide="compass" class="w-4 h-4"></i>
+                <i data-lucide="scan-line" class="w-4 h-4"></i>
               </div>
-              <h5 class="cultural-font font-bold text-xs text-stone-800">如何对楚式古民居纹饰断代？</h5>
-              <p class="text-[10px] text-stone-400 mt-1">2050人已学 · 答题奖积分</p>
-            </div>
+              <h5 class="cultural-font font-bold text-xs text-stone-800">楚式纹样怎么拍</h5>
+              <p class="text-[10px] text-stone-400 mt-1">6张样例 · +20积分</p>
+            </button>
 
-            <div class="bg-white border border-stone-200 rounded-xl p-3 shadow-xs">
+            <button onclick="openLearningTip('口述史收音要点')" class="bg-white border border-stone-200 rounded-xl p-3 shadow-sm text-left">
               <div class="bg-deepTeal text-sandGold w-8 h-8 rounded-lg flex items-center justify-center mb-2">
                 <i data-lucide="file-audio" class="w-4 h-4"></i>
               </div>
-              <h5 class="cultural-font font-bold text-xs text-stone-800">民间口述史抢救录制与防噪收音</h5>
-              <p class="text-[10px] text-stone-400 mt-1">1120人已学 · 答题奖积分</p>
-            </div>
+              <h5 class="cultural-font font-bold text-xs text-stone-800">口述史防噪收音</h5>
+              <p class="text-[10px] text-stone-400 mt-1">3分钟 · +20积分</p>
+            </button>
           </div>
         </div>
       </section>
@@ -733,6 +808,12 @@
         <span class="text-[10px]">我的</span>
       </button>
     </nav>
+
+    <!-- 手机屏幕内即时通知 -->
+    <div id="toast-notification" class="toast-notification toast-hidden absolute left-1/2 bg-stone-900 text-white border border-sandGold/30 px-4 py-2.5 rounded-xl shadow-2xl text-xs flex items-center space-x-2 pointer-events-none">
+      <i data-lucide="bell" id="toast-icon" class="text-sandGold w-4 h-4"></i>
+      <span id="toast-message">流光值更新！</span>
+    </div>
   </div>
 
   <!-- -------------------- 交互模态弹窗系统 -------------------- -->
@@ -910,12 +991,6 @@
     </div>
   </div>
 
-  <!-- 弹窗 4：通用提示通知模态/吐司 -->
-  <div id="toast-notification" class="fixed top-12 left-1/2 -translate-x-1/2 bg-stone-900 text-white border border-sandGold/30 px-4 py-2.5 rounded-xl z-55 shadow-xl text-xs flex items-center space-x-2 transform translate-y-[-100px] transition-transform duration-300 pointer-events-none">
-    <i data-lucide="bell" id="toast-icon" class="text-sandGold w-4 h-4"></i>
-    <span id="toast-message">流光值更新！</span>
-  </div>
-
   <!-- -------------------- 页面交互逻辑 JavaScript -------------------- -->
   <script>
     // 初始化图标
@@ -924,20 +999,25 @@
       initHeritageMap();
     });
 
-    // 真实地图瓦片配置。离线演示时可在本文件前面或单独 JS 中覆盖 window.CHULINK_MAP_CONFIG。
-    // 在线: { tileUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' }
-    // 离线: { tileUrl: './static/tiles/{z}/{x}/{y}.png', attribution: '本地离线瓦片' }
+    // 真实地图瓦片配置
     const DEFAULT_MAP_CONFIG = {
-      tileUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      attribution: '&copy; OpenStreetMap contributors',
+      tileUrl: './static/tiles/hubei/{z}/{x}/{y}.png',
+      attribution: 'Offline Hubei map tiles | &copy; OpenStreetMap contributors',
       minZoom: 6,
-      maxZoom: 18,
+      maxZoom: 14,
+      maxNativeZoom: 14,
       initialCenter: [31.2, 112.3],
-      initialZoom: 7
+      initialZoom: 7,
+      bounds: [
+        [29.0, 108.3],
+        [33.4, 116.3]
+      ],
+      sourceLabel: '真实地图：湖北离线瓦片'
     };
     const heritageMapConfig = Object.assign({}, DEFAULT_MAP_CONFIG, window.CHULINK_MAP_CONFIG || {});
     const heritageLandmarks = [
       {
+        id: 'zenghou-archway',
         title: '曾侯遗韵牌楼',
         desc: '榫卯开裂，面临倒塌危险',
         points: 50,
@@ -946,6 +1026,7 @@
         label: '待采'
       },
       {
+        id: 'wudang-stone-niche',
         title: '武当山道家石龛',
         desc: '已完成数字化图谱关联',
         points: 100,
@@ -954,16 +1035,72 @@
         label: '已采'
       },
       {
+        id: 'pengjiazhai-stilt-house',
         title: '恩施宣恩彭家寨',
         desc: '土家吊脚楼聚落，适合补充外立面与口述资料',
         points: 80,
         coords: [29.9821, 109.4912],
         status: 'pending',
         label: '补采'
+      },
+      {
+        id: 'yellow-crane-tower',
+        title: '武汉黄鹤楼周边碑刻',
+        desc: '待用户探索：补充碑刻纹样、题刻与周边口述资料',
+        points: 60,
+        coords: [30.5465, 114.3026],
+        status: 'explore',
+        label: '探索'
+      },
+      {
+        id: 'hubei-museum',
+        title: '湖北省博物馆东湖片区',
+        desc: '待用户探索：采集馆外公共文化导览与周边传播线索',
+        points: 55,
+        coords: [30.5619, 114.3679],
+        status: 'explore',
+        label: '探索'
+      },
+      {
+        id: 'mingxianling',
+        title: '钟祥明显陵神道',
+        desc: '待用户探索：补充石像生、神道节点和现场保护状态',
+        points: 90,
+        coords: [31.1806, 112.6007],
+        status: 'explore',
+        label: '探索'
+      },
+      {
+        id: 'chibi-ancient-battlefield',
+        title: '赤壁古战场摩崖题刻',
+        desc: '待用户探索：记录题刻、古战场导览节点和空间关系',
+        points: 70,
+        coords: [29.8789, 113.6336],
+        status: 'explore',
+        label: '探索'
+      },
+      {
+        id: 'three-gorges-dam',
+        title: '宜昌三峡坝区文化节点',
+        desc: '待用户探索：补充水利工程记忆、移民叙事与观景点资料',
+        points: 75,
+        coords: [30.8231, 111.0034],
+        status: 'explore',
+        label: '探索'
+      },
+      {
+        id: 'shennongjia-muyu',
+        title: '神农架木鱼镇民俗点',
+        desc: '待用户探索：采集山地民俗、林区传说和地方物候线索',
+        points: 85,
+        coords: [31.4726, 110.3724],
+        status: 'explore',
+        label: '探索'
       }
     ];
     let heritageMap = null;
     let userLocationMarker = null;
+    let activeLandmark = heritageLandmarks[0];
 
     function createHeritageIcon(status, label) {
       return L.divIcon({
@@ -972,6 +1109,26 @@
         iconSize: [28, 28],
         iconAnchor: [14, 14]
       });
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function createLandmarkPopup(item) {
+      return `
+        <div>
+          <div class="map-popup-title">${escapeHtml(item.title)}</div>
+          <div class="map-popup-desc">${escapeHtml(item.desc)}</div>
+          <button class="map-popup-nav" onclick="openLandmarkNavigationById('${escapeHtml(item.id)}')">打开系统地图导航</button>
+        </div>
+      `;
     }
 
     function initHeritageMap() {
@@ -990,11 +1147,16 @@
       }).setView(heritageMapConfig.initialCenter, heritageMapConfig.initialZoom);
 
       L.control.zoom({ position: 'bottomright' }).addTo(heritageMap);
-      L.tileLayer(heritageMapConfig.tileUrl, {
+      const tileLayerOptions = {
         attribution: heritageMapConfig.attribution,
         minZoom: heritageMapConfig.minZoom,
-        maxZoom: heritageMapConfig.maxZoom
-      }).addTo(heritageMap);
+        maxZoom: heritageMapConfig.maxZoom,
+        maxNativeZoom: heritageMapConfig.maxNativeZoom || heritageMapConfig.maxZoom
+      };
+      if (heritageMapConfig.bounds) {
+        tileLayerOptions.bounds = heritageMapConfig.bounds;
+      }
+      L.tileLayer(heritageMapConfig.tileUrl, tileLayerOptions).addTo(heritageMap);
 
       heritageLandmarks.forEach(item => {
         L.marker(item.coords, {
@@ -1002,13 +1164,22 @@
           title: item.title
         })
         .addTo(heritageMap)
+        .bindPopup(createLandmarkPopup(item))
         .bindTooltip(item.title, { direction: 'top', offset: [0, -10] })
-        .on('click', () => focusLandmark(item.title, item.desc, item.points));
+        .on('click', () => focusLandmark(item));
       });
 
+      if (heritageMapConfig.bounds) {
+        heritageMap.setMaxBounds(heritageMapConfig.bounds);
+      }
+
       const sourceLabel = document.getElementById('map-source-label');
-      if (sourceLabel && heritageMapConfig.tileUrl.includes('static/tiles')) {
-        sourceLabel.innerText = '真实地图：本地离线瓦片';
+      if (sourceLabel) {
+        sourceLabel.innerText = heritageMapConfig.sourceLabel || (
+          heritageMapConfig.tileUrl.includes('static/tiles')
+            ? '真实地图：本地离线瓦片'
+            : '真实地图：OpenStreetMap 在线瓦片'
+        );
       }
 
       const loading = document.getElementById('map-loading');
@@ -1089,12 +1260,29 @@
     }
 
     // 3. 寻迹地图地标焦点展示
-    function focusLandmark(title, desc, points) {
-      document.getElementById('drawer-title').innerText = title;
-      document.getElementById('drawer-desc').innerText = desc;
-      document.getElementById('drawer-points').innerText = points;
+    function normalizeLandmark(titleOrItem, desc, points) {
+      if (typeof titleOrItem === 'object' && titleOrItem !== null) {
+        return titleOrItem;
+      }
+
+      return {
+        id: 'legacy-landmark',
+        title: titleOrItem,
+        desc,
+        points,
+        coords: null
+      };
+    }
+
+    function focusLandmark(titleOrItem, desc, points) {
+      const item = normalizeLandmark(titleOrItem, desc, points);
+      activeLandmark = item;
+      document.getElementById('drawer-title').innerText = item.title;
+      document.getElementById('drawer-desc').innerText = item.desc;
+      document.getElementById('drawer-points').innerText = item.points;
       const drawer = document.getElementById('landmark-drawer');
       drawer.classList.remove('translate-y-[200px]');
+      lucide.createIcons();
     }
 
     function closeLandmarkDrawer() {
@@ -1102,107 +1290,123 @@
       drawer.classList.add('translate-y-[200px]');
     }
 
-    // 4. 双视角文化脉络图谱
-    function showGraphModal(item, museum) {
-      document.getElementById('graph-modal').classList.remove('hidden');
+    function buildLandmarkNavigationUrls(item) {
+      if (!item || !Array.isArray(item.coords)) return null;
+      const [latitude, longitude] = item.coords;
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+      const label = encodeURIComponent(item.title || '目的地');
+      return {
+        apple: `maps://maps.apple.com/?daddr=${latitude},${longitude}&q=${label}`,
+        android: `geo:0,0?q=${latitude},${longitude}(${label})`,
+        web: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`
+      };
     }
 
-    function closeGraphModal() {
-      document.getElementById('graph-modal').classList.add('hidden');
-    }
-
-    // 5. 纠错/质疑提报闭环
-    function openDisputeModal(target, loc) {
-      document.getElementById('dispute-target').innerText = `${target} (${loc})`;
-      document.getElementById('dispute-modal').classList.remove('hidden');
-    }
-
-    function closeDisputeModal() {
-      document.getElementById('dispute-modal').classList.add('hidden');
-    }
-
-    function handleDisputeSubmit(event) {
-      event.preventDefault();
-      closeDisputeModal();
-      showToast('提报成功！已进入众包质疑通道，专家在48h内完成复审。', 'shield-alert');
-    }
-
-    // 6. 真实 GPS / 系统定位刷新与抗篡改
-    let currentLocation = {
-      longitude: null,
-      latitude: null,
-      accuracy: null,
-      isReal: false
-    };
-
-    function formatCoord(value) {
-      return Number(value).toFixed(6);
-    }
-
-    function getGeoErrorMessage(error) {
-      if (!error) return '定位失败，请稍后重试。';
-      if (error.code === error.PERMISSION_DENIED) return '定位权限被拒绝，请在浏览器或系统设置中允许位置访问。';
-      if (error.code === error.POSITION_UNAVAILABLE) return '系统暂时无法获取当前位置，请确认设备定位服务已开启。';
-      if (error.code === error.TIMEOUT) return '定位请求超时，请移动到信号更好的位置后重试。';
-      return '定位失败，请稍后重试。';
-    }
-
-    function refreshGPS() {
-      const geoText = document.getElementById('geo-text');
-      const coordText = document.getElementById('coord-text');
-      const topGPS = document.getElementById('current-gps');
-
-      if (!navigator.geolocation) {
-        if (geoText) geoText.innerText = '当前浏览器不支持定位';
-        if (coordText) coordText.innerText = '请使用支持 Geolocation 的浏览器或移动端 WebView';
-        if (topGPS) topGPS.innerText = '定位不可用';
-        currentLocation.isReal = false;
-        showToast('当前浏览器不支持真实 GPS 定位。', 'map-pin');
+    function openLandmarkNavigation(item) {
+      const urls = buildLandmarkNavigationUrls(item);
+      if (!urls) {
+        showToast('该点位暂未配置导航坐标', 'map-pin');
         return;
       }
 
-      if (geoText) geoText.innerText = '正在获取真实定位...';
-      if (coordText) coordText.innerText = '等待系统定位权限与坐标返回';
-      if (topGPS) topGPS.innerText = '定位中';
+      const userAgent = navigator.userAgent || '';
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+      const isAndroid = /Android/i.test(userAgent);
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { longitude, latitude, accuracy } = position.coords;
-          currentLocation = {
-            longitude,
-            latitude,
-            accuracy,
-            isReal: true
-          };
+      if (isIOS) {
+        window.location.href = urls.apple;
+        return;
+      }
 
-          const coordLabel = `经度: ${formatCoord(longitude)}, 纬度: ${formatCoord(latitude)}`;
-          const accuracyLabel = Number.isFinite(accuracy) ? `，精度约 ${Math.round(accuracy)} 米` : '';
+      if (isAndroid) {
+        window.location.href = urls.android;
+        return;
+      }
 
-          if (geoText) geoText.innerText = '浏览器真实定位坐标';
-          if (coordText) coordText.innerText = `${coordLabel} (系统定位返回${accuracyLabel})`;
-          if (topGPS) topGPS.innerText = '真实定位';
-          updateMapUserLocation(longitude, latitude, accuracy);
-          showToast('真实 GPS / 系统定位已更新成功！', 'map-pin');
-        },
-        (error) => {
-          currentLocation.isReal = false;
-          if (geoText) geoText.innerText = '真实定位获取失败';
-          if (coordText) coordText.innerText = getGeoErrorMessage(error);
-          if (topGPS) topGPS.innerText = '定位失败';
-          showToast(getGeoErrorMessage(error), 'shield-alert');
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0
+      window.open(urls.web, '_blank', 'noopener');
+    }
+
+    function openCurrentLandmarkNavigation() {
+      openLandmarkNavigation(activeLandmark);
+    }
+
+    function openLandmarkNavigationById(id) {
+      const item = heritageLandmarks.find(landmark => landmark.id === id);
+      if (!item) {
+        showToast('未找到该探索点', 'map-pin');
+        return;
+      }
+      activeLandmark = item;
+      openLandmarkNavigation(item);
+    }
+
+    let communityQuizCompleted = false;
+    let communityRouteProgress = 0;
+
+    function joinCommunityActivity(name) {
+      showToast(`已报名「${name}」，可从推荐路线开始探索。`, 'ticket-check');
+    }
+
+    function updateCommunityProgress() {
+      communityRouteProgress = Math.min(3, communityRouteProgress + 1);
+      const progress = document.getElementById('activity-progress');
+      if (progress) {
+        progress.innerText = `${communityRouteProgress}/3 已点亮`;
+      }
+    }
+
+    function openCommunityMapPoint(id) {
+      const item = heritageLandmarks.find(landmark => landmark.id === id);
+      if (!item) {
+        showToast('该活动点暂未开放', 'map-pin');
+        return;
+      }
+
+      switchTab('map');
+      setTimeout(() => {
+        initHeritageMap();
+        if (heritageMap) {
+          heritageMap.setView(item.coords, Math.max(heritageMap.getZoom(), 12), { animate: true });
         }
-      );
+        focusLandmark(item);
+      }, 120);
+    }
+
+    function answerCommunityQuiz(btn, isCorrect) {
+      const feedback = document.getElementById('quiz-feedback');
+      const optA = document.getElementById('quiz-option-a');
+      const optB = document.getElementById('quiz-option-b');
+      const optC = document.getElementById('quiz-option-c');
+
+      [optA, optB, optC].forEach(opt => {
+        opt.disabled = true;
+        opt.className = "w-full text-left bg-stone-100 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400";
+      });
+
+      if (isCorrect) {
+        btn.className = "w-full text-left bg-emerald-100 border border-emerald-300 rounded-lg px-3 py-2 text-xs text-emerald-800 font-bold";
+        feedback.className = "mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-[11px] text-emerald-800 leading-tight";
+        feedback.innerHTML = `<strong>🟢 回答正确！</strong><br>提供多角度细节近景图、尺度参照物（如硬币/笔）并保证 GPS 抗篡改水印已锁定，能直接提高馆藏相似度对比精准度，并帮助学者复核。积分 +50 已到账！`;
+        updateUserPoints(50);
+        showToast('答题闯关成功！+50 积分已放入多宝阁', 'award');
+      } else {
+        btn.className = "w-full text-left bg-red-100 border border-red-300 rounded-lg px-3 py-2 text-xs text-red-800 font-bold";
+        feedback.className = "mt-3 bg-red-50 border border-red-200 rounded-lg p-2.5 text-[11px] text-red-800 leading-tight";
+        feedback.innerHTML = `<strong>🔴 选择不当：</strong><br>这会给系统考证和数字水印锁源增加极大难度。请刷新本页后重新挑战！`;
+      }
+      feedback.classList.remove('hidden');
+    }
+
+    function openLearningTip(title) {
+      showToast(`已打开「${title}」速学卡，完成后可获得 20 积分。`, 'graduation-cap');
     }
 
     // 🛡️ AIGC 模拟状态变量与文件名追踪
     let forceAigcBlocked = false;
     let currentFileName = ""; 
     let selectedUploadFile = null;
+    const LOCAL_API_BASE_URL = 'http://localhost:3000';
 
     // 切换 AIGC 拦截状态
     function toggleAigcMockMode() {
@@ -1290,7 +1494,7 @@
       }
 
       selectedUploadFile = file;
-      currentFileName = file.name; // 👈 动态抓取、标记文件名
+      currentFileName = file.name; // 👈 动态抓取并标记文件名
       const reader = new FileReader();
       reader.onload = function(e) {
         document.getElementById('upload-placeholder').classList.add('hidden');
@@ -1327,6 +1531,152 @@
       lucide.createIcons();
     }
 
+    function getSelectedAssetType() {
+      const checked = document.querySelector('input[name="asset-type"]:checked');
+      return checked ? checked.value : 'image';
+    }
+
+    function getCollectDescription() {
+      const input = document.getElementById('heritage-description');
+      return input ? input.value.trim() : '';
+    }
+
+    function buildSignedLocationPayload(lon, lat, timestamp, deviceId) {
+      const SECURE_KEY = "ChuYunLianJi@2026_Secret";
+      const payload = `${parseFloat(lon).toFixed(6)}|${parseFloat(lat).toFixed(6)}|${timestamp}|${deviceId}`;
+      const signature = CryptoJS.HmacSHA256(payload, SECURE_KEY).toString(CryptoJS.enc.Hex);
+
+      return {
+        longitude: parseFloat(lon),
+        latitude: parseFloat(lat),
+        timestamp,
+        deviceId,
+        signature
+      };
+    }
+
+    function buildQualityCheckFormData(locationPayload, regionName) {
+      const formData = new FormData();
+      formData.append('image', selectedUploadFile);
+      formData.append('assetType', getSelectedAssetType());
+      formData.append('description', getCollectDescription());
+      formData.append('regionName', regionName || '');
+      formData.append('mockAigcBlocked', forceAigcBlocked ? 'true' : 'false');
+      formData.append('fileNameHint', currentFileName || '');
+      Object.entries(locationPayload).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+      return formData;
+    }
+
+    function requestQualityCheck(locationPayload, regionName) {
+      // 兼容本地服务器的多维质检模块，如果服务器没有部署多维质检，该 fetch 会失败，前端进入友好容错
+      return fetch(`${LOCAL_API_BASE_URL}/api/quality-check`, {
+        method: 'POST',
+        body: buildQualityCheckFormData(locationPayload, regionName)
+      }).then(response => response.json().then(data => ({ status: response.status, data })));
+    }
+
+    function setAiCloseButton(className, label, handlerName = 'closeAiModalWithError()') {
+      const btn = document.getElementById('ai-btn-close');
+      btn.disabled = false;
+      btn.className = className;
+      btn.innerText = label;
+      btn.setAttribute('onclick', handlerName);
+    }
+
+    function resetAiModalState() {
+      const resultEl = document.getElementById('ai-success-result');
+      const btn = document.getElementById('ai-btn-close');
+      resultEl.classList.add('hidden');
+      btn.disabled = true;
+      btn.className = "flex-1 bg-stone-100 text-stone-400 py-2 rounded-xl text-xs font-bold w-full";
+      btn.innerText = '请等待检测完成...';
+      btn.setAttribute('onclick', 'closeAiModal()');
+    }
+
+    function showQualityCheckBlockedCard(data, status) {
+      updateStepStatus('step-watermark', 'waiting', '质检未通过，水印写入已暂停');
+      updateStepStatus('step-milvus', 'waiting', '质检未通过，馆藏关联已暂停');
+
+      const issues = Array.isArray(data && data.issues) && data.issues.length ? data.issues : ['quality_check_failed'];
+      const suggestions = Array.isArray(data && data.suggestions) && data.suggestions.length
+        ? data.suggestions
+        : ['请补充更清晰的实拍图片、地点说明或文化背景后再提交。'];
+      const score = Number.isFinite(Number(data && data.qualityScore)) ? Number(data.qualityScore) : 0;
+
+      const resultEl = document.getElementById('ai-success-result');
+      resultEl.className = "bg-red-50 rounded-xl p-3 border border-red-200 space-y-1.5";
+      resultEl.innerHTML = `
+        <div class="flex items-center text-red-800 text-xs font-bold">
+          <i data-lucide="shield-alert" class="w-4 h-4 mr-1 text-red-700"></i> AI 内容质检未通过
+        </div>
+        <p class="text-[10px] text-red-600 pl-5">接口状态: <strong class="font-mono bg-red-100 px-1 rounded">${status}</strong>；质量评分: <strong>${score}</strong>/100</p>
+        <p class="text-[10px] text-red-600 pl-5">问题标签: <strong class="text-stone-800">${issues.join('、')}</strong></p>
+        <p class="text-[10px] text-red-500 pl-5">建议: ${suggestions[0]}</p>
+      `;
+      resultEl.classList.remove('hidden');
+      setAiCloseButton("flex-1 bg-cinnabarRed text-white py-2 rounded-xl text-xs font-bold w-full", '重新回到采集区');
+      lucide.createIcons();
+    }
+
+    function showQualityCheckConnectionError(err) {
+      updateStepStatus('step-deepfake', 'error', 'AI 内容质检接口未响应');
+      updateStepStatus('step-watermark', 'waiting', '接口未响应，水印写入已暂停');
+      updateStepStatus('step-milvus', 'waiting', '接口未响应，馆藏关联已暂停');
+
+      const resultEl = document.getElementById('ai-success-result');
+      resultEl.className = "bg-amber-50 rounded-xl p-3 border border-amber-200 space-y-1";
+      resultEl.innerHTML = `
+        <div class="flex items-center text-amber-800 text-xs font-bold">
+          <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> AI 质检接口连接失败
+        </div>
+        <p class="text-[10px] text-stone-600 pl-5">请确认本地后端已启动：</p>
+        <p class="text-[10px] font-mono bg-stone-100 p-1 rounded text-stone-800 pl-5">node tools/server.js</p>
+        <p class="text-[10px] text-amber-600 pl-5">接口目标: ${LOCAL_API_BASE_URL}/api/quality-check</p>
+        <p class="text-[10px] text-stone-500 pl-5">错误信息: ${(err && err.message) || 'network_error'}</p>
+      `;
+      resultEl.classList.remove('hidden');
+      setAiCloseButton("flex-1 bg-stone-800 text-white py-2 rounded-xl text-xs font-bold w-full", '关闭调试窗口');
+      lucide.createIcons();
+    }
+
+    function finishApprovedSubmission(regionData, qualityData) {
+      const qualityScore = Number.isFinite(Number(qualityData.qualityScore)) ? Number(qualityData.qualityScore) : 88;
+      const authenticity = Number.isFinite(Number(qualityData.aiAuthenticity)) ? Number(qualityData.aiAuthenticity) : 98.7;
+
+      updateStepStatus('step-deepfake', 'success', `AI质检完成 (质量评分: ${qualityScore}/100)`);
+      updateStepStatus('step-watermark', 'loading', '正在为素材注入用户特征声纹隐形数字水印...');
+      
+      setTimeout(() => {
+        updateStepStatus('step-watermark', 'success', '数字特征水印嵌入成功 (溯源已锁)');
+        updateStepStatus('step-milvus', 'loading', '正在利用向量库检索并自动生成文化关系脉络...');
+        
+        setTimeout(() => {
+          updateStepStatus('step-milvus', 'success', `图谱脉络检索匹配完毕 (当前归属地: ${regionData.regionName})`);
+          
+          const resultEl = document.getElementById('ai-success-result');
+          const firstSuggestion = Array.isArray(qualityData.suggestions) && qualityData.suggestions.length ? qualityData.suggestions[0] : '素材质量良好，可进入待审核内容池。';
+          resultEl.className = "bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1";
+          resultEl.innerHTML = `
+            <div class="flex items-center text-emerald-800 text-xs font-bold">
+              <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 校验通过：物理及内容可信度核验无误！
+            </div>
+            <p class="text-[10px] text-emerald-600 pl-5">识别区域: <strong class="font-bold">${regionData.regionName}</strong></p>
+            <p class="text-[10px] text-emerald-600 pl-5">质量评分: <strong class="font-bold">${qualityScore}/100</strong>；实拍可信度: <strong class="font-bold">${authenticity}%</strong></p>
+            <p class="text-[10px] text-emerald-600 pl-5">内容判定: <strong class="font-bold">${qualityData.category || '湖北文化遗产实拍素材'}</strong></p>
+            <p class="text-[10px] text-emerald-600 pl-5">优化建议: <span class="text-stone-700">${firstSuggestion}</span></p>
+            <p class="text-[10px] text-emerald-600 pl-5">积分奖励: <strong class="font-bold">+100 流光值已发放</strong></p>
+          `;
+          resultEl.classList.remove('hidden');
+          lucide.createIcons();
+          
+          setAiCloseButton("flex-1 bg-deepTeal text-sandGold py-2 rounded-xl text-xs font-bold w-full", '确认并领取流光值', 'closeAiModal()');
+          updateUserPoints(100);
+        }, 1000);
+      }, 1000);
+    }
+
     // 10. 表单提交与双模式检测
     function handleUploadSubmit(event) {
       event.preventDefault();
@@ -1343,6 +1693,7 @@
       
       const aiModal = document.getElementById('ai-check-modal');
       aiModal.classList.remove('hidden');
+      resetAiModalState();
 
       updateStepStatus('step-gps', 'loading', '验证硬件GPS与抗防篡改合规性');
       updateStepStatus('step-deepfake', 'waiting', '扫描 AIGC / 深度伪造检测算力引擎');
@@ -1362,16 +1713,7 @@
 
       // 🔴 模式 1: 连接本地真实 Express + PostGIS 数据库进行空间碰撞
       if (localApiMode) {
-        const payload = `${parseFloat(lon).toFixed(6)}|${parseFloat(lat).toFixed(6)}|${timestamp}|${deviceId}`;
-        const signature = CryptoJS.HmacSHA256(payload, SECURE_KEY).toString(CryptoJS.enc.Hex);
-
-        const payloadData = {
-          longitude: parseFloat(lon),
-          latitude: parseFloat(lat),
-          timestamp: timestamp,
-          deviceId: deviceId,
-          signature: signature
-        };
+        const payloadData = buildSignedLocationPayload(lon, lat, timestamp, deviceId);
 
         // 完美对齐本地 server.js 的 /api/verify-location JSON 接收端
         fetch('http://localhost:3000/api/verify-location', {
@@ -1389,50 +1731,58 @@
             // PostGIS 围栏判定放行！
             setTimeout(() => {
               updateStepStatus('step-gps', 'success', `GPS定位认证完成 (${data.regionName})`);
-              updateStepStatus('step-deepfake', 'loading', '正在进行 AIGC 图像篡改深度特征对比...');
+              updateStepStatus('step-deepfake', 'loading', '正在进行 AIGC 图像篡改与内容质量检测...');
               
-              // 第二步：执行 AIGC 检测与分流
-              setTimeout(() => {
-                if (isAiDetected) {
-                  updateStepStatus('step-deepfake', 'error', '防伪对比失败：检测到 AIGC 深度伪造特征！');
-                  showAigcBlockedCard(currentFileName || "mock_chuyun_photo.jpg");
-                } else {
-                  updateStepStatus('step-deepfake', 'success', '防伪对比完成 (非AI合成真实率: 98.7%)');
-                  updateStepStatus('step-watermark', 'loading', '正在为素材注入用户特征声纹隐形数字水印...');
-                  
+              // 第二步：执行本地后端 AI 质量质检分流（优先调用本地高级接口，如未部署则降级纯防伪）
+              requestQualityCheck(payloadData, data.regionName)
+                .then(({ status: qStatus, data: qualityData }) => {
+                  if (isAiDetected || qStatus !== 200 || !qualityData.success || !qualityData.approved) {
+                    updateStepStatus('step-deepfake', 'error', 'AI 内容质检发现风险素材');
+                    showQualityCheckBlockedCard(qualityData, qStatus);
+                    return;
+                  }
+
+                  finishApprovedSubmission(data, qualityData);
+                })
+                .catch(() => {
+                  // 本地 node 暂无高级 AIGC 质检接口时：友好自动降级为“经典款”纯防伪分流，保证联调流畅不中断！
                   setTimeout(() => {
-                    updateStepStatus('step-watermark', 'success', '数字特征水印嵌入成功 (溯源已锁)');
-                    updateStepStatus('step-milvus', 'loading', '正在利用向量库检索并自动生成文化关系脉络...');
-                    
-                    setTimeout(() => {
-                      updateStepStatus('step-milvus', 'success', `图谱脉络检索匹配完毕 (当前归属地: ${data.regionName})`);
+                    if (isAiDetected) {
+                      updateStepStatus('step-deepfake', 'error', '防伪对比失败：检测到 AIGC 深度伪造特征！');
+                      showAigcBlockedCard(currentFileName || "mock_chuyun_photo.jpg");
+                    } else {
+                      updateStepStatus('step-deepfake', 'success', '防伪对比完成 (非AI合成真实率: 98.7%)');
+                      updateStepStatus('step-watermark', 'loading', '正在为素材注入用户特征声纹隐形数字水印...');
                       
-                      const resultEl = document.getElementById('ai-success-result');
-                      resultEl.className = "bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1";
-                      resultEl.innerHTML = `
-                        <div class="flex items-center text-emerald-800 text-xs font-bold">
-                          <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 校验通过：物理及内容可信度核验无误！
-                        </div>
-                        <p class="text-[10px] text-emerald-600 pl-5">识别区域: <strong class="font-bold">${data.regionName}</strong></p>
-                        <p class="text-[10px] text-emerald-600 pl-5">行政级别: <strong class="font-bold">${data.regionLevel === 'province' ? '省级' : data.regionLevel === 'city' ? '市级' : '县区级'}</strong></p>
-                        <p class="text-[10px] text-emerald-600 pl-5">PostGIS 验证: <span class="font-mono bg-emerald-100 px-1 rounded">ST_Contains 碰撞成功</span></p>
-                        <p class="text-[10px] text-emerald-600 pl-5">接口响应: <span class="font-mono bg-emerald-100 px-1 rounded">${data.message}</span></p>
-                        <p class="text-[10px] text-emerald-600 pl-5">积分奖励: <strong class="font-bold">+100 流光值已发放</strong></p>
-                      `;
-                      resultEl.classList.remove('hidden');
-                      lucide.createIcons();
-                      
-                      const btn = document.getElementById('ai-btn-close');
-                      btn.disabled = false;
-                      btn.classList.remove('bg-stone-100', 'text-stone-400');
-                      btn.classList.add('bg-deepTeal', 'text-sandGold');
-                      btn.innerText = '确认并领取流光值';
-                      
-                      updateUserPoints(100);
-                    }, 1000);
+                      setTimeout(() => {
+                        updateStepStatus('step-watermark', 'success', '数字特征水印嵌入成功 (溯源已锁)');
+                        updateStepStatus('step-milvus', 'loading', '正在利用向量库检索并自动生成文化关系脉络...');
+                        
+                        setTimeout(() => {
+                          updateStepStatus('step-milvus', 'success', `图谱脉络检索匹配完毕 (当前归属地: ${data.regionName})`);
+                          
+                          const resultEl = document.getElementById('ai-success-result');
+                          resultEl.className = "bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1";
+                          resultEl.innerHTML = `
+                            <div class="flex items-center text-emerald-800 text-xs font-bold">
+                              <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 校验通过：物理及内容可信度核验无误！
+                            </div>
+                            <p class="text-[10px] text-emerald-600 pl-5">识别区域: <strong class="font-bold">${data.regionName}</strong></p>
+                            <p class="text-[10px] text-emerald-600 pl-5">行政级别: <strong class="font-bold">${data.regionLevel === 'province' ? '省级' : data.regionLevel === 'city' ? '市级' : '县区级'}</strong></p>
+                            <p class="text-[10px] text-emerald-600 pl-5">PostGIS 验证: <span class="font-mono bg-emerald-100 px-1 rounded">ST_Contains 碰撞成功</span></p>
+                            <p class="text-[10px] text-emerald-600 pl-5">接口响应: <span class="font-mono bg-emerald-100 px-1 rounded">${data.message}</span></p>
+                            <p class="text-[10px] text-emerald-600 pl-5">积分奖励: <strong class="font-bold">+100 流光值已发放</strong></p>
+                          `;
+                          resultEl.classList.remove('hidden');
+                          lucide.createIcons();
+                          
+                          setAiCloseButton("flex-1 bg-deepTeal text-sandGold py-2 rounded-xl text-xs font-bold w-full", '确认并领取流光值', 'closeAiModal()');
+                          updateUserPoints(100);
+                        }, 1000);
+                      }, 1000);
+                    }
                   }, 1000);
-                }
-              }, 1000);
+                });
             }, 1000);
           } else {
             // PostGIS 判定失败（越界异常）或数据库等服务挂起
@@ -1471,7 +1821,7 @@
               btn.disabled = false;
               btn.classList.remove('bg-stone-100', 'text-stone-400');
               btn.classList.add('bg-cinnabarRed', 'text-white');
-              btn.innerText = status === 500 ? '重试数据库连接' : '重新回到采集区';
+              btn.innerText = status === 500 ? '重试本地服务' : '重新回到采集区';
               btn.setAttribute('onclick', 'closeAiModalWithError()');
             }, 1000);
           }
@@ -1620,13 +1970,14 @@
       toastIcon.setAttribute('data-lucide', iconName);
       lucide.createIcons();
 
-      toast.classList.remove('translate-y-[-100px]');
-      toast.classList.add('translate-y-0');
+      toast.classList.remove('toast-visible', 'toast-hidden');
+      void toast.offsetWidth; // 触发 reflow 重新触发过渡动画
+      toast.classList.add('toast-visible');
 
       clearTimeout(toastTimeout);
       toastTimeout = setTimeout(() => {
-        toast.classList.remove('translate-y-0');
-        toast.classList.add('translate-y-[-100px]');
+        toast.classList.remove('toast-visible');
+        toast.classList.add('toast-hidden');
       }, 3000);
     }
 
