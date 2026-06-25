@@ -520,7 +520,11 @@
           <!-- 4. 文本描述 -->
           <div>
             <label class="block text-xs font-bold text-stone-500 mb-1">4. 故事/现状描述 (选填)</label>
+<<<<<<< Updated upstream
             <textarea id="collect-description" name="description" placeholder="例如：此青铜残件是在自家翻土时刨出来的，听村里老人说这地界曾是楚国古墓群边缘..." rows="3" class="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs text-stone-800 outline-none focus:border-sandGold"></textarea>
+=======
+            <textarea id="heritage-description" name="description" placeholder="例如：此青铜残件是在自家翻土时刨出来的，听村里老人说这地界曾是楚国古墓群边缘..." rows="3" class="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs text-stone-800 outline-none focus:border-sandGold"></textarea>
+>>>>>>> Stashed changes
           </div>
 
           <!-- 5. 提交按钮 -->
@@ -1833,8 +1837,13 @@
       const lat = currentLocation.latitude;
       const timestamp = Math.floor(Date.now() / 1000);
       const deviceId = "browser_geolocation_001";
+<<<<<<< Updated upstream
+=======
+      const SECURE_KEY = "ChuYunLianJi@2026_Secret";
+      const description = document.getElementById('heritage-description')?.value || '';
+>>>>>>> Stashed changes
 
-      // 🔴 模式 1: 连接本地真实 Express + PostGIS 数据库
+      // 🔴 模式 1: 连接本地真实 Express + GeoJSON 边界 + JSON 采集库
       if (localApiMode) {
 <<<<<<< Updated upstream
         // 1. 计算 HMAC-SHA256 签名，完全还原真实硬件防篡改原理
@@ -1845,6 +1854,8 @@
         uploadForm.append('image', selectedUploadFile);
         uploadForm.append('longitude', lon);
         uploadForm.append('latitude', lat);
+        uploadForm.append('locationAccuracy', currentLocation.accuracy ?? '');
+        uploadForm.append('description', description);
         uploadForm.append('timestamp', timestamp);
         uploadForm.append('deviceId', deviceId);
         uploadForm.append('signature', signature);
@@ -1887,8 +1898,9 @@
                     resultEl.className = "bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1";
                     resultEl.innerHTML = `
                       <div class="flex items-center text-emerald-800 text-xs font-bold">
-                        <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 上传成功：图片已入库暂存！
+                        <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 上传成功：采集数据已入库！
                       </div>
+                      <p class="text-[10px] text-emerald-600 pl-5">采集编号: <strong class="font-mono bg-emerald-100 px-1 rounded">#${data.submission?.id || '-'}</strong> / 状态: <strong class="font-mono bg-emerald-100 px-1 rounded">${data.submission?.status || 'pending'}</strong></p>
                       <p class="text-[10px] text-emerald-600 pl-5">识别区域: <strong class="font-bold">${data.regionName}</strong></p>
                       <p class="text-[10px] text-emerald-600 pl-5">保存文件: <strong class="font-mono bg-emerald-100 px-1 rounded break-all">${data.file.storedName}</strong></p>
                       <p class="text-[10px] text-emerald-600 pl-5">访问地址: <a class="font-mono bg-emerald-100 px-1 rounded break-all underline" href="${data.file.url}" target="_blank">${data.file.url}</a></p>
@@ -1935,11 +1947,11 @@
               
               // 🌟 动态异常诊断与信息纠正
               let titleText = "湖北省行政边界安全防御拦截！";
-              let errorTip = "该北京坐标不在本地导入 of PostgreSQL 边界表内，地理围栏阻断了请求！";
+              let errorTip = "该坐标不在湖北 GeoJSON 边界范围内，地理围栏阻断了请求！";
               
               if (status === 500) {
                 titleText = "本地系统服务运行异常！";
-                errorTip = "⚠️ 数据库异常！请核实 `tools/server.js` 第 20 行中的密码配置是否与您 pgAdmin 真实数据库登录密码完全一致！";
+                errorTip = "⚠️ 本地文件存储或 hubei_boundary.geojson 读取异常，请查看 node tools/server.js 终端报错。";
               } else if (status === 401) {
                 errorTip = "⚠️ 前后端签名安全认证失败！防篡改哈希被拒绝，请确认密钥配置。";
               } else if (status === 403) {
@@ -1949,7 +1961,7 @@
               } else if (status === 415) {
                 errorTip = "⚠️ 文件类型不符合图片接口要求，请上传 JPG、PNG、WEBP 或 GIF。";
               } else if (status === 400) {
-                errorTip = "⚠️ 该坐标点未命中湖北行政边界；如果您确实在湖北，请确认浏览器定位精度和 PostGIS 边界数据是否正常。";
+                errorTip = "⚠️ 该坐标点未命中湖北行政边界；如果您确实在湖北，请确认浏览器定位精度和 hubei_boundary.geojson 边界数据。";
               }
               
               resultEl.innerHTML = `
@@ -1967,7 +1979,7 @@
               btn.disabled = false;
               btn.classList.remove('bg-stone-100', 'text-stone-400');
               btn.classList.add('bg-cinnabarRed', 'text-white');
-              btn.innerText = status === 500 ? '重试数据库连接' : '重新回到采集区';
+              btn.innerText = status === 500 ? '重试本地服务' : '重新回到采集区';
               btn.setAttribute('onclick', 'closeAiModalWithError()');
             }, 1000);
           }

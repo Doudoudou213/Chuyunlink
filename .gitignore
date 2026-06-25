@@ -2,5 +2,6 @@ node_modules/
 unpackage/
 .hbuilderx/
 uploads/
+data/
 .DS_Store
 Thumbs.db
