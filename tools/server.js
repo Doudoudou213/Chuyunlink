@@ -8,6 +8,8 @@ const path = require('path');
 const app = express();
 const PORT = 3000;
 const SECURE_KEY = 'ChuYunLianJi@2026_Secret';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 const ROOT_DIR = path.join(__dirname, '..');
 const UPLOAD_DIR = path.join(ROOT_DIR, 'uploads');
@@ -321,6 +323,113 @@ function analyzeSubmissionQuality({ image, fields, detectedType }) {
     moderationLabels: issues.includes('possible_ad_or_contact') ? ['needs_manual_review'] : ['safe'],
   };
 }
+function extractJsonFromAiText(text) {
+  const raw = String(text || '').trim();
+  const firstBrace = raw.indexOf('{');
+  const lastBrace = raw.lastIndexOf('}');
+
+  if (firstBrace === -1 || lastBrace === -1) {
+    throw new Error('AI 返回内容不是 JSON');
+  }
+
+  return JSON.parse(raw.slice(firstBrace, lastBrace + 1));
+}
+
+function normalizeAiQualityResult(result) {
+  const decision = ['approved', 'needs_review', 'rejected'].includes(result.decision)
+    ? result.decision
+    : 'needs_review';
+
+  return {
+    approved: decision !== 'rejected',
+    decision,
+    qualityScore: Math.max(0, Math.min(100, Number(result.qualityScore) || 0)),
+    aiAuthenticity: Math.max(0, Math.min(100, Number(result.aiAuthenticity) || 0)),
+    category: result.category || '其他',
+    issues: Array.isArray(result.issues) ? result.issues : [],
+    suggestions: Array.isArray(result.suggestions) && result.suggestions.length
+      ? result.suggestions
+      : ['建议补充更清晰图片和更完整说明。'],
+    moderationLabels: decision === 'rejected' ? ['needs_manual_review'] : ['safe'],
+  };
+}
+
+async function callGeminiQualityCheck({ image, fields, detectedType }) {
+  if (!GEMINI_API_KEY) {
+    return null;
+  }
+
+  const prompt = `
+你是“楚韵链迹”的用户上传内容质检员。
+请根据图片和用户文字描述，判断这条文化遗产采集内容是否适合进入待审核内容池。
+
+用户描述：
+${fields.description || '无'}
+
+定位区域：
+${fields.regionName || '未知'}
+
+素材类型：
+${fields.assetType || 'image'}
+
+请只返回 JSON，不要解释，不要 Markdown。
+JSON 格式必须是：
+{
+  "decision": "approved | needs_review | rejected",
+  "qualityScore": 0,
+  "aiAuthenticity": 0,
+  "category": "碑刻/题刻线索 | 古建筑纹样 | 民俗与口述线索 | 博物馆/展陈线索 | 无关内容 | 其他",
+  "issues": ["英文问题标签"],
+  "suggestions": ["给用户看的中文建议"]
+}
+
+判断标准：
+- 图片清晰、像真实拍摄、和湖北文化遗产相关，decision 为 approved。
+- 图片模糊、主体不清、描述太短，decision 为 needs_review。
+- 疑似 AI 生成图、广告、无关图片、色情暴力、个人隐私，decision 为 rejected。
+- suggestions 要温和，像产品提示。
+`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': GEMINI_API_KEY,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: detectedType,
+                  data: image.buffer.toString('base64'),
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0,
+          responseMimeType: 'application/json',
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API 调用失败: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return normalizeAiQualityResult(extractJsonFromAiText(text));
+}
 
 async function findHubeiRegion(longitude, latitude) {
   const client = new Client(dbConfig);
@@ -609,7 +718,29 @@ app.post('/api/quality-check', async (req, res) => {
       });
     }
 
-    const quality = analyzeSubmissionQuality({ image, fields, detectedType });
+    const localQuality = analyzeSubmissionQuality({ image, fields, detectedType });
+let aiQuality = null;
+
+try {
+  aiQuality = await callGeminiQualityCheck({ image, fields, detectedType });
+} catch (aiError) {
+  console.error('Gemini AI 质检失败，已回退本地规则:', aiError.message);
+}
+
+let quality = aiQuality || localQuality;
+
+if (!localQuality.approved) {
+  quality = {
+    ...quality,
+    approved: false,
+    decision: 'rejected',
+    qualityScore: Math.min(quality.qualityScore || 0, localQuality.qualityScore),
+    aiAuthenticity: Math.min(quality.aiAuthenticity || 0, localQuality.aiAuthenticity),
+    issues: [...new Set([...(quality.issues || []), ...localQuality.issues])],
+    suggestions: [...new Set([...(quality.suggestions || []), ...localQuality.suggestions])],
+    moderationLabels: ['needs_manual_review'],
+  };
+}
     const sha256 = crypto.createHash('sha256').update(image.buffer).digest('hex');
     const status = quality.approved ? 200 : 422;
 

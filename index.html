@@ -149,6 +149,19 @@
       70% { transform: translate(-50%, 4px) scale(1.01); opacity: 1; }
       100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
     }
+    #audio-record-panel.recording .audio-wave-bar {
+      animation: audio-wave 680ms ease-in-out infinite alternate;
+    }
+    #audio-record-panel.recording .audio-wave-bar:nth-child(2n) {
+      animation-duration: 520ms;
+    }
+    #audio-record-panel.recording .audio-wave-bar:nth-child(3n) {
+      animation-duration: 820ms;
+    }
+    @keyframes audio-wave {
+      from { transform: scaleY(0.45); opacity: 0.55; }
+      to { transform: scaleY(1.08); opacity: 1; }
+    }
     @keyframes map-pulse {
       0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(44,76,78,0.35); }
       50% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(44,76,78,0); }
@@ -453,7 +466,7 @@
           <div>
             <label class="block text-xs font-bold text-stone-500 mb-2">1. 采集素材类型</label>
             <div class="grid grid-cols-3 gap-3">
-              <label class="border-2 border-sandGold bg-sandGold/5 rounded-xl p-3 text-center cursor-pointer block">
+              <label class="border-2 border-sandGold bg-sandGold/5 rounded-xl p-3 text-center cursor-pointer block" onclick="selectType(this)">
                 <input type="radio" name="asset-type" value="image" checked class="hidden font-medium">
                 <i data-lucide="image" class="w-6 h-6 mx-auto text-deepTeal"></i>
                 <span class="text-xs font-bold text-stone-800 block mt-1">拍古建老物</span>
@@ -477,19 +490,50 @@
             <div class="border-2 border-dashed border-stone-300 hover:border-sandGold rounded-2xl p-6 bg-white text-center cursor-pointer relative" onclick="triggerFileSelect()">
               <input type="file" id="real-file-input" class="hidden" accept="image/*" onchange="previewFile(event)">
               <div id="upload-placeholder">
-                <i data-lucide="cloud-lightning" class="w-10 h-10 mx-auto text-sandGold animate-pulse"></i>
-                <p class="text-xs font-bold text-stone-700 mt-2">点击拍照或上传本地图片</p>
-                <p class="text-[10px] text-stone-400 mt-1">大小限20MB内，支持 JPG, PNG, WEBP, GIF</p>
+                <i id="upload-placeholder-icon" data-lucide="cloud-lightning" class="w-10 h-10 mx-auto text-sandGold animate-pulse"></i>
+                <p id="upload-placeholder-title" class="text-xs font-bold text-stone-700 mt-2">点击拍照或上传本地图片</p>
+                <p id="upload-placeholder-desc" class="text-[10px] text-stone-400 mt-1">大小限20MB内，支持 JPG, PNG, WEBP, GIF</p>
               </div>
               <!-- 本地图片预览区域 -->
               <div id="upload-preview" class="hidden flex flex-col items-center">
                 <div class="relative w-full max-h-36 overflow-hidden rounded-xl">
                   <img id="preview-img" src="" class="w-full h-32 object-cover">
+                  <div id="preview-media-icon" class="hidden w-full h-32 bg-stone-900 text-sandGold flex items-center justify-center">
+                    <i data-lucide="file-audio" class="w-10 h-10"></i>
+                  </div>
                   <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-white">
                     <p id="preview-file-name" class="text-xs font-semibold px-3 break-all">已选择本地图片</p>
                   </div>
                 </div>
                 <button type="button" onclick="resetFilePreview(event)" class="text-xs text-cinnabarRed font-bold mt-2 hover:underline">重新上传</button>
+              </div>
+            </div>
+            <div id="audio-record-panel" class="hidden mt-3 bg-white border border-sandGold/30 rounded-xl p-3">
+              <div class="flex items-center justify-between gap-3">
+                <button type="button" id="record-audio-btn" onclick="toggleAudioRecording(event)" class="bg-deepTeal text-sandGold w-12 h-12 rounded-full flex items-center justify-center shadow">
+                  <i data-lucide="mic" class="w-5 h-5"></i>
+                </button>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <p id="record-audio-status" class="text-xs font-bold text-stone-800">口述采集待开始</p>
+                    <span id="record-audio-time" class="text-[10px] font-mono text-stone-500">00:00</span>
+                  </div>
+                  <div class="mt-2 flex items-end gap-1 h-8">
+                    <span class="audio-wave-bar h-2 flex-1 bg-sandGold/40 rounded"></span>
+                    <span class="audio-wave-bar h-5 flex-1 bg-sandGold/70 rounded"></span>
+                    <span class="audio-wave-bar h-3 flex-1 bg-sandGold/50 rounded"></span>
+                    <span class="audio-wave-bar h-7 flex-1 bg-deepTeal/70 rounded"></span>
+                    <span class="audio-wave-bar h-4 flex-1 bg-sandGold/60 rounded"></span>
+                    <span class="audio-wave-bar h-6 flex-1 bg-deepTeal/50 rounded"></span>
+                    <span class="audio-wave-bar h-3 flex-1 bg-sandGold/40 rounded"></span>
+                  </div>
+                </div>
+              </div>
+              <div id="audio-summary-card" class="hidden mt-3 bg-stone-50 border border-stone-200 rounded-lg p-2">
+                <div class="flex items-center text-deepTeal text-xs font-bold">
+                  <i data-lucide="list-checks" class="w-3.5 h-3.5 mr-1"></i> 识别梗概
+                </div>
+                <p id="audio-summary-text" class="text-[10px] text-stone-600 mt-1 leading-relaxed"></p>
               </div>
             </div>
           </div>
@@ -520,11 +564,7 @@
           <!-- 4. 文本描述 -->
           <div>
             <label class="block text-xs font-bold text-stone-500 mb-1">4. 故事/现状描述 (选填)</label>
-<<<<<<< Updated upstream
             <textarea id="collect-description" name="description" placeholder="例如：此青铜残件是在自家翻土时刨出来的，听村里老人说这地界曾是楚国古墓群边缘..." rows="3" class="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs text-stone-800 outline-none focus:border-sandGold"></textarea>
-=======
-            <textarea id="heritage-description" name="description" placeholder="例如：此青铜残件是在自家翻土时刨出来的，听村里老人说这地界曾是楚国古墓群边缘..." rows="3" class="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs text-stone-800 outline-none focus:border-sandGold"></textarea>
->>>>>>> Stashed changes
           </div>
 
           <!-- 5. 提交按钮 -->
@@ -1527,8 +1567,6 @@
       );
     }
 
-<<<<<<< Updated upstream
-=======
     // 🛡️ AIGC 模拟状态变量与文件名追踪
     let forceAigcBlocked = false;
     let currentFileName = ""; 
@@ -1561,10 +1599,12 @@
       }
     }
 
->>>>>>> Stashed changes
     // 7. 调试模式：切换本地 API / 仿真 Mock
     let localApiMode = false;
-    let selectedUploadFile = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioRecordTimer = null;
+    let audioRecordSeconds = 0;
     function toggleApiMode() {
       localApiMode = !localApiMode;
       const btn = document.getElementById('api-toggle-btn');
@@ -1595,11 +1635,68 @@
       document.getElementById('real-file-input').click();
     }
 
+    function getMediaModeConfig(type = getSelectedAssetType()) {
+      const configs = {
+        image: {
+          accept: 'image/*',
+          icon: 'cloud-lightning',
+          title: '点击拍照或上传本地图片',
+          desc: '大小限20MB内，支持 JPG, PNG, WEBP, GIF',
+          previewIcon: 'image',
+          invalidTip: '请上传 JPG、PNG、WEBP 或 GIF 图片文件'
+        },
+        audio: {
+          accept: 'audio/*',
+          icon: 'mic',
+          title: '录制口述或上传音频',
+          desc: '建议 30 秒内，支持常见音频文件',
+          previewIcon: 'file-audio',
+          invalidTip: '请上传音频文件，或点击下方录音按钮采集口述'
+        },
+        video: {
+          accept: 'video/*',
+          icon: 'video',
+          title: '拍摄或上传短视频',
+          desc: '建议 30 秒内，支持常见视频文件',
+          previewIcon: 'file-video',
+          invalidTip: '请上传视频文件'
+        }
+      };
+      return configs[type] || configs.image;
+    }
+
+    function updateCollectMediaMode(type = getSelectedAssetType()) {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+
+      const config = getMediaModeConfig(type);
+      const input = document.getElementById('real-file-input');
+      const placeholderIcon = document.getElementById('upload-placeholder-icon');
+      const title = document.getElementById('upload-placeholder-title');
+      const desc = document.getElementById('upload-placeholder-desc');
+      const audioPanel = document.getElementById('audio-record-panel');
+
+      input.accept = config.accept;
+      placeholderIcon.setAttribute('data-lucide', config.icon);
+      title.innerText = config.title;
+      desc.innerText = config.desc;
+      audioPanel.classList.toggle('hidden', type !== 'audio');
+      resetFilePreview({stopPropagation: () => {}});
+      document.getElementById('audio-summary-card').classList.add('hidden');
+      document.getElementById('record-audio-status').innerText = '口述采集待开始';
+      document.getElementById('record-audio-time').innerText = '00:00';
+      lucide.createIcons();
+    }
+
     function resetFilePreview(event) {
       if (event && event.stopPropagation) event.stopPropagation();
       selectedUploadFile = null;
+      currentFileName = "";
       document.getElementById('real-file-input').value = '';
       document.getElementById('preview-img').src = '';
+      document.getElementById('preview-img').classList.remove('hidden');
+      document.getElementById('preview-media-icon').classList.add('hidden');
       document.getElementById('preview-file-name').innerText = '已选择本地图片';
       document.getElementById('upload-placeholder').classList.remove('hidden');
       document.getElementById('upload-preview').classList.add('hidden');
@@ -1609,9 +1706,11 @@
     function previewFile(event) {
       const file = event.target.files[0];
       if (!file) return;
+      const mediaType = getSelectedAssetType();
+      const config = getMediaModeConfig(mediaType);
 
-      if (!file.type.startsWith('image/')) {
-        showToast('请上传 JPG、PNG、WEBP 或 GIF 图片文件', 'image');
+      if (!file.type.startsWith(`${mediaType}/`)) {
+        showToast(config.invalidTip, mediaType === 'image' ? 'image' : config.previewIcon);
         resetFilePreview({stopPropagation: () => {}});
         return;
       }
@@ -1623,20 +1722,124 @@
       }
 
       selectedUploadFile = file;
+      currentFileName = file.name;
       const reader = new FileReader();
       reader.onload = function(e) {
         document.getElementById('upload-placeholder').classList.add('hidden');
         const preview = document.getElementById('upload-preview');
+        const previewImg = document.getElementById('preview-img');
+        const previewMediaIcon = document.getElementById('preview-media-icon');
         preview.classList.remove('hidden');
-        document.getElementById('preview-img').src = e.target.result;
+        if (mediaType === 'image') {
+          previewImg.classList.remove('hidden');
+          previewMediaIcon.classList.add('hidden');
+          previewImg.src = e.target.result;
+        } else {
+          previewImg.classList.add('hidden');
+          previewMediaIcon.classList.remove('hidden');
+          previewMediaIcon.querySelector('i').setAttribute('data-lucide', config.previewIcon);
+        }
         document.getElementById('preview-file-name').innerText = `已选：${file.name}`;
+        lucide.createIcons();
       }
-      reader.readAsDataURL(file);
+      if (mediaType === 'image') {
+        reader.readAsDataURL(file);
+      } else {
+        reader.onload({target: {result: ''}});
+      }
     }
 
-<<<<<<< Updated upstream
-    // 9. 表单提交与双模式检测
-=======
+    function formatRecordTime(seconds) {
+      const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const ss = String(seconds % 60).padStart(2, '0');
+      return `${mm}:${ss}`;
+    }
+
+    function setAudioRecordingUi(isRecording) {
+      const panel = document.getElementById('audio-record-panel');
+      const btn = document.getElementById('record-audio-btn');
+      const status = document.getElementById('record-audio-status');
+
+      panel.classList.toggle('recording', isRecording);
+      btn.className = isRecording
+        ? 'bg-cinnabarRed text-white w-12 h-12 rounded-full flex items-center justify-center shadow'
+        : 'bg-deepTeal text-sandGold w-12 h-12 rounded-full flex items-center justify-center shadow';
+      btn.querySelector('i').setAttribute('data-lucide', isRecording ? 'square' : 'mic');
+      status.innerText = isRecording ? '正在采集口述' : '口述采集已生成';
+      lucide.createIcons();
+    }
+
+    function generateAudioSummary(seconds) {
+      const desc = getCollectDescription();
+      const topic = desc || '围绕采集点的口述记忆、地点线索和保存现状';
+      return `已记录约 ${formatRecordTime(seconds)} 的口述音频。系统将提取人物、地点、年代与事件线索，初步梗概：${topic}。`;
+    }
+
+    function finishAudioRecording(blob) {
+      clearInterval(audioRecordTimer);
+      audioRecordTimer = null;
+      setAudioRecordingUi(false);
+
+      if (blob) {
+        const ext = blob.type.includes('webm') ? 'webm' : 'wav';
+        selectedUploadFile = new File([blob], `oral-history-${Date.now()}.${ext}`, { type: blob.type || 'audio/webm' });
+        currentFileName = selectedUploadFile.name;
+        document.getElementById('upload-placeholder').classList.add('hidden');
+        document.getElementById('upload-preview').classList.remove('hidden');
+        document.getElementById('preview-img').classList.add('hidden');
+        const previewMediaIcon = document.getElementById('preview-media-icon');
+        previewMediaIcon.classList.remove('hidden');
+        previewMediaIcon.querySelector('i').setAttribute('data-lucide', 'file-audio');
+        document.getElementById('preview-file-name').innerText = `已录制：${selectedUploadFile.name}`;
+      }
+
+      document.getElementById('audio-summary-text').innerText = generateAudioSummary(audioRecordSeconds);
+      document.getElementById('audio-summary-card').classList.remove('hidden');
+      showToast('口述音频已生成识别梗概', 'list-checks');
+      lucide.createIcons();
+    }
+
+    async function toggleAudioRecording(event) {
+      if (event && event.stopPropagation) event.stopPropagation();
+
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+        audioRecordSeconds = 12;
+        finishAudioRecording(new Blob(['mock oral history audio'], { type: 'audio/webm' }));
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        audioRecordSeconds = 0;
+        document.getElementById('audio-summary-card').classList.add('hidden');
+        document.getElementById('record-audio-time').innerText = '00:00';
+
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size) audioChunks.push(e.data);
+        };
+        mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(track => track.stop());
+          finishAudioRecording(new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' }));
+        };
+
+        mediaRecorder.start();
+        setAudioRecordingUi(true);
+        audioRecordTimer = setInterval(() => {
+          audioRecordSeconds += 1;
+          document.getElementById('record-audio-time').innerText = formatRecordTime(audioRecordSeconds);
+        }, 1000);
+      } catch (err) {
+        showToast('麦克风权限未开启，可先上传音频文件', 'mic-off');
+      }
+    }
+
     // 9. 渲染 AIGC 拦截警告红框卡片
     function showAigcBlockedCard(fileName) {
       updateStepStatus('step-watermark', 'waiting', '防伪未通过，注入动作被安全挂起');
@@ -1808,7 +2011,6 @@
     }
 
     // 10. 表单提交与双模式检测
->>>>>>> Stashed changes
     function handleUploadSubmit(event) {
       event.preventDefault();
 
@@ -1837,39 +2039,21 @@
       const lat = currentLocation.latitude;
       const timestamp = Math.floor(Date.now() / 1000);
       const deviceId = "browser_geolocation_001";
-<<<<<<< Updated upstream
-=======
-      const SECURE_KEY = "ChuYunLianJi@2026_Secret";
-      const description = document.getElementById('heritage-description')?.value || '';
->>>>>>> Stashed changes
+      const lowerName = (currentFileName || "mock_chuyun_photo.jpg").toLowerCase();
+      const isFileNameAi = lowerName.includes('ai') || lowerName.includes('fake') || lowerName.includes('sd') || lowerName.includes('midjourney');
+      const isAiDetected = isFileNameAi || forceAigcBlocked;
 
       // 🔴 模式 1: 连接本地真实 Express + GeoJSON 边界 + JSON 采集库
       if (localApiMode) {
-<<<<<<< Updated upstream
-        // 1. 计算 HMAC-SHA256 签名，完全还原真实硬件防篡改原理
-        const payload = `${parseFloat(lon).toFixed(6)}|${parseFloat(lat).toFixed(6)}|${timestamp}|${deviceId}`;
-        const signature = CryptoJS.HmacSHA256(payload, SECURE_KEY).toString(CryptoJS.enc.Hex);
-
-        const uploadForm = new FormData();
-        uploadForm.append('image', selectedUploadFile);
-        uploadForm.append('longitude', lon);
-        uploadForm.append('latitude', lat);
-        uploadForm.append('locationAccuracy', currentLocation.accuracy ?? '');
-        uploadForm.append('description', description);
-        uploadForm.append('timestamp', timestamp);
-        uploadForm.append('deviceId', deviceId);
-        uploadForm.append('signature', signature);
-
-        // 2. 发送真实本地图片文件给 Node.js 服务器
-        fetch('http://localhost:3000/api/upload-image', {
-=======
         const payloadData = buildSignedLocationPayload(lon, lat, timestamp, deviceId);
 
         // 完美对齐本地 server.js 的 /api/verify-location JSON 接收端
         fetch(`${LOCAL_API_BASE_URL}/api/verify-location`, {
->>>>>>> Stashed changes
           method: 'POST',
-          body: uploadForm
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payloadData)
         })
         .then(response => {
           return response.json().then(data => ({ status: response.status, data }));
@@ -1881,46 +2065,6 @@
               updateStepStatus('step-gps', 'success', `GPS定位认证完成 (${data.regionName})`);
               updateStepStatus('step-deepfake', 'loading', '正在进行 AIGC 图像篡改深度特征对比...');
               
-<<<<<<< Updated upstream
-              setTimeout(() => {
-                updateStepStatus('step-deepfake', 'success', '防伪对比完成 (非AI合成真实率: 98.7%)');
-                updateStepStatus('step-watermark', 'loading', '正在为素材注入用户特征声纹隐形数字水印...');
-                
-                setTimeout(() => {
-                  updateStepStatus('step-watermark', 'success', '数字特征水印嵌入成功 (溯源已锁)');
-                  updateStepStatus('step-milvus', 'loading', '正在利用向量库检索并自动生成文化关系脉络...');
-                  
-                  setTimeout(() => {
-                    updateStepStatus('step-milvus', 'success', `图谱脉络检索匹配完毕 (当前归属地: ${data.regionName})`);
-                    
-                    // 展现成功结果卡片
-                    const resultEl = document.getElementById('ai-success-result');
-                    resultEl.className = "bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1";
-                    resultEl.innerHTML = `
-                      <div class="flex items-center text-emerald-800 text-xs font-bold">
-                        <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 上传成功：采集数据已入库！
-                      </div>
-                      <p class="text-[10px] text-emerald-600 pl-5">采集编号: <strong class="font-mono bg-emerald-100 px-1 rounded">#${data.submission?.id || '-'}</strong> / 状态: <strong class="font-mono bg-emerald-100 px-1 rounded">${data.submission?.status || 'pending'}</strong></p>
-                      <p class="text-[10px] text-emerald-600 pl-5">识别区域: <strong class="font-bold">${data.regionName}</strong></p>
-                      <p class="text-[10px] text-emerald-600 pl-5">保存文件: <strong class="font-mono bg-emerald-100 px-1 rounded break-all">${data.file.storedName}</strong></p>
-                      <p class="text-[10px] text-emerald-600 pl-5">访问地址: <a class="font-mono bg-emerald-100 px-1 rounded break-all underline" href="${data.file.url}" target="_blank">${data.file.url}</a></p>
-                      <p class="text-[10px] text-emerald-600 pl-5">接口响应: <span class="font-mono bg-emerald-100 px-1 rounded">${data.message}</span></p>
-                      <p class="text-[10px] text-emerald-600 pl-5">积分奖励: <strong class="font-bold">+100 流光值已发放</strong></p>
-                    `;
-                    resultEl.classList.remove('hidden');
-                    lucide.createIcons();
-                    
-                    const btn = document.getElementById('ai-btn-close');
-                    btn.disabled = false;
-                    btn.classList.remove('bg-stone-100', 'text-stone-400');
-                    btn.classList.add('bg-deepTeal', 'text-sandGold');
-                    btn.innerText = '确认并领取流光值';
-                    
-                    updateUserPoints(100);
-                  }, 1000);
-                }, 1000);
-              }, 1000);
-=======
               // 第二步：调用本地后端 AI 内容质检接口
               requestQualityCheck(payloadData, data.regionName)
                 .then(({ status, data: qualityData }) => {
@@ -1935,7 +2079,6 @@
                 .catch(err => {
                   showQualityCheckConnectionError(err);
                 });
->>>>>>> Stashed changes
             }, 1000);
           } else {
             // 碰撞失败或接口报错：动态展示防御或系统故障信息
@@ -2122,15 +2265,9 @@
       toastIcon.setAttribute('data-lucide', iconName);
       lucide.createIcons();
 
-<<<<<<< Updated upstream
-      // 动效拉入
-      toast.classList.remove('translate-y-[-100px]');
-      toast.classList.add('translate-y-0');
-=======
       toast.classList.remove('toast-visible', 'toast-hidden');
       void toast.offsetWidth;
       toast.classList.add('toast-visible');
->>>>>>> Stashed changes
 
       clearTimeout(toastTimeout);
       toastTimeout = setTimeout(() => {
@@ -2168,6 +2305,7 @@
       const radio = el.querySelector('input[type="radio"]');
       if (radio) {
         radio.checked = true;
+        updateCollectMediaMode(radio.value);
       }
     }
   </script>
