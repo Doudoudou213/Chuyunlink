@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>楚韵链迹 - 管理审核台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sandGold: '#C5A880',
+            deepTeal: '#2C4C4E',
+            cinnabarRed: '#962D2D',
+            parchment: '#F9F8F4'
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+    body { font-family: 'Noto Sans SC', sans-serif; background: #f4f1ea; }
+    .cultural-font { font-family: 'Noto Serif SC', serif; }
+  </style>
+</head>
+<body class="text-stone-800">
+  <main class="min-h-screen">
+    <header class="bg-deepTeal text-white border-b-4 border-sandGold">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="text-[11px] text-sandGold font-bold tracking-widest uppercase">ChuLink Admin</p>
+          <h1 class="cultural-font text-2xl font-bold">楚韵链迹管理审核台</h1>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <input id="admin-token" type="password" placeholder="管理员密钥" class="w-full sm:w-64 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-stone-300 outline-none focus:border-sandGold">
+          <button onclick="saveTokenAndLoad()" class="rounded-lg bg-sandGold px-4 py-2 text-sm font-bold text-deepTeal flex items-center justify-center gap-1">
+            <i data-lucide="key-round" class="w-4 h-4"></i>
+            进入审核
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <section class="max-w-7xl mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4">
+      <aside class="space-y-3">
+        <div class="bg-white border border-stone-200 rounded-xl p-3 shadow-sm">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-bold flex items-center gap-1">
+              <i data-lucide="inbox" class="w-4 h-4 text-deepTeal"></i>
+              用户提交记录
+            </h2>
+            <button onclick="loadSubmissions()" class="w-8 h-8 rounded-lg bg-stone-100 text-deepTeal flex items-center justify-center" title="刷新">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+            <button onclick="setStatusFilter('pending')" id="filter-pending" class="status-filter rounded-lg bg-deepTeal text-sandGold px-3 py-2 font-bold">待审核</button>
+            <button onclick="setStatusFilter('approved')" id="filter-approved" class="status-filter rounded-lg bg-stone-100 px-3 py-2 font-bold text-stone-600">已通过</button>
+            <button onclick="setStatusFilter('rejected')" id="filter-rejected" class="status-filter rounded-lg bg-stone-100 px-3 py-2 font-bold text-stone-600">已驳回</button>
+            <button onclick="setStatusFilter('needs_revision')" id="filter-needs_revision" class="status-filter rounded-lg bg-stone-100 px-3 py-2 font-bold text-stone-600">需补充</button>
+          </div>
+        </div>
+
+        <div id="summary-cards" class="grid grid-cols-3 gap-2"></div>
+        <div id="submission-list" class="space-y-2"></div>
+      </aside>
+
+      <section id="detail-panel" class="bg-white border border-stone-200 rounded-xl shadow-sm min-h-[640px] overflow-hidden">
+        <div class="h-full flex items-center justify-center p-8 text-center text-stone-400">
+          <div>
+            <i data-lucide="mouse-pointer-click" class="w-10 h-10 mx-auto mb-3"></i>
+            <p class="text-sm font-bold">选择一条提交记录开始审核</p>
+            <p class="text-xs mt-1">管理员可以查看原始文件、AI 初筛结论、定位与用户说明。</p>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 hidden bg-stone-900 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50"></div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000';
+    let adminToken = localStorage.getItem('chulink_admin_token') || 'local-admin-dev-token';
+    let statusFilter = 'pending';
+    let submissions = [];
+    let selectedId = null;
+
+    document.getElementById('admin-token').value = adminToken;
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.innerText = message;
+      toast.classList.remove('hidden');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.add('hidden'), 2200);
+    }
+
+    function authHeaders(extra = {}) {
+      return {
+        ...extra,
+        Authorization: `Bearer ${adminToken}`
+      };
+    }
+
+    function saveTokenAndLoad() {
+      adminToken = document.getElementById('admin-token').value.trim();
+      localStorage.setItem('chulink_admin_token', adminToken);
+      loadSubmissions();
+    }
+
+    function setStatusFilter(status) {
+      statusFilter = status;
+      document.querySelectorAll('.status-filter').forEach((btn) => {
+        btn.className = 'status-filter rounded-lg bg-stone-100 px-3 py-2 font-bold text-stone-600';
+      });
+      const active = document.getElementById(`filter-${status}`);
+      if (active) active.className = 'status-filter rounded-lg bg-deepTeal text-sandGold px-3 py-2 font-bold';
+      loadSubmissions();
+    }
+
+    function statusLabel(status) {
+      const labels = {
+        pending: '待审核',
+        approved: '已通过',
+        rejected: '已驳回',
+        needs_revision: '需补充',
+        archived: '已归档'
+      };
+      return labels[status] || status || '未知';
+    }
+
+    function assetLabel(item) {
+      const type = item.assetType || item.type || 'photo';
+      const labels = {
+        photo: '照片',
+        image: '照片',
+        audio: '口述音频',
+        video: '视频',
+        text: '文字'
+      };
+      return labels[type] || type;
+    }
+
+    function formatTime(value) {
+      if (!value) return '未记录';
+      return new Date(value).toLocaleString('zh-CN', { hour12: false });
+    }
+
+    function fileUrl(item) {
+      const raw = item.fileUrl || item.originalFileUrl || item.filePath || '';
+      if (!raw) return '';
+      if (/^https?:\/\//i.test(raw)) return raw;
+      return `${API_BASE}${raw.startsWith('/') ? raw : `/${raw}`}`;
+    }
+
+    function renderSummary() {
+      const counts = submissions.reduce((acc, item) => {
+        acc[item.status] = (acc[item.status] || 0) + 1;
+        return acc;
+      }, {});
+      const cards = [
+        ['待审核', counts.pending || 0, 'clock'],
+        ['已通过', counts.approved || 0, 'check-circle'],
+        ['需处理', (counts.rejected || 0) + (counts.needs_revision || 0), 'alert-circle']
+      ];
+      document.getElementById('summary-cards').innerHTML = cards.map(([label, count, icon]) => `
+        <div class="bg-white border border-stone-200 rounded-xl p-3 shadow-sm">
+          <i data-lucide="${icon}" class="w-4 h-4 text-deepTeal"></i>
+          <p class="text-xl font-black text-stone-900 mt-1">${count}</p>
+          <p class="text-[10px] text-stone-500">${label}</p>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function renderList(items) {
+      const list = document.getElementById('submission-list');
+      if (!items.length) {
+        list.innerHTML = `
+          <div class="bg-white border border-stone-200 rounded-xl p-5 text-center text-stone-400 text-sm">
+            当前筛选下暂无记录
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = items.map((item) => {
+        const active = String(item.id) === String(selectedId);
+        const score = item.aiResult && Number.isFinite(Number(item.aiResult.qualityScore)) ? `${item.aiResult.qualityScore}/100` : '待复核';
+        return `
+          <button onclick="selectSubmission('${item.id}')" class="w-full text-left bg-white border ${active ? 'border-sandGold ring-2 ring-sandGold/30' : 'border-stone-200'} rounded-xl p-3 shadow-sm hover:border-sandGold transition-colors">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="text-sm font-bold text-stone-900 truncate">#${item.id} ${item.title || item.originalName || '未命名素材'}</p>
+                <p class="text-[10px] text-stone-500 mt-1">${assetLabel(item)} · ${item.regionName || '未知区域'} · ${formatTime(item.createdAt)}</p>
+              </div>
+              <span class="shrink-0 text-[10px] rounded bg-stone-100 px-2 py-0.5 font-bold text-deepTeal">${statusLabel(item.status)}</span>
+            </div>
+            <div class="mt-2 flex items-center justify-between text-[10px] text-stone-500">
+              <span>AI/初筛：${score}</span>
+              <span>${item.fileSize ? Math.round(item.fileSize / 1024) + 'KB' : '未知大小'}</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderMedia(item) {
+      const url = fileUrl(item);
+      const mime = item.mimeType || '';
+      if (!url) {
+        return '<div class="h-80 bg-stone-100 flex items-center justify-center text-stone-400">没有原始文件地址</div>';
+      }
+      if (mime.startsWith('audio/') || item.assetType === 'audio') {
+        return `
+          <div class="h-80 bg-stone-950 flex flex-col items-center justify-center text-white p-6">
+            <i data-lucide="file-audio" class="w-12 h-12 text-sandGold mb-4"></i>
+            <audio src="${url}" controls class="w-full"></audio>
+          </div>
+        `;
+      }
+      if (mime.startsWith('video/') || item.assetType === 'video') {
+        return `<video src="${url}" controls class="w-full max-h-[420px] bg-stone-950"></video>`;
+      }
+      return `<img src="${url}" alt="用户提交原图" class="w-full max-h-[520px] object-contain bg-stone-950">`;
+    }
+
+    function renderDetail(item) {
+      const ai = item.aiResult || {};
+      const issues = Array.isArray(ai.issues) ? ai.issues.join('、') : '暂无';
+      const suggestions = Array.isArray(ai.suggestions) ? ai.suggestions.join('；') : '暂无';
+      const locationText = item.location
+        ? `${item.location.latitude}, ${item.location.longitude}`
+        : `${item.latitude || '-'}, ${item.longitude || '-'}`;
+
+      document.getElementById('detail-panel').innerHTML = `
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] min-h-[640px]">
+          <div class="bg-stone-950 flex items-center justify-center">
+            ${renderMedia(item)}
+          </div>
+          <div class="p-4 space-y-4 border-l border-stone-200">
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="cultural-font text-xl font-bold text-stone-900">#${item.id} ${item.title || item.originalName || '未命名素材'}</h2>
+                <span class="text-xs rounded bg-stone-100 px-2 py-1 font-bold text-deepTeal">${statusLabel(item.status)}</span>
+              </div>
+              <p class="text-xs text-stone-500 mt-1">${assetLabel(item)} · ${formatTime(item.createdAt)}</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="rounded-lg bg-stone-50 border border-stone-200 p-3">
+                <p class="text-stone-400">区域</p>
+                <p class="font-bold mt-1">${item.regionName || '未知'}</p>
+              </div>
+              <div class="rounded-lg bg-stone-50 border border-stone-200 p-3">
+                <p class="text-stone-400">坐标</p>
+                <p class="font-bold mt-1">${locationText}</p>
+              </div>
+            </div>
+
+            <div class="rounded-lg bg-stone-50 border border-stone-200 p-3">
+              <p class="text-xs font-bold text-stone-500">用户说明</p>
+              <p class="text-sm mt-2 leading-relaxed">${item.description || '用户未填写说明'}</p>
+            </div>
+
+            <div class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs space-y-1">
+              <p class="font-bold text-amber-800 flex items-center gap-1">
+                <i data-lucide="cpu" class="w-4 h-4"></i>
+                AI/初筛结果
+              </p>
+              <p>来源：<strong>${ai.aiUsed ? 'Gemini 已调用' : (ai.provider || '人工初筛队列')}</strong></p>
+              <p>评分：<strong>${Number.isFinite(Number(ai.qualityScore)) ? ai.qualityScore + '/100' : '待复核'}</strong></p>
+              <p>判定：<strong>${ai.category || ai.decision || '待复核'}</strong></p>
+              <p>问题：${issues}</p>
+              <p>建议：${suggestions}</p>
+            </div>
+
+            <div class="space-y-2">
+              <textarea id="review-note" rows="3" placeholder="审核意见，例如：图片清晰，地点可信，可公开展示。" class="w-full rounded-lg border border-stone-200 bg-white p-3 text-sm outline-none focus:border-sandGold">${item.reviewNote || ''}</textarea>
+              <div class="grid grid-cols-3 gap-2">
+                <button onclick="reviewSubmission('${item.id}', 'approved')" class="rounded-lg bg-deepTeal px-3 py-2 text-sm font-bold text-sandGold">通过</button>
+                <button onclick="reviewSubmission('${item.id}', 'needs_revision')" class="rounded-lg bg-sandGold px-3 py-2 text-sm font-bold text-deepTeal">需补充</button>
+                <button onclick="reviewSubmission('${item.id}', 'rejected')" class="rounded-lg bg-cinnabarRed px-3 py-2 text-sm font-bold text-white">驳回</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    async function loadSubmissions() {
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/submissions?limit=500`, {
+          headers: authHeaders()
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || `加载失败 ${response.status}`);
+        submissions = data.items || [];
+        renderSummary();
+        const filtered = submissions.filter((item) => item.status === statusFilter);
+        renderList(filtered);
+        if (selectedId) {
+          const selected = submissions.find((item) => String(item.id) === String(selectedId));
+          if (selected) renderDetail(selected);
+        }
+      } catch (error) {
+        showToast(error.message || '加载提交记录失败');
+      }
+    }
+
+    function selectSubmission(id) {
+      selectedId = id;
+      const item = submissions.find((entry) => String(entry.id) === String(id));
+      if (item) {
+        renderList(submissions.filter((entry) => entry.status === statusFilter));
+        renderDetail(item);
+      }
+    }
+
+    async function reviewSubmission(id, status) {
+      const note = document.getElementById('review-note')?.value || '';
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/submissions/${id}/review`, {
+          method: 'PATCH',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            status,
+            reviewNote: note,
+            reviewer: 'local-admin'
+          })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || `审核失败 ${response.status}`);
+        showToast(`已更新为：${statusLabel(status)}`);
+        selectedId = id;
+        await loadSubmissions();
+      } catch (error) {
+        showToast(error.message || '审核操作失败');
+      }
+    }
+
+    loadSubmissions();
+    lucide.createIcons();
+  </script>
+</body>
+</html>

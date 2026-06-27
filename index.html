@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide 图标库引入 -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- CryptoJS 引入用于前端哈希签名计算 -->
+  <!-- CryptoJS 引入用于前端安全签名计算 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <!-- Leaflet 真实地图引擎 -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -733,7 +733,7 @@
               <h4 class="cultural-font text-base font-bold text-sandGold">守护人·楚天行</h4>
               <span class="text-[9px] bg-sandGold/20 text-sandGold px-1.5 py-0.5 rounded-full border border-sandGold/40">楚文化二级志愿者</span>
             </div>
-            <p class="text-[10px] text-stone-300 mt-0.5">唯一守护哈希: <span class="font-mono">uid_2026_8c9a12</span></p>
+            <p class="text-[10px] text-stone-300 mt-0.5">守护者编号: <span class="font-mono">uid_2026_8c9a12</span></p>
           </div>
           <!-- 积分显示 -->
           <div class="text-right">
@@ -742,42 +742,95 @@
           </div>
         </div>
 
-        <!-- 数字化守护者多宝阁 (区块链数字徽章墙) -->
+        <!-- 数字化守护者多宝阁 -->
         <div class="space-y-2">
-          <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-            <i data-lucide="shield" class="w-4 h-4 mr-1 text-deepTeal"></i> 数字化守护者唯一徽章墙
-          </h4>
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
+              <i data-lucide="shield" class="w-4 h-4 mr-1 text-deepTeal"></i> 数字化守护者唯一徽章墙
+            </h4>
+            <span class="text-[10px] bg-sandGold/20 text-deepTeal px-2 py-0.5 rounded-full font-bold">6/12 已点亮</span>
+          </div>
+          <div class="bg-white border border-stone-200 rounded-xl p-3">
+            <div class="flex items-center justify-between text-[10px] text-stone-500">
+              <span>本周徽章进度</span>
+              <span class="font-bold text-deepTeal">还差 2 次有效采集升级</span>
+            </div>
+            <div class="mt-2 h-2 bg-stone-100 rounded-full overflow-hidden">
+              <div class="h-full bg-sandGold rounded-full" style="width: 58%"></div>
+            </div>
+          </div>
           <div class="grid grid-cols-4 gap-2 bg-stone-100 p-3 rounded-2xl border border-stone-200">
-            <!-- 徽章 1 (激活) -->
-            <div class="text-center cursor-pointer" onclick="openBadgeDetails('荆楚古寨首席发现官', '0x8f7c9e01ad42ff', '2026-06-01')">
+            <div class="text-center cursor-pointer" onclick="openBadgeDetails('荆楚古寨首席发现官', '首次通过古建类素材审核', '2026-06-01')">
               <div class="w-12 h-12 mx-auto rounded-full bg-sandGold text-deepTeal border-2 border-white flex items-center justify-center shadow-md transform hover:scale-110 transition-transform">
                 <i data-lucide="landmark" class="w-6 h-6"></i>
               </div>
-              <p class="text-[9px] font-bold text-stone-800 mt-1 truncate">首席发现官</p>
+              <p class="text-[9px] font-bold text-stone-800 mt-1 truncate">发现官</p>
             </div>
-
-            <!-- 徽章 2 (激活) -->
-            <div class="text-center cursor-pointer" onclick="openBadgeDetails('江汉记忆耳蜗官', '0x2a91df014cb8bc', '2026-06-10')">
+            <div class="text-center cursor-pointer" onclick="openBadgeDetails('江汉记忆耳蜗官', '完成口述历史线索采集', '2026-06-10')">
               <div class="w-12 h-12 mx-auto rounded-full bg-sandGold text-deepTeal border-2 border-white flex items-center justify-center shadow-md transform hover:scale-110 transition-transform">
                 <i data-lucide="mic-vocal" class="w-6 h-6"></i>
               </div>
               <p class="text-[9px] font-bold text-stone-800 mt-1 truncate">耳蜗官</p>
             </div>
-
-            <!-- 徽章 3 (激活) -->
-            <div class="text-center cursor-pointer" onclick="openBadgeDetails('楚风编钟传承使者', '0xbc7e82937ad8b1', '2026-06-15')">
+            <div class="text-center cursor-pointer" onclick="openBadgeDetails('楚风编钟传承使者', '完成馆藏知识学习任务', '2026-06-15')">
               <div class="w-12 h-12 mx-auto rounded-full bg-sandGold text-deepTeal border-2 border-white flex items-center justify-center shadow-md transform hover:scale-110 transition-transform">
                 <i data-lucide="history" class="w-6 h-6"></i>
               </div>
-              <p class="text-[9px] font-bold text-stone-800 mt-1 truncate">传承使者</p>
+              <p class="text-[9px] font-bold text-stone-800 mt-1 truncate">传承使</p>
             </div>
-
-            <!-- 徽章 4 (锁定状态) -->
-            <div class="text-center opacity-40">
-              <div class="w-12 h-12 mx-auto rounded-full bg-stone-300 text-stone-500 border-2 border-dashed border-stone-400 flex items-center justify-center">
-                <i data-lucide="lock" class="w-5 h-5"></i>
+            <div class="text-center cursor-pointer" onclick="openBadgeDetails('纹样拓印观察员', '提交纹样细节观察记录', '2026-06-18')">
+              <div class="w-12 h-12 mx-auto rounded-full bg-sandGold text-deepTeal border-2 border-white flex items-center justify-center shadow-md transform hover:scale-110 transition-transform">
+                <i data-lucide="scan-line" class="w-6 h-6"></i>
               </div>
-              <p class="text-[9px] text-stone-500 mt-1 truncate">万物图谱师</p>
+              <p class="text-[9px] font-bold text-stone-800 mt-1 truncate">拓印员</p>
+            </div>
+            <div class="text-center cursor-pointer" onclick="openBadgeDetails('山水祠堂巡访者', '完成实地路线打卡', '2026-06-20')">
+              <div class="w-12 h-12 mx-auto rounded-full bg-deepTeal text-sandGold border-2 border-white flex items-center justify-center shadow-md transform hover:scale-110 transition-transform">
+                <i data-lucide="route" class="w-6 h-6"></i>
+              </div>
+              <p class="text-[9px] font-bold text-stone-800 mt-1 truncate">巡访者</p>
+            </div>
+            <div class="text-center cursor-pointer" onclick="openBadgeDetails('非遗影像记录员', '提交视频素材并通过初审', '2026-06-22')">
+              <div class="w-12 h-12 mx-auto rounded-full bg-deepTeal text-sandGold border-2 border-white flex items-center justify-center shadow-md transform hover:scale-110 transition-transform">
+                <i data-lucide="video" class="w-6 h-6"></i>
+              </div>
+              <p class="text-[9px] font-bold text-stone-800 mt-1 truncate">影像员</p>
+            </div>
+            <div class="text-center opacity-45 cursor-pointer" onclick="openBadgeDetails('万物图谱师', '待完成 5 条馆藏关联', '未激活')">
+              <div class="w-12 h-12 mx-auto rounded-full bg-stone-300 text-stone-500 border-2 border-dashed border-stone-400 flex items-center justify-center">
+                <i data-lucide="network" class="w-5 h-5"></i>
+              </div>
+              <p class="text-[9px] text-stone-500 mt-1 truncate">图谱师</p>
+            </div>
+            <div class="text-center opacity-45 cursor-pointer" onclick="openBadgeDetails('楚地坐标守门人', '待完成 3 次 GPS 可信采集', '未激活')">
+              <div class="w-12 h-12 mx-auto rounded-full bg-stone-300 text-stone-500 border-2 border-dashed border-stone-400 flex items-center justify-center">
+                <i data-lucide="map-pin-check" class="w-5 h-5"></i>
+              </div>
+              <p class="text-[9px] text-stone-500 mt-1 truncate">守门人</p>
+            </div>
+            <div class="text-center opacity-45 cursor-pointer" onclick="openBadgeDetails('乡音整理师', '待通过 2 条口述历史审核', '未激活')">
+              <div class="w-12 h-12 mx-auto rounded-full bg-stone-300 text-stone-500 border-2 border-dashed border-stone-400 flex items-center justify-center">
+                <i data-lucide="captions" class="w-5 h-5"></i>
+              </div>
+              <p class="text-[9px] text-stone-500 mt-1 truncate">整理师</p>
+            </div>
+            <div class="text-center opacity-45 cursor-pointer" onclick="openBadgeDetails('活动共创星', '待参加 1 场线下活动', '未激活')">
+              <div class="w-12 h-12 mx-auto rounded-full bg-stone-300 text-stone-500 border-2 border-dashed border-stone-400 flex items-center justify-center">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+              </div>
+              <p class="text-[9px] text-stone-500 mt-1 truncate">共创星</p>
+            </div>
+            <div class="text-center opacity-45 cursor-pointer" onclick="openBadgeDetails('专家复核协作者', '待完成 3 次纠错反馈', '未激活')">
+              <div class="w-12 h-12 mx-auto rounded-full bg-stone-300 text-stone-500 border-2 border-dashed border-stone-400 flex items-center justify-center">
+                <i data-lucide="badge-check" class="w-5 h-5"></i>
+              </div>
+              <p class="text-[9px] text-stone-500 mt-1 truncate">协作者</p>
+            </div>
+            <div class="text-center opacity-45 cursor-pointer" onclick="openBadgeDetails('湖北全域采风者', '待点亮 6 个城市', '未激活')">
+              <div class="w-12 h-12 mx-auto rounded-full bg-stone-300 text-stone-500 border-2 border-dashed border-stone-400 flex items-center justify-center">
+                <i data-lucide="map" class="w-5 h-5"></i>
+              </div>
+              <p class="text-[9px] text-stone-500 mt-1 truncate">采风者</p>
             </div>
           </div>
         </div>
@@ -1018,16 +1071,16 @@
 
       <div class="space-y-1">
         <h4 id="modal-badge-name" class="cultural-font text-lg font-bold text-sandGold">荆楚古寨首席发现官</h4>
-        <span class="text-[10px] bg-stone-800 text-sandGold px-3 py-0.5 rounded-full border border-sandGold/20 font-mono">区块链唯一共识存证</span>
+        <span class="text-[10px] bg-stone-800 text-sandGold px-3 py-0.5 rounded-full border border-sandGold/20">守护者成就档案</span>
       </div>
 
       <div class="bg-stone-900/60 p-3.5 rounded-xl border border-stone-800 text-left space-y-1.5 text-xs text-stone-300">
-        <p><strong class="text-stone-500">存证凭证 Hash：</strong><br><span id="modal-badge-hash" class="font-mono text-[10px] text-sandGold">0x8f7c9e01ad42ff0092fcd1b</span></p>
+        <p><strong class="text-stone-500">获得方式：</strong><br><span id="modal-badge-proof" class="text-[10px] text-sandGold">首次通过古建类素材审核</span></p>
         <p><strong class="text-stone-500">激活日期：</strong> <span id="modal-badge-date">2026-06-01</span></p>
-        <p><strong class="text-stone-500">颁发主体：</strong> 楚韵链迹大众众包文化资产共识联盟</p>
+        <p><strong class="text-stone-500">颁发主体：</strong> 楚韵链迹文化采集计划</p>
       </div>
 
-      <p class="text-[10px] text-stone-400">该徽章具有不可篡改性与全网唯一性，标记着您作为该下沉非遗物质采集的第一贡献者。</p>
+      <p class="text-[10px] text-stone-400">该徽章记录您在荆楚文化遗产采集中的阶段性贡献，可用于解锁后续活动与本地福利。</p>
 
       <button onclick="closeBadgeDetails()" class="w-full bg-sandGold text-deepTeal py-2.5 rounded-xl text-xs font-bold">
         确定并放回我的多宝阁
@@ -1879,6 +1932,27 @@
       return formData;
     }
 
+    function buildSubmissionFormData(locationPayload, regionName, qualityData) {
+      const formData = new FormData();
+      formData.append('media', selectedUploadFile);
+      formData.append('assetType', getSelectedAssetType());
+      formData.append('description', getCollectDescription());
+      formData.append('regionName', regionName || '');
+      formData.append('title', currentFileName || '未命名采集素材');
+      formData.append('qualityResult', JSON.stringify(qualityData || {}));
+      formData.append('submitter', JSON.stringify({
+        userId: 'uid_2026_8c9a12',
+        userName: '守护人·楚天行'
+      }));
+      Object.entries(locationPayload).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+      if (currentLocation.accuracy) {
+        formData.append('locationAccuracy', currentLocation.accuracy);
+      }
+      return formData;
+    }
+
     function requestQualityCheck(locationPayload, regionName) {
       // 兼容本地服务器的多维质检模块，如果服务器没有部署多维质检，该 fetch 会失败，前端进入友好容错
       return fetch(`${LOCAL_API_BASE_URL}/api/quality-check`, {
@@ -1895,6 +1969,43 @@
 
         return { status: response.status, data };
       }));
+    }
+
+    function requestSaveSubmission(locationPayload, regionName, qualityData) {
+      return fetch(`${LOCAL_API_BASE_URL}/api/submissions`, {
+        method: 'POST',
+        body: buildSubmissionFormData(locationPayload, regionName, qualityData)
+      }).then(response => response.json().then(data => {
+        if (data && data.serverBuild && data.serverBuild !== EXPECTED_SERVER_BUILD) {
+          throw new Error(`后端版本不一致: ${data.serverBuild}`);
+        }
+
+        if (!response.ok || !data || !data.success) {
+          throw new Error((data && data.message) || `submission_save_failed_${response.status}`);
+        }
+
+        return { status: response.status, data };
+      }));
+    }
+
+    function buildManualReviewQuality(regionName) {
+      const assetType = getSelectedAssetType();
+      const labelMap = {
+        audio: '口述音频素材',
+        video: '现场视频素材',
+        image: '图片素材'
+      };
+
+      return {
+        approved: false,
+        decision: 'needs_review',
+        qualityScore: 0,
+        category: labelMap[assetType] || '待复核素材',
+        provider: 'manual-review',
+        aiUsed: false,
+        issues: ['media_requires_manual_review'],
+        suggestions: [`${labelMap[assetType] || '素材'}已保存到 ${regionName || '湖北'} 待审核池，请管理员查看原始文件后确认。`]
+      };
     }
 
     function setAiCloseButton(className, label, handlerName = 'closeAiModalWithError()') {
@@ -1965,12 +2076,16 @@
       lucide.createIcons();
     }
 
-    function finishReviewSubmission(regionData, qualityData) {
+    function finishReviewSubmission(regionData, qualityData, savedData = null) {
       const qualityScore = Number.isFinite(Number(qualityData.qualityScore)) ? Number(qualityData.qualityScore) : 0;
       const providerLabel = qualityData.aiUsed ? 'Gemini 已调用' : '本地规则兜底';
+      const submission = savedData && savedData.submission ? savedData.submission : null;
+      const submissionLine = submission
+        ? `<p class="text-[10px] text-amber-700 pl-5">本地审核编号: <strong class="font-mono">#${submission.id}</strong>；原始文件已保存</p>`
+        : '';
 
       updateStepStatus('step-deepfake', 'success', `AI初筛完成 (质量评分: ${qualityScore}/100)`);
-      updateStepStatus('step-watermark', 'waiting', '待人工复核，暂不写入积分水印');
+      updateStepStatus('step-watermark', submission ? 'success' : 'waiting', submission ? '原始素材已保存到本地待审核库' : '待人工复核，暂不写入积分水印');
       updateStepStatus('step-milvus', 'waiting', '待人工复核后再关联馆藏图谱');
 
       const resultEl = document.getElementById('ai-success-result');
@@ -1986,13 +2101,32 @@
         <p class="text-[10px] text-amber-700 pl-5">识别区域: <strong class="font-bold">${regionData.regionName}</strong></p>
         <p class="text-[10px] text-amber-700 pl-5">检测来源: <strong class="font-bold">${providerLabel}</strong></p>
         <p class="text-[10px] text-amber-700 pl-5">质量评分: <strong class="font-bold">${qualityScore}/100</strong>；内容判定: <strong class="font-bold">${qualityData.category || '待复核素材'}</strong></p>
+        ${submissionLine}
         <p class="text-[10px] text-amber-700 pl-5">审核建议: <span class="text-stone-700">${firstSuggestion}</span></p>
         <p class="text-[10px] text-amber-700 pl-5">积分状态: <strong class="font-bold">人工通过后发放</strong></p>
       `;
       resultEl.classList.remove('hidden');
       lucide.createIcons();
 
-      setAiCloseButton("flex-1 bg-stone-800 text-white py-2 rounded-xl text-xs font-bold w-full", '知道了，返回采集区', 'closeAiModalWithError()');
+      setAiCloseButton("flex-1 bg-stone-800 text-white py-2 rounded-xl text-xs font-bold w-full", '知道了，返回采集区', 'closePendingSubmissionModal()');
+    }
+
+    function showSubmissionSaveError(err) {
+      updateStepStatus('step-watermark', 'error', '本地提交存储失败');
+      updateStepStatus('step-milvus', 'waiting', '未进入管理员审核池');
+
+      const resultEl = document.getElementById('ai-success-result');
+      resultEl.className = "bg-red-50 rounded-xl p-3 border border-red-200 space-y-1";
+      resultEl.innerHTML = `
+        <div class="flex items-center text-red-800 text-xs font-bold">
+          <i data-lucide="database-x" class="w-4 h-4 mr-1"></i> 素材保存失败
+        </div>
+        <p class="text-[10px] text-red-600 pl-5">AI 初筛已完成，但没有写入本地审核池。</p>
+        <p class="text-[10px] text-red-500 pl-5">错误信息: ${(err && err.message) || 'submission_save_failed'}</p>
+      `;
+      resultEl.classList.remove('hidden');
+      setAiCloseButton("flex-1 bg-cinnabarRed text-white py-2 rounded-xl text-xs font-bold w-full", '重新回到采集区');
+      lucide.createIcons();
     }
 
     function finishApprovedSubmission(regionData, qualityData) {
@@ -2037,7 +2171,7 @@
       event.preventDefault();
 
       if (localApiMode && !selectedUploadFile) {
-        showToast('本地 API 模式需要先选择一张真实本地图片', 'image');
+        showToast('本地 API 模式需要先选择或录制一个真实素材', 'upload-cloud');
         return;
       }
 
@@ -2085,26 +2219,37 @@
             // PostGIS 围栏判定放行！
             setTimeout(() => {
               updateStepStatus('step-gps', 'success', `GPS定位认证完成 (${data.regionName})`);
-              updateStepStatus('step-deepfake', 'loading', '正在进行 AIGC 图像篡改与内容质量检测...');
+              updateStepStatus('step-deepfake', 'loading', getSelectedAssetType() === 'image' ? '正在进行 AIGC 图像篡改与内容质量检测...' : '音视频素材进入人工初筛队列...');
               
-              // 第二步：调用本地后端 AI 内容质检接口
-              requestQualityCheck(payloadData, data.regionName)
+              const qualityPromise = getSelectedAssetType() === 'image'
+                ? requestQualityCheck(payloadData, data.regionName)
+                : Promise.resolve({ status: 200, data: buildManualReviewQuality(data.regionName) });
+
+              qualityPromise
                 .then(({ status: qStatus, data: qualityData }) => {
                   if (isAiDetected || qStatus === 422 || qualityData.decision === 'rejected') {
                     updateStepStatus('step-deepfake', 'error', 'AI 内容质检发现风险素材');
                     showQualityCheckBlockedCard(qualityData, qStatus);
-                    return;
+                    return Promise.reject({ handled: true });
                   }
 
-                  if (qualityData.decision === 'approved' && qualityData.approved) {
-                    finishApprovedSubmission(data, qualityData);
-                    return;
-                  }
-
-                  finishReviewSubmission(data, qualityData);
+                  updateStepStatus('step-watermark', 'loading', '正在保存原始素材到本地待审核库...');
+                  return requestSaveSubmission(payloadData, data.regionName, qualityData)
+                    .catch(err => {
+                      err.stage = 'save';
+                      throw err;
+                    })
+                    .then(({ data: savedData }) => {
+                      finishReviewSubmission(data, qualityData, savedData);
+                    });
                 })
                 .catch(err => {
-                  showQualityCheckConnectionError(err);
+                  if (err && err.handled) return;
+                  if (getSelectedAssetType() === 'image' && err.stage !== 'save') {
+                    showQualityCheckConnectionError(err);
+                    return;
+                  }
+                  showSubmissionSaveError(err);
                 });
             }, 1000);
           } else {
@@ -2245,6 +2390,19 @@
       showToast('获得 100 积分！可在“我的-多宝阁”中查看数字化荣誉', 'award');
     }
 
+    function closePendingSubmissionModal() {
+      document.getElementById('ai-check-modal').classList.add('hidden');
+      document.getElementById('ai-success-result').classList.add('hidden');
+      document.getElementById('collect-form').reset();
+      const firstType = document.querySelector('input[name="asset-type"][value="image"]');
+      if (firstType) {
+        selectType(firstType.closest('label'));
+      } else {
+        resetFilePreview({stopPropagation: () => {}});
+      }
+      showToast('素材已进入管理员待审核池，人工通过后发放流光值', 'clock');
+    }
+
     function closeAiModalWithError() {
       document.getElementById('ai-check-modal').classList.add('hidden');
       document.getElementById('ai-success-result').classList.add('hidden');
@@ -2253,9 +2411,9 @@
     }
 
     // 11. 数字化守护者唯一徽章详情
-    function openBadgeDetails(name, hash, date) {
+    function openBadgeDetails(name, proof, date) {
       document.getElementById('modal-badge-name').innerText = name;
-      document.getElementById('modal-badge-hash').innerText = hash;
+      document.getElementById('modal-badge-proof').innerText = proof;
       document.getElementById('modal-badge-date').innerText = date;
       document.getElementById('badge-modal').classList.remove('hidden');
     }

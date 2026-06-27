@@ -10,20 +10,46 @@ const PORT = Number(process.env.PORT) || 3000;
 const SECURE_KEY = 'ChuYunLianJi@2026_Secret';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'local-admin-dev-token';
 const SERVER_BUILD = 'strict-ai-quality-2026-06-27b';
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 const ROOT_DIR = path.join(__dirname, '..');
 const UPLOAD_DIR = path.join(ROOT_DIR, 'uploads');
+const SUBMISSION_UPLOAD_DIR = path.join(UPLOAD_DIR, 'submissions');
 const DATA_DIR = path.join(ROOT_DIR, 'data');
 const SUBMISSIONS_FILE = path.join(DATA_DIR, 'submissions.json');
 const HUBEI_GEOJSON_FILE = path.join(ROOT_DIR, 'hubei_boundary.geojson');
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const ALLOWED_MEDIA_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/wav',
+  'audio/webm',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+]);
 const IMAGE_EXTENSIONS = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
   'image/webp': '.webp',
   'image/gif': '.gif',
 };
+const MEDIA_EXTENSIONS = {
+  ...IMAGE_EXTENSIONS,
+  'audio/mpeg': '.mp3',
+  'audio/mp4': '.m4a',
+  'audio/wav': '.wav',
+  'audio/webm': '.webm',
+  'video/mp4': '.mp4',
+  'video/webm': '.webm',
+  'video/quicktime': '.mov',
+};
+const REVIEW_STATUSES = new Set(['pending', 'approved', 'rejected', 'needs_revision', 'archived']);
 
 let hubeiFeatures = [];
 let writeQueue = Promise.resolve();
@@ -38,6 +64,7 @@ app.get('/api/health', (req, res) => {
     serverBuild: SERVER_BUILD,
     geminiConfigured: Boolean(GEMINI_API_KEY),
     geminiModel: GEMINI_MODEL,
+    adminConfigured: Boolean(ADMIN_TOKEN),
   });
 });
 
@@ -657,6 +684,59 @@ function normalizeOptionalText(value, maxLength = 2000) {
   return String(value || '').trim().slice(0, maxLength);
 }
 
+function parseOptionalJson(value, fallback = null) {
+  if (!value) return fallback;
+
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    return fallback;
+  }
+}
+
+function normalizeAssetType(value, detectedType) {
+  const raw = normalizeOptionalText(value, 40).toLowerCase();
+  if (raw === 'image') return 'photo';
+  if (['photo', 'video', 'audio', 'text', 'oral-history'].includes(raw)) return raw;
+  if (detectedType && detectedType.startsWith('video/')) return 'video';
+  if (detectedType && detectedType.startsWith('audio/')) return 'audio';
+  return 'photo';
+}
+
+function getUploadedSubmissionFile(files) {
+  return files.media || files.image || files.file || Object.values(files)[0] || null;
+}
+
+function detectSubmissionMediaType(file) {
+  const detectedImageType = detectImageType(file.buffer);
+  if (detectedImageType) return detectedImageType;
+
+  const contentType = String(file.contentType || '').toLowerCase();
+  if (ALLOWED_MEDIA_TYPES.has(contentType)) return contentType;
+  return null;
+}
+
+function getAbsolutePublicUrl(req, publicPath) {
+  return `${req.protocol}://${req.get('host')}${publicPath}`;
+}
+
+function getAdminToken(req) {
+  const auth = req.headers.authorization || '';
+  if (auth.toLowerCase().startsWith('bearer ')) return auth.slice(7).trim();
+  return req.headers['x-admin-token'] || '';
+}
+
+function requireAdmin(req, res, next) {
+  if (getAdminToken(req) !== ADMIN_TOKEN) {
+    return res.status(401).json({
+      success: false,
+      message: 'admin_token_required',
+    });
+  }
+
+  return next();
+}
+
 async function readSubmissions() {
   try {
     const raw = await fs.promises.readFile(SUBMISSIONS_FILE, 'utf8');
@@ -674,32 +754,72 @@ async function writeSubmissions(items) {
 }
 
 function createSubmissionRecord(record) {
-  writeQueue = writeQueue.then(async () => {
+  writeQueue = writeQueue.catch(() => {}).then(async () => {
     const items = await readSubmissions();
     const lastId = items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0);
+    const createdAt = new Date().toISOString();
+    const location = {
+      longitude: Number(record.longitude).toFixed(6),
+      latitude: Number(record.latitude).toFixed(6),
+      accuracy: record.locationAccuracy,
+      regionName: record.regionName,
+      regionLevel: record.regionLevel,
+    };
     const submission = {
       id: lastId + 1,
+      title: normalizeOptionalText(record.title, 120),
+      assetType: record.assetType || 'photo',
       originalName: record.originalName,
       storedName: record.storedName,
       filePath: record.filePath,
       fileUrl: record.fileUrl,
+      originalFileUrl: record.originalFileUrl || record.fileUrl || record.filePath,
+      thumbnailUrl: record.thumbnailUrl || record.fileUrl || record.filePath,
       mimeType: record.mimeType,
       fileSize: record.fileSize,
       sha256: record.sha256,
-      longitude: Number(record.longitude).toFixed(6),
-      latitude: Number(record.latitude).toFixed(6),
+      longitude: location.longitude,
+      latitude: location.latitude,
       locationAccuracy: record.locationAccuracy,
+      location,
       regionName: record.regionName,
       regionLevel: record.regionLevel,
       description: record.description,
       deviceId: record.deviceId,
+      submitter: record.submitter || null,
+      aiResult: record.aiResult || null,
       status: 'pending',
-      createdAt: new Date().toISOString(),
+      reviewNote: '',
+      reviewedAt: null,
+      reviewer: null,
+      reviewHistory: [],
+      createdAt,
+      updatedAt: createdAt,
     };
 
     items.unshift(submission);
     await writeSubmissions(items);
     return submission;
+  });
+
+  return writeQueue;
+}
+
+function updateSubmissionById(id, updater) {
+  writeQueue = writeQueue.catch(() => {}).then(async () => {
+    const items = await readSubmissions();
+    const index = items.findIndex((item) => String(item.id) === String(id));
+
+    if (index === -1) {
+      const err = new Error('submission_not_found');
+      err.status = 404;
+      throw err;
+    }
+
+    const updated = updater({ ...items[index] });
+    items[index] = updated;
+    await writeSubmissions(items);
+    return updated;
   });
 
   return writeQueue;
@@ -833,6 +953,121 @@ app.post('/api/upload-image', async (req, res) => {
   }
 });
 
+app.post('/api/submissions', async (req, res) => {
+  try {
+    const bodyBuffer = await readLimitedBody(req);
+    const { fields, files } = parseMultipartForm(req, bodyBuffer);
+    const media = getUploadedSubmissionFile(files);
+
+    if (!media || media.size === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'submission_file_required',
+      });
+    }
+
+    const detectedType = detectSubmissionMediaType(media);
+    if (!detectedType || !ALLOWED_MEDIA_TYPES.has(detectedType)) {
+      return res.status(415).json({
+        success: false,
+        message: 'unsupported_submission_media_type',
+      });
+    }
+
+    const signatureResult = verifySignedLocationPayload(fields);
+    if (!signatureResult.ok) {
+      return res.status(signatureResult.status).json({
+        success: false,
+        message: signatureResult.message,
+      });
+    }
+
+    const region = findHubeiRegion(fields.longitude, fields.latitude);
+    if (!region) {
+      return res.status(400).json({
+        success: false,
+        message: 'location_outside_hubei',
+      });
+    }
+
+    await fs.promises.mkdir(SUBMISSION_UPLOAD_DIR, { recursive: true });
+
+    const ext = MEDIA_EXTENSIONS[detectedType] || path.extname(media.originalName) || '.bin';
+    const storedName = `${Date.now()}-${crypto.randomUUID()}${ext}`;
+    const storedPath = path.join(SUBMISSION_UPLOAD_DIR, storedName);
+    const publicPath = `/uploads/submissions/${storedName}`;
+    const fileUrl = getAbsolutePublicUrl(req, publicPath);
+    const sha256 = crypto.createHash('sha256').update(media.buffer).digest('hex');
+
+    await fs.promises.writeFile(storedPath, media.buffer);
+
+    const locationAccuracy = Number.isFinite(Number(fields.locationAccuracy)) ? Number(fields.locationAccuracy) : null;
+    const aiResult = parseOptionalJson(fields.aiResult || fields.qualityResult, null);
+    const submitter = parseOptionalJson(fields.submitter, null) || {
+      userId: normalizeOptionalText(fields.userId, 120),
+      userName: normalizeOptionalText(fields.userName, 120),
+      openid: normalizeOptionalText(fields.openid, 160),
+    };
+
+    let submission;
+    try {
+      submission = await createSubmissionRecord({
+        title: normalizeOptionalText(fields.title, 120),
+        assetType: normalizeAssetType(fields.assetType || fields.type, detectedType),
+        originalName: media.originalName,
+        storedName,
+        filePath: publicPath,
+        fileUrl,
+        originalFileUrl: publicPath,
+        thumbnailUrl: detectedType.startsWith('image/') ? publicPath : '',
+        mimeType: detectedType,
+        fileSize: media.size,
+        sha256,
+        longitude: Number(fields.longitude),
+        latitude: Number(fields.latitude),
+        locationAccuracy,
+        regionName: region.name,
+        regionLevel: region.level,
+        description: normalizeOptionalText(fields.description),
+        deviceId: normalizeOptionalText(fields.deviceId, 200),
+        submitter,
+        aiResult,
+      });
+    } catch (storeErr) {
+      await fs.promises.unlink(storedPath).catch(() => {});
+      throw storeErr;
+    }
+
+    return res.status(201).json({
+      success: true,
+      serverBuild: SERVER_BUILD,
+      submission: {
+        id: submission.id,
+        status: submission.status,
+        createdAt: submission.createdAt,
+        originalFileUrl: submission.originalFileUrl,
+      },
+      file: {
+        originalName: media.originalName,
+        storedName,
+        size: media.size,
+        mimeType: detectedType,
+        sha256,
+        url: fileUrl,
+        publicPath,
+      },
+      message: 'submission_saved_pending_review',
+    });
+  } catch (err) {
+    const status = err.status || 500;
+    console.error('Submission save API error:', err.message || err);
+    return res.status(status).json({
+      success: false,
+      message: err.message || 'submission_save_failed',
+    });
+  }
+});
+
 app.post('/api/quality-check', async (req, res) => {
   try {
     const bodyBuffer = await readLimitedBody(req);
@@ -919,6 +1154,112 @@ app.post('/api/quality-check', async (req, res) => {
       issues: ['quality_check_api_error'],
       suggestions: ['请确认本地后端服务正常运行后重试。'],
       message: error.message || 'AI 内容质检失败，请检查本地服务状态。',
+    });
+  }
+});
+
+app.get('/api/admin/submissions', requireAdmin, async (req, res) => {
+  try {
+    const items = await readSubmissions();
+    const status = normalizeOptionalText(req.query.status, 40);
+    const assetType = normalizeOptionalText(req.query.assetType, 40);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+    let filtered = items;
+
+    if (status) {
+      filtered = filtered.filter((item) => item.status === status);
+    }
+
+    if (assetType) {
+      filtered = filtered.filter((item) => item.assetType === assetType || item.type === assetType);
+    }
+
+    return res.json({
+      success: true,
+      count: filtered.length,
+      items: filtered.slice(0, limit),
+    });
+  } catch (err) {
+    console.error('Admin submissions API error:', err.message || err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'admin_submissions_query_failed',
+    });
+  }
+});
+
+app.get('/api/admin/submissions/:id', requireAdmin, async (req, res) => {
+  try {
+    const items = await readSubmissions();
+    const submission = items.find((item) => String(item.id) === String(req.params.id));
+
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        message: 'submission_not_found',
+      });
+    }
+
+    return res.json({
+      success: true,
+      submission,
+    });
+  } catch (err) {
+    console.error('Admin submission detail API error:', err.message || err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'admin_submission_detail_failed',
+    });
+  }
+});
+
+app.patch('/api/admin/submissions/:id/review', requireAdmin, async (req, res) => {
+  try {
+    const status = normalizeOptionalText(req.body.status, 40);
+    if (!REVIEW_STATUSES.has(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'invalid_review_status',
+        allowedStatuses: Array.from(REVIEW_STATUSES),
+      });
+    }
+
+    const reviewNote = normalizeOptionalText(req.body.reviewNote || req.body.note, 1000);
+    const reviewer = normalizeOptionalText(req.body.reviewer, 120) || 'local-admin';
+    const reviewedAt = new Date().toISOString();
+    const submission = await updateSubmissionById(req.params.id, (item) => {
+      const history = Array.isArray(item.reviewHistory) ? item.reviewHistory : [];
+
+      return {
+        ...item,
+        status,
+        reviewNote,
+        reviewer,
+        reviewedAt,
+        updatedAt: reviewedAt,
+        reviewHistory: [
+          {
+            status,
+            reviewNote,
+            reviewer,
+            reviewedAt,
+          },
+          ...history,
+        ],
+      };
+    });
+
+    return res.json({
+      success: true,
+      submission,
+      message: 'submission_review_updated',
+    });
+  } catch (err) {
+    const status = err.status || 500;
+    console.error('Admin submission review API error:', err.message || err);
+    return res.status(status).json({
+      success: false,
+      message: err.message || 'submission_review_failed',
     });
   }
 });
