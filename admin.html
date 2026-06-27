@@ -84,6 +84,7 @@
 
   <script>
     const API_BASE = 'http://localhost:3000';
+    const EXPECTED_SERVER_BUILD = 'admin-submissions-2026-06-27c';
     let adminToken = localStorage.getItem('chulink_admin_token') || 'local-admin-dev-token';
     let statusFilter = 'pending';
     let submissions = [];
@@ -110,6 +111,40 @@
       adminToken = document.getElementById('admin-token').value.trim();
       localStorage.setItem('chulink_admin_token', adminToken);
       loadSubmissions();
+    }
+
+    async function readJsonResponse(response) {
+      const text = await response.text();
+      if (!text) return {};
+
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        return {
+          success: false,
+          message: text.slice(0, 180)
+        };
+      }
+    }
+
+    async function ensureBackendReady() {
+      let response;
+      try {
+        response = await fetch(`${API_BASE}/api/health`);
+      } catch (error) {
+        throw new Error('本地后端未连接，请先启动 node .\\tools\\server.js');
+      }
+
+      const data = await readJsonResponse(response);
+      if (!response.ok || !data.success) {
+        throw new Error('本地后端健康检查失败，请重启 tools/server.js');
+      }
+
+      if (data.serverBuild !== EXPECTED_SERVER_BUILD || !data.adminConfigured) {
+        throw new Error(`当前 3000 端口不是最新管理员后端，请停止旧 Node 进程并重启。当前版本: ${data.serverBuild || '未知'}`);
+      }
+
+      return data;
     }
 
     function setStatusFilter(status) {
@@ -233,6 +268,12 @@
       const ai = item.aiResult || {};
       const issues = Array.isArray(ai.issues) ? ai.issues.join('、') : '暂无';
       const suggestions = Array.isArray(ai.suggestions) ? ai.suggestions.join('；') : '暂无';
+      const appealNotice = ai.userRequestedManualReview ? `
+        <div class="rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-700 font-bold flex items-center gap-1">
+          <i data-lucide="user-check" class="w-4 h-4"></i>
+          用户对 AI 拦截结果申请人工复核
+        </div>
+      ` : '';
       const locationText = item.location
         ? `${item.location.latitude}, ${item.location.longitude}`
         : `${item.latitude || '-'}, ${item.longitude || '-'}`;
@@ -250,6 +291,8 @@
               </div>
               <p class="text-xs text-stone-500 mt-1">${assetLabel(item)} · ${formatTime(item.createdAt)}</p>
             </div>
+
+            ${appealNotice}
 
             <div class="grid grid-cols-2 gap-2 text-xs">
               <div class="rounded-lg bg-stone-50 border border-stone-200 p-3">
@@ -295,10 +338,17 @@
 
     async function loadSubmissions() {
       try {
+        await ensureBackendReady();
         const response = await fetch(`${API_BASE}/api/admin/submissions?limit=500`, {
           headers: authHeaders()
         });
-        const data = await response.json();
+        const data = await readJsonResponse(response);
+        if (response.status === 401) {
+          throw new Error('管理员密钥不正确，请确认与启动后端时设置的 ADMIN_TOKEN 完全一致');
+        }
+        if (response.status === 404) {
+          throw new Error('管理员接口不存在：当前 3000 端口仍是旧服务，请重启 tools/server.js');
+        }
         if (!response.ok || !data.success) throw new Error(data.message || `加载失败 ${response.status}`);
         submissions = data.items || [];
         renderSummary();
@@ -325,6 +375,7 @@
     async function reviewSubmission(id, status) {
       const note = document.getElementById('review-note')?.value || '';
       try {
+        await ensureBackendReady();
         const response = await fetch(`${API_BASE}/api/admin/submissions/${id}/review`, {
           method: 'PATCH',
           headers: authHeaders({ 'Content-Type': 'application/json' }),
@@ -334,7 +385,10 @@
             reviewer: 'local-admin'
           })
         });
-        const data = await response.json();
+        const data = await readJsonResponse(response);
+        if (response.status === 401) {
+          throw new Error('管理员密钥不正确，请重新输入');
+        }
         if (!response.ok || !data.success) throw new Error(data.message || `审核失败 ${response.status}`);
         showToast(`已更新为：${statusLabel(status)}`);
         selectedId = id;

@@ -1600,8 +1600,9 @@
     let forceAigcBlocked = false;
     let currentFileName = ""; 
     let selectedUploadFile = null;
+    let manualReviewContext = null;
     const LOCAL_API_BASE_URL = 'http://localhost:3000';
-    const EXPECTED_SERVER_BUILD = 'strict-ai-quality-2026-06-27b';
+    const EXPECTED_SERVER_BUILD = 'admin-submissions-2026-06-27c';
 
     // 切换 AIGC 拦截状态
     function toggleAigcMockMode() {
@@ -2017,6 +2018,7 @@
     }
 
     function resetAiModalState() {
+      manualReviewContext = null;
       const resultEl = document.getElementById('ai-success-result');
       const btn = document.getElementById('ai-btn-close');
       resultEl.classList.add('hidden');
@@ -2026,7 +2028,8 @@
       btn.setAttribute('onclick', 'closeAiModal()');
     }
 
-    function showQualityCheckBlockedCard(data, status) {
+    function showQualityCheckBlockedCard(data, status, reviewContext = null) {
+      manualReviewContext = reviewContext;
       updateStepStatus('step-watermark', 'waiting', '质检未通过，水印写入已暂停');
       updateStepStatus('step-milvus', 'waiting', '质检未通过，馆藏关联已暂停');
 
@@ -2037,6 +2040,12 @@
       const score = Number.isFinite(Number(data && data.qualityScore)) ? Number(data.qualityScore) : 0;
       const providerLabel = data && data.aiUsed ? 'Gemini 已调用' : '本地规则兜底';
       const aiErrorText = data && data.aiError ? `<p class="text-[10px] text-red-500 pl-5">Gemini状态: ${data.aiError}</p>` : '';
+      const manualReviewButton = reviewContext ? `
+        <button type="button" id="manual-review-appeal-btn" onclick="submitBlockedForManualReview()" class="mt-2 w-full bg-stone-900 text-white py-2 rounded-lg text-xs font-bold flex items-center justify-center">
+          <i data-lucide="user-check" class="w-3.5 h-3.5 mr-1"></i> 申请人工复核
+        </button>
+        <p class="text-[10px] text-stone-500 pl-5">申请后会保存原始素材和 AI 拦截原因，交由管理员人工判断。</p>
+      ` : '';
 
       const resultEl = document.getElementById('ai-success-result');
       resultEl.className = "bg-red-50 rounded-xl p-3 border border-red-200 space-y-1.5";
@@ -2049,10 +2058,48 @@
         ${aiErrorText}
         <p class="text-[10px] text-red-600 pl-5">问题标签: <strong class="text-stone-800">${issues.join('、')}</strong></p>
         <p class="text-[10px] text-red-500 pl-5">建议: ${suggestions[0]}</p>
+        ${manualReviewButton}
       `;
       resultEl.classList.remove('hidden');
       setAiCloseButton("flex-1 bg-cinnabarRed text-white py-2 rounded-xl text-xs font-bold w-full", '重新回到采集区');
       lucide.createIcons();
+    }
+
+    function submitBlockedForManualReview() {
+      if (!manualReviewContext || !selectedUploadFile) {
+        showToast('当前没有可提交复核的素材，请重新选择素材', 'alert-circle');
+        return;
+      }
+
+      const btn = document.getElementById('manual-review-appeal-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.className = "mt-2 w-full bg-stone-300 text-stone-500 py-2 rounded-lg text-xs font-bold flex items-center justify-center";
+        btn.innerHTML = '<i data-lucide="loader" class="w-3.5 h-3.5 mr-1 animate-spin"></i> 正在提交人工复核...';
+        lucide.createIcons();
+      }
+
+      updateStepStatus('step-watermark', 'loading', '正在保存被拦截素材到人工复核池...');
+      updateStepStatus('step-milvus', 'waiting', '等待管理员人工判断');
+
+      const appealedQuality = {
+        ...(manualReviewContext.qualityData || {}),
+        userRequestedManualReview: true,
+        manualReviewReason: '用户对 AI 拦截结果申请人工复核'
+      };
+
+      requestSaveSubmission(
+        manualReviewContext.locationPayload,
+        manualReviewContext.regionData.regionName,
+        appealedQuality
+      )
+        .then(({ data: savedData }) => {
+          finishReviewSubmission(manualReviewContext.regionData, appealedQuality, savedData);
+          manualReviewContext = null;
+        })
+        .catch((err) => {
+          showSubmissionSaveError(err);
+        });
     }
 
     function showQualityCheckConnectionError(err) {
@@ -2229,7 +2276,11 @@
                 .then(({ status: qStatus, data: qualityData }) => {
                   if (isAiDetected || qStatus === 422 || qualityData.decision === 'rejected') {
                     updateStepStatus('step-deepfake', 'error', 'AI 内容质检发现风险素材');
-                    showQualityCheckBlockedCard(qualityData, qStatus);
+                    showQualityCheckBlockedCard(qualityData, qStatus, {
+                      locationPayload: payloadData,
+                      regionData: data,
+                      qualityData
+                    });
                     return Promise.reject({ handled: true });
                   }
 
@@ -2406,6 +2457,7 @@
     function closeAiModalWithError() {
       document.getElementById('ai-check-modal').classList.add('hidden');
       document.getElementById('ai-success-result').classList.add('hidden');
+      manualReviewContext = null;
       const btn = document.getElementById('ai-btn-close');
       btn.setAttribute('onclick', 'closeAiModal()'); 
     }

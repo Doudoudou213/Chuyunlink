@@ -11,7 +11,7 @@ const SECURE_KEY = 'ChuYunLianJi@2026_Secret';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'local-admin-dev-token';
-const SERVER_BUILD = 'strict-ai-quality-2026-06-27b';
+const SERVER_BUILD = 'admin-submissions-2026-06-27c';
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 const ROOT_DIR = path.join(__dirname, '..');
 const UPLOAD_DIR = path.join(ROOT_DIR, 'uploads');
@@ -131,6 +131,10 @@ app.get('/api/gemini-diagnostics', async (req, res) => {
       errorCode: error.cause && error.cause.code,
     });
   }
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(ROOT_DIR, 'admin.html'));
 });
 
 function loadHubeiBoundary() {
