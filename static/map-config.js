@@ -1,13 +1,13 @@
 // ChuLink map source configuration.
-// Offline Hubei tiles use the Leaflet/OSM XYZ layout:
-// static/tiles/hubei/{z}/{x}/{y}.png
+// The current default uses online Gaode tiles for better access in mainland China.
 window.CHULINK_MAP_CONFIG = {
-  tileUrl: './static/tiles/hubei/{z}/{x}/{y}.png',
-  attribution: 'Offline Hubei map tiles | &copy; OpenStreetMap contributors',
-  sourceLabel: '真实地图：湖北离线瓦片',
+  tileUrl: 'https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}',
+  attribution: '&copy; 高德地图',
+  sourceLabel: '真实地图：高德在线瓦片',
+  coordinateSystem: 'gcj02',
   minZoom: 6,
-  maxZoom: 14,
-  maxNativeZoom: 14,
+  maxZoom: 18,
+  maxNativeZoom: 18,
   initialCenter: [31.2, 112.3],
   initialZoom: 7,
   bounds: [
