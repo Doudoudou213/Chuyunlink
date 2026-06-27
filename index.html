@@ -550,11 +550,7 @@
           <!-- 4. 文本描述 -->
           <div>
             <label class="block text-xs font-bold text-stone-500 mb-1">4. 故事/现状描述 (选填)</label>
-<<<<<<< HEAD
             <textarea id="collect-description" name="description" placeholder="例如：此青铜残件是在自家翻土时刨出来的，听村里老人说这地界曾是楚国古墓群边缘..." rows="3" class="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs text-stone-800 outline-none focus:border-sandGold"></textarea>
-=======
-            <textarea id="heritage-description" name="description" placeholder="例如：此青铜残件是在自家翻土时刨出来的，听村里老人说这地界曾是楚国古墓群边缘..." rows="3" class="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs text-stone-800 outline-none focus:border-sandGold"></textarea>
->>>>>>> e0a286cfc682161ab111b29fddaccac0281e93d5
           </div>
 
           <!-- 5. 提交按钮 -->
@@ -1450,7 +1446,6 @@
       showToast(`已打开「${title}」速学卡，完成后可获得 20 积分。`, 'graduation-cap');
     }
 
-<<<<<<< HEAD
     // 4. 双视角文化脉络图谱
     function showGraphModal(item, museum) {
       document.getElementById('graph-modal').classList.remove('hidden');
@@ -1548,13 +1543,12 @@
       );
     }
 
-=======
->>>>>>> e0a286cfc682161ab111b29fddaccac0281e93d5
     // 🛡️ AIGC 模拟状态变量与文件名追踪
     let forceAigcBlocked = false;
     let currentFileName = ""; 
     let selectedUploadFile = null;
     const LOCAL_API_BASE_URL = 'http://localhost:3000';
+    const EXPECTED_SERVER_BUILD = 'strict-ai-quality-2026-06-27b';
 
     // 切换 AIGC 拦截状态
     function toggleAigcMockMode() {
@@ -1584,13 +1578,10 @@
 
     // 7. 调试模式：切换本地 API / 仿真 Mock
     let localApiMode = false;
-<<<<<<< HEAD
     let mediaRecorder = null;
     let audioChunks = [];
     let audioRecordTimer = null;
     let audioRecordSeconds = 0;
-=======
->>>>>>> e0a286cfc682161ab111b29fddaccac0281e93d5
     function toggleApiMode() {
       localApiMode = !localApiMode;
       const btn = document.getElementById('api-toggle-btn');
@@ -1678,11 +1669,7 @@
     function resetFilePreview(event) {
       if (event && event.stopPropagation) event.stopPropagation();
       selectedUploadFile = null;
-<<<<<<< HEAD
       currentFileName = "";
-=======
-      currentFileName = ""; 
->>>>>>> e0a286cfc682161ab111b29fddaccac0281e93d5
       document.getElementById('real-file-input').value = '';
       document.getElementById('preview-img').src = '';
       document.getElementById('preview-img').classList.remove('hidden');
@@ -1711,11 +1698,7 @@
       }
 
       selectedUploadFile = file;
-<<<<<<< HEAD
       currentFileName = file.name;
-=======
-      currentFileName = file.name; // 👈 动态抓取并标记文件名
->>>>>>> e0a286cfc682161ab111b29fddaccac0281e93d5
       const reader = new FileReader();
       reader.onload = function(e) {
         document.getElementById('upload-placeholder').classList.add('hidden');
@@ -1864,7 +1847,7 @@
     }
 
     function getCollectDescription() {
-      const input = document.getElementById('heritage-description');
+      const input = document.getElementById('collect-description');
       return input ? input.value.trim() : '';
     }
 
@@ -1901,7 +1884,17 @@
       return fetch(`${LOCAL_API_BASE_URL}/api/quality-check`, {
         method: 'POST',
         body: buildQualityCheckFormData(locationPayload, regionName)
-      }).then(response => response.json().then(data => ({ status: response.status, data })));
+      }).then(response => response.json().then(data => {
+        if (data && data.serverBuild && data.serverBuild !== EXPECTED_SERVER_BUILD) {
+          throw new Error(`后端版本不一致: ${data.serverBuild}`);
+        }
+
+        if (!data || !data.serverBuild) {
+          throw new Error('当前 3000 端口仍是旧版质检服务，请停止旧 node 进程后重启 tools/server.js');
+        }
+
+        return { status: response.status, data };
+      }));
     }
 
     function setAiCloseButton(className, label, handlerName = 'closeAiModalWithError()') {
@@ -1931,6 +1924,8 @@
         ? data.suggestions
         : ['请补充更清晰的实拍图片、地点说明或文化背景后再提交。'];
       const score = Number.isFinite(Number(data && data.qualityScore)) ? Number(data.qualityScore) : 0;
+      const providerLabel = data && data.aiUsed ? 'Gemini 已调用' : '本地规则兜底';
+      const aiErrorText = data && data.aiError ? `<p class="text-[10px] text-red-500 pl-5">Gemini状态: ${data.aiError}</p>` : '';
 
       const resultEl = document.getElementById('ai-success-result');
       resultEl.className = "bg-red-50 rounded-xl p-3 border border-red-200 space-y-1.5";
@@ -1939,6 +1934,8 @@
           <i data-lucide="shield-alert" class="w-4 h-4 mr-1 text-red-700"></i> AI 内容质检未通过
         </div>
         <p class="text-[10px] text-red-600 pl-5">接口状态: <strong class="font-mono bg-red-100 px-1 rounded">${status}</strong>；质量评分: <strong>${score}</strong>/100</p>
+        <p class="text-[10px] text-red-600 pl-5">检测来源: <strong class="text-stone-800">${providerLabel}</strong></p>
+        ${aiErrorText}
         <p class="text-[10px] text-red-600 pl-5">问题标签: <strong class="text-stone-800">${issues.join('、')}</strong></p>
         <p class="text-[10px] text-red-500 pl-5">建议: ${suggestions[0]}</p>
       `;
@@ -1968,9 +1965,39 @@
       lucide.createIcons();
     }
 
+    function finishReviewSubmission(regionData, qualityData) {
+      const qualityScore = Number.isFinite(Number(qualityData.qualityScore)) ? Number(qualityData.qualityScore) : 0;
+      const providerLabel = qualityData.aiUsed ? 'Gemini 已调用' : '本地规则兜底';
+
+      updateStepStatus('step-deepfake', 'success', `AI初筛完成 (质量评分: ${qualityScore}/100)`);
+      updateStepStatus('step-watermark', 'waiting', '待人工复核，暂不写入积分水印');
+      updateStepStatus('step-milvus', 'waiting', '待人工复核后再关联馆藏图谱');
+
+      const resultEl = document.getElementById('ai-success-result');
+      const firstSuggestion = Array.isArray(qualityData.suggestions) && qualityData.suggestions.length
+        ? qualityData.suggestions[0]
+        : '建议补充更清晰图片和更完整说明。';
+
+      resultEl.className = "bg-amber-50 rounded-xl p-3 border border-amber-200 space-y-1";
+      resultEl.innerHTML = `
+        <div class="flex items-center text-amber-800 text-xs font-bold">
+          <i data-lucide="clock" class="w-4 h-4 mr-1"></i> AI 初筛完成：进入待人工审核
+        </div>
+        <p class="text-[10px] text-amber-700 pl-5">识别区域: <strong class="font-bold">${regionData.regionName}</strong></p>
+        <p class="text-[10px] text-amber-700 pl-5">检测来源: <strong class="font-bold">${providerLabel}</strong></p>
+        <p class="text-[10px] text-amber-700 pl-5">质量评分: <strong class="font-bold">${qualityScore}/100</strong>；内容判定: <strong class="font-bold">${qualityData.category || '待复核素材'}</strong></p>
+        <p class="text-[10px] text-amber-700 pl-5">审核建议: <span class="text-stone-700">${firstSuggestion}</span></p>
+        <p class="text-[10px] text-amber-700 pl-5">积分状态: <strong class="font-bold">人工通过后发放</strong></p>
+      `;
+      resultEl.classList.remove('hidden');
+      lucide.createIcons();
+
+      setAiCloseButton("flex-1 bg-stone-800 text-white py-2 rounded-xl text-xs font-bold w-full", '知道了，返回采集区', 'closeAiModalWithError()');
+    }
+
     function finishApprovedSubmission(regionData, qualityData) {
-      const qualityScore = Number.isFinite(Number(qualityData.qualityScore)) ? Number(qualityData.qualityScore) : 88;
-      const authenticity = Number.isFinite(Number(qualityData.aiAuthenticity)) ? Number(qualityData.aiAuthenticity) : 98.7;
+      const qualityScore = Number.isFinite(Number(qualityData.qualityScore)) ? Number(qualityData.qualityScore) : 0;
+      const authenticity = Number.isFinite(Number(qualityData.aiAuthenticity)) ? Number(qualityData.aiAuthenticity) : 0;
 
       updateStepStatus('step-deepfake', 'success', `AI质检完成 (质量评分: ${qualityScore}/100)`);
       updateStepStatus('step-watermark', 'loading', '正在为素材注入用户特征声纹隐形数字水印...');
@@ -1987,9 +2014,10 @@
           resultEl.className = "bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1";
           resultEl.innerHTML = `
             <div class="flex items-center text-emerald-800 text-xs font-bold">
-              <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 校验通过：物理及内容可信度核验无误！
+              <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> Gemini 校验通过：物理及内容可信度核验无误！
             </div>
             <p class="text-[10px] text-emerald-600 pl-5">识别区域: <strong class="font-bold">${regionData.regionName}</strong></p>
+            <p class="text-[10px] text-emerald-600 pl-5">检测来源: <strong class="font-bold">${qualityData.aiUsed ? 'Gemini 已调用' : '本地规则兜底'}</strong></p>
             <p class="text-[10px] text-emerald-600 pl-5">质量评分: <strong class="font-bold">${qualityScore}/100</strong>；实拍可信度: <strong class="font-bold">${authenticity}%</strong></p>
             <p class="text-[10px] text-emerald-600 pl-5">内容判定: <strong class="font-bold">${qualityData.category || '湖北文化遗产实拍素材'}</strong></p>
             <p class="text-[10px] text-emerald-600 pl-5">优化建议: <span class="text-stone-700">${firstSuggestion}</span></p>
@@ -2031,13 +2059,6 @@
       const lat = currentLocation.latitude;
       const timestamp = Math.floor(Date.now() / 1000);
       const deviceId = "browser_geolocation_001";
-<<<<<<< HEAD
-      const lowerName = (currentFileName || "mock_chuyun_photo.jpg").toLowerCase();
-      const isFileNameAi = lowerName.includes('ai') || lowerName.includes('fake') || lowerName.includes('sd') || lowerName.includes('midjourney');
-      const isAiDetected = isFileNameAi || forceAigcBlocked;
-=======
-      const SECURE_KEY = "ChuYunLianJi@2026_Secret";
->>>>>>> e0a286cfc682161ab111b29fddaccac0281e93d5
 
       // 判定特征名
       const lowerName = (currentFileName || "mock_chuyun_photo.jpg").toLowerCase();
@@ -2049,11 +2070,7 @@
         const payloadData = buildSignedLocationPayload(lon, lat, timestamp, deviceId);
 
         // 完美对齐本地 server.js 的 /api/verify-location JSON 接收端
-<<<<<<< HEAD
         fetch(`${LOCAL_API_BASE_URL}/api/verify-location`, {
-=======
-        fetch('http://localhost:3000/api/verify-location', {
->>>>>>> e0a286cfc682161ab111b29fddaccac0281e93d5
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -2070,59 +2087,24 @@
               updateStepStatus('step-gps', 'success', `GPS定位认证完成 (${data.regionName})`);
               updateStepStatus('step-deepfake', 'loading', '正在进行 AIGC 图像篡改与内容质量检测...');
               
-<<<<<<< HEAD
               // 第二步：调用本地后端 AI 内容质检接口
-=======
-              // 第二步：执行本地后端 AI 质量质检分流（优先调用本地高级接口，如未部署则降级纯防伪）
->>>>>>> e0a286cfc682161ab111b29fddaccac0281e93d5
               requestQualityCheck(payloadData, data.regionName)
                 .then(({ status: qStatus, data: qualityData }) => {
-                  if (isAiDetected || qStatus !== 200 || !qualityData.success || !qualityData.approved) {
+                  if (isAiDetected || qStatus === 422 || qualityData.decision === 'rejected') {
                     updateStepStatus('step-deepfake', 'error', 'AI 内容质检发现风险素材');
                     showQualityCheckBlockedCard(qualityData, qStatus);
                     return;
                   }
 
-                  finishApprovedSubmission(data, qualityData);
+                  if (qualityData.decision === 'approved' && qualityData.approved) {
+                    finishApprovedSubmission(data, qualityData);
+                    return;
+                  }
+
+                  finishReviewSubmission(data, qualityData);
                 })
-                .catch(() => {
-                  // 本地 node 暂无高级 AIGC 质检接口时：友好自动降级为“经典款”纯防伪分流，保证联调流畅不中断！
-                  setTimeout(() => {
-                    if (isAiDetected) {
-                      updateStepStatus('step-deepfake', 'error', '防伪对比失败：检测到 AIGC 深度伪造特征！');
-                      showAigcBlockedCard(currentFileName || "mock_chuyun_photo.jpg");
-                    } else {
-                      updateStepStatus('step-deepfake', 'success', '防伪对比完成 (非AI合成真实率: 98.7%)');
-                      updateStepStatus('step-watermark', 'loading', '正在为素材注入用户特征声纹隐形数字水印...');
-                      
-                      setTimeout(() => {
-                        updateStepStatus('step-watermark', 'success', '数字特征水印嵌入成功 (溯源已锁)');
-                        updateStepStatus('step-milvus', 'loading', '正在利用向量库检索并自动生成文化关系脉络...');
-                        
-                        setTimeout(() => {
-                          updateStepStatus('step-milvus', 'success', `图谱脉络检索匹配完毕 (当前归属地: ${data.regionName})`);
-                          
-                          const resultEl = document.getElementById('ai-success-result');
-                          resultEl.className = "bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1";
-                          resultEl.innerHTML = `
-                            <div class="flex items-center text-emerald-800 text-xs font-bold">
-                              <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> API 校验通过：物理及内容可信度核验无误！
-                            </div>
-                            <p class="text-[10px] text-emerald-600 pl-5">识别区域: <strong class="font-bold">${data.regionName}</strong></p>
-                            <p class="text-[10px] text-emerald-600 pl-5">行政级别: <strong class="font-bold">${data.regionLevel === 'province' ? '省级' : data.regionLevel === 'city' ? '市级' : '县区级'}</strong></p>
-                            <p class="text-[10px] text-emerald-600 pl-5">PostGIS 验证: <span class="font-mono bg-emerald-100 px-1 rounded">ST_Contains 碰撞成功</span></p>
-                            <p class="text-[10px] text-emerald-600 pl-5">接口响应: <span class="font-mono bg-emerald-100 px-1 rounded">${data.message}</span></p>
-                            <p class="text-[10px] text-emerald-600 pl-5">积分奖励: <strong class="font-bold">+100 流光值已发放</strong></p>
-                          `;
-                          resultEl.classList.remove('hidden');
-                          lucide.createIcons();
-                          
-                          setAiCloseButton("flex-1 bg-deepTeal text-sandGold py-2 rounded-xl text-xs font-bold w-full", '确认并领取流光值', 'closeAiModal()');
-                          updateUserPoints(100);
-                        }, 1000);
-                      }, 1000);
-                    }
-                  }, 1000);
+                .catch(err => {
+                  showQualityCheckConnectionError(err);
                 });
             }, 1000);
           } else {
