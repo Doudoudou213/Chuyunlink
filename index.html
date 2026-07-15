@@ -218,10 +218,10 @@
           </div>
           <!-- 分类滑块 -->
           <div class="flex space-x-2 mt-3 overflow-x-auto pb-1 text-xs scrollbar-none">
-            <span class="px-3 py-1.5 bg-deepTeal text-sandGold rounded-full whitespace-nowrap cursor-pointer">全部遗迹</span>
-            <span class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full whitespace-nowrap cursor-pointer">楚风古建</span>
-            <span class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full whitespace-nowrap cursor-pointer">荆楚口述</span>
-            <span class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full whitespace-nowrap cursor-pointer">鄂地老物</span>
+            <button id="discover-cat-all" type="button" onclick="setDiscoverCategory('all')" class="px-3 py-1.5 bg-deepTeal text-sandGold rounded-full whitespace-nowrap transition-colors">全部遗迹</button>
+            <button id="discover-cat-chufeng" type="button" onclick="setDiscoverCategory('楚风古建')" class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full whitespace-nowrap transition-colors">楚风古建</button>
+            <button id="discover-cat-koushu" type="button" onclick="setDiscoverCategory('荆楚口述')" class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full whitespace-nowrap transition-colors">荆楚口述</button>
+            <button id="discover-cat-old" type="button" onclick="setDiscoverCategory('鄂地老物')" class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full whitespace-nowrap transition-colors">鄂地老物</button>
           </div>
         </div>
 
@@ -252,11 +252,13 @@
           <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
             <i data-lucide="clock" class="w-4 h-4 mr-1 text-deepTeal"></i> 社区最新大众采集点
           </h4>
-          
+
+          <div id="approved-submission-feed" class="space-y-3">
           <!-- 卡片 1 (图片古建类型) -->
-          <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+          <div data-category="楚风古建" class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
             <div class="relative">
               <img src="https://images.unsplash.com/photo-1599839619722-3975141122a1?auto=format&fit=crop&q=80&w=600" alt="古宅" class="w-full h-40 object-cover" onerror="this.src='https://images.unsplash.com/photo-1508333706533-1ab43ecb1606?q=80&w=400'">
+              <div class="absolute top-2 left-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-deepTeal">楚风古建</div>
               <div class="absolute top-2 right-2 bg-emerald-600/90 text-white text-[10px] px-2 py-0.5 rounded flex items-center font-semibold">
                 <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i> AI & 专家双重已认证
               </div>
@@ -297,7 +299,7 @@
           </div>
 
           <!-- 卡片 2 (音频口述类型) -->
-          <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-3">
+          <div data-category="荆楚口述" class="bg-white rounded-xl border border-stone-200 shadow-sm p-3">
             <div class="flex justify-between items-start">
               <span class="bg-sandGold/20 text-deepTeal text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center">
                 <i data-lucide="mic" class="w-3 h-3 mr-0.5"></i> 荆楚民间口述
@@ -343,6 +345,7 @@
                 <i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1"></i> 发起质疑
               </button>
             </div>
+          </div>
           </div>
         </div>
       </section>
@@ -1074,10 +1077,46 @@
 
   <!-- -------------------- 页面交互逻辑 JavaScript -------------------- -->
   <script>
-    // 初始化图标
+    let discoverCategoryFilter = 'all';
+
+    function updateDiscoverCategoryButtons() {
+      const categories = ['all', '楚风古建', '荆楚口述', '鄂地老物'];
+      categories.forEach(cat => {
+        const button = document.getElementById(`discover-cat-${cat === 'all' ? 'all' : cat === '楚风古建' ? 'chufeng' : cat === '荆楚口述' ? 'koushu' : 'old'}`);
+        if (!button) return;
+        const isActive = discoverCategoryFilter === cat;
+        button.className = isActive
+          ? 'px-3 py-1.5 bg-deepTeal text-sandGold rounded-full whitespace-nowrap transition-colors'
+          : 'px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full whitespace-nowrap transition-colors hover:bg-stone-200';
+      });
+    }
+
+    function setDiscoverCategory(category) {
+      discoverCategoryFilter = category;
+      updateDiscoverCategoryButtons();
+      filterDiscoverFeed();
+    }
+
+    function filterDiscoverFeed() {
+      const feed = document.getElementById('approved-submission-feed');
+      if (!feed) return;
+      const cards = feed.querySelectorAll('[data-category]');
+      cards.forEach(card => {
+        const category = card.getAttribute('data-category') || '';
+        if (discoverCategoryFilter === 'all' || discoverCategoryFilter === category) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
       lucide.createIcons();
       initHeritageMap();
+      loadApprovedSubmissionFeed();
+      updateDiscoverCategoryButtons();
+      setTimeout(filterDiscoverFeed, 120);
     });
 
     // 真实地图瓦片配置
@@ -1252,6 +1291,134 @@
         '"': '&quot;',
         "'": '&#39;'
       }[char]));
+    }
+
+    function escapeJsString(value) {
+      return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ');
+    }
+
+    function formatPublicDate(value) {
+      if (!value) return '刚刚通过';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '刚刚通过';
+      return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+    }
+
+    function getPublicAssetLabel(item) {
+      const type = item.assetType || 'photo';
+      if (type === 'audio') return '荆楚民间口述';
+      if (type === 'video') return '现场视频记录';
+      return '图像采集素材';
+    }
+
+    function renderApprovedMedia(item) {
+      const url = item.thumbnailUrl || item.fileUrl || '';
+      const mime = item.mimeType || '';
+      const assetType = item.assetType || 'photo';
+
+      if (!url) {
+        return `
+          <div class="h-40 bg-stone-100 flex items-center justify-center text-stone-400">
+            <i data-lucide="image-off" class="w-8 h-8"></i>
+          </div>
+        `;
+      }
+
+      if (assetType === 'audio' || mime.startsWith('audio/')) {
+        return `
+          <div class="bg-stone-50 border border-stone-100 rounded-xl p-3 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-deepTeal text-sandGold flex items-center justify-center shrink-0">
+              <i data-lucide="file-audio" class="w-5 h-5"></i>
+            </div>
+            <audio src="${escapeHtml(item.fileUrl || url)}" controls class="w-full"></audio>
+          </div>
+        `;
+      }
+
+      if (assetType === 'video' || mime.startsWith('video/')) {
+        return `<video src="${escapeHtml(item.fileUrl || url)}" controls class="w-full max-h-56 bg-stone-950"></video>`;
+      }
+
+      return `<img src="${escapeHtml(url)}" alt="${escapeHtml(item.title || '用户通过素材')}" class="w-full h-40 object-cover">`;
+    }
+
+    function renderApprovedSubmissionCard(item) {
+      const title = item.title || '未命名采集素材';
+      const region = item.regionName || '湖北';
+      const scoreText = Number.isFinite(Number(item.qualityScore)) ? `${item.qualityScore}/100` : '人工复核';
+      const description = item.description || '该素材已通过管理员审核，进入公开展示区。';
+      const isVisual = !['audio', 'video'].includes(item.assetType || '');
+      const category = item.category || (item.assetType === 'audio' ? '荆楚口述' : item.assetType === 'video' ? '鄂地老物' : '楚风古建');
+      const assetLabel = getPublicAssetLabel(item);
+
+      return `
+        <div data-category="${escapeHtml(category)}" class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+          ${isVisual ? `
+            <div class="relative">
+              ${renderApprovedMedia(item)}
+              <div class="absolute top-2 left-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-deepTeal">${escapeHtml(category)}</div>
+              <div class="absolute top-2 right-2 bg-emerald-600/90 text-white text-[10px] px-2 py-0.5 rounded flex items-center font-semibold">
+                <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i> 管理员已通过
+              </div>
+              <div class="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded flex items-center backdrop-blur-xs">
+                <i data-lucide="map-pin" class="w-3 h-3 mr-0.5 text-sandGold"></i> ${escapeHtml(region)}
+              </div>
+            </div>
+          ` : `
+            <div class="p-3 pb-0">
+              <div class="flex justify-between items-start">
+                <span class="bg-sandGold/20 text-deepTeal text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center">
+                  <i data-lucide="${item.assetType === 'video' ? 'video' : 'mic'}" class="w-3 h-3 mr-0.5"></i> ${getPublicAssetLabel(item)}
+                </span>
+                <span class="text-stone-400 text-[10px]">通过于 ${formatPublicDate(item.reviewedAt || item.createdAt)}</span>
+              </div>
+              <div class="mt-3">${renderApprovedMedia(item)}</div>
+            </div>
+          `}
+          <div class="p-3">
+            <div class="flex items-start justify-between gap-2">
+              <h5 class="cultural-font font-bold text-stone-800 text-sm">${escapeHtml(title)}</h5>
+              <span class="shrink-0 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(scoreText)}</span>
+            </div>
+            <p class="text-xs text-stone-500 mt-1 line-clamp-2">${escapeHtml(description)}</p>
+            <div class="mt-3 bg-stone-50 rounded-lg p-2 border border-sandGold/20 flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-sandGold"></span>
+                <p class="text-[10px] text-deepTeal font-semibold">公开展示：${escapeHtml(region)} · ${escapeHtml(getPublicAssetLabel(item))}</p>
+              </div>
+              <span class="text-[10px] text-stone-400">采集人：${escapeHtml(item.contributorName || '楚韵链迹守护者')}</span>
+            </div>
+            <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-stone-100 text-xs">
+              <span class="text-stone-400 text-[10px]">通过于 ${formatPublicDate(item.reviewedAt || item.createdAt)}</span>
+              <button onclick="openDisputeModal('${escapeJsString(title)}', '${escapeJsString(region)}')" class="text-cinnabarRed font-bold flex items-center hover:underline">
+                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1"></i> 我有质疑/纠错
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    let curatedSubmissionFeedHtml = '';
+    function loadApprovedSubmissionFeed() {
+      const feed = document.getElementById('approved-submission-feed');
+      if (!feed || typeof fetch !== 'function') return;
+      if (!curatedSubmissionFeedHtml) {
+        curatedSubmissionFeedHtml = feed.innerHTML;
+      }
+
+      fetch(`${LOCAL_API_BASE_URL}/api/public/submissions?limit=10`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data || !data.success || !Array.isArray(data.items) || data.items.length === 0) return;
+          feed.innerHTML = `${data.items.map(renderApprovedSubmissionCard).join('')}${curatedSubmissionFeedHtml}`;
+          lucide.createIcons();
+          filterDiscoverFeed();
+        })
+        .catch(() => {
+          // Keep the curated example cards when the local backend is not running.
+          filterDiscoverFeed();
+        });
     }
 
     function createLandmarkPopup(item) {
@@ -1638,7 +1805,7 @@
     let selectedUploadFile = null;
     let manualReviewContext = null;
     const LOCAL_API_BASE_URL = 'http://localhost:3000';
-    const EXPECTED_SERVER_BUILD = 'admin-submissions-2026-06-27c';
+    const EXPECTED_SERVER_BUILD = 'admin-posts-2026-06-28a';
 
     // 7. 调试模式：切换本地 API / 仿真 Mock
     let localApiMode = false;
