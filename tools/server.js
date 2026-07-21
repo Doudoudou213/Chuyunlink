@@ -11,13 +11,14 @@ const SECURE_KEY = 'ChuYunLianJi@2026_Secret';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'local-admin-dev-token';
-const SERVER_BUILD = 'admin-submissions-2026-06-27c';
+const SERVER_BUILD = 'admin-posts-2026-06-28a';
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 const ROOT_DIR = path.join(__dirname, '..');
 const UPLOAD_DIR = path.join(ROOT_DIR, 'uploads');
 const SUBMISSION_UPLOAD_DIR = path.join(UPLOAD_DIR, 'submissions');
 const DATA_DIR = path.join(ROOT_DIR, 'data');
 const SUBMISSIONS_FILE = path.join(DATA_DIR, 'submissions.json');
+const POSTS_FILE = path.join(DATA_DIR, 'posts.json');
 const HUBEI_GEOJSON_FILE = path.join(ROOT_DIR, 'hubei_boundary.geojson');
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const ALLOWED_MEDIA_TYPES = new Set([
@@ -53,6 +54,7 @@ const REVIEW_STATUSES = new Set(['pending', 'approved', 'rejected', 'needs_revis
 
 let hubeiFeatures = [];
 let writeQueue = Promise.resolve();
+let postWriteQueue = Promise.resolve();
 
 app.use(cors());
 app.use(express.json());
@@ -757,6 +759,118 @@ async function writeSubmissions(items) {
   await fs.promises.writeFile(SUBMISSIONS_FILE, JSON.stringify(items, null, 2), 'utf8');
 }
 
+async function readPosts() {
+  try {
+    const raw = await fs.promises.readFile(POSTS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    if (err.code === 'ENOENT') return [];
+    throw err;
+  }
+}
+
+async function writePosts(items) {
+  await fs.promises.mkdir(DATA_DIR, { recursive: true });
+  await fs.promises.writeFile(POSTS_FILE, JSON.stringify(items, null, 2), 'utf8');
+}
+
+function normalizePostInput(body = {}) {
+  const status = ['draft', 'published', 'archived'].includes(body.status) ? body.status : 'published';
+  return {
+    title: normalizeOptionalText(body.title, 120),
+    category: normalizeOptionalText(body.category, 40) || 'activity',
+    summary: normalizeOptionalText(body.summary, 260),
+    body: normalizeOptionalText(body.body, 3000),
+    coverUrl: normalizeOptionalText(body.coverUrl, 800),
+    status,
+    pinned: Boolean(body.pinned),
+    actionLabel: normalizeOptionalText(body.actionLabel, 40) || '查看详情',
+    targetPointId: normalizeOptionalText(body.targetPointId, 80),
+  };
+}
+
+function createPostRecord(body) {
+  postWriteQueue = postWriteQueue.catch(() => {}).then(async () => {
+    const items = await readPosts();
+    const lastId = items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0);
+    const now = new Date().toISOString();
+    const input = normalizePostInput(body);
+    if (!input.title) {
+      const err = new Error('post_title_required');
+      err.status = 400;
+      throw err;
+    }
+
+    const post = {
+      id: lastId + 1,
+      ...input,
+      createdAt: now,
+      updatedAt: now,
+      publishedAt: input.status === 'published' ? now : null,
+    };
+
+    items.unshift(post);
+    await writePosts(items);
+    return post;
+  });
+
+  return postWriteQueue;
+}
+
+function updatePostById(id, body) {
+  postWriteQueue = postWriteQueue.catch(() => {}).then(async () => {
+    const items = await readPosts();
+    const index = items.findIndex((item) => String(item.id) === String(id));
+    if (index === -1) {
+      const err = new Error('post_not_found');
+      err.status = 404;
+      throw err;
+    }
+
+    const current = items[index];
+    const input = normalizePostInput({
+      ...current,
+      ...body,
+      pinned: Object.prototype.hasOwnProperty.call(body, 'pinned') ? body.pinned : current.pinned,
+    });
+    if (!input.title) {
+      const err = new Error('post_title_required');
+      err.status = 400;
+      throw err;
+    }
+
+    const now = new Date().toISOString();
+    const updated = {
+      ...current,
+      ...input,
+      updatedAt: now,
+      publishedAt: current.publishedAt || (input.status === 'published' ? now : null),
+    };
+
+    items[index] = updated;
+    await writePosts(items);
+    return updated;
+  });
+
+  return postWriteQueue;
+}
+
+function toPublicPost(post) {
+  return {
+    id: post.id,
+    title: post.title,
+    category: post.category,
+    summary: post.summary,
+    body: post.body,
+    coverUrl: post.coverUrl,
+    pinned: Boolean(post.pinned),
+    actionLabel: post.actionLabel || '查看详情',
+    targetPointId: post.targetPointId || '',
+    publishedAt: post.publishedAt || post.createdAt,
+  };
+}
+
 function createSubmissionRecord(record) {
   writeQueue = writeQueue.catch(() => {}).then(async () => {
     const items = await readSubmissions();
@@ -827,6 +941,33 @@ function updateSubmissionById(id, updater) {
   });
 
   return writeQueue;
+}
+
+function toPublicSubmission(item, req) {
+  const publicPath = item.originalFileUrl || item.filePath || '';
+  const fileUrl = publicPath
+    ? (/^https?:\/\//i.test(publicPath) ? publicPath : getAbsolutePublicUrl(req, publicPath))
+    : '';
+  const aiResult = item.aiResult || {};
+
+  return {
+    id: item.id,
+    title: item.title || item.originalName || '未命名采集素材',
+    assetType: item.assetType || 'photo',
+    description: item.description || '',
+    regionName: item.regionName || item.location?.regionName || '',
+    mimeType: item.mimeType || '',
+    fileUrl,
+    thumbnailUrl: item.thumbnailUrl
+      ? (/^https?:\/\//i.test(item.thumbnailUrl) ? item.thumbnailUrl : getAbsolutePublicUrl(req, item.thumbnailUrl))
+      : fileUrl,
+    createdAt: item.createdAt,
+    reviewedAt: item.reviewedAt,
+    contributorName: item.submitter?.userName || '楚韵链迹守护者',
+    qualityScore: Number.isFinite(Number(aiResult.qualityScore)) ? Number(aiResult.qualityScore) : null,
+    category: aiResult.category || '湖北文化遗产采集素材',
+    reviewNote: item.reviewNote || '',
+  };
 }
 
 app.post('/api/verify-location', (req, res) => {
@@ -1188,6 +1329,132 @@ app.get('/api/admin/submissions', requireAdmin, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: err.message || 'admin_submissions_query_failed',
+    });
+  }
+});
+
+app.get('/api/public/submissions', async (req, res) => {
+  try {
+    const items = await readSubmissions();
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+    const assetType = normalizeOptionalText(req.query.assetType, 40);
+    let approvedItems = items.filter((item) => item.status === 'approved');
+
+    if (assetType) {
+      approvedItems = approvedItems.filter((item) => item.assetType === assetType || item.type === assetType);
+    }
+
+    return res.json({
+      success: true,
+      count: approvedItems.length,
+      items: approvedItems.slice(0, limit).map((item) => toPublicSubmission(item, req)),
+    });
+  } catch (err) {
+    console.error('Public submissions API error:', err.message || err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'public_submissions_query_failed',
+    });
+  }
+});
+
+app.get('/api/posts', async (req, res) => {
+  try {
+    const items = await readPosts();
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+    const category = normalizeOptionalText(req.query.category, 40);
+    let posts = items.filter((item) => item.status === 'published');
+
+    if (category) {
+      posts = posts.filter((item) => item.category === category);
+    }
+
+    posts.sort((a, b) => {
+      if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
+      return new Date(b.publishedAt || b.createdAt || 0) - new Date(a.publishedAt || a.createdAt || 0);
+    });
+
+    return res.json({
+      success: true,
+      count: posts.length,
+      items: posts.slice(0, limit).map(toPublicPost),
+    });
+  } catch (err) {
+    console.error('Public posts API error:', err.message || err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'posts_query_failed',
+    });
+  }
+});
+
+app.get('/api/admin/posts', requireAdmin, async (req, res) => {
+  try {
+    const items = await readPosts();
+    return res.json({
+      success: true,
+      count: items.length,
+      items,
+    });
+  } catch (err) {
+    console.error('Admin posts API error:', err.message || err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'admin_posts_query_failed',
+    });
+  }
+});
+
+app.post('/api/admin/posts', requireAdmin, async (req, res) => {
+  try {
+    const post = await createPostRecord(req.body || {});
+    return res.status(201).json({
+      success: true,
+      post,
+      message: 'post_created',
+    });
+  } catch (err) {
+    const status = err.status || 500;
+    console.error('Admin post create API error:', err.message || err);
+    return res.status(status).json({
+      success: false,
+      message: err.message || 'post_create_failed',
+    });
+  }
+});
+
+app.patch('/api/admin/posts/:id', requireAdmin, async (req, res) => {
+  try {
+    const post = await updatePostById(req.params.id, req.body || {});
+    return res.json({
+      success: true,
+      post,
+      message: 'post_updated',
+    });
+  } catch (err) {
+    const status = err.status || 500;
+    console.error('Admin post update API error:', err.message || err);
+    return res.status(status).json({
+      success: false,
+      message: err.message || 'post_update_failed',
+    });
+  }
+});
+
+app.delete('/api/admin/posts/:id', requireAdmin, async (req, res) => {
+  try {
+    const post = await updatePostById(req.params.id, { status: 'archived' });
+    return res.json({
+      success: true,
+      post,
+      message: 'post_archived',
+    });
+  } catch (err) {
+    const status = err.status || 500;
+    console.error('Admin post archive API error:', err.message || err);
+    return res.status(status).json({
+      success: false,
+      message: err.message || 'post_archive_failed',
     });
   }
 });
