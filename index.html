@@ -210,6 +210,69 @@
       
       <!-- 页面 1：发现 (DISCOVER) -->
       <section id="view-discover" class="page-view space-y-4 py-4">
+        <div class="px-4">
+          <div class="rounded-2xl border border-sandGold/20 bg-gradient-to-r from-deepTeal via-emerald-900 to-stone-900 p-4 text-white shadow-sm">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-[10px] uppercase tracking-[0.24em] text-sandGold/80">新手引导</p>
+                <h3 class="cultural-font text-base font-bold text-sandGold mt-1">完成 4 个轻量任务，快速上手采集</h3>
+              </div>
+              <button type="button" onclick="showOnboardingModal(true)" class="shrink-0 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-sandGold">查看引导</button>
+            </div>
+            <div class="mt-3">
+              <div class="h-2 w-full overflow-hidden rounded-full bg-white/20">
+                <div id="task-progress-bar" class="h-full rounded-full bg-sandGold transition-all duration-300" style="width: 0%"></div>
+              </div>
+              <div class="mt-2 flex items-center justify-between text-[11px] text-stone-200">
+                <span id="task-progress-text">0/4 已完成</span>
+                <span class="text-sandGold">每完成一步，都会更贴近真实采集</span>
+              </div>
+            </div>
+            <div class="mt-3 grid gap-2">
+              <div class="flex items-center justify-between rounded-xl border border-white/10 bg-white/10 px-3 py-2.5" data-task="location">
+                <div class="flex items-start gap-2">
+                  <div data-task-icon class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-[10px] font-bold text-sandGold">1</div>
+                  <div>
+                    <p class="text-xs font-semibold text-white" data-task-label>授权定位</p>
+                    <p class="text-[10px] text-stone-300">让采集点和地图更准确。</p>
+                  </div>
+                </div>
+                <button type="button" data-task-action onclick="handleTaskJump('location')" class="rounded-lg border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-sandGold">去完成</button>
+              </div>
+              <div class="flex items-center justify-between rounded-xl border border-white/10 bg-white/10 px-3 py-2.5" data-task="map">
+                <div class="flex items-start gap-2">
+                  <div data-task-icon class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-[10px] font-bold text-sandGold">2</div>
+                  <div>
+                    <p class="text-xs font-semibold text-white" data-task-label>查看地图探索点</p>
+                    <p class="text-[10px] text-stone-300">了解附近待采集的文化节点。</p>
+                  </div>
+                </div>
+                <button type="button" data-task-action onclick="handleTaskJump('map')" class="rounded-lg border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-sandGold">去完成</button>
+              </div>
+              <div class="flex items-center justify-between rounded-xl border border-white/10 bg-white/10 px-3 py-2.5" data-task="collect">
+                <div class="flex items-start gap-2">
+                  <div data-task-icon class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-[10px] font-bold text-sandGold">3</div>
+                  <div>
+                    <p class="text-xs font-semibold text-white" data-task-label>开始一次采集</p>
+                    <p class="text-[10px] text-stone-300">上传素材，体验真实采集闭环。</p>
+                  </div>
+                </div>
+                <button type="button" data-task-action onclick="handleTaskJump('collect')" class="rounded-lg border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-sandGold">去完成</button>
+              </div>
+              <div class="flex items-center justify-between rounded-xl border border-white/10 bg-white/10 px-3 py-2.5" data-task="activity">
+                <div class="flex items-start gap-2">
+                  <div data-task-icon class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-[10px] font-bold text-sandGold">4</div>
+                  <div>
+                    <p class="text-xs font-semibold text-white" data-task-label>参与活动或答题</p>
+                    <p class="text-[10px] text-stone-300">感受社区与科普任务的互动。</p>
+                  </div>
+                </div>
+                <button type="button" data-task-action onclick="handleTaskJump('activity')" class="rounded-lg border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-sandGold">去完成</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 搜索与筛选 -->
         <div class="px-4">
           <div class="flex items-center bg-stone-100 rounded-xl px-3 py-2 border border-stone-200">
@@ -247,12 +310,15 @@
           </div>
         </div>
 
+        <div id="discover-recommendations" class="px-4 space-y-3"></div>
+
         <!-- 社区大众采集流 (瀑布流卡片) -->
         <div class="px-4 space-y-3">
           <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
             <i data-lucide="clock" class="w-4 h-4 mr-1 text-deepTeal"></i> 社区最新大众采集点
           </h4>
-          
+
+          <div id="approved-submission-feed" class="space-y-3">
           <!-- 卡片 1 (图片古建类型) -->
           <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
             <div class="relative">
@@ -268,15 +334,29 @@
               <h5 class="cultural-font font-bold text-stone-800 text-sm">恩施土家彭家寨 · 传统吊脚楼榫卯</h5>
               <p class="text-xs text-stone-500 mt-1 line-clamp-2">典型的干栏式吊脚楼，飞檐翘角，全木穿斗结构，部分木质构件出现干裂风化，急需数字建档与溯源。</p>
               
-              <!-- 核心：图谱关联显示 -->
-              <div class="mt-3 bg-stone-50 rounded-lg p-2 border border-sandGold/20 flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                  <span class="w-2 h-2 rounded-full bg-sandGold animate-ping"></span>
-                  <p class="text-[10px] text-deepTeal font-semibold">已关联馆藏：湖北省博物馆 · 楚文化展</p>
+              <!-- 核心：图谱关联摘要 -->
+              <div class="mt-3 rounded-xl border border-sandGold/30 bg-gradient-to-br from-stone-50 to-amber-50/60 p-2.5">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex items-start gap-2">
+                    <div class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-deepTeal text-sandGold">
+                      <i data-lucide="network" class="h-3.5 w-3.5"></i>
+                    </div>
+                    <div>
+                      <p class="text-[11px] font-bold text-deepTeal">文化关联图谱</p>
+                      <p class="mt-0.5 text-[10px] text-stone-500">5 条关联 · 3 条已有采集证据</p>
+                    </div>
+                  </div>
+                  <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">综合 86%</span>
                 </div>
-                <button onclick="showGraphModal('土家彭家寨吊脚楼', '楚文化展')" class="text-[10px] font-bold text-sandGold flex items-center bg-deepTeal px-2 py-1 rounded">
-                  <i data-lucide="git-branch" class="w-3 h-3 mr-1"></i> 查看脉络图谱
-                </button>
+                <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-stone-200">
+                  <div class="h-full w-[86%] rounded-full bg-gradient-to-r from-deepTeal to-sandGold"></div>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <p class="text-[9px] text-stone-500">技艺 90% · 地域 88% · 证据 76%</p>
+                  <button onclick="showGraphModal('pengjiazhai-stilt')" class="flex shrink-0 items-center rounded-lg bg-deepTeal px-2.5 py-1.5 text-[10px] font-bold text-sandGold">
+                    <i data-lucide="git-branch" class="mr-1 h-3 w-3"></i> 查看证据图谱
+                  </button>
+                </div>
               </div>
 
               <!-- 互动按钮 -->
@@ -343,6 +423,7 @@
                 <i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1"></i> 发起质疑
               </button>
             </div>
+          </div>
           </div>
         </div>
       </section>
@@ -659,8 +740,11 @@
           <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-3">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <span class="text-[10px] bg-sandGold/20 text-deepTeal px-2 py-0.5 rounded font-bold">今日一问</span>
-                <h5 class="cultural-font font-bold text-stone-800 text-sm mt-2">采集古建筑纹样时，最应该优先补充哪类信息？</h5>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] bg-sandGold/20 text-deepTeal px-2 py-0.5 rounded font-bold">每日更新</span>
+                  <span id="quiz-date" class="text-[10px] text-stone-400"></span>
+                </div>
+                <h5 id="quiz-question" class="cultural-font font-bold text-stone-800 text-sm mt-2">采集古建筑纹样时，最应该优先补充哪类信息？</h5>
               </div>
               <div class="bg-deepTeal text-sandGold w-9 h-9 rounded-lg flex items-center justify-center shrink-0">
                 <i data-lucide="brain" class="w-4 h-4"></i>
@@ -668,14 +752,15 @@
             </div>
 
             <div class="mt-3 space-y-2">
-              <button id="quiz-option-a" onclick="answerCommunityQuiz(this, false)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">只拍一张远景照片，方便快速完成任务</button>
-              <button id="quiz-option-b" onclick="answerCommunityQuiz(this, true)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">补充纹样近景、所在位置、保存状态和尺度参照</button>
-              <button id="quiz-option-c" onclick="answerCommunityQuiz(this, false)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">尽量加滤镜，让图像看起来更清晰</button>
+              <button id="quiz-option-a" onclick="answerCommunityQuiz(0)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">只拍一张远景照片，方便快速完成任务</button>
+              <button id="quiz-option-b" onclick="answerCommunityQuiz(1)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">补充纹样近景、所在位置、保存状态和尺度参照</button>
+              <button id="quiz-option-c" onclick="answerCommunityQuiz(2)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">尽量加滤镜，让图像看起来更清晰</button>
             </div>
 
             <div id="quiz-feedback" class="hidden mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-[10px] text-emerald-800">
               答对了：近景、位置、保存状态和尺度参照能帮助专家复核，也能减少后续补采。
             </div>
+            <p id="quiz-update-tip" class="mt-3 text-[10px] text-stone-400">明日 00:00 更新 · 答对可得 50 积分</p>
           </div>
         </div>
 
@@ -899,84 +984,93 @@
 
   <!-- -------------------- 交互模态弹窗系统 -------------------- -->
 
-  <!-- 弹窗 1：AI双视角脉络图谱可视化模态 -->
+  <!-- 弹窗 1：证据驱动的文化脉络图谱 -->
   <div id="graph-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
-    <div class="bg-parchment rounded-3xl p-5 max-w-sm w-full space-y-4 text-stone-800 border-2 border-sandGold">
-      <div class="flex justify-between items-center border-b border-stone-200 pb-2">
-        <div class="flex items-center space-x-1">
-          <i data-lucide="git-branch" class="text-deepTeal w-5 h-5"></i>
-          <h4 class="cultural-font font-bold text-deepTeal text-base">双视角文化脉络图谱</h4>
+    <div class="phone-scroll max-h-[92vh] w-full max-w-sm space-y-3 overflow-y-auto rounded-3xl border border-[#c7ad7c] bg-[#f6eedf] p-4 text-stone-800 shadow-2xl shadow-black/30">
+      <div class="flex items-start justify-between gap-3 border-b border-[#c8ae80]/45 pb-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="cultural-font flex h-8 w-8 items-center justify-center rounded bg-cinnabarRed text-sm font-bold text-[#f9e9cf]">
+              谱
+            </span>
+            <h4 class="cultural-font text-base font-bold tracking-[0.06em] text-deepTeal">文化关联证据图谱</h4>
+          </div>
+          <p id="graph-modal-subtitle" class="mt-1.5 pl-11 text-[10px] text-stone-500">彭家寨传统吊脚楼 · 5 条关联</p>
         </div>
-        <button onclick="closeGraphModal()" class="text-stone-400 hover:text-stone-600">
-          <i data-lucide="x" class="w-5 h-5"></i>
+        <button onclick="closeGraphModal()" class="flex h-7 w-7 items-center justify-center rounded-full border border-[#c8ae80]/60 bg-[#fff9ed] text-stone-500 transition-colors hover:border-cinnabarRed/50 hover:text-cinnabarRed">
+          <i data-lucide="x" class="h-4 w-4"></i>
         </button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2">
+        <div class="rounded-lg border border-[#ddccb0] bg-[#fffaf2] p-2 text-center">
+          <p id="graph-relation-count" class="text-sm font-black text-deepTeal">5</p>
+          <p class="cultural-font text-[9px] tracking-wider text-stone-500">文化关联</p>
+        </div>
+        <div class="rounded-lg border border-[#ddccb0] bg-[#fffaf2] p-2 text-center">
+          <p id="graph-verified-count" class="text-sm font-black text-cinnabarRed">3</p>
+          <p class="cultural-font text-[9px] tracking-wider text-stone-500">已有证据</p>
+        </div>
+        <div class="rounded-lg border border-[#ddccb0] bg-[#fffaf2] p-2 text-center">
+          <p id="graph-overall-confidence" class="text-sm font-black text-deepTeal">86%</p>
+          <p class="cultural-font text-[9px] tracking-wider text-stone-500">综合关联度</p>
+        </div>
       </div>
 
       <!-- 视图切换器 -->
-      <div class="flex bg-stone-200/80 rounded-lg p-1 text-xs">
-        <button id="btn-perspective-time" class="flex-1 py-1.5 rounded-md font-bold bg-white text-deepTeal shadow-xs">
-          时空史料轴视角
+      <div class="grid grid-cols-2 gap-1 rounded-xl bg-[#e8dcc5] p-1 text-[10px]">
+        <button id="btn-perspective-craft" onclick="setGraphPerspective('craft')" class="flex items-center justify-center gap-1.5 rounded-lg bg-deepTeal px-2 py-2 font-bold text-[#f5dfb6] transition-all">
+          <span class="cultural-font text-[11px]">匠</span>
+          <span class="cultural-font tracking-[0.12em]">技艺关系</span>
         </button>
-        <button id="btn-perspective-museum" class="flex-1 py-1.5 rounded-md text-stone-500 font-medium">
-          馆藏溯源映射视角
+        <button id="btn-perspective-museum" onclick="setGraphPerspective('museum')" class="flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 font-medium text-[#715f45] transition-all hover:bg-[#f8edd9]/70">
+          <span class="cultural-font text-[11px]">藏</span>
+          <span class="cultural-font tracking-[0.12em]">馆藏对照</span>
         </button>
       </div>
 
-      <!-- SVG 关联图谱呈现 -->
-      <div class="bg-stone-900 rounded-2xl p-2 relative h-48 border border-stone-800 flex items-center justify-center overflow-hidden">
-        <svg class="w-full h-full" viewBox="0 0 300 180" xmlns="http://www.w3.org/2000/svg">
-          <!-- 渐变线定义 -->
-          <defs>
-            <linearGradient id="line-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#C5A880" />
-              <stop offset="100%" stop-color="#2C4C4E" />
-            </linearGradient>
-          </defs>
-
-          <!-- 脉络连接线 -->
-          <line x1="40" y1="90" x2="150" y2="40" stroke="url(#line-grad)" stroke-width="2" class="animated-line"/>
-          <line x1="40" y1="90" x2="150" y2="140" stroke="url(#line-grad)" stroke-width="2" class="animated-line"/>
-          <line x1="150" y1="40" x2="260" y2="90" stroke="url(#line-grad)" stroke-width="2"/>
-          <line x1="150" y1="140" x2="260" y2="90" stroke="url(#line-grad)" stroke-width="2"/>
-
-          <!-- 节点 A: 大众采集点 (民间记忆) -->
-          <g transform="translate(40, 90)" class="cursor-pointer">
-            <circle r="22" fill="#C5A880" stroke="#fff" stroke-width="2"/>
-            <text text-anchor="middle" dy="4" fill="#2C4C4E" font-size="9" font-family="'Noto Serif SC', serif" font-weight="bold">土家吊脚</text>
-          </g>
-
-          <!-- 节点 B1: 关联断代 (明晚期) -->
-          <g transform="translate(150, 40)">
-            <rect x="-30" y="-12" width="60" height="24" rx="4" fill="#2C4C4E" stroke="#C5A880" stroke-width="1"/>
-            <text text-anchor="middle" dy="4" fill="#C5A880" font-size="8">楚风穿斗卯榫</text>
-          </g>
-
-          <!-- 节点 B2: 地理分布 (清江流域) -->
-          <g transform="translate(150, 140)">
-            <rect x="-30" y="-12" width="60" height="24" rx="4" fill="#2C4C4E" stroke="#C5A880" stroke-width="1"/>
-            <text text-anchor="middle" dy="4" fill="#C5A880" font-size="8">清江流域水系</text>
-          </g>
-
-          <!-- 节点 C: 省博物馆馆藏 (历史正史) -->
-          <g transform="translate(260, 90)">
-            <circle r="22" fill="#2C4C4E" stroke="#C5A880" stroke-width="2"/>
-            <text text-anchor="middle" dy="4" fill="#C5A880" font-size="9" font-family="'Noto Serif SC', serif" font-weight="bold">国家馆藏</text>
-          </g>
-        </svg>
-
-        <div class="absolute bottom-2 inset-x-0 text-center">
-          <span class="text-[9px] bg-black/60 text-stone-300 px-2 py-0.5 rounded-full">
-            数据链条：民间记忆 ── 考证关联 ── 国家文博
-          </span>
+      <!-- 动态 SVG 关联图谱 -->
+      <div class="relative h-60 overflow-hidden rounded-2xl border border-[#9f865d] bg-deepTeal shadow-md">
+        <div class="absolute left-3 top-3 z-20 flex gap-3 text-[8px]">
+          <span class="text-[#ead19f]">— 实证</span>
+          <span class="text-[#e8a79c]">┄ 待核</span>
         </div>
+        <span id="graph-perspective-label" class="cultural-font absolute right-3 top-3 z-20 text-[8px] font-bold tracking-[0.14em] text-[#ead19f]">技艺关系</span>
+        <svg id="cultural-graph-svg" class="h-full w-full" viewBox="0 0 300 220" role="img" aria-label="文化关联图谱"></svg>
+        <p id="graph-perspective-caption" class="absolute inset-x-4 bottom-2 z-20 rounded-md bg-[#173b3d]/90 px-3 py-1.5 text-center text-[9px] leading-relaxed text-[#eadbbd]">点击节点查看关联证据</p>
       </div>
 
-      <p class="text-[11px] text-stone-500 leading-relaxed bg-stone-100 p-2.5 rounded-xl border border-stone-200">
-        <strong class="font-bold text-stone-700">AI 关联脉络解析：</strong>该传统土家吊脚楼的梁架穿斗方式，与国家一级馆藏《楚国天星观木构件》在空间尺度、卯眼形态上具有 92.4% 结构同源性，是楚地传统营建技术传承至今的重要实证。
-      </p>
+      <!-- 节点证据详情 -->
+      <section class="rounded-xl border border-[#d8c6a7] bg-[#fffaf2] p-3">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <p id="graph-node-category" class="cultural-font text-[9px] font-bold tracking-[0.18em] text-cinnabarRed">技艺关系</p>
+            <h5 id="graph-node-title" class="cultural-font mt-0.5 text-sm font-bold text-stone-800">穿斗式木构架</h5>
+          </div>
+          <span id="graph-node-status" class="rounded-sm border border-[#d2bb91] bg-[#f4e6ca] px-2 py-1 text-[9px] font-bold text-deepTeal">已有证据</span>
+        </div>
+        <p id="graph-node-description" class="mt-2 text-[10px] leading-relaxed text-stone-500"></p>
 
-      <div class="pt-1 flex justify-end">
-        <button onclick="closeGraphModal()" class="bg-deepTeal text-sandGold px-4 py-2 rounded-xl text-xs font-bold">
+        <div id="graph-confidence-breakdown" class="mt-3 grid grid-cols-4 gap-1.5"></div>
+
+        <div class="mt-3 border-t border-[#e0cfb0] pt-2">
+          <div class="flex items-center justify-between">
+            <p class="cultural-font text-[10px] font-bold tracking-wider text-stone-700">关联依据</p>
+            <span class="text-[9px] text-stone-400">点击其他节点可切换</span>
+          </div>
+          <div id="graph-evidence-list" class="mt-2 space-y-1.5"></div>
+        </div>
+      </section>
+
+      <div class="border-l-2 border-cinnabarRed/60 bg-[#f4e8d3] px-3 py-2 text-[9px] leading-relaxed text-[#71552e]">
+        图谱关联度按技艺 40%、地域 25%、年代 20%、证据完整度 15% 加权生成；“待核验”关系仅作研究线索，不作为确定性结论。
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button onclick="openGraphDispute()" class="cultural-font flex-1 rounded-lg border border-cinnabarRed/45 bg-[#fff7ea] px-3 py-2 text-xs font-bold tracking-wider text-cinnabarRed">
+          质疑这条关联
+        </button>
+        <button onclick="closeGraphModal()" class="cultural-font flex-1 rounded-lg border border-[#183c3d] bg-deepTeal px-3 py-2 text-xs font-bold tracking-wider text-[#f0d8a7] shadow-sm">
           已阅，共同守护
         </button>
       </div>
@@ -1072,12 +1166,679 @@
     </div>
   </div>
 
+  <!-- 新手引导弹层 -->
+  <div id="welcome-guide-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-4 backdrop-blur-xs">
+    <div class="w-full max-w-sm rounded-[28px] border border-stone-200 bg-white p-5 shadow-2xl">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-sandGold">首次引导</p>
+          <h3 class="cultural-font mt-1 text-lg font-bold text-deepTeal">欢迎加入楚韵链迹</h3>
+          <p class="mt-1 text-[11px] leading-relaxed text-stone-500">先完成 4 个轻量步骤，就能快速了解从定位、寻迹、采集到社区互动的完整体验。</p>
+        </div>
+        <button type="button" onclick="closeOnboardingModal()" class="text-stone-400 hover:text-stone-600">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-2">
+        <button type="button" onclick="handleTaskJump('location')" class="flex w-full items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-left">
+          <span class="text-xs font-semibold text-stone-800">1. 授权定位</span>
+          <span class="text-[10px] text-sandGold">去完成</span>
+        </button>
+        <button type="button" onclick="handleTaskJump('map')" class="flex w-full items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-left">
+          <span class="text-xs font-semibold text-stone-800">2. 查看地图探索点</span>
+          <span class="text-[10px] text-sandGold">去完成</span>
+        </button>
+        <button type="button" onclick="handleTaskJump('collect')" class="flex w-full items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-left">
+          <span class="text-xs font-semibold text-stone-800">3. 开始一次采集</span>
+          <span class="text-[10px] text-sandGold">去完成</span>
+        </button>
+        <button type="button" onclick="handleTaskJump('activity')" class="flex w-full items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-left">
+          <span class="text-xs font-semibold text-stone-800">4. 参与活动或答题</span>
+          <span class="text-[10px] text-sandGold">去完成</span>
+        </button>
+      </div>
+
+      <div class="mt-4 flex gap-2">
+        <button type="button" onclick="closeOnboardingModal()" class="flex-1 rounded-xl border border-stone-200 bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-600">先看看再说</button>
+        <button type="button" onclick="closeOnboardingModal()" class="flex-1 rounded-xl bg-deepTeal px-3 py-2 text-xs font-semibold text-sandGold">开始体验</button>
+      </div>
+    </div>
+  </div>
+
   <!-- -------------------- 页面交互逻辑 JavaScript -------------------- -->
   <script>
     // 初始化图标
+    const onboardingState = {
+      seen: false,
+      tasks: {
+        location: false,
+        map: false,
+        collect: false,
+        activity: false
+      }
+    };
+
+    function loadOnboardingState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('chulink-onboarding-state') || '{}');
+        if (saved && typeof saved === 'object') {
+          onboardingState.seen = Boolean(saved.seen);
+          if (saved.tasks && typeof saved.tasks === 'object') {
+            onboardingState.tasks = {
+              location: Boolean(saved.tasks.location),
+              map: Boolean(saved.tasks.map),
+              collect: Boolean(saved.tasks.collect),
+              activity: Boolean(saved.tasks.activity)
+            };
+          }
+        }
+      } catch (error) {
+        console.warn('无法加载新手引导状态', error);
+      }
+    }
+
+    function saveOnboardingState() {
+      try {
+        localStorage.setItem('chulink-onboarding-state', JSON.stringify(onboardingState));
+      } catch (error) {
+        console.warn('无法保存新手引导状态', error);
+      }
+    }
+
+    function updateTaskProgressUI() {
+      const total = Object.keys(onboardingState.tasks).length;
+      const completed = Object.values(onboardingState.tasks).filter(Boolean).length;
+      const progressBar = document.getElementById('task-progress-bar');
+      const progressText = document.getElementById('task-progress-text');
+
+      if (progressBar) {
+        progressBar.style.width = `${Math.round((completed / total) * 100)}%`;
+      }
+      if (progressText) {
+        progressText.innerText = `${completed}/${total} 已完成`;
+      }
+
+      document.querySelectorAll('[data-task]').forEach((item) => {
+        const taskKey = item.getAttribute('data-task');
+        const isDone = Boolean(onboardingState.tasks[taskKey]);
+        const icon = item.querySelector('[data-task-icon]');
+        const label = item.querySelector('[data-task-label]');
+        const actionButton = item.querySelector('[data-task-action]');
+
+        item.className = isDone
+          ? 'flex items-center justify-between rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2.5'
+          : 'flex items-center justify-between rounded-xl border border-white/10 bg-white/10 px-3 py-2.5';
+
+        if (icon) {
+          icon.innerHTML = isDone ? '<i data-lucide="check-circle" class="w-3.5 h-3.5"></i>' : taskKey === 'location' ? '1' : taskKey === 'map' ? '2' : taskKey === 'collect' ? '3' : '4';
+          icon.className = isDone
+            ? 'mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-200'
+            : 'mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-[10px] font-bold text-sandGold';
+        }
+
+        if (label) {
+          label.className = isDone ? 'text-xs font-semibold text-emerald-100' : 'text-xs font-semibold text-white';
+        }
+
+        if (actionButton) {
+          actionButton.innerText = isDone ? '已完成' : '去完成';
+          actionButton.className = isDone
+            ? 'rounded-lg border border-emerald-400/30 bg-emerald-500/20 px-2.5 py-1 text-[10px] font-semibold text-emerald-100'
+            : 'rounded-lg border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-sandGold';
+        }
+      });
+
+      lucide.createIcons();
+    }
+
+    function showOnboardingModal(force = false) {
+      if (!force && onboardingState.seen) return;
+      const modal = document.getElementById('welcome-guide-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeOnboardingModal() {
+      onboardingState.seen = true;
+      saveOnboardingState();
+      const modal = document.getElementById('welcome-guide-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function markTaskCompleted(taskKey) {
+      if (onboardingState.tasks[taskKey]) return;
+      onboardingState.tasks[taskKey] = true;
+      saveOnboardingState();
+      updateTaskProgressUI();
+      const labels = {
+        location: '定位任务已完成',
+        map: '地图探索任务已完成',
+        collect: '采集任务已开启',
+        activity: '社区活动任务已完成'
+      };
+      if (labels[taskKey]) {
+        showToast(labels[taskKey], 'check-circle');
+      }
+    }
+
+    function handleTaskJump(taskKey) {
+      closeOnboardingModal();
+      if (taskKey === 'location') {
+        refreshGPS();
+        return;
+      }
+      if (taskKey === 'map') {
+        markTaskCompleted('map');
+        switchTab('map');
+        return;
+      }
+      if (taskKey === 'collect') {
+        markTaskCompleted('collect');
+        switchTab('collect');
+        return;
+      }
+      if (taskKey === 'activity') {
+        markTaskCompleted('activity');
+        switchTab('community');
+      }
+    }
+
+    const discoverFeedController = (() => {
+      const STORAGE_KEY = 'chulink-discover-feed-state';
+      const items = [
+        {
+          id: 'discover-yingxian-ancient-window',
+          title: '随州曾国遗风 · 楚式花窗木雕',
+          desc: '现状濒危，民居拆迁与缺乏维护导致构件风化与细节散失。',
+          region: '随州',
+          category: '楚风古建',
+          urgency: 95,
+          distanceKm: 18,
+          coords: [31.6886, 113.3731],
+          tag: '急需保护',
+          baseReason: '高优先保护线索'
+        },
+        {
+          id: 'discover-penjiazhai-stilt',
+          title: '恩施宣恩彭家寨 · 吊脚楼榫卯',
+          desc: '适合补充外立面、构件细节和口述资料。',
+          region: '恩施',
+          category: '荆楚口述',
+          urgency: 82,
+          distanceKm: 42,
+          coords: [29.9821, 109.4912],
+          tag: '离我最近',
+
+          baseReason: '地理位置更靠近当前定位'
+        },
+        {
+          id: 'discover-hubei-museum',
+          title: '湖北省博物馆周边 · 碑刻与导览线索',
+          desc: '适合补充馆外传播线索和公共文化任务点。',
+          region: '武汉',
+          category: '鄂地老物',
+          urgency: 71,
+          distanceKm: 27,
+          coords: [30.5619, 114.3679],
+          tag: '我可能感兴趣',
+          baseReason: '基于你近期的采集兴趣生成'
+        },
+        {
+          id: 'discover-zhongxiang-shendao',
+          title: '钟祥明显陵 · 神道石像生',
+          desc: '可补充石像生尺码、保存状态与现地环境对比。',
+          region: '荆州',
+          category: '楚风古建',
+          urgency: 66,
+          distanceKm: 36,
+          coords: [31.1806, 112.6007],
+          tag: '我可能感兴趣',
+          baseReason: '与你当前采集方向高度相关'
+        }
+      ];
+
+      const state = {
+        events: [],
+        contentState: {}
+      };
+
+      function load() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+          if (saved && typeof saved === 'object') {
+            state.events = Array.isArray(saved.events) ? saved.events : [];
+            state.contentState = saved.contentState && typeof saved.contentState === 'object' ? saved.contentState : {};
+          }
+        } catch (error) {
+          console.warn('无法加载发现页推荐流状态', error);
+        }
+      }
+
+      function save() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (error) {
+          console.warn('无法保存发现页推荐流状态', error);
+        }
+      }
+
+      function ensureState(contentId) {
+        if (!state.contentState[contentId]) {
+          state.contentState[contentId] = {
+            bookmarked: false,
+            shared: false,
+            commented: false,
+            collected: false,
+            checkedIn: false,
+            verified: false,
+            shareCount: 0,
+            commentCount: 0,
+            comments: []
+          };
+        }
+        return state.contentState[contentId];
+      }
+
+      function recordEvent(contentId, action, metadata = {}) {
+        state.events.push({
+          contentId,
+          action,
+          timestamp: Date.now(),
+          metadata
+        });
+        save();
+      }
+
+      function getDistanceKm(item) {
+        if (!item.coords || !Array.isArray(item.coords) || !currentLocation || !currentLocation.isReal) {
+          return item.distanceKm || 999;
+        }
+        const [lat, lon] = item.coords;
+        const dLat = (lat - currentLocation.latitude) * 111.0;
+        const dLon = (lon - currentLocation.longitude) * 111.0 * Math.cos((currentLocation.latitude * Math.PI) / 180);
+        return Math.max(1, Math.round(Math.sqrt(dLat * dLat + dLon * dLon)));
+      }
+
+      function getRecommendationScore(item, contentState) {
+        const proximity = Math.max(0, 30 - getDistanceKm(item));
+        const urgency = item.urgency || 0;
+        const interest = (contentState.bookmarked ? 18 : 0) + (contentState.collected ? 20 : 0) + (contentState.checkedIn ? 10 : 0) + (contentState.verified ? 15 : 0);
+        const profileBoost = item.tag === '急需保护' ? 10 : 0;
+        return urgency + proximity + interest + profileBoost;
+      }
+
+      function sortItems() {
+        return [...items].sort((a, b) => {
+          const aState = ensureState(a.id);
+          const bState = ensureState(b.id);
+          const aScore = getRecommendationScore(a, aState);
+          const bScore = getRecommendationScore(b, bState);
+          return bScore - aScore;
+        });
+      }
+
+      function render() {
+        const container = document.getElementById('discover-recommendations');
+        if (!container) return;
+
+        const rankedItems = sortItems();
+        container.innerHTML = `
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center">
+              <i data-lucide="sparkles" class="w-4 h-4 mr-1 text-deepTeal"></i> 为你推荐的内容流
+            </h4>
+            <span class="text-[10px] text-deepTeal font-semibold">按“离我最近 / 急需保护 / 你可能感兴趣”排序</span>
+          </div>
+          <div class="space-y-3">
+            ${rankedItems.map((item) => {
+              const stateData = ensureState(item.id);
+              const badges = [];
+              if (stateData.collected) badges.push('<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">已采集</span>');
+              if (stateData.checkedIn) badges.push('<span class="rounded-full bg-sandGold/20 px-2 py-0.5 text-[10px] font-semibold text-deepTeal">已打卡</span>');
+              if (stateData.verified) badges.push('<span class="rounded-full bg-stone-900 px-2 py-0.5 text-[10px] font-semibold text-sandGold">已认证</span>');
+              if (!badges.length) badges.push('<span class="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500">待开始</span>');
+
+              return `
+                <article class="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="rounded-full bg-cinnabarRed/10 px-2 py-0.5 text-[10px] font-semibold text-cinnabarRed">${escapeHtml(item.tag)}</span>
+                        <span class="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500">${escapeHtml(item.category)}</span>
+                      </div>
+                      <h5 class="cultural-font mt-2 text-sm font-bold text-stone-800">${escapeHtml(item.title)}</h5>
+                      <p class="mt-1 text-[11px] leading-relaxed text-stone-500">${escapeHtml(item.desc)}</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-[10px] font-semibold text-deepTeal">${escapeHtml(item.region)}</p>
+                      <p class="text-[10px] text-stone-400">${getDistanceKm(item)} km</p>
+                    </div>
+                  </div>
+                  <div class="mt-3 flex flex-wrap gap-2">${badges.join('')}</div>
+                  <div class="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+                    <button type="button" data-feed-action="bookmark" data-feed-id="${item.id}" class="rounded-full border ${stateData.bookmarked ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-stone-200 bg-stone-50 text-stone-600'} px-2.5 py-1.5 font-semibold">
+                      <i data-lucide="bookmark" class="mr-1 inline-block h-3.5 w-3.5"></i>${stateData.bookmarked ? '已收藏' : '收藏'}
+                    </button>
+                    <button type="button" data-feed-action="share" data-feed-id="${item.id}" class="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1.5 font-semibold text-stone-600">
+                      <i data-lucide="share-2" class="mr-1 inline-block h-3.5 w-3.5"></i>分享${stateData.shareCount ? `· ${stateData.shareCount}` : ''}
+                    </button>
+                    <button type="button" data-feed-action="comment" data-feed-id="${item.id}" class="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1.5 font-semibold text-stone-600">
+                      <i data-lucide="message-square" class="mr-1 inline-block h-3.5 w-3.5"></i>评论${stateData.commentCount ? `· ${stateData.commentCount}` : ''}
+                    </button>
+                    <button type="button" data-feed-action="collect" data-feed-id="${item.id}" class="rounded-full border ${stateData.collected ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-stone-200 bg-stone-50 text-stone-600'} px-2.5 py-1.5 font-semibold">
+                      <i data-lucide="camera" class="mr-1 inline-block h-3.5 w-3.5"></i>${stateData.collected ? '已采集' : '采集'}
+                    </button>
+                    <button type="button" data-feed-action="checkin" data-feed-id="${item.id}" class="rounded-full border ${stateData.checkedIn ? 'border-sandGold bg-sandGold/10 text-deepTeal' : 'border-stone-200 bg-stone-50 text-stone-600'} px-2.5 py-1.5 font-semibold">
+                      <i data-lucide="map-pin" class="mr-1 inline-block h-3.5 w-3.5"></i>${stateData.checkedIn ? '已打卡' : '打卡'}
+                    </button>
+                    <button type="button" data-feed-action="verify" data-feed-id="${item.id}" class="rounded-full border ${stateData.verified ? 'border-stone-900 bg-stone-900 text-sandGold' : 'border-stone-200 bg-stone-50 text-stone-600'} px-2.5 py-1.5 font-semibold">
+                      <i data-lucide="shield-check" class="mr-1 inline-block h-3.5 w-3.5"></i>${stateData.verified ? '已认证' : '认证'}
+                    </button>
+                  </div>
+                </article>
+              `;
+            }).join('')}
+          </div>
+        `;
+        lucide.createIcons();
+      }
+
+      function handleAction(contentId, action) {
+        const contentState = ensureState(contentId);
+        const metadata = { source: 'discover-feed' };
+
+        if (action === 'bookmark') {
+          contentState.bookmarked = !contentState.bookmarked;
+          recordEvent(contentId, 'bookmark', metadata);
+        } else if (action === 'share') {
+          contentState.shared = true;
+          contentState.shareCount = (contentState.shareCount || 0) + 1;
+          recordEvent(contentId, 'share', metadata);
+          if (navigator.share) {
+            navigator.share({ title: '楚韵链迹', text: '我在楚韵链迹里发现了一个不错的文化遗产线索。' });
+          } else if (navigator.clipboard) {
+            navigator.clipboard.writeText('我在楚韵链迹中发现了一个值得关注的文化遗产线索。');
+          }
+        } else if (action === 'comment') {
+          const commentText = window.prompt('请输入你的评论内容：', '这个点位很值得继续深入采集。');
+          if (!commentText) return;
+          contentState.commented = true;
+          contentState.commentCount = (contentState.commentCount || 0) + 1;
+          contentState.comments.push(commentText);
+          recordEvent(contentId, 'comment', { commentText });
+        } else if (action === 'collect') {
+          contentState.collected = !contentState.collected;
+          markTaskCompleted('collect');
+          recordEvent(contentId, 'collect', metadata);
+          if (contentState.collected) {
+            switchTab('collect');
+          }
+        } else if (action === 'checkin') {
+          contentState.checkedIn = !contentState.checkedIn;
+          recordEvent(contentId, 'checkin', metadata);
+        } else if (action === 'verify') {
+          contentState.verified = !contentState.verified;
+          recordEvent(contentId, 'verify', metadata);
+        }
+
+        save();
+        render();
+        showToast('推荐流状态已更新', 'sparkles');
+      }
+
+      function bindEvents() {
+        const container = document.getElementById('discover-recommendations');
+        if (!container) return;
+        container.addEventListener('click', (event) => {
+          const button = event.target.closest('[data-feed-action]');
+          if (!button) return;
+          const contentId = button.getAttribute('data-feed-id');
+          const action = button.getAttribute('data-feed-action');
+          if (contentId && action) {
+            handleAction(contentId, action);
+          }
+        });
+      }
+
+      return {
+        init() {
+          load();
+          bindEvents();
+          render();
+        },
+        render,
+        handleAction,
+        getState: ensureState
+      };
+    })();
+
+    window.discoverFeedController = discoverFeedController;
+
+    const DAILY_QUIZ_REWARD = 50;
+    const DAILY_QUIZ_STATE_PREFIX = 'chulink-daily-quiz-';
+    const DAILY_QUIZ_REWARD_TOTAL_KEY = 'chulink-daily-quiz-reward-total';
+    const dailyQuizQuestions = [
+      {
+        id: 'ancient-pattern-record',
+        question: '采集古建筑纹样时，最应该优先补充哪类信息？',
+        options: [
+          '只拍一张远景照片，方便快速完成任务',
+          '补充纹样近景、所在位置、保存状态和尺度参照',
+          '尽量加滤镜，让图像看起来更清晰'
+        ],
+        correctIndex: 1,
+        explanation: '近景、位置、保存状态和尺度参照能帮助专家复核，也能减少后续补采。'
+      },
+      {
+        id: 'oral-history-consent',
+        question: '采集民间口述史前，第一步应该做什么？',
+        options: [
+          '说明用途并取得讲述者知情同意',
+          '直接录音，结束后再告知',
+          '先把故事改写得更有戏剧性'
+        ],
+        correctIndex: 0,
+        explanation: '提前说明采集目的、公开范围并取得同意，是尊重讲述者权益和保证资料可用性的基础。'
+      },
+      {
+        id: 'inscription-photo',
+        question: '记录古碑刻文字时，哪种做法更稳妥？',
+        options: [
+          '用粉笔描深字迹后拍摄',
+          '只记录自己能辨认的文字',
+          '在不触碰碑面的前提下拍摄全貌、细节和尺度参照'
+        ],
+        correctIndex: 2,
+        explanation: '非接触式记录可以避免二次损伤，全貌、细节与尺度参照则能保留完整的研究信息。'
+      },
+      {
+        id: 'original-file',
+        question: '为什么文化遗产采集应保留未经处理的原始文件？',
+        options: [
+          '原始文件更方便添加滤镜',
+          '原始文件能保留拍摄参数和时间等核验线索',
+          '原始文件一定比现场观察更准确'
+        ],
+        correctIndex: 1,
+        explanation: '未经处理的文件通常保留更多元数据和图像细节，有助于来源核验与后续研究。'
+      },
+      {
+        id: 'ancient-building-safety',
+        question: '发现古建筑构件松动时，采集者应该怎么做？',
+        options: [
+          '自行拆下构件带回保管',
+          '摇动构件判断牢固程度',
+          '保持安全距离记录现状，并向管理方报告'
+        ],
+        correctIndex: 2,
+        explanation: '采集者应优先保证人身和文物安全，通过非接触记录留下线索并交由专业人员处置。'
+      },
+      {
+        id: 'bronze-patina',
+        question: '拍摄带有锈层的老铜器时，哪种处理是正确的？',
+        options: [
+          '保持原状拍摄，不自行擦洗锈层',
+          '用清洁剂去除表面锈迹',
+          '刮开一小块确认金属颜色'
+        ],
+        correctIndex: 0,
+        explanation: '锈层可能包含年代、环境和保存状态信息，未经专业判断不应清洁或刮除。'
+      },
+      {
+        id: 'location-record',
+        question: '记录文化遗产点位时，除了定位坐标还应补充什么？',
+        options: [
+          '只写一个容易传播的简称',
+          '行政区划、附近地标和现场方向信息',
+          '隐藏所有现场环境信息'
+        ],
+        correctIndex: 1,
+        explanation: '行政区划、地标和方向信息可以与坐标相互印证，降低定位偏差造成的复核困难。'
+      }
+    ];
+
+    let activeDailyQuiz = null;
+
+    function getDailyQuizDateKey(date = new Date()) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function getDailyQuizForDate(date = new Date()) {
+      const localDayNumber = Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
+      return dailyQuizQuestions[localDayNumber % dailyQuizQuestions.length];
+    }
+
+    function getDailyQuizOptions() {
+      return [
+        document.getElementById('quiz-option-a'),
+        document.getElementById('quiz-option-b'),
+        document.getElementById('quiz-option-c')
+      ];
+    }
+
+    function readDailyQuizState(dateKey) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`${DAILY_QUIZ_STATE_PREFIX}${dateKey}`) || 'null');
+        return saved && typeof saved === 'object' ? saved : null;
+      } catch (error) {
+        console.warn('无法读取每日科普答题状态', error);
+        return null;
+      }
+    }
+
+    function saveDailyQuizState(dateKey, state) {
+      try {
+        localStorage.setItem(`${DAILY_QUIZ_STATE_PREFIX}${dateKey}`, JSON.stringify(state));
+      } catch (error) {
+        console.warn('无法保存每日科普答题状态', error);
+      }
+    }
+
+    function getDailyQuizRewardTotal() {
+      try {
+        const total = Number(localStorage.getItem(DAILY_QUIZ_REWARD_TOTAL_KEY) || 0);
+        return Number.isFinite(total) && total > 0 ? total : 0;
+      } catch (error) {
+        return 0;
+      }
+    }
+
+    function addDailyQuizReward() {
+      const nextTotal = getDailyQuizRewardTotal() + DAILY_QUIZ_REWARD;
+      try {
+        localStorage.setItem(DAILY_QUIZ_REWARD_TOTAL_KEY, String(nextTotal));
+      } catch (error) {
+        console.warn('无法保存每日科普积分', error);
+      }
+      updateUserPoints(DAILY_QUIZ_REWARD);
+    }
+
+    function showDailyQuizResult(question, state, shouldNotify = false) {
+      const options = getDailyQuizOptions();
+      const feedback = document.getElementById('quiz-feedback');
+      const updateTip = document.getElementById('quiz-update-tip');
+
+      options.forEach((option, index) => {
+        option.disabled = true;
+        option.className = 'w-full text-left bg-stone-100 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400';
+        if (index === question.correctIndex) {
+          option.className = 'w-full text-left bg-emerald-100 border border-emerald-300 rounded-lg px-3 py-2 text-xs text-emerald-800 font-bold';
+        }
+      });
+
+      if (!state.isCorrect && options[state.selectedIndex]) {
+        options[state.selectedIndex].className = 'w-full text-left bg-red-100 border border-red-300 rounded-lg px-3 py-2 text-xs text-red-800 font-bold';
+      }
+
+      if (state.isCorrect) {
+        feedback.className = 'mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-[11px] text-emerald-800 leading-tight';
+        feedback.innerHTML = `<strong>🟢 回答正确！</strong><br>${question.explanation}<br><span class="font-bold">积分 +${DAILY_QUIZ_REWARD} 已到账！</span>`;
+        updateTip.innerText = `今日已完成 · 已获得 ${DAILY_QUIZ_REWARD} 积分 · 明日 00:00 更新`;
+        if (shouldNotify) {
+          showToast(`每日答题成功！+${DAILY_QUIZ_REWARD} 积分已放入多宝阁`, 'award');
+        }
+      } else {
+        feedback.className = 'mt-3 bg-red-50 border border-red-200 rounded-lg p-2.5 text-[11px] text-red-800 leading-tight';
+        feedback.innerHTML = `<strong>🔴 今日回答未通过：</strong><br>${question.explanation}<br>明天会有一道新题，记得再来挑战。`;
+        updateTip.innerText = '今日已完成 · 明日 00:00 更新';
+        if (shouldNotify) {
+          showToast('已记录今日答题，查看解析继续学习', 'book-open');
+        }
+      }
+      feedback.classList.remove('hidden');
+    }
+
+    function initializeDailyCommunityQuiz() {
+      const today = new Date();
+      const dateKey = getDailyQuizDateKey(today);
+      const question = getDailyQuizForDate(today);
+      const dateLabel = document.getElementById('quiz-date');
+      const questionLabel = document.getElementById('quiz-question');
+      const options = getDailyQuizOptions();
+
+      dateLabel.innerText = `${today.getMonth() + 1}月${today.getDate()}日`;
+      questionLabel.innerText = question.question;
+      options.forEach((option, index) => {
+        option.innerText = question.options[index];
+        option.disabled = false;
+        option.className = 'w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700';
+      });
+
+      const savedState = readDailyQuizState(dateKey);
+      activeDailyQuiz = {
+        dateKey,
+        question,
+        state: savedState && savedState.questionId === question.id ? savedState : null
+      };
+
+      const savedRewardTotal = getDailyQuizRewardTotal();
+      if (savedRewardTotal > 0) {
+        updateUserPoints(savedRewardTotal);
+      }
+
+      if (activeDailyQuiz.state) {
+        showDailyQuizResult(question, activeDailyQuiz.state, false);
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
       lucide.createIcons();
+      loadOnboardingState();
+      updateTaskProgressUI();
+      initializeDailyCommunityQuiz();
       initHeritageMap();
+      loadApprovedSubmissionFeed();
+      discoverFeedController.init();
+      if (!onboardingState.seen) {
+        showOnboardingModal(false);
+      }
     });
 
     // 真实地图瓦片配置
@@ -1254,6 +2015,129 @@
       }[char]));
     }
 
+    function escapeJsString(value) {
+      return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ');
+    }
+
+    function formatPublicDate(value) {
+      if (!value) return '刚刚通过';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '刚刚通过';
+      return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+    }
+
+    function getPublicAssetLabel(item) {
+      const type = item.assetType || 'photo';
+      if (type === 'audio') return '荆楚民间口述';
+      if (type === 'video') return '现场视频记录';
+      return '图像采集素材';
+    }
+
+    function renderApprovedMedia(item) {
+      const url = item.thumbnailUrl || item.fileUrl || '';
+      const mime = item.mimeType || '';
+      const assetType = item.assetType || 'photo';
+
+      if (!url) {
+        return `
+          <div class="h-40 bg-stone-100 flex items-center justify-center text-stone-400">
+            <i data-lucide="image-off" class="w-8 h-8"></i>
+          </div>
+        `;
+      }
+
+      if (assetType === 'audio' || mime.startsWith('audio/')) {
+        return `
+          <div class="bg-stone-50 border border-stone-100 rounded-xl p-3 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-deepTeal text-sandGold flex items-center justify-center shrink-0">
+              <i data-lucide="file-audio" class="w-5 h-5"></i>
+            </div>
+            <audio src="${escapeHtml(item.fileUrl || url)}" controls class="w-full"></audio>
+          </div>
+        `;
+      }
+
+      if (assetType === 'video' || mime.startsWith('video/')) {
+        return `<video src="${escapeHtml(item.fileUrl || url)}" controls class="w-full max-h-56 bg-stone-950"></video>`;
+      }
+
+      return `<img src="${escapeHtml(url)}" alt="${escapeHtml(item.title || '用户通过素材')}" class="w-full h-40 object-cover">`;
+    }
+
+    function renderApprovedSubmissionCard(item) {
+      const title = item.title || '未命名采集素材';
+      const region = item.regionName || '湖北';
+      const scoreText = Number.isFinite(Number(item.qualityScore)) ? `${item.qualityScore}/100` : '人工复核';
+      const description = item.description || item.category || '该素材已通过管理员审核，进入公开展示区。';
+      const isVisual = !['audio', 'video'].includes(item.assetType || '');
+
+      return `
+        <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+          ${isVisual ? `
+            <div class="relative">
+              ${renderApprovedMedia(item)}
+              <div class="absolute top-2 right-2 bg-emerald-600/90 text-white text-[10px] px-2 py-0.5 rounded flex items-center font-semibold">
+                <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i> 管理员已通过
+              </div>
+              <div class="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded flex items-center backdrop-blur-xs">
+                <i data-lucide="map-pin" class="w-3 h-3 mr-0.5 text-sandGold"></i> ${escapeHtml(region)}
+              </div>
+            </div>
+          ` : `
+            <div class="p-3 pb-0">
+              <div class="flex justify-between items-start">
+                <span class="bg-sandGold/20 text-deepTeal text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center">
+                  <i data-lucide="${item.assetType === 'video' ? 'video' : 'mic'}" class="w-3 h-3 mr-0.5"></i> ${getPublicAssetLabel(item)}
+                </span>
+                <span class="text-stone-400 text-[10px]">通过于 ${formatPublicDate(item.reviewedAt || item.createdAt)}</span>
+              </div>
+              <div class="mt-3">${renderApprovedMedia(item)}</div>
+            </div>
+          `}
+          <div class="p-3">
+            <div class="flex items-start justify-between gap-2">
+              <h5 class="cultural-font font-bold text-stone-800 text-sm">${escapeHtml(title)}</h5>
+              <span class="shrink-0 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(scoreText)}</span>
+            </div>
+            <p class="text-xs text-stone-500 mt-1 line-clamp-2">${escapeHtml(description)}</p>
+            <div class="mt-3 bg-stone-50 rounded-lg p-2 border border-sandGold/20 flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-sandGold"></span>
+                <p class="text-[10px] text-deepTeal font-semibold">公开展示：${escapeHtml(region)} · ${escapeHtml(getPublicAssetLabel(item))}</p>
+              </div>
+              <span class="text-[10px] text-stone-400">采集人：${escapeHtml(item.contributorName || '楚韵链迹守护者')}</span>
+            </div>
+            <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-stone-100 text-xs">
+              <span class="text-stone-400 text-[10px]">通过于 ${formatPublicDate(item.reviewedAt || item.createdAt)}</span>
+              <button onclick="openDisputeModal('${escapeJsString(title)}', '${escapeJsString(region)}')" class="text-cinnabarRed font-bold flex items-center hover:underline">
+                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1"></i> 我有质疑/纠错
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    let curatedSubmissionFeedHtml = '';
+    function loadApprovedSubmissionFeed() {
+      const feed = document.getElementById('approved-submission-feed');
+      if (!feed || typeof fetch !== 'function') return;
+      if (!curatedSubmissionFeedHtml) {
+        curatedSubmissionFeedHtml = feed.innerHTML;
+      }
+
+      fetch(`${LOCAL_API_BASE_URL}/api/public/submissions?limit=10`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data || !data.success || !Array.isArray(data.items) || data.items.length === 0) return;
+          feed.innerHTML = `${data.items.map(renderApprovedSubmissionCard).join('')}${curatedSubmissionFeedHtml}`;
+          lucide.createIcons();
+        })
+        .catch(() => {
+          // Keep the curated example cards when the local backend is not running.
+        });
+    }
+
     function createLandmarkPopup(item) {
       return `
         <div>
@@ -1364,6 +2248,10 @@
       if (currentNav && tabId !== 'collect') {
         currentNav.classList.remove('text-stone-400');
         currentNav.classList.add('text-sandGold');
+      }
+
+      if (tabId === 'discover' && window.discoverFeedController) {
+        window.discoverFeedController.render();
       }
 
       if (tabId === 'map') {
@@ -1479,6 +2367,7 @@
     let communityRouteProgress = 0;
 
     function joinCommunityActivity(name) {
+      markTaskCompleted('activity');
       showToast(`已报名「${name}」，可从推荐路线开始探索。`, 'ticket-check');
     }
 
@@ -1507,42 +2396,410 @@
       }, 120);
     }
 
-    function answerCommunityQuiz(btn, isCorrect) {
-      const feedback = document.getElementById('quiz-feedback');
-      const optA = document.getElementById('quiz-option-a');
-      const optB = document.getElementById('quiz-option-b');
-      const optC = document.getElementById('quiz-option-c');
+    function answerCommunityQuiz(selectedIndex) {
+      if (!activeDailyQuiz || activeDailyQuiz.state) return;
 
-      [optA, optB, optC].forEach(opt => {
-        opt.disabled = true;
-        opt.className = "w-full text-left bg-stone-100 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400";
-      });
+      markTaskCompleted('activity');
+      const question = activeDailyQuiz.question;
+      const state = {
+        questionId: question.id,
+        selectedIndex,
+        isCorrect: selectedIndex === question.correctIndex,
+        answeredAt: new Date().toISOString()
+      };
 
-      if (isCorrect) {
-        btn.className = "w-full text-left bg-emerald-100 border border-emerald-300 rounded-lg px-3 py-2 text-xs text-emerald-800 font-bold";
-        feedback.className = "mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-[11px] text-emerald-800 leading-tight";
-        feedback.innerHTML = `<strong>🟢 回答正确！</strong><br>提供多角度细节近景图、尺度参照物（如硬币/笔）并保证 GPS 抗篡改水印已锁定，能直接提高馆藏相似度对比精准度，并帮助学者复核。积分 +50 已到账！`;
-        updateUserPoints(50);
-        showToast('答题闯关成功！+50 积分已放入多宝阁', 'award');
-      } else {
-        btn.className = "w-full text-left bg-red-100 border border-red-300 rounded-lg px-3 py-2 text-xs text-red-800 font-bold";
-        feedback.className = "mt-3 bg-red-50 border border-red-200 rounded-lg p-2.5 text-[11px] text-red-800 leading-tight";
-        feedback.innerHTML = `<strong>🔴 选择不当：</strong><br>这会给系统考证和数字水印锁源增加极大难度。请刷新本页后重新挑战！`;
+      activeDailyQuiz.state = state;
+      saveDailyQuizState(activeDailyQuiz.dateKey, state);
+      if (state.isCorrect) {
+        addDailyQuizReward();
       }
-      feedback.classList.remove('hidden');
+      showDailyQuizResult(question, state, true);
     }
 
     function openLearningTip(title) {
       showToast(`已打开「${title}」速学卡，完成后可获得 20 积分。`, 'graduation-cap');
     }
 
-    // 4. 双视角文化脉络图谱
-    function showGraphModal(item, museum) {
-      document.getElementById('graph-modal').classList.remove('hidden');
+    // 4. 证据驱动的文化脉络图谱
+    const culturalGraphRegistry = {
+      'pengjiazhai-stilt': {
+        id: 'pengjiazhai-stilt',
+        title: '彭家寨传统吊脚楼',
+        location: '恩施宣恩彭家寨',
+        overallScores: { craft: 90, region: 88, period: 83, evidence: 76 },
+        verifiedCount: 3,
+        relationCount: 5,
+        rootNodeId: 'pengjiazhai-root',
+        perspectives: {
+          craft: {
+            label: '技艺关系',
+            caption: '从梁架、榫卯和干栏形态观察营造技艺关联',
+            nodeIds: ['pengjiazhai-root', 'craft-frame', 'craft-joint', 'craft-ganlan']
+          },
+          museum: {
+            label: '馆藏对照',
+            caption: '区分社区实证档案与仍待补齐编号的馆藏线索',
+            nodeIds: ['pengjiazhai-root', 'archive-community', 'museum-reference']
+          }
+        },
+        nodes: {
+          'pengjiazhai-root': {
+            id: 'pengjiazhai-root',
+            shortLabel: '彭家寨|吊脚楼',
+            title: '彭家寨传统吊脚楼',
+            category: '社区采集点',
+            status: 'verified',
+            description: '本次大众采集形成图像、定位和保存状态记录，是整张图谱的现场实证起点。',
+            scores: { craft: 90, region: 96, period: 72, evidence: 92 },
+            evidence: [
+              { text: '现场全景与构件细节影像', source: '社区认证采集 · 9 张', verified: true },
+              { text: '采集位置与拍摄时间记录', source: 'GPS 与原始文件元数据', verified: true }
+            ]
+          },
+          'craft-frame': {
+            id: 'craft-frame',
+            shortLabel: '穿斗式|木构架',
+            title: '穿斗式木构架',
+            category: '技艺关系',
+            status: 'verified',
+            description: '立柱、穿枋与梁架的连接方式在现场影像中具有连续可辨识特征。',
+            scores: { craft: 94, region: 86, period: 74, evidence: 88 },
+            evidence: [
+              { text: '梁柱受力结构与穿枋位置可辨', source: '现场构架照片 · 3 张', verified: true },
+              { text: '构件连接方式人工复核通过', source: '社区审核记录 · CHU-EN-024', verified: true }
+            ]
+          },
+          'craft-joint': {
+            id: 'craft-joint',
+            shortLabel: '榫卯|节点',
+            title: '榫卯节点形态',
+            category: '技艺关系',
+            status: 'verified',
+            description: '柱、枋交接部位保留多处非金属连接节点，可与梁架结构形成相互印证。',
+            scores: { craft: 92, region: 80, period: 76, evidence: 86 },
+            evidence: [
+              { text: '柱枋交接节点近景', source: '现场细节照片 · 6 张', verified: true },
+              { text: '尺度参照和保存状态说明', source: '采集者补充记录', verified: true }
+            ]
+          },
+          'craft-ganlan': {
+            id: 'craft-ganlan',
+            shortLabel: '干栏式|形态',
+            title: '干栏式建筑形态',
+            category: '技艺关系',
+            status: 'pending',
+            description: '建筑依地形架空的外观特征与干栏式形态接近，但内部结构仍需测绘资料确认。',
+            scores: { craft: 84, region: 88, period: 65, evidence: 62 },
+            evidence: [
+              { text: '架空层与坡地适应特征', source: 'AI 形态识别 · 待人工复核', verified: false },
+              { text: '内部结构测绘数据尚未采集', source: '证据缺口', verified: false }
+            ]
+          },
+          'archive-community': {
+            id: 'archive-community',
+            shortLabel: '社区数字|采集档案',
+            title: '社区数字采集档案',
+            category: '馆藏对照',
+            status: 'verified',
+            description: '现场素材、定位和审核记录已形成可追溯数字档案，可作为后续馆藏比对的可靠基线。',
+            scores: { craft: 88, region: 94, period: 72, evidence: 96 },
+            evidence: [
+              { text: '原始素材与审核结果已绑定', source: '楚韵链迹数字档案', verified: true },
+              { text: '采集来源和时间可追溯', source: '防篡改采集记录', verified: true }
+            ]
+          },
+          'museum-reference': {
+            id: 'museum-reference',
+            shortLabel: '民族民俗|馆藏线索',
+            title: '民族民俗类馆藏比对线索',
+            category: '馆藏对照',
+            status: 'pending',
+            description: '当前仅完成目录关键词和图像特征初筛，尚未取得可公开核验的具体馆藏编号。',
+            scores: { craft: 74, region: 70, period: 58, evidence: 48 },
+            evidence: [
+              { text: '“木构、榫卯、土家营造”关键词命中', source: '目录初筛 · AI 生成线索', verified: false },
+              { text: '具体馆藏名称与编号待补齐', source: '证据缺口', verified: false }
+            ]
+          }
+        },
+        relations: [
+          { source: 'pengjiazhai-root', target: 'craft-frame', perspective: 'craft', label: '梁架结构', status: 'verified' },
+          { source: 'pengjiazhai-root', target: 'craft-joint', perspective: 'craft', label: '连接节点', status: 'verified' },
+          { source: 'pengjiazhai-root', target: 'craft-ganlan', perspective: 'craft', label: '形态推测', status: 'pending' },
+          { source: 'pengjiazhai-root', target: 'archive-community', perspective: 'museum', label: '数字存证', status: 'verified' },
+          { source: 'pengjiazhai-root', target: 'museum-reference', perspective: 'museum', label: '目录初筛', status: 'pending' }
+        ]
+      }
+    };
+
+    let currentCulturalGraph = null;
+    let activeGraphPerspective = 'craft';
+    let activeGraphNodeId = null;
+
+    function calculateGraphConfidence(scores) {
+      return Math.round(
+        scores.craft * 0.4 +
+        scores.region * 0.25 +
+        scores.period * 0.2 +
+        scores.evidence * 0.15
+      );
+    }
+
+    function getGraphNodePositions(nodeIds, rootNodeId) {
+      const secondaryIds = nodeIds.filter(id => id !== rootNodeId);
+      const positions = { [rootNodeId]: { x: 150, y: 157 } };
+      const secondaryPositions = secondaryIds.length === 3
+        ? [{ x: 49, y: 69 }, { x: 150, y: 56 }, { x: 251, y: 69 }]
+        : secondaryIds.length === 2
+          ? [{ x: 80, y: 68 }, { x: 220, y: 68 }]
+          : [{ x: 150, y: 64 }];
+
+      secondaryIds.forEach((id, index) => {
+        positions[id] = secondaryPositions[index];
+      });
+      return positions;
+    }
+
+    function getGraphNodeLabelLines(node) {
+      if (node.shortLabel && node.shortLabel.includes('|')) {
+        return node.shortLabel.split('|').slice(0, 2);
+      }
+      const label = node.shortLabel || node.title;
+      return label.length > 6 ? [label.slice(0, 6), label.slice(6, 12)] : [label];
+    }
+
+    function renderGraphNodeLabel(node, isRoot) {
+      const lines = getGraphNodeLabelLines(node);
+      const textColor = isRoot ? '#233f3e' : '#f5dfb6';
+      const startY = lines.length === 1 ? 3 : -3;
+      return `<text text-anchor="middle" y="${startY}" fill="${textColor}" font-size="${isRoot ? 9.1 : 8.3}" font-family="'Noto Serif SC', serif" font-weight="700" letter-spacing="0.45" pointer-events="none">${lines.map((line, index) => `<tspan x="0" dy="${index === 0 ? 0 : 11}">${escapeHtml(line)}</tspan>`).join('')}</text>`;
+    }
+
+    function getGraphEdgeGeometry(source, target) {
+      const dx = target.x - source.x;
+      const dy = target.y - source.y;
+      const distance = Math.max(Math.hypot(dx, dy), 1);
+      const unitX = dx / distance;
+      const unitY = dy / distance;
+      const start = { x: source.x + unitX * 33, y: source.y + unitY * 33 };
+      const end = { x: target.x - unitX * 27, y: target.y - unitY * 27 };
+      const controlOne = { x: start.x, y: start.y - 24 };
+      const controlTwo = { x: end.x, y: end.y + 25 };
+      return {
+        path: `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} C ${controlOne.x.toFixed(1)} ${controlOne.y.toFixed(1)}, ${controlTwo.x.toFixed(1)} ${controlTwo.y.toFixed(1)}, ${end.x.toFixed(1)} ${end.y.toFixed(1)}`,
+        label: {
+          x: (start.x + 3 * controlOne.x + 3 * controlTwo.x + end.x) / 8,
+          y: (start.y + 3 * controlOne.y + 3 * controlTwo.y + end.y) / 8 - 1
+        }
+      };
+    }
+
+    function renderCulturalGraphSvg() {
+      if (!currentCulturalGraph) return;
+      const svg = document.getElementById('cultural-graph-svg');
+      const perspective = currentCulturalGraph.perspectives[activeGraphPerspective];
+      const positions = getGraphNodePositions(perspective.nodeIds, currentCulturalGraph.rootNodeId);
+      const relations = currentCulturalGraph.relations.filter(relation => relation.perspective === activeGraphPerspective);
+      const theme = activeGraphPerspective === 'craft'
+        ? { center: '#315c5c', edge: '#102f31', node: 'graph-craft-plaque', accent: '#d6b775' }
+        : { center: '#534235', edge: '#182e2d', node: 'graph-museum-plaque', accent: '#d2a96b' };
+      svg.setAttribute('aria-label', `${currentCulturalGraph.title} · ${perspective.label}`);
+
+      const edgeMarkup = relations.map(relation => {
+        const source = positions[relation.source];
+        const target = positions[relation.target];
+        const isActive = activeGraphNodeId === relation.source || activeGraphNodeId === relation.target;
+        const isVerified = relation.status === 'verified';
+        const geometry = getGraphEdgeGeometry(source, target);
+        const edgeColor = isActive ? '#f4dca8' : isVerified ? '#d6b775' : '#c75a4c';
+        const labelFill = isVerified ? '#f1dfbc' : '#efd1c5';
+        const labelWidth = Math.max(38, relation.label.length * 8.5 + 12);
+        const markerId = isActive ? 'graph-arrow-active' : isVerified ? 'graph-arrow-verified' : 'graph-arrow-pending';
+        return `
+          <path d="${geometry.path}" fill="none" stroke="${edgeColor}" stroke-width="${isActive ? 2.2 : 1.45}" stroke-linecap="round" ${isVerified ? '' : 'stroke-dasharray="4 4"'} opacity="${isActive ? 1 : 0.78}" marker-end="url(#${markerId})"/>
+          <g transform="translate(${geometry.label.x.toFixed(1)}, ${geometry.label.y.toFixed(1)})" pointer-events="none">
+            <rect x="-${labelWidth / 2}" y="-7" width="${labelWidth}" height="14" rx="3" fill="${labelFill}" fill-opacity="0.96"/>
+            <text text-anchor="middle" y="2.8" fill="#294343" font-size="7.2" font-family="'Noto Serif SC', serif" font-weight="700" letter-spacing="0.25">${escapeHtml(relation.label)}</text>
+          </g>
+        `;
+      }).join('');
+
+      const nodeMarkup = perspective.nodeIds.map(nodeId => {
+        const node = currentCulturalGraph.nodes[nodeId];
+        const position = positions[nodeId];
+        const isRoot = nodeId === currentCulturalGraph.rootNodeId;
+        const isActive = nodeId === activeGraphNodeId;
+        const isVerified = node.status === 'verified';
+        const statusColor = isVerified ? '#b99358' : '#a93b34';
+        const stampText = isVerified ? '证' : '待';
+        const shape = isRoot
+          ? `
+            <circle r="32" fill="url(#graph-root-seal)" stroke="${isActive ? '#f7e6bf' : '#d2af70'}" stroke-width="${isActive ? 2.3 : 1.5}"/>
+            <circle r="27.5" fill="none" stroke="#8c332d" stroke-width="0.65" stroke-opacity="0.42"/>
+          `
+          : `
+            <path d="M -32 -20 H 32 L 38 -14 V 14 L 32 20 H -32 L -38 14 V -14 Z" fill="url(#${theme.node})" stroke="${isActive ? '#f7e2b3' : statusColor}" stroke-width="${isActive ? 2 : 1.2}"/>
+          `;
+        const activeFrame = isRoot
+          ? `<circle r="39" fill="none" stroke="#f0cf8d" stroke-width="0.9" stroke-opacity="0.8"/>`
+          : `<path d="M -36 -25 H 36 L 44 -17 V 17 L 36 25 H -36 L -44 17 V -17 Z" fill="none" stroke="#f0cf8d" stroke-width="0.8" stroke-opacity="0.85"/>`;
+        const stampX = isRoot ? 22 : 29;
+        const stampY = isRoot ? -26 : -24;
+        return `
+          <g transform="translate(${position.x}, ${position.y})" onclick="selectGraphNode('${escapeJsString(nodeId)}')" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); selectGraphNode('${escapeJsString(nodeId)}'); }" class="cursor-pointer" role="button" tabindex="0" aria-label="${escapeHtml(node.title)}">
+            <title>${escapeHtml(node.title)} · ${isVerified ? '已有证据' : '待核验'}</title>
+            ${isActive ? activeFrame : ''}
+            ${shape}
+            ${renderGraphNodeLabel(node, isRoot)}
+            <rect x="${stampX}" y="${stampY}" width="12" height="12" rx="1.5" fill="${statusColor}"/>
+            <text x="${stampX + 6}" y="${stampY + 8.7}" text-anchor="middle" fill="#fff1d5" font-size="6.5" font-family="'Noto Serif SC', serif" font-weight="700" pointer-events="none">${stampText}</text>
+          </g>
+        `;
+      }).join('');
+
+      svg.innerHTML = `
+        <defs>
+          <radialGradient id="graph-bg" cx="50%" cy="68%" r="82%">
+            <stop offset="0%" stop-color="${theme.center}"/>
+            <stop offset="62%" stop-color="#173f40"/>
+            <stop offset="100%" stop-color="${theme.edge}"/>
+          </radialGradient>
+          <linearGradient id="graph-root-seal" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f5e8ca"/>
+            <stop offset="62%" stop-color="#d9bd86"/>
+            <stop offset="100%" stop-color="#b99055"/>
+          </linearGradient>
+          <linearGradient id="graph-craft-plaque" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#376565"/>
+            <stop offset="100%" stop-color="#173b3d"/>
+          </linearGradient>
+          <linearGradient id="graph-museum-plaque" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#684f3d"/>
+            <stop offset="100%" stop-color="#372d27"/>
+          </linearGradient>
+          <marker id="graph-arrow-verified" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 Z" fill="#d6b775"/>
+          </marker>
+          <marker id="graph-arrow-pending" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 Z" fill="#c75a4c"/>
+          </marker>
+          <marker id="graph-arrow-active" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 Z" fill="#f4dca8"/>
+          </marker>
+        </defs>
+        <rect width="300" height="220" fill="url(#graph-bg)"/>
+        <g fill="none" stroke="${theme.accent}" stroke-linecap="round">
+          <path d="M -8 55 H 5 C 7 44 17 40 25 46 C 31 34 48 38 49 49 C 58 44 69 48 70 55 H 87" stroke-width="0.7" stroke-opacity="0.11"/>
+          <g transform="translate(300 0) scale(-1 1)">
+            <path d="M -8 55 H 5 C 7 44 17 40 25 46 C 31 34 48 38 49 49 C 58 44 69 48 70 55 H 87" stroke-width="0.7" stroke-opacity="0.11"/>
+          </g>
+        </g>
+        ${edgeMarkup}
+        ${nodeMarkup}
+      `;
+    }
+
+    function renderGraphNodeDetail() {
+      if (!currentCulturalGraph || !activeGraphNodeId) return;
+      const node = currentCulturalGraph.nodes[activeGraphNodeId];
+      const isVerified = node.status === 'verified';
+      document.getElementById('graph-node-category').innerText = node.category;
+      document.getElementById('graph-node-title').innerText = node.title;
+      document.getElementById('graph-node-description').innerText = node.description;
+
+      const status = document.getElementById('graph-node-status');
+      status.innerText = `${isVerified ? '已有证据' : '待核验'} · ${calculateGraphConfidence(node.scores)}%`;
+      status.className = isVerified
+        ? 'rounded-sm border border-[#c7a76c] bg-[#f3e4c7] px-2 py-1 text-[9px] font-bold text-deepTeal'
+        : 'rounded-sm border border-[#c98d80] bg-[#f2d7cf] px-2 py-1 text-[9px] font-bold text-cinnabarRed';
+
+      const scoreLabels = [
+        ['craft', '技艺'],
+        ['region', '地域'],
+        ['period', '年代'],
+        ['evidence', '证据']
+      ];
+      document.getElementById('graph-confidence-breakdown').innerHTML = scoreLabels.map(([key, label]) => `
+        <div class="rounded-md bg-[#f4ead8] p-1.5 text-center">
+          <p class="cultural-font text-[8px] text-[#836f51]">${label}</p>
+          <p class="text-[10px] font-black ${node.scores[key] >= 80 ? 'text-deepTeal' : node.scores[key] >= 60 ? 'text-[#9b733b]' : 'text-cinnabarRed'}">${node.scores[key]}%</p>
+        </div>
+      `).join('');
+
+      document.getElementById('graph-evidence-list').innerHTML = node.evidence.map(item => `
+        <div class="flex items-start gap-2 rounded-md border-l-2 ${item.verified ? 'border-deepTeal bg-[#f7efe1]' : 'border-cinnabarRed bg-[#f8ebe6]'} p-2">
+          <span class="cultural-font mt-0.5 shrink-0 text-[9px] font-bold ${item.verified ? 'text-deepTeal' : 'text-cinnabarRed'}">${item.verified ? '证' : '待'}</span>
+          <div>
+            <p class="text-[10px] font-semibold text-stone-700">${escapeHtml(item.text)}</p>
+            <p class="mt-0.5 text-[9px] text-stone-400">${escapeHtml(item.source)}</p>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function updateGraphPerspectiveTabs() {
+      Object.keys(currentCulturalGraph.perspectives).forEach(perspective => {
+        const button = document.getElementById(`btn-perspective-${perspective}`);
+        if (!button) return;
+        const isActive = perspective === activeGraphPerspective;
+        button.className = isActive
+          ? 'flex items-center justify-center gap-1.5 rounded-lg bg-deepTeal px-2 py-2 font-bold text-[#f5dfb6] transition-all'
+          : 'flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 font-medium text-[#715f45] transition-all hover:bg-[#f8edd9]/70';
+        button.setAttribute('aria-pressed', String(isActive));
+      });
+    }
+
+    function renderCulturalGraph() {
+      if (!currentCulturalGraph) return;
+      const perspective = currentCulturalGraph.perspectives[activeGraphPerspective];
+      document.getElementById('graph-modal-subtitle').innerText = `${currentCulturalGraph.title} · ${currentCulturalGraph.relationCount} 条关联`;
+      document.getElementById('graph-relation-count').innerText = currentCulturalGraph.relationCount;
+      document.getElementById('graph-verified-count').innerText = currentCulturalGraph.verifiedCount;
+      document.getElementById('graph-overall-confidence').innerText = `${calculateGraphConfidence(currentCulturalGraph.overallScores)}%`;
+      document.getElementById('graph-perspective-label').innerText = perspective.label;
+      document.getElementById('graph-perspective-caption').innerText = `${perspective.caption} · 点击节点查看证据`;
+      updateGraphPerspectiveTabs();
+      renderCulturalGraphSvg();
+      renderGraphNodeDetail();
+    }
+
+    function setGraphPerspective(perspective) {
+      if (!currentCulturalGraph || !currentCulturalGraph.perspectives[perspective]) return;
+      activeGraphPerspective = perspective;
+      const nodeIds = currentCulturalGraph.perspectives[perspective].nodeIds;
+      activeGraphNodeId = nodeIds.find(id => id !== currentCulturalGraph.rootNodeId) || currentCulturalGraph.rootNodeId;
+      renderCulturalGraph();
+    }
+
+    function selectGraphNode(nodeId) {
+      if (!currentCulturalGraph || !currentCulturalGraph.nodes[nodeId]) return;
+      activeGraphNodeId = nodeId;
+      renderCulturalGraphSvg();
+      renderGraphNodeDetail();
+    }
+
+    function showGraphModal(graphId = 'pengjiazhai-stilt') {
+      currentCulturalGraph = culturalGraphRegistry[graphId] || culturalGraphRegistry['pengjiazhai-stilt'];
+      activeGraphPerspective = 'craft';
+      activeGraphNodeId = currentCulturalGraph.perspectives.craft.nodeIds.find(id => id !== currentCulturalGraph.rootNodeId);
+      renderCulturalGraph();
+      const modal = document.getElementById('graph-modal');
+      modal.classList.remove('hidden');
+      const panel = modal.querySelector('.phone-scroll');
+      if (panel) panel.scrollTop = 0;
+      lucide.createIcons();
     }
 
     function closeGraphModal() {
       document.getElementById('graph-modal').classList.add('hidden');
+    }
+
+    function openGraphDispute() {
+      if (!currentCulturalGraph) return;
+      const node = currentCulturalGraph.nodes[activeGraphNodeId];
+      closeGraphModal();
+      openDisputeModal(`${currentCulturalGraph.title} ↔ ${node.title}`, currentCulturalGraph.location);
     }
 
     // 5. 纠错/质疑提报闭环
@@ -1615,7 +2872,11 @@
           if (geoText) geoText.innerText = '浏览器真实定位坐标';
           if (coordText) coordText.innerText = `${coordLabel} (系统定位返回${accuracyLabel})`;
           if (topGPS) topGPS.innerText = '真实定位';
+          markTaskCompleted('location');
           updateMapUserLocation(longitude, latitude, accuracy);
+          if (window.discoverFeedController) {
+            window.discoverFeedController.render();
+          }
           showToast('真实 GPS / 系统定位已更新成功！', 'map-pin');
         },
         (error) => {
@@ -2236,6 +3497,8 @@
         return;
       }
       
+      markTaskCompleted('collect');
+
       const aiModal = document.getElementById('ai-check-modal');
       aiModal.classList.remove('hidden');
       resetAiModalState();
