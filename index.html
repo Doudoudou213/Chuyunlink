@@ -125,6 +125,68 @@
       padding: 7px 10px;
       cursor: pointer;
     }
+    .route-marker {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 3px solid #fff;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.26);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #2C4C4E;
+      color: #C5A880;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .route-marker.origin {
+      background: #962D2D;
+      color: #fff;
+      animation: map-pulse 1.7s ease-in-out infinite;
+    }
+    .route-marker.muted {
+      width: 22px;
+      height: 22px;
+      border-width: 2px;
+      background: #8a8277;
+      color: #fff;
+      font-size: 10px;
+    }
+    .route-arrow-marker {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 2px solid #fff;
+      background: var(--route-color, #2C4C4E);
+      box-shadow: 0 5px 14px rgba(0,0,0,0.24);
+      position: relative;
+    }
+    .route-arrow-marker::before {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 5px;
+      width: 8px;
+      height: 8px;
+      border-top: 3px solid #fff;
+      border-right: 3px solid #fff;
+      transform: rotate(45deg);
+    }
+    .route-popup-kv {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin: 8px 0;
+    }
+    .route-popup-kv span {
+      display: block;
+      border-radius: 8px;
+      background: #f7f3ea;
+      padding: 6px 7px;
+      color: #2C4C4E;
+      font-size: 11px;
+      font-weight: 800;
+    }
     .toast-notification {
       top: 52px;
       width: calc(100% - 32px);
@@ -148,6 +210,14 @@
       0% { transform: translate(-50%, -120%) scale(0.96); opacity: 0; }
       70% { transform: translate(-50%, 4px) scale(1.01); opacity: 1; }
       100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+    }
+    @keyframes activity-success-pop {
+      0% { transform: translateY(14px) scale(0.92); opacity: 0; }
+      70% { transform: translateY(-2px) scale(1.02); opacity: 1; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .activity-success-card {
+      animation: activity-success-pop 360ms cubic-bezier(0.18, 0.9, 0.2, 1.08);
     }
     #audio-record-panel.recording .audio-wave-bar {
       animation: audio-wave 680ms ease-in-out infinite alternate;
@@ -210,14 +280,22 @@
       
       <!-- 页面 1：发现 (DISCOVER) -->
       <section id="view-discover" class="page-view space-y-4 py-4">
-        <div class="px-4">
+        <div id="onboarding-card" class="px-4">
           <div class="rounded-2xl border border-sandGold/20 bg-gradient-to-r from-deepTeal via-emerald-900 to-stone-900 p-4 text-white shadow-sm">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-[10px] uppercase tracking-[0.24em] text-sandGold/80">新手引导</p>
                 <h3 class="cultural-font text-base font-bold text-sandGold mt-1">完成 4 个轻量任务，快速上手采集</h3>
               </div>
-              <button type="button" onclick="showOnboardingModal(true)" class="shrink-0 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-sandGold">查看引导</button>
+              <button type="button" onclick="dismissOnboardingGuide()" class="shrink-0 text-stone-300 hover:text-white" aria-label="关闭新手引导">
+                <i data-lucide="x" class="h-4 w-4"></i>
+              </button>
+            </div>
+            <div class="mt-3 flex gap-2">
+              <button type="button" onclick="startOnboardingLearning()" class="flex-1 rounded-xl bg-sandGold px-3 py-2 text-xs font-bold text-deepTeal">
+                <i data-lucide="play-circle" class="mr-1 inline-block h-4 w-4"></i> 开始学习
+              </button>
+              <button type="button" onclick="dismissOnboardingGuide()" class="flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-sandGold">关闭引导</button>
             </div>
             <div class="mt-3">
               <div class="h-2 w-full overflow-hidden rounded-full bg-white/20">
@@ -277,14 +355,15 @@
         <div class="px-4">
           <div class="flex items-center bg-stone-100 rounded-xl px-3 py-2 border border-stone-200">
             <i data-lucide="search" class="w-4 h-4 text-stone-400 mr-2"></i>
-            <input type="text" placeholder="寻找身边的楚地古建、土家口述、老物..." class="bg-transparent text-sm text-stone-800 outline-none w-full">
+            <input id="discover-search-input" type="text" oninput="renderDiscoverFeed()" placeholder="搜索景点、文物、技艺衍生线索..." class="bg-transparent text-sm text-stone-800 outline-none w-full">
           </div>
-          <!-- 分类滑块 -->
-          <div class="flex space-x-2 mt-3 overflow-x-auto pb-1 text-xs scrollbar-none">
-            <span class="px-3 py-1.5 bg-deepTeal text-sandGold rounded-full whitespace-nowrap cursor-pointer">全部遗迹</span>
-            <span class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full whitespace-nowrap cursor-pointer">楚风古建</span>
-            <span class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full whitespace-nowrap cursor-pointer">荆楚口述</span>
-            <span class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full whitespace-nowrap cursor-pointer">鄂地老物</span>
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <button id="discover-board-share" type="button" onclick="setDiscoverBoardFilter('share')" class="rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold shadow-sm">
+              <i data-lucide="sparkles" class="mr-1 inline-block h-3.5 w-3.5"></i> 完善科普
+            </button>
+            <button id="discover-board-needs" type="button" onclick="setDiscoverBoardFilter('needs')" class="rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-600 shadow-sm">
+              <i data-lucide="list-plus" class="mr-1 inline-block h-3.5 w-3.5"></i> 待补充
+            </button>
           </div>
         </div>
 
@@ -309,121 +388,35 @@
             </div>
           </div>
         </div>
-
-        <div id="discover-recommendations" class="px-4 space-y-3"></div>
-
-        <!-- 社区大众采集流 (瀑布流卡片) -->
-        <div class="px-4 space-y-3">
-          <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-            <i data-lucide="clock" class="w-4 h-4 mr-1 text-deepTeal"></i> 社区最新大众采集点
-          </h4>
-
-          <div id="approved-submission-feed" class="space-y-3">
-          <!-- 卡片 1 (图片古建类型) -->
-          <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
-            <div class="relative">
-              <img src="https://images.unsplash.com/photo-1599839619722-3975141122a1?auto=format&fit=crop&q=80&w=600" alt="古宅" class="w-full h-40 object-cover" onerror="this.src='https://images.unsplash.com/photo-1508333706533-1ab43ecb1606?q=80&w=400'">
-              <div class="absolute top-2 right-2 bg-emerald-600/90 text-white text-[10px] px-2 py-0.5 rounded flex items-center font-semibold">
-                <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i> AI & 专家双重已认证
-              </div>
-              <div class="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded flex items-center backdrop-blur-xs">
-                <i data-lucide="map-pin" class="w-3 h-3 mr-0.5 text-sandGold"></i> 恩施宣恩古寨
-              </div>
-            </div>
-            <div class="p-3">
-              <h5 class="cultural-font font-bold text-stone-800 text-sm">恩施土家彭家寨 · 传统吊脚楼榫卯</h5>
-              <p class="text-xs text-stone-500 mt-1 line-clamp-2">典型的干栏式吊脚楼，飞檐翘角，全木穿斗结构，部分木质构件出现干裂风化，急需数字建档与溯源。</p>
-              
-              <!-- 核心：图谱关联摘要 -->
-              <div class="mt-3 rounded-xl border border-sandGold/30 bg-gradient-to-br from-stone-50 to-amber-50/60 p-2.5">
-                <div class="flex items-start justify-between gap-2">
-                  <div class="flex items-start gap-2">
-                    <div class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-deepTeal text-sandGold">
-                      <i data-lucide="network" class="h-3.5 w-3.5"></i>
-                    </div>
-                    <div>
-                      <p class="text-[11px] font-bold text-deepTeal">文化关联图谱</p>
-                      <p class="mt-0.5 text-[10px] text-stone-500">5 条关联 · 3 条已有采集证据</p>
-                    </div>
-                  </div>
-                  <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">综合 86%</span>
-                </div>
-                <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-stone-200">
-                  <div class="h-full w-[86%] rounded-full bg-gradient-to-r from-deepTeal to-sandGold"></div>
-                </div>
-                <div class="mt-2 flex items-center justify-between gap-2">
-                  <p class="text-[9px] text-stone-500">技艺 90% · 地域 88% · 证据 76%</p>
-                  <button onclick="showGraphModal('pengjiazhai-stilt')" class="flex shrink-0 items-center rounded-lg bg-deepTeal px-2.5 py-1.5 text-[10px] font-bold text-sandGold">
-                    <i data-lucide="git-branch" class="mr-1 h-3 w-3"></i> 查看证据图谱
-                  </button>
-                </div>
-              </div>
-
-              <!-- 互动按钮 -->
-              <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-stone-100 text-xs">
-                <div class="flex items-center space-x-3 text-stone-500">
-                  <button class="flex items-center hover:text-deepTeal">
-                    <i data-lucide="thumbs-up" class="w-4 h-4 mr-1"></i> <span>28</span>
-                  </button>
-                  <button class="flex items-center hover:text-deepTeal">
-                    <i data-lucide="message-square" class="w-4 h-4 mr-1"></i> <span>4</span>
-                  </button>
-                </div>
-                <button onclick="openDisputeModal('土家彭家寨吊脚楼', '恩施宣恩彭家寨')" class="text-cinnabarRed font-bold flex items-center hover:underline">
-                  <i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1"></i> 我有质疑/纠错
-                </button>
-              </div>
-            </div>
+        <!-- 社区大众采集流 -->
+        <div class="px-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
+              <i data-lucide="radio" class="w-4 h-4 mr-1 text-deepTeal"></i> 社区实时大众采集点
+            </h4>
+            <span id="discover-live-status" class="flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+              <span class="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span> 实时更新中
+            </span>
           </div>
 
-          <!-- 卡片 2 (音频口述类型) -->
-          <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-3">
-            <div class="flex justify-between items-start">
-              <span class="bg-sandGold/20 text-deepTeal text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center">
-                <i data-lucide="mic" class="w-3 h-3 mr-0.5"></i> 荆楚民间口述
-              </span>
-              <span class="text-stone-400 text-[10px]">上传于 2026.06.18</span>
+          <div id="discover-share-section" class="space-y-2">
+            <div class="flex items-center justify-between">
+              <h5 class="flex items-center text-xs font-black text-deepTeal">
+                <i data-lucide="sparkles" class="mr-1.5 h-4 w-4 text-sandGold"></i> 完善度高 · 科普分享
+              </h5>
+              <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">可申诉</span>
             </div>
-            <h5 class="cultural-font font-bold text-stone-800 text-sm mt-2">神农架张爷爷口述：武当道茶手工制法</h5>
-            
-            <!-- 模拟音频播放组件 -->
-            <div class="mt-3 bg-stone-50 border border-stone-100 rounded-xl p-2.5 flex items-center space-x-3">
-              <button onclick="toggleAudio(this)" class="w-9 h-9 rounded-full bg-deepTeal text-sandGold flex items-center justify-center shrink-0 shadow">
-                <i data-lucide="play" class="w-5 h-5 ml-0.5"></i>
-              </button>
-              <div class="flex-1">
-                <!-- 模拟声波图 -->
-                <div class="flex items-end justify-between h-5 space-x-0.5 px-1">
-                  <div class="w-1 bg-stone-300 h-2"></div>
-                  <div class="w-1 bg-stone-300 h-4"></div>
-                  <div class="w-1 bg-stone-300 h-3"></div>
-                  <div class="w-1 bg-deepTeal h-5"></div>
-                  <div class="w-1 bg-deepTeal h-2"></div>
-                  <div class="w-1 bg-stone-300 h-4"></div>
-                  <div class="w-1 bg-stone-300 h-1"></div>
-                  <div class="w-1 bg-stone-300 h-3"></div>
-                  <div class="w-1 bg-stone-300 h-5"></div>
-                  <div class="w-1 bg-stone-300 h-2"></div>
-                  <div class="w-1 bg-stone-300 h-3"></div>
-                </div>
-                <div class="flex justify-between text-[9px] text-stone-400 mt-1">
-                  <span>0:00 / 1:12</span>
-                  <span class="text-emerald-600 font-semibold flex items-center">
-                    <i data-lucide="shield-check" class="w-3 h-3 mr-0.5"></i> 已注入隐形声纹水印
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <p class="text-xs text-stone-500 mt-2 line-clamp-2">“...采茶要在清明前。太阳刚露头，带露水的嫩芽最香。炒茶时，铁锅烧红，用武当道家特有的推揉手势发酵...”</p>
-            
-            <div class="mt-3 flex justify-between items-center text-xs">
-              <span class="text-stone-400 text-[10px]">采集人：志愿者·雷杰</span>
-              <button onclick="openDisputeModal('武当道茶手工制法', '神农架张爷爷')" class="text-cinnabarRed font-bold flex items-center hover:underline">
-                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1"></i> 发起质疑
-              </button>
-            </div>
+            <div id="discover-share-feed" class="space-y-3"></div>
           </div>
+
+          <div id="discover-needs-section" class="hidden space-y-2">
+            <div class="flex items-center justify-between">
+              <h5 class="flex items-center text-xs font-black text-cinnabarRed">
+                <i data-lucide="list-plus" class="mr-1.5 h-4 w-4"></i> 采集不足 · 等待补充
+              </h5>
+              <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">补充资料得积分</span>
+            </div>
+            <div id="discover-needs-feed" class="space-y-3"></div>
           </div>
         </div>
       </section>
@@ -445,6 +438,19 @@
             <button type="button" onclick="refreshGPS()" class="pointer-events-auto bg-deepTeal text-sandGold px-2 py-1 rounded-lg shadow text-[10px] font-bold flex items-center">
               <i data-lucide="locate-fixed" class="w-3 h-3 mr-1"></i> 定位
             </button>
+          </div>
+          <div id="map-route-panel" class="pointer-events-auto hidden absolute bottom-4 left-3 right-3 z-[402] rounded-2xl border border-stone-200 bg-white/95 p-3 shadow-2xl backdrop-blur-sm">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-[10px] font-black uppercase tracking-[0.16em] text-sandGold">路线方案</p>
+                <h4 id="map-route-title" class="cultural-font mt-0.5 truncate text-sm font-bold text-deepTeal">活动路线</h4>
+                <p id="map-route-subtitle" class="mt-0.5 text-[10px] leading-relaxed text-stone-500">点击点位查看用时与交通方式</p>
+              </div>
+              <button type="button" onclick="closeMapRoutePanel()" class="shrink-0 rounded-lg border border-stone-200 bg-stone-50 p-1.5 text-stone-500">
+                <i data-lucide="x" class="h-3.5 w-3.5"></i>
+              </button>
+            </div>
+            <div id="map-route-options" class="mt-2 flex gap-2 overflow-x-auto pb-1"></div>
           </div>
           <!-- 伪造背景图 (以地图线条 and 地标模拟) -->
           <svg class="hidden absolute inset-0 w-full h-full text-stone-300 stroke-2 bg-stone-100" xmlns="http://www.w3.org/2000/svg">
@@ -492,8 +498,8 @@
       <!-- 页面 3：采集发布中心 (COLLECT) -->
       <section id="view-collect" class="page-view hidden space-y-4 py-4 px-4">
         <div class="text-center pb-2 border-b border-stone-100">
-          <h3 class="cultural-font text-base font-bold text-stone-800">荆楚非遗众包采集</h3>
-          <p class="text-xs text-stone-500 mt-1">上传碎片化素材，AI 算法将为您自动核验、存证及关联馆藏</p>
+          <h3 class="cultural-font text-base font-bold text-stone-800">记录一条文化线索</h3>
+          <p class="text-xs text-stone-500 mt-1">仅收录景点、文物或技艺衍生线索，需具备可复核的历史研究价值</p>
         </div>
 
         <form id="collect-form" onsubmit="handleUploadSubmit(event)" class="space-y-4">
@@ -520,7 +526,7 @@
               <label class="border-2 border-sandGold bg-sandGold/5 rounded-xl p-3 text-center cursor-pointer block" onclick="selectType(this)">
                 <input type="radio" name="asset-type" value="image" checked class="hidden font-medium">
                 <i data-lucide="image" class="w-6 h-6 mx-auto text-deepTeal"></i>
-                <span class="text-xs font-bold text-stone-800 block mt-1">拍古建老物</span>
+                <span class="text-xs font-bold text-stone-800 block mt-1">拍景点文物</span>
               </label>
               <label class="border-2 border-stone-200 bg-white rounded-xl p-3 text-center cursor-pointer block" onclick="selectType(this)">
                 <input type="radio" name="asset-type" value="audio" class="hidden">
@@ -615,7 +621,7 @@
           <!-- 4. 文本描述 -->
           <div>
             <label class="block text-xs font-bold text-stone-500 mb-1">4. 故事/现状描述 (选填)</label>
-            <textarea id="collect-description" name="description" placeholder="例如：此青铜残件是在自家翻土时刨出来的，听村里老人说这地界曾是楚国古墓群边缘..." rows="3" class="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs text-stone-800 outline-none focus:border-sandGold"></textarea>
+            <textarea id="collect-description" name="description" placeholder="例如：这件文物复制纹样源自曾侯乙编钟蟠螭纹，本次补充制作技艺、纹样局部与现场展示位置，便于后续历史脉络复核。" rows="3" class="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs text-stone-800 outline-none focus:border-sandGold"></textarea>
           </div>
 
           <!-- 5. 提交按钮 -->
@@ -706,29 +712,7 @@
             <span id="activity-progress" class="text-[10px] text-deepTeal font-semibold">0/3 已点亮</span>
           </div>
 
-          <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-3">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <h5 class="cultural-font font-bold text-stone-800 text-sm">武汉东湖文化半日线</h5>
-                <p class="text-[10px] text-stone-500 mt-1">适合新手：先学编钟与楚纹样，再去附近公共文化点补采。</p>
-              </div>
-              <span class="shrink-0 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">约 2.5h</span>
-            </div>
-            <div class="mt-3 grid grid-cols-3 gap-2 text-[10px]">
-              <button onclick="openCommunityMapPoint('hubei-museum')" class="bg-stone-50 border border-stone-200 rounded-lg p-2 text-left hover:border-sandGold transition-colors">
-                <p class="font-bold text-stone-800">1. 省博曾侯乙</p>
-                <p class="text-[9px] text-stone-500 mt-0.5">参观编钟获取认知</p>
-              </button>
-              <button onclick="openCommunityMapPoint('yellow-crane-tower')" class="bg-stone-50 border border-stone-200 rounded-lg p-2 text-left hover:border-sandGold transition-colors">
-                <p class="font-bold text-stone-800">2. 黄鹤楼碑刻</p>
-                <p class="text-[9px] text-stone-500 mt-0.5">拓片题刻细节采集</p>
-              </button>
-              <button onclick="switchTab('collect')" class="bg-stone-50 border border-stone-200 rounded-lg p-2 text-left hover:border-sandGold transition-colors">
-                <p class="font-bold text-deepTeal">3. 本地入链核验</p>
-                <p class="text-[9px] text-stone-500 mt-0.5">上传并获取可信印记</p>
-              </button>
-            </div>
-          </div>
+          <div id="community-route-card" class="bg-white rounded-xl border border-stone-200 shadow-sm p-3"></div>
         </div>
 
         <!-- 科普闯关 -->
@@ -766,27 +750,19 @@
 
         <!-- 微课程 -->
         <div class="px-4 space-y-3">
-          <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-            <i data-lucide="graduation-cap" class="w-4 h-4 mr-1 text-deepTeal"></i> 采集前速学
-          </h4>
-          
-          <div class="grid grid-cols-2 gap-3">
-            <button onclick="openLearningTip('纹样断代速记')" class="bg-white border border-stone-200 rounded-xl p-3 shadow-sm text-left">
-              <div class="bg-deepTeal text-sandGold w-8 h-8 rounded-lg flex items-center justify-center mb-2">
-                <i data-lucide="scan-line" class="w-4 h-4"></i>
-              </div>
-              <h5 class="cultural-font font-bold text-xs text-stone-800">楚式纹样怎么拍</h5>
-              <p class="text-[10px] text-stone-400 mt-1">6张样例 · +20积分</p>
-            </button>
-
-            <button onclick="openLearningTip('口述史收音要点')" class="bg-white border border-stone-200 rounded-xl p-3 shadow-sm text-left">
-              <div class="bg-deepTeal text-sandGold w-8 h-8 rounded-lg flex items-center justify-center mb-2">
-                <i data-lucide="file-audio" class="w-4 h-4"></i>
-              </div>
-              <h5 class="cultural-font font-bold text-xs text-stone-800">口述史防噪收音</h5>
-              <p class="text-[10px] text-stone-400 mt-1">3分钟 · +20积分</p>
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
+                <i data-lucide="graduation-cap" class="w-4 h-4 mr-1 text-deepTeal"></i> 采集前速学
+              </h4>
+              <p id="quick-learning-summary" class="mt-1 text-[10px] text-stone-400">每次登录随机展示 2 个知识点</p>
+            </div>
+            <button type="button" onclick="refreshQuickLearningSet(true)" class="shrink-0 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-deepTeal">
+              <i data-lucide="refresh-cw" class="mr-1 inline-block h-3.5 w-3.5"></i> 换一组
             </button>
           </div>
+
+          <div id="quick-learning-list" class="grid grid-cols-2 gap-3"></div>
         </div>
       </section>
 
@@ -817,18 +793,43 @@
             <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
               <i data-lucide="shield" class="w-4 h-4 mr-1 text-deepTeal"></i> 数字化守护者唯一徽章墙
             </h4>
-            <span class="text-[10px] bg-sandGold/20 text-deepTeal px-2 py-0.5 rounded-full font-bold">6/12 已点亮</span>
+            <span id="badge-wall-count" class="text-[10px] bg-sandGold/20 text-deepTeal px-2 py-0.5 rounded-full font-bold">成就待解锁</span>
           </div>
           <div class="bg-white border border-stone-200 rounded-xl p-3">
             <div class="flex items-center justify-between text-[10px] text-stone-500">
               <span>本周徽章进度</span>
-              <span class="font-bold text-deepTeal">还差 2 次有效采集升级</span>
+              <span id="badge-wall-progress-text" class="font-bold text-deepTeal">还差 550 积分解锁完整墙</span>
             </div>
             <div class="mt-2 h-2 bg-stone-100 rounded-full overflow-hidden">
-              <div class="h-full bg-sandGold rounded-full" style="width: 58%"></div>
+              <div id="badge-wall-progress-bar" class="h-full bg-sandGold rounded-full" style="width: 69%"></div>
             </div>
           </div>
-          <div class="grid grid-cols-4 gap-2 bg-stone-100 p-3 rounded-2xl border border-stone-200">
+          <div id="badge-wall-locked" class="bg-white border border-stone-200 rounded-2xl p-3 shadow-sm">
+            <div class="flex items-start gap-3">
+              <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-deepTeal text-sandGold">
+                <i data-lucide="lock-keyhole" class="h-5 w-5"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-bold text-stone-800">完整徽章墙将在采集积累后开放</p>
+                <p class="mt-1 text-[10px] leading-relaxed text-stone-500">先保留核心身份和最近两枚成就，避免个人页过早堆满徽章。完成更多有效采集、补充资料或路线打卡后解锁完整墙。</p>
+              </div>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <button type="button" onclick="openBadgeDetails('荆楚古寨首席发现官', '首次通过古建类素材审核', '2026-06-01')" class="rounded-xl border border-sandGold/30 bg-sandGold/10 p-2 text-left">
+                <div class="flex items-center gap-2">
+                  <span class="flex h-8 w-8 items-center justify-center rounded-full bg-sandGold text-deepTeal"><i data-lucide="landmark" class="h-4 w-4"></i></span>
+                  <span class="text-[10px] font-bold text-stone-800">发现官</span>
+                </div>
+              </button>
+              <button type="button" onclick="openBadgeDetails('楚风编钟传承使者', '完成馆藏知识学习任务', '2026-06-15')" class="rounded-xl border border-sandGold/30 bg-sandGold/10 p-2 text-left">
+                <div class="flex items-center gap-2">
+                  <span class="flex h-8 w-8 items-center justify-center rounded-full bg-sandGold text-deepTeal"><i data-lucide="history" class="h-4 w-4"></i></span>
+                  <span class="text-[10px] font-bold text-stone-800">传承使</span>
+                </div>
+              </button>
+            </div>
+          </div>
+          <div id="badge-wall-grid" class="hidden grid grid-cols-4 gap-2 bg-stone-100 p-3 rounded-2xl border border-stone-200">
             <div class="text-center cursor-pointer" onclick="openBadgeDetails('荆楚古寨首席发现官', '首次通过古建类素材审核', '2026-06-01')">
               <div class="w-12 h-12 mx-auto rounded-full bg-sandGold text-deepTeal border-2 border-white flex items-center justify-center shadow-md transform hover:scale-110 transition-transform">
                 <i data-lucide="landmark" class="w-6 h-6"></i>
@@ -983,6 +984,54 @@
   </div>
 
   <!-- -------------------- 交互模态弹窗系统 -------------------- -->
+
+  <!-- 活动报名成功弹窗 -->
+  <div id="activity-success-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs">
+    <div class="activity-success-card w-full max-w-[340px] rounded-[28px] border-2 border-sandGold bg-gradient-to-b from-stone-900 to-stone-950 p-5 text-center text-white shadow-2xl shadow-black/40">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-sandGold/50 bg-sandGold/15 text-sandGold shadow-lg shadow-sandGold/10">
+        <i data-lucide="ticket-check" class="h-8 w-8"></i>
+      </div>
+      <p class="mt-4 text-[10px] font-bold uppercase tracking-[0.18em] text-sandGold">报名成功</p>
+      <h4 id="activity-success-title" class="cultural-font mt-1 text-xl font-bold text-white">已报名活动</h4>
+      <p class="mt-2 text-xs leading-relaxed text-stone-300">已为你点亮活动任务，可从推荐路线开始探索并完成实地采集。</p>
+      <div class="mt-5 grid grid-cols-2 gap-2">
+        <button type="button" onclick="closeActivitySuccessModal()" class="rounded-xl border border-white/15 bg-white/10 py-2 text-xs font-bold text-stone-200">
+          知道了
+        </button>
+        <button type="button" onclick="goActivityRouteFromSuccess()" class="rounded-xl bg-sandGold py-2 text-xs font-black text-deepTeal">
+          查看路线
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 活动路线图谱弹窗 -->
+  <div id="activity-route-graph-modal" class="hidden fixed inset-0 z-[72] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs">
+    <div class="phone-scroll max-h-[92vh] w-full max-w-sm overflow-y-auto rounded-[28px] border border-stone-200 bg-white p-4 shadow-2xl">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-sandGold">路线图谱</p>
+          <h3 id="activity-route-graph-title" class="cultural-font mt-1 text-base font-bold text-deepTeal">活动路线</h3>
+          <p id="activity-route-graph-subtitle" class="mt-1 text-[10px] leading-relaxed text-stone-500">包含你的位置、任务点、交通方式与预估时间。</p>
+        </div>
+        <button type="button" onclick="closeActivityRouteGraphModal()" class="shrink-0 text-stone-400 hover:text-stone-600">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+      </div>
+
+      <div id="activity-route-graph-map" class="mt-3 overflow-hidden rounded-xl border border-stone-200 bg-stone-50"></div>
+      <div id="activity-route-graph-list" class="mt-3 space-y-2"></div>
+
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <button type="button" onclick="refreshGPS()" class="rounded-xl border border-stone-200 bg-stone-50 py-2 text-xs font-bold text-deepTeal">
+          刷新定位
+        </button>
+        <button type="button" onclick="openActiveRouteInMap()" class="rounded-xl bg-deepTeal py-2 text-xs font-black text-sandGold">
+          打开地图
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- 弹窗 1：证据驱动的文化脉络图谱 -->
   <div id="graph-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
@@ -1200,9 +1249,72 @@
       </div>
 
       <div class="mt-4 flex gap-2">
-        <button type="button" onclick="closeOnboardingModal()" class="flex-1 rounded-xl border border-stone-200 bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-600">先看看再说</button>
-        <button type="button" onclick="closeOnboardingModal()" class="flex-1 rounded-xl bg-deepTeal px-3 py-2 text-xs font-semibold text-sandGold">开始体验</button>
+        <button type="button" onclick="dismissOnboardingGuide()" class="flex-1 rounded-xl border border-stone-200 bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-600">关闭引导</button>
+        <button type="button" onclick="startFirstOnboardingTask()" class="flex-1 rounded-xl bg-deepTeal px-3 py-2 text-xs font-semibold text-sandGold">开始第一步</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 采集前速学弹层 -->
+  <div id="learning-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-4 backdrop-blur-xs">
+    <div class="w-full max-w-sm rounded-[28px] border border-stone-200 bg-white p-5 shadow-2xl">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <span id="learning-tag" class="rounded-full bg-sandGold/20 px-2 py-0.5 text-[10px] font-bold text-deepTeal">采集前</span>
+          <h3 id="learning-title" class="cultural-font mt-2 text-base font-bold text-deepTeal">采集前速学</h3>
+          <p id="learning-subtitle" class="mt-1 text-[11px] leading-relaxed text-stone-500">一张卡记住一个采集要点。</p>
+        </div>
+        <button type="button" onclick="closeLearningModule()" class="text-stone-400 hover:text-stone-600">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
+        <div id="learning-icon" class="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-deepTeal text-sandGold">
+          <i data-lucide="book-open-check" class="h-4 w-4"></i>
+        </div>
+        <p id="learning-tip" class="text-xs leading-relaxed text-stone-700">采集前先确认对象能否公开记录。</p>
+        <ul id="learning-points" class="mt-3 space-y-1.5 text-[11px] leading-relaxed text-stone-600"></ul>
+      </div>
+
+      <button id="learning-complete-btn" type="button" onclick="completeLearningModule()" class="mt-4 w-full rounded-xl bg-deepTeal px-3 py-2.5 text-xs font-bold text-sandGold">学会了 · 今日+10积分</button>
+    </div>
+  </div>
+
+  <!-- 发现页采集详情与补充资料弹层 -->
+  <div id="discover-detail-modal" class="hidden fixed inset-0 z-[65] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs">
+    <div class="phone-scroll max-h-[92vh] w-full max-w-sm overflow-y-auto rounded-[28px] border border-stone-200 bg-white p-4 shadow-2xl">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p id="discover-detail-region" class="text-[10px] font-bold uppercase tracking-[0.16em] text-sandGold">湖北</p>
+          <h3 id="discover-detail-title" class="cultural-font mt-1 text-base font-bold text-deepTeal">采集详情</h3>
+          <p id="discover-detail-meta" class="mt-1 text-[10px] text-stone-400">社区采集</p>
+        </div>
+        <button type="button" onclick="closeDiscoverDetailModal()" class="shrink-0 text-stone-400 hover:text-stone-600">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+      </div>
+
+      <div id="discover-detail-media" class="mt-3 overflow-hidden rounded-xl bg-stone-50"></div>
+      <p id="discover-detail-desc" class="mt-3 text-xs leading-relaxed text-stone-600"></p>
+      <div id="discover-science-content" class="mt-3"></div>
+
+      <div class="mt-3 rounded-xl border border-sandGold/25 bg-stone-50 p-3">
+        <p class="flex items-center text-[11px] font-bold text-deepTeal">
+          <i data-lucide="landmark" class="mr-1.5 h-3.5 w-3.5"></i> 历史研究价值
+        </p>
+        <p id="discover-detail-value" class="mt-1 text-[11px] leading-relaxed text-stone-600"></p>
+      </div>
+
+      <div class="mt-4">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-bold text-stone-700">可补充资料位置</h4>
+          <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">上传成功发积分</span>
+        </div>
+        <div id="discover-supplement-slots" class="mt-2 space-y-2"></div>
+      </div>
+
+      <input id="discover-supplement-file" type="file" class="hidden" onchange="handleDiscoverSupplementUpload(event)">
     </div>
   </div>
 
@@ -1211,6 +1323,7 @@
     // 初始化图标
     const onboardingState = {
       seen: false,
+      dismissed: false,
       tasks: {
         location: false,
         map: false,
@@ -1224,6 +1337,7 @@
         const saved = JSON.parse(localStorage.getItem('chulink-onboarding-state') || '{}');
         if (saved && typeof saved === 'object') {
           onboardingState.seen = Boolean(saved.seen);
+          onboardingState.dismissed = Boolean(saved.dismissed);
           if (saved.tasks && typeof saved.tasks === 'object') {
             onboardingState.tasks = {
               location: Boolean(saved.tasks.location),
@@ -1246,11 +1360,21 @@
       }
     }
 
-    function updateTaskProgressUI() {
+    function getOnboardingProgress() {
       const total = Object.keys(onboardingState.tasks).length;
       const completed = Object.values(onboardingState.tasks).filter(Boolean).length;
+      return { total, completed, isComplete: completed >= total };
+    }
+
+    function updateTaskProgressUI() {
+      const { total, completed, isComplete } = getOnboardingProgress();
       const progressBar = document.getElementById('task-progress-bar');
       const progressText = document.getElementById('task-progress-text');
+      const onboardingCard = document.getElementById('onboarding-card');
+
+      if (onboardingCard) {
+        onboardingCard.classList.toggle('hidden', onboardingState.dismissed || isComplete);
+      }
 
       if (progressBar) {
         progressBar.style.width = `${Math.round((completed / total) * 100)}%`;
@@ -1293,6 +1417,8 @@
     }
 
     function showOnboardingModal(force = false) {
+      const { isComplete } = getOnboardingProgress();
+      if (isComplete || onboardingState.dismissed) return;
       if (!force && onboardingState.seen) return;
       const modal = document.getElementById('welcome-guide-modal');
       if (modal) {
@@ -1309,9 +1435,42 @@
       }
     }
 
+    function startOnboardingLearning() {
+      onboardingState.seen = true;
+      onboardingState.dismissed = false;
+      saveOnboardingState();
+      showOnboardingModal(true);
+    }
+
+    function dismissOnboardingGuide() {
+      onboardingState.seen = true;
+      onboardingState.dismissed = true;
+      saveOnboardingState();
+      const modal = document.getElementById('welcome-guide-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+      updateTaskProgressUI();
+      showToast('已关闭新手引导，可继续自由探索', 'x-circle');
+    }
+
+    function startFirstOnboardingTask() {
+      const nextTask = ['location', 'map', 'collect', 'activity'].find(taskKey => !onboardingState.tasks[taskKey]);
+      if (nextTask) {
+        handleTaskJump(nextTask);
+        return;
+      }
+      dismissOnboardingGuide();
+    }
+
     function markTaskCompleted(taskKey) {
       if (onboardingState.tasks[taskKey]) return;
       onboardingState.tasks[taskKey] = true;
+      const { isComplete } = getOnboardingProgress();
+      if (isComplete) {
+        onboardingState.dismissed = true;
+        closeOnboardingModal();
+      }
       saveOnboardingState();
       updateTaskProgressUI();
       const labels = {
@@ -1322,6 +1481,9 @@
       };
       if (labels[taskKey]) {
         showToast(labels[taskKey], 'check-circle');
+      }
+      if (isComplete) {
+        showToast('新手引导已全部完成，卡片已自动关闭', 'party-popper');
       }
     }
 
@@ -1347,276 +1509,6 @@
       }
     }
 
-    const discoverFeedController = (() => {
-      const STORAGE_KEY = 'chulink-discover-feed-state';
-      const items = [
-        {
-          id: 'discover-yingxian-ancient-window',
-          title: '随州曾国遗风 · 楚式花窗木雕',
-          desc: '现状濒危，民居拆迁与缺乏维护导致构件风化与细节散失。',
-          region: '随州',
-          category: '楚风古建',
-          urgency: 95,
-          distanceKm: 18,
-          coords: [31.6886, 113.3731],
-          tag: '急需保护',
-          baseReason: '高优先保护线索'
-        },
-        {
-          id: 'discover-penjiazhai-stilt',
-          title: '恩施宣恩彭家寨 · 吊脚楼榫卯',
-          desc: '适合补充外立面、构件细节和口述资料。',
-          region: '恩施',
-          category: '荆楚口述',
-          urgency: 82,
-          distanceKm: 42,
-          coords: [29.9821, 109.4912],
-          tag: '离我最近',
-
-          baseReason: '地理位置更靠近当前定位'
-        },
-        {
-          id: 'discover-hubei-museum',
-          title: '湖北省博物馆周边 · 碑刻与导览线索',
-          desc: '适合补充馆外传播线索和公共文化任务点。',
-          region: '武汉',
-          category: '鄂地老物',
-          urgency: 71,
-          distanceKm: 27,
-          coords: [30.5619, 114.3679],
-          tag: '我可能感兴趣',
-          baseReason: '基于你近期的采集兴趣生成'
-        },
-        {
-          id: 'discover-zhongxiang-shendao',
-          title: '钟祥明显陵 · 神道石像生',
-          desc: '可补充石像生尺码、保存状态与现地环境对比。',
-          region: '荆州',
-          category: '楚风古建',
-          urgency: 66,
-          distanceKm: 36,
-          coords: [31.1806, 112.6007],
-          tag: '我可能感兴趣',
-          baseReason: '与你当前采集方向高度相关'
-        }
-      ];
-
-      const state = {
-        events: [],
-        contentState: {}
-      };
-
-      function load() {
-        try {
-          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-          if (saved && typeof saved === 'object') {
-            state.events = Array.isArray(saved.events) ? saved.events : [];
-            state.contentState = saved.contentState && typeof saved.contentState === 'object' ? saved.contentState : {};
-          }
-        } catch (error) {
-          console.warn('无法加载发现页推荐流状态', error);
-        }
-      }
-
-      function save() {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        } catch (error) {
-          console.warn('无法保存发现页推荐流状态', error);
-        }
-      }
-
-      function ensureState(contentId) {
-        if (!state.contentState[contentId]) {
-          state.contentState[contentId] = {
-            bookmarked: false,
-            shared: false,
-            commented: false,
-            collected: false,
-            checkedIn: false,
-            verified: false,
-            shareCount: 0,
-            commentCount: 0,
-            comments: []
-          };
-        }
-        return state.contentState[contentId];
-      }
-
-      function recordEvent(contentId, action, metadata = {}) {
-        state.events.push({
-          contentId,
-          action,
-          timestamp: Date.now(),
-          metadata
-        });
-        save();
-      }
-
-      function getDistanceKm(item) {
-        if (!item.coords || !Array.isArray(item.coords) || !currentLocation || !currentLocation.isReal) {
-          return item.distanceKm || 999;
-        }
-        const [lat, lon] = item.coords;
-        const dLat = (lat - currentLocation.latitude) * 111.0;
-        const dLon = (lon - currentLocation.longitude) * 111.0 * Math.cos((currentLocation.latitude * Math.PI) / 180);
-        return Math.max(1, Math.round(Math.sqrt(dLat * dLat + dLon * dLon)));
-      }
-
-      function getRecommendationScore(item, contentState) {
-        const proximity = Math.max(0, 30 - getDistanceKm(item));
-        const urgency = item.urgency || 0;
-        const interest = (contentState.bookmarked ? 18 : 0) + (contentState.collected ? 20 : 0) + (contentState.checkedIn ? 10 : 0) + (contentState.verified ? 15 : 0);
-        const profileBoost = item.tag === '急需保护' ? 10 : 0;
-        return urgency + proximity + interest + profileBoost;
-      }
-
-      function sortItems() {
-        return [...items].sort((a, b) => {
-          const aState = ensureState(a.id);
-          const bState = ensureState(b.id);
-          const aScore = getRecommendationScore(a, aState);
-          const bScore = getRecommendationScore(b, bState);
-          return bScore - aScore;
-        });
-      }
-
-      function render() {
-        const container = document.getElementById('discover-recommendations');
-        if (!container) return;
-
-        const rankedItems = sortItems();
-        container.innerHTML = `
-          <div class="flex items-center justify-between">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center">
-              <i data-lucide="sparkles" class="w-4 h-4 mr-1 text-deepTeal"></i> 为你推荐的内容流
-            </h4>
-            <span class="text-[10px] text-deepTeal font-semibold">按“离我最近 / 急需保护 / 你可能感兴趣”排序</span>
-          </div>
-          <div class="space-y-3">
-            ${rankedItems.map((item) => {
-              const stateData = ensureState(item.id);
-              const badges = [];
-              if (stateData.collected) badges.push('<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">已采集</span>');
-              if (stateData.checkedIn) badges.push('<span class="rounded-full bg-sandGold/20 px-2 py-0.5 text-[10px] font-semibold text-deepTeal">已打卡</span>');
-              if (stateData.verified) badges.push('<span class="rounded-full bg-stone-900 px-2 py-0.5 text-[10px] font-semibold text-sandGold">已认证</span>');
-              if (!badges.length) badges.push('<span class="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500">待开始</span>');
-
-              return `
-                <article class="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
-                  <div class="flex items-start justify-between gap-2">
-                    <div>
-                      <div class="flex flex-wrap items-center gap-2">
-                        <span class="rounded-full bg-cinnabarRed/10 px-2 py-0.5 text-[10px] font-semibold text-cinnabarRed">${escapeHtml(item.tag)}</span>
-                        <span class="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500">${escapeHtml(item.category)}</span>
-                      </div>
-                      <h5 class="cultural-font mt-2 text-sm font-bold text-stone-800">${escapeHtml(item.title)}</h5>
-                      <p class="mt-1 text-[11px] leading-relaxed text-stone-500">${escapeHtml(item.desc)}</p>
-                    </div>
-                    <div class="text-right">
-                      <p class="text-[10px] font-semibold text-deepTeal">${escapeHtml(item.region)}</p>
-                      <p class="text-[10px] text-stone-400">${getDistanceKm(item)} km</p>
-                    </div>
-                  </div>
-                  <div class="mt-3 flex flex-wrap gap-2">${badges.join('')}</div>
-                  <div class="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
-                    <button type="button" data-feed-action="bookmark" data-feed-id="${item.id}" class="rounded-full border ${stateData.bookmarked ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-stone-200 bg-stone-50 text-stone-600'} px-2.5 py-1.5 font-semibold">
-                      <i data-lucide="bookmark" class="mr-1 inline-block h-3.5 w-3.5"></i>${stateData.bookmarked ? '已收藏' : '收藏'}
-                    </button>
-                    <button type="button" data-feed-action="share" data-feed-id="${item.id}" class="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1.5 font-semibold text-stone-600">
-                      <i data-lucide="share-2" class="mr-1 inline-block h-3.5 w-3.5"></i>分享${stateData.shareCount ? `· ${stateData.shareCount}` : ''}
-                    </button>
-                    <button type="button" data-feed-action="comment" data-feed-id="${item.id}" class="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1.5 font-semibold text-stone-600">
-                      <i data-lucide="message-square" class="mr-1 inline-block h-3.5 w-3.5"></i>评论${stateData.commentCount ? `· ${stateData.commentCount}` : ''}
-                    </button>
-                    <button type="button" data-feed-action="collect" data-feed-id="${item.id}" class="rounded-full border ${stateData.collected ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-stone-200 bg-stone-50 text-stone-600'} px-2.5 py-1.5 font-semibold">
-                      <i data-lucide="camera" class="mr-1 inline-block h-3.5 w-3.5"></i>${stateData.collected ? '已采集' : '采集'}
-                    </button>
-                    <button type="button" data-feed-action="checkin" data-feed-id="${item.id}" class="rounded-full border ${stateData.checkedIn ? 'border-sandGold bg-sandGold/10 text-deepTeal' : 'border-stone-200 bg-stone-50 text-stone-600'} px-2.5 py-1.5 font-semibold">
-                      <i data-lucide="map-pin" class="mr-1 inline-block h-3.5 w-3.5"></i>${stateData.checkedIn ? '已打卡' : '打卡'}
-                    </button>
-                    <button type="button" data-feed-action="verify" data-feed-id="${item.id}" class="rounded-full border ${stateData.verified ? 'border-stone-900 bg-stone-900 text-sandGold' : 'border-stone-200 bg-stone-50 text-stone-600'} px-2.5 py-1.5 font-semibold">
-                      <i data-lucide="shield-check" class="mr-1 inline-block h-3.5 w-3.5"></i>${stateData.verified ? '已认证' : '认证'}
-                    </button>
-                  </div>
-                </article>
-              `;
-            }).join('')}
-          </div>
-        `;
-        lucide.createIcons();
-      }
-
-      function handleAction(contentId, action) {
-        const contentState = ensureState(contentId);
-        const metadata = { source: 'discover-feed' };
-
-        if (action === 'bookmark') {
-          contentState.bookmarked = !contentState.bookmarked;
-          recordEvent(contentId, 'bookmark', metadata);
-        } else if (action === 'share') {
-          contentState.shared = true;
-          contentState.shareCount = (contentState.shareCount || 0) + 1;
-          recordEvent(contentId, 'share', metadata);
-          if (navigator.share) {
-            navigator.share({ title: '楚韵链迹', text: '我在楚韵链迹里发现了一个不错的文化遗产线索。' });
-          } else if (navigator.clipboard) {
-            navigator.clipboard.writeText('我在楚韵链迹中发现了一个值得关注的文化遗产线索。');
-          }
-        } else if (action === 'comment') {
-          const commentText = window.prompt('请输入你的评论内容：', '这个点位很值得继续深入采集。');
-          if (!commentText) return;
-          contentState.commented = true;
-          contentState.commentCount = (contentState.commentCount || 0) + 1;
-          contentState.comments.push(commentText);
-          recordEvent(contentId, 'comment', { commentText });
-        } else if (action === 'collect') {
-          contentState.collected = !contentState.collected;
-          markTaskCompleted('collect');
-          recordEvent(contentId, 'collect', metadata);
-          if (contentState.collected) {
-            switchTab('collect');
-          }
-        } else if (action === 'checkin') {
-          contentState.checkedIn = !contentState.checkedIn;
-          recordEvent(contentId, 'checkin', metadata);
-        } else if (action === 'verify') {
-          contentState.verified = !contentState.verified;
-          recordEvent(contentId, 'verify', metadata);
-        }
-
-        save();
-        render();
-        showToast('推荐流状态已更新', 'sparkles');
-      }
-
-      function bindEvents() {
-        const container = document.getElementById('discover-recommendations');
-        if (!container) return;
-        container.addEventListener('click', (event) => {
-          const button = event.target.closest('[data-feed-action]');
-          if (!button) return;
-          const contentId = button.getAttribute('data-feed-id');
-          const action = button.getAttribute('data-feed-action');
-          if (contentId && action) {
-            handleAction(contentId, action);
-          }
-        });
-      }
-
-      return {
-        init() {
-          load();
-          bindEvents();
-          render();
-        },
-        render,
-        handleAction,
-        getState: ensureState
-      };
-    })();
-
-    window.discoverFeedController = discoverFeedController;
 
     const DAILY_QUIZ_REWARD = 50;
     const DAILY_QUIZ_STATE_PREFIX = 'chulink-daily-quiz-';
@@ -1833,9 +1725,10 @@
       loadOnboardingState();
       updateTaskProgressUI();
       initializeDailyCommunityQuiz();
+      initializeQuickLearning();
+      renderCommunityRouteCard();
       initHeritageMap();
       loadApprovedSubmissionFeed();
-      discoverFeedController.init();
       if (!onboardingState.seen) {
         showOnboardingModal(false);
       }
@@ -1994,7 +1887,173 @@
     ];
     let heritageMap = null;
     let userLocationMarker = null;
+    let mapRouteLayerGroup = null;
+    let mapRoutePanelActive = false;
     let activeLandmark = heritageLandmarks[0];
+    let activeCommunityRoute = null;
+    let activeMapRouteId = null;
+
+    const communityRoutePlans = [
+      {
+        id: 'wuhan-eastlake',
+        city: '武汉',
+        center: [30.5619, 114.3679],
+        title: '武汉东湖文脉半日线',
+        desc: '从省博看编钟与楚纹样，再到东湖、黄鹤楼周边补充公共文化线索。',
+        duration: '约 3h',
+        badge: '都市文脉',
+        steps: [
+          { title: '省博曾侯乙', desc: '看编钟与楚式纹样', landmarkId: 'hubei-museum' },
+          { title: '东湖导览线索', desc: '记录公共文化节点', landmarkId: 'hubei-museum' },
+          { title: '黄鹤楼碑刻', desc: '补采题刻与纹样', landmarkId: 'yellow-crane-tower' }
+        ],
+        services: {
+          food: {
+            title: '东湖/武昌美食',
+            desc: '搜楚菜、热干面、咖啡休息点',
+            keyword: '武汉 东湖 湖北省博物馆 美食'
+          },
+          hotel: {
+            title: '东湖/楚河汉街住宿',
+            desc: '查地铁沿线酒店和湖畔民宿',
+            keyword: '武汉 东湖 湖北省博物馆 酒店'
+          }
+        }
+      },
+      {
+        id: 'yichang-three-gorges',
+        city: '宜昌',
+        center: [30.8231, 111.0034],
+        title: '宜昌三峡记忆线',
+        desc: '围绕三峡大坝与两坝一峡，采集水利工程记忆、移民叙事和观景点资料。',
+        duration: '约 4h',
+        badge: '峡江文化',
+        steps: [
+          { title: '三峡坝区节点', desc: '记录工程叙事', landmarkId: 'three-gorges-dam' },
+          { title: '游客中心周边', desc: '补充导览与口述', landmarkId: 'three-gorges-dam' },
+          { title: '上传现场资料', desc: '整理照片/音频入链', action: 'collect' }
+        ],
+        services: {
+          food: {
+            title: '三峡游客中心美食',
+            desc: '搜鱼馆、宜昌本地菜和简餐',
+            keyword: '宜昌 三峡大坝 三峡游客中心 美食'
+          },
+          hotel: {
+            title: '夷陵/三峡游客中心住宿',
+            desc: '查靠近换乘点的酒店民宿',
+            keyword: '宜昌 三峡大坝 夷陵 酒店'
+          }
+        }
+      },
+      {
+        id: 'shennongjia-muyu',
+        city: '神农架',
+        center: [31.4726, 110.3724],
+        title: '神农架木鱼民俗线',
+        desc: '以木鱼镇为集散点，采集山地民俗、林区传说和地方物候线索。',
+        duration: '约 3h',
+        badge: '山地民俗',
+        steps: [
+          { title: '木鱼镇民俗点', desc: '记录地方口述', landmarkId: 'shennongjia-muyu' },
+          { title: '镇区服务节点', desc: '补充导览与标识', landmarkId: 'shennongjia-muyu' },
+          { title: '上传口述摘要', desc: '整理音频与备注', action: 'collect' }
+        ],
+        services: {
+          food: {
+            title: '木鱼镇土菜',
+            desc: '搜腊肉、土菜馆和早餐点',
+            keyword: '神农架 木鱼镇 美食'
+          },
+          hotel: {
+            title: '木鱼镇住宿',
+            desc: '查民宿、客栈和避暑酒店',
+            keyword: '神农架 木鱼镇 民宿 酒店'
+          }
+        }
+      },
+      {
+        id: 'enshi-pengjiazhai',
+        city: '恩施',
+        center: [29.9821, 109.4912],
+        title: '恩施彭家寨土家建筑线',
+        desc: '围绕彭家寨吊脚楼群，采集外立面、廊桥、农耕场景和土家生活口述。',
+        duration: '约 3.5h',
+        badge: '土家建筑',
+        steps: [
+          { title: '彭家寨吊脚楼', desc: '拍外立面和榫卯', landmarkId: 'pengjiazhai-stilt-house' },
+          { title: '廊桥与耍耍街', desc: '补充空间关系', landmarkId: 'pengjiazhai-stilt-house' },
+          { title: '上传建筑线索', desc: '整理全貌与细节', action: 'collect' }
+        ],
+        services: {
+          food: {
+            title: '彭家寨/宣恩美食',
+            desc: '搜土家菜、合渣和本地小吃',
+            keyword: '恩施 宣恩 彭家寨 美食'
+          },
+          hotel: {
+            title: '彭家寨/宣恩住宿',
+            desc: '查景区周边民宿和县城酒店',
+            keyword: '恩施 宣恩 彭家寨 民宿 酒店'
+          }
+        }
+      },
+      {
+        id: 'suizhou-zenghou',
+        city: '随州',
+        center: [31.7142, 113.3721],
+        title: '随州曾侯遗韵线',
+        desc: '围绕曾侯文化和古建线索，采集牌楼构件、纹样细节和保存状态。',
+        duration: '约 2.5h',
+        badge: '曾侯遗韵',
+        steps: [
+          { title: '曾侯遗韵牌楼', desc: '拍构件和裂损', landmarkId: 'zenghou-archway' },
+          { title: '周边纹样线索', desc: '记录位置和尺度', landmarkId: 'zenghou-archway' },
+          { title: '上传复核资料', desc: '补标题和保存状态', action: 'collect' }
+        ],
+        services: {
+          food: {
+            title: '随州曾都美食',
+            desc: '搜本地菜、早餐和休息点',
+            keyword: '随州 曾都 美食'
+          },
+          hotel: {
+            title: '随州曾都住宿',
+            desc: '查市区酒店和交通便利住处',
+            keyword: '随州 曾都 酒店'
+          }
+        }
+      }
+    ];
+
+    const routePlatformCityConfig = {
+      '武汉': {
+        dianpingCityId: 16,
+        dianpingSlug: 'wuhan',
+        meituanHost: 'wh.meituan.com',
+        meituanCityName: '武汉'
+      },
+      '宜昌': {
+        dianpingSlug: 'yichang',
+        meituanHost: 'yichang.meituan.com',
+        meituanCityName: '宜昌'
+      },
+      '神农架': {
+        dianpingSlug: 'shennongjia',
+        meituanHost: 'shennongjia.meituan.com',
+        meituanCityName: '神农架'
+      },
+      '恩施': {
+        dianpingSlug: 'enshi',
+        meituanHost: 'enshi.meituan.com',
+        meituanCityName: '恩施'
+      },
+      '随州': {
+        dianpingSlug: 'suizhou',
+        meituanHost: 'suizhou.meituan.com',
+        meituanCityName: '随州'
+      }
+    };
 
     function createHeritageIcon(status, label) {
       return L.divIcon({
@@ -2019,11 +2078,352 @@
       return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ');
     }
 
+    const DISCOVER_FEED_LIKE_KEY = 'chulink-discover-feed-likes-v1';
+    const DISCOVER_SUPPLEMENT_REWARD_KEY = 'chulink-discover-supplement-rewards-v1';
+    let discoverLikeState = {};
+    let discoverLiveTimer = null;
+    let discoverNextLiveIndex = 0;
+    let approvedSubmissionItems = [];
+    let activeDiscoverDetailItem = null;
+    let activeSupplementSlot = null;
+    let activeDiscoverBoard = 'share';
+
+    const discoverLiveFeedItems = [
+      {
+        id: 'share-yellow-crane-tower',
+        author: '科普整理·江城阿岚',
+        avatar: '岚',
+        badge: '成熟景点',
+        title: '武汉黄鹤楼 · 楼阁营造与题刻文化',
+        description: '黄鹤楼作为武汉城市文化地标，楼阁营造、碑廊题刻、诗文传播链条较完整，适合面向公众做建筑与文学史科普。',
+        region: '武汉黄鹤楼公园',
+        imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/20240621%20Yellow%20Crane%20Tower.jpg?width=900',
+        imageAlt: '武汉黄鹤楼',
+        board: 'share',
+        completeness: 96,
+        researchValue: '黄鹤楼兼具楼阁建筑、诗文题刻和城市公共记忆价值，可用于展示湖北物质文化遗产如何被旅游、教育和城市叙事共同传播。',
+        sciencePoints: [
+          {
+            title: '楼阁、诗文与城市记忆',
+            text: '黄鹤楼位于武汉武昌蛇山，传统叙事常把它的创建追溯到三国吴黄武二年。它在历史上经历多次兴废、迁建与重建，今天的黄鹤楼公园既是旅游景区，也是武汉城市记忆的集中展示场。科普时不能只讲“名楼”，还要把楼阁、长江、蛇山、诗文传播和近现代城市建设放在同一个空间里理解。',
+            imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/20240621%20Yellow%20Crane%20Tower.jpg?width=900',
+            imageAlt: '近年拍摄的黄鹤楼外观',
+            sourceName: '武汉市园林和林业局黄鹤楼公园资料',
+            sourceUrl: 'https://ylj.wuhan.gov.cn/zwgk/zwxxgkzl_12298/jggk_12304/xsdwszjzz_12308/202001/t20200110_726398.shtml'
+          },
+          {
+            title: '为什么它会成为“江城地标”',
+            text: '黄鹤楼的传播力来自多层叠加：一是临江登高的地理位置，二是历代文人题咏形成的文学传统，三是近现代重建后与长江大桥、龟蛇两山共同构成的城市景观。游客在楼上看到的是风景，研究者更关心这些景观如何被诗歌、碑刻、匾联、旅游导览和城市形象不断重述。'
+          },
+          {
+            title: '建筑与游线怎么读',
+            text: '现有景区可按“登楼观景、碑廊题刻、园区遗迹、诗画文化”几条线阅读。楼体本身可以观察层檐、屋面、斗拱装饰、匾额楹联和色彩体系；园区则可观察胜像宝塔、岳飞亭、诗碑、导览牌等节点，理解它如何从一座楼扩展为综合文化景区。'
+          },
+          {
+            title: '适合补充的采集资料',
+            text: '优先补充碑廊题刻、说明牌、楹联、楼体构件细节和游客动线照片。拍摄时让“文字说明”和“对应实物”同时入镜，能帮助后续把诗文来源、重建叙事、建筑构件和景区展示关系对应起来；不要只上传远景风光照。'
+          }
+        ],
+        supplementSlots: [
+          { id: 'inscription-caption', title: '补充碑廊题刻说明牌', desc: '拍清题刻名称、作者、年代或景区说明文字。', accept: 'image/*', reward: 25 },
+          { id: 'roof-detail', title: '补充楼阁屋面构件细节', desc: '拍摄鸱吻、瓦当、斗拱等构件，不使用无关风景图。', accept: 'image/*', reward: 30 }
+        ],
+        createdAt: Date.now() - 5 * 60 * 1000,
+        baseLikes: 92,
+        comments: 18
+      },
+      {
+        id: 'share-wudang-ancient-buildings',
+        author: '科普整理·玄岳志',
+        avatar: '玄',
+        badge: '世界遗产',
+        title: '武当山古建筑群 · 皇家道教建筑轴线',
+        description: '武当山古建筑群已形成较成熟的游览与研究资料，适合科普宫观格局、山岳信仰、明代皇家营建和空间轴线。',
+        region: '十堰武当山',
+        imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/20250526%20Wudangshan%20Jindian%20%28155228%29.jpg?width=900',
+        imageAlt: '武当山古建筑群',
+        board: 'share',
+        completeness: 95,
+        researchValue: '武当山古建筑群是湖北代表性物质文化遗产，可用于解释明代建筑制度、宗教空间组织和山水环境中的营造秩序。',
+        sciencePoints: [
+          {
+            title: '山水中的皇家道教建筑群',
+            text: '武当山古建筑群被列入世界遗产，核心价值在于宫观、殿宇、庵堂、桥梁、牌坊等人工建筑与山岳环境的整体关系。UNESCO 对其价值的说明强调了元、明、清时期建筑与艺术成就，其中明代皇家营建尤其重要，使武当山形成了从山下到山顶、由世俗进入神圣空间的朝山秩序。',
+            imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/20250526%20Wudangshan%20Jindian%20%28155228%29.jpg?width=900',
+            imageAlt: '近年拍摄的武当山金殿区域',
+            sourceName: 'UNESCO 世界遗产中心',
+            sourceUrl: 'https://whc.unesco.org/en/list/705/'
+          },
+          {
+            title: '明代营建与空间等级',
+            text: '武当山不是单座建筑，而是大型山地建筑体系。宫、观、庵、祠、殿等节点沿山势展开，建筑等级、位置和朝向共同服务于礼仪动线。科普时可以把太和宫、紫霄宫、南岩宫等节点看成不同层级的空间标记，而不是互不相关的景点。'
+          },
+          {
+            title: '“依山就势”的营造方法',
+            text: '武当山建筑的精彩之处在于不简单削平山体，而是借助峰、岩、谷、台地组织建筑。石阶、山门、殿宇、栏杆、屋脊和院落常与自然地形相互咬合，形成“走一段路、转一个景、升一级空间”的体验。这也是研究山岳信仰和建筑技术的重要材料。'
+          },
+          {
+            title: '适合补充的采集资料',
+            text: '可沿宫观轴线记录山门、殿宇、神道、石栏、屋脊构件和导览说明。补充时建议拍同一节点的“远景位置、入口说明、构件细节、路线关系”四类照片，对比不同节点的海拔、朝向与建筑等级，有助于理解武当山古建筑群的整体营造方式。'
+          }
+        ],
+        supplementSlots: [
+          { id: 'axis-sign', title: '补充宫观轴线导览牌', desc: '拍清导览图、宫观名称和路线关系。', accept: 'image/*', reward: 25 },
+          { id: 'component-caption', title: '补充建筑构件说明', desc: '补充斗拱、屋脊、石栏等构件说明牌或局部照片。', accept: 'image/*', reward: 30 }
+        ],
+        createdAt: Date.now() - 11 * 60 * 1000,
+        baseLikes: 108,
+        comments: 21
+      },
+      {
+        id: 'share-mingxianling',
+        author: '科普整理·钟祥站',
+        avatar: '陵',
+        badge: '世界遗产',
+        title: '钟祥明显陵 · 明代帝陵礼制空间',
+        description: '明显陵已形成较完整的景区动线和研究资料，可科普明代陵寝制度、神道石像生、建筑遗存和礼制空间。',
+        region: '荆门钟祥明显陵',
+        imageUrl: 'https://wlt.hubei.gov.cn/bmdt/ztzl/zlxhbxmxfj/wlxjc/202405/W020240514427320258225.jpg',
+        imageAlt: '钟祥明显陵',
+        board: 'share',
+        completeness: 93,
+        researchValue: '明显陵体现明代皇家陵寝制度在湖北的物质遗存，可用于公众理解神道、碑亭、陵寝格局与礼制思想。',
+        sciencePoints: [
+          {
+            title: '明代帝陵礼制在湖北的遗存',
+            text: '明显陵位于湖北钟祥，是明世宗嘉靖皇帝父母的合葬陵寝，始建于明正德年间，营建时间延续较长。它后来被纳入明清皇家陵寝世界文化遗产体系，适合用来理解明代陵寝制度、神道石像生、碑亭、寝殿遗存和皇家礼制空间如何在地方山水中展开。',
+            imageUrl: 'https://wlt.hubei.gov.cn/bmdt/ztzl/zlxhbxmxfj/wlxjc/202405/W020240514427320258225.jpg',
+            imageAlt: '明显陵景区近年公开图片',
+            sourceName: '湖北省文化和旅游厅、世界遗产资料',
+            sourceUrl: 'https://wlt.hubei.gov.cn/bmdt/ztzl/zlxhbxmxfj/wlxjc/202405/t20240514_5189951.shtml'
+          },
+          {
+            title: '从神道读懂陵寝秩序',
+            text: '明显陵的科普重点不只是“谁的陵墓”，更在于空间秩序。神道、石像生、碑亭、陵门、明楼等节点共同构成进入陵寝的礼仪路径。游客沿线行走时，其实是在经历一套被建筑和雕塑组织出来的等级秩序。'
+          },
+          {
+            title: '石像生和碑刻的研究价值',
+            text: '神道石像生、碑刻和建筑遗址可以提供制度、工艺和修缮信息：石像生的类型与排列反映陵寝礼制，碑刻说明有助于核对年代和修缮沿革，遗址位置则能帮助理解原有建筑格局。把这些材料合在一起，才能从旅游景点进一步进入历史研究。'
+          },
+          {
+            title: '适合补充的采集资料',
+            text: '补充资料可以集中在神道石像生、碑亭、陵寝入口、导览图和修缮说明。拍摄时要让说明文字与对应遗存同时入镜，最好按游线顺序补充，便于后续核对空间顺序、礼制含义和景区展示是否一致。'
+          }
+        ],
+        supplementSlots: [
+          { id: 'sacred-way-caption', title: '补充神道石像生说明', desc: '拍清石像生名称、位置和景区说明文字。', accept: 'image/*', reward: 25 },
+          { id: 'ritual-space-route', title: '补充陵寝空间路线', desc: '拍摄导览图或主要节点之间的空间关系。', accept: 'image/*', reward: 30 }
+        ],
+        createdAt: Date.now() - 18 * 60 * 1000,
+        baseLikes: 86,
+        comments: 14
+      },
+      {
+        id: 'share-hubei-museum-bells',
+        author: '科普整理·省博馆旁',
+        avatar: '博',
+        badge: '馆藏科普',
+        title: '湖北省博物馆 · 曾侯乙编钟展陈',
+        description: '曾侯乙编钟相关展陈信息完整，适合科普青铜铸造、礼乐制度、纹样系统和战国时期音乐考古。',
+        region: '武汉湖北省博物馆',
+        imageUrl: 'https://www.xinhuanet.com/ci/20250612/914aba7b4fa64e0d9e50a0902f7b4100/20250612914aba7b4fa64e0d9e50a0902f7b4100_20250612ba7a417d8e0244f4bb5d55a793eb9bb1.jpeg',
+        imageAlt: '湖北省博物馆曾侯乙编钟',
+        board: 'share',
+        completeness: 97,
+        researchValue: '曾侯乙编钟是湖北物质文化遗产科普中的核心案例，可连接青铜器、音乐史、礼制和楚文化传播。',
+        sciencePoints: [
+          {
+            title: '战国礼乐制度与音乐考古',
+            text: '曾侯乙编钟出土于湖北随州曾侯乙墓，是战国早期青铜乐器体系的代表，也是湖北省博物馆最重要的馆藏之一。它的科普价值不只在“体量大、声音好听”，更在于它能把青铜铸造、乐律知识、铭文信息、诸侯礼制和战国时期区域文化交流放在同一个场景中讲清楚。',
+            imageUrl: 'https://www.xinhuanet.com/ci/20250612/914aba7b4fa64e0d9e50a0902f7b4100/20250612914aba7b4fa64e0d9e50a0902f7b4100_20250612ba7a417d8e0244f4bb5d55a793eb9bb1.jpeg',
+            imageAlt: '湖北省博物馆曾侯乙编钟展陈近年图片',
+            sourceName: '湖北省博物馆曾侯乙编钟藏品页',
+            sourceUrl: 'https://m-www.hbww.org.cn/p/4695.html'
+          },
+          {
+            title: '为什么编钟能“一钟双音”',
+            text: '编钟的横截面并非普通圆形，而是有利于形成不同振动区域的结构。敲击钟体不同位置可以发出不同音高，这使它成为理解古代声学、冶铸技术和礼乐制度的关键实物。科普时可把“形制、敲击位置、音名、铭文”连起来讲，用户会更容易理解它为什么重要。'
+          },
+          {
+            title: '铭文和排列关系怎么读',
+            text: '编钟上的铭文记录了音名、律名等信息，为研究先秦音乐理论提供材料。展陈中的编钟并不是随意摆放，而是按大小、音区、组合关系呈现出礼乐器体系。观察时可注意上层、中层、下层钟的大小差异和排列逻辑。'
+          },
+          {
+            title: '适合补充的采集资料',
+            text: '馆内补充资料应优先拍摄公开允许拍照的展陈说明、编钟排列关系、复制演示区域、纹样细节和教育展示内容。不要拍摄禁止拍照区域，也不要用无关博物馆照片替代；如果无法拍到清晰实物，应补充说明牌或官方授权图源。'
+          }
+        ],
+        supplementSlots: [
+          { id: 'exhibition-caption', title: '补充展陈说明牌', desc: '拍清展品说明、年代、出土信息和展陈编号。', accept: 'image/*', reward: 25 },
+          { id: 'pattern-detail', title: '补充纹样或铭文细节', desc: '在允许拍摄范围内补充可公开的纹样细节。', accept: 'image/*', reward: 30 }
+        ],
+        createdAt: Date.now() - 24 * 60 * 1000,
+        baseLikes: 121,
+        comments: 24
+      },
+      {
+        id: 'share-jingzhou-city-wall',
+        author: '科普整理·楚城墙',
+        avatar: '城',
+        badge: '成熟景点',
+        title: '荆州古城墙 · 城防遗存与城砖文化',
+        description: '荆州古城墙旅游开放度高，适合科普城防格局、城砖铭文、修缮历史和长江中游城市形态。',
+        region: '荆州古城',
+        imageUrl: 'https://i2.chinanews.com.cn/simg/ypt/2024/241215/903c2e00-dd1b-4afe-a57d-2032530b7d8d_zsite.JPG',
+        imageAlt: '荆州古城墙',
+        board: 'share',
+        completeness: 90,
+        researchValue: '荆州古城墙保存了城防体系、城砖铭文和城市空间格局，是湖北历史城市物质遗存的重要科普对象。',
+        sciencePoints: [
+          {
+            title: '长江中游历史城防样本',
+            text: '荆州古城墙是湖北重要的历史城市遗存，古城格局与城墙、城门、护城河共同构成防御体系。它的价值不只是“有一圈城墙”，而是保存了长江中游历史城市在军事防御、交通组织、水系利用和城市生活之间的关系。',
+            imageUrl: 'https://i2.chinanews.com.cn/simg/ypt/2024/241215/903c2e00-dd1b-4afe-a57d-2032530b7d8d_zsite.JPG',
+            imageAlt: '近年拍摄的荆州古城墙',
+            sourceName: '荆州古城历史文化旅游区、中国新闻网',
+            sourceUrl: 'https://www.jingzhougucheng.com/'
+          },
+          {
+            title: '城墙、城门与护城河',
+            text: '读荆州古城墙，要把墙体、城门、瓮城、马道、护城河和周边街区一起看。城门控制通行，城墙形成防御边界，护城河增强屏障，城内外道路则体现城市运行。这样的空间组合，比单独看墙砖更能解释古城为什么能长期作为区域中心。'
+          },
+          {
+            title: '城砖铭文与修缮线索',
+            text: '城砖、铭文和修缮说明是研究城墙历史的重要线索。铭文可能记录烧造、责任单位、年代或工匠组织信息；修缮说明则能帮助区分原有遗存、后期补配和现代保护工程。科普时应避免把所有可见墙体都简单说成同一时期遗存。'
+          },
+          {
+            title: '适合补充的采集资料',
+            text: '可补充城门名称、城墙段落说明、公开展示的城砖铭文、修缮说明和护城河空间关系。资料应指向具体段落，照片里最好包含方位或导览牌，避免只上传泛风景照；涉及城砖铭文时不拓印、不触碰、不移动。'
+          }
+        ],
+        supplementSlots: [
+          { id: 'city-wall-guide', title: '补充城墙导览牌', desc: '拍清城墙段落、城门名称和历史说明。', accept: 'image/*', reward: 25 },
+          { id: 'brick-public-caption', title: '补充城砖铭文说明', desc: '拍摄景区公开展示的城砖铭文说明，不拓印不触碰。', accept: 'image/*', reward: 30 }
+        ],
+        createdAt: Date.now() - 31 * 60 * 1000,
+        baseLikes: 77,
+        comments: 13
+      }
+    ];
+
+    const discoverLiveCandidates = [
+      {
+        id: 'live-new-jingzhou-inscription',
+        author: '采集人·阿越',
+        avatar: '越',
+        badge: '刚刚采到',
+        title: '荆州古城墙 · 城砖纪年铭文复核',
+        description: '补充明清城砖铭文字口、砖体规格和砌筑位置，可用于城墙修筑年代与工匠组织研究。',
+        region: '荆州古城墙',
+        imageUrl: '',
+        imageAlt: '荆州古城墙铭文砖线索',
+        board: 'needs',
+        completeness: 49,
+        researchValue: '铭文砖可为城墙修筑年代、地方窑口和工役制度研究提供可比对材料。',
+        supplementSlots: [
+          { id: 'brick-rubbing-photo', title: '补充铭文高清近景', desc: '不拓印、不描红，只补拍自然光和侧光照片。', accept: 'image/*', reward: 45 },
+          { id: 'brick-size', title: '补充砖体规格参照', desc: '拍摄砖长宽厚参照，避免接触或移动城砖。', accept: 'image/*', reward: 35 }
+        ],
+        baseLikes: 19,
+        comments: 2
+      },
+      {
+        id: 'live-new-enshi-door',
+        author: '志愿者·青禾',
+        avatar: '禾',
+        badge: '实时入列',
+        title: '恩施土司城 · 木雕门楣纹样采集',
+        description: '门楣转角处有连续卷草纹，已补充正面、侧面和尺度参照照片。',
+        region: '恩施土司城',
+        imageUrl: '',
+        imageAlt: '恩施土司城木构建筑',
+        board: 'needs',
+        completeness: 61,
+        researchValue: '木雕门楣纹样可用于分析土家建筑装饰题材、地域工艺和景区保护修缮方式。',
+        supplementSlots: [
+          { id: 'lintel-front', title: '补充门楣正面全图', desc: '确保纹样完整入画，保留上下边界。', accept: 'image/*', reward: 35 },
+          { id: 'carving-detail', title: '补充雕刻刀法细节', desc: '近景拍摄卷草纹、边框和转角连接处。', accept: 'image/*', reward: 40 }
+        ],
+        baseLikes: 24,
+        comments: 3
+      },
+      {
+        id: 'live-new-wudang-stone',
+        author: '守护人·行远',
+        avatar: '远',
+        badge: '实时复核',
+        title: '武当古道 · 石阶磨损与题刻线索',
+        description: '石阶边缘磨耗明显，题刻字口较浅，建议清晨斜光下再采一组。',
+        region: '十堰武当山',
+        imageUrl: '',
+        imageAlt: '武当山古道和古建筑环境',
+        board: 'needs',
+        completeness: 58,
+        researchValue: '古道题刻和石阶磨耗可以辅助研究朝山路径、历史交通和宗教空间使用方式。',
+        supplementSlots: [
+          { id: 'inscription-angle', title: '补充题刻斜侧光照片', desc: '选择清晨或傍晚斜光，拍清字口轮廓。', accept: 'image/*', reward: 45 },
+          { id: 'path-context', title: '补充古道环境全景', desc: '拍摄题刻与石阶、路向、周边建筑的关系。', accept: 'image/*', reward: 30 }
+        ],
+        baseLikes: 31,
+        comments: 4
+      },
+      {
+        id: 'live-new-suizhou-pattern',
+        author: '研究志愿者·若水',
+        avatar: '若',
+        badge: '待补图像',
+        title: '随州曾侯文化 · 编钟纹样技艺衍生样本',
+        description: '记录本地工坊依据曾侯乙编钟纹样制作的木作衍生样本，需补拍纹样局部和制作过程照片后再入库。',
+        region: '随州曾侯文化片区',
+        imageUrl: '',
+        board: 'needs',
+        completeness: 36,
+        researchValue: '编钟纹样技艺衍生样本可观察馆藏纹样在地方工坊、文创制作和公共教育中的再阐释。',
+        supplementSlots: [
+          { id: 'pattern-closeup', title: '补充纹样局部照片', desc: '拍清蟠螭纹、边饰或铭文元素，不用泛图替代。', accept: 'image/*', reward: 45 },
+          { id: 'making-process', title: '补充制作过程照片或视频', desc: '记录雕刻、描摹、铸造或装配过程中的关键步骤。', accept: 'image/*,video/*', reward: 50 }
+        ],
+        baseLikes: 27,
+        comments: 6
+      }
+    ];
+
+    const discoverFeaturedShareItems = discoverLiveFeedItems
+      .filter(item => item.board === 'share')
+      .map(item => ({ ...item }));
+
+    function loadDiscoverLikes() {
+      try {
+        discoverLikeState = JSON.parse(localStorage.getItem(DISCOVER_FEED_LIKE_KEY) || '{}') || {};
+      } catch (error) {
+        discoverLikeState = {};
+      }
+    }
+
+    function saveDiscoverLikes() {
+      try {
+        localStorage.setItem(DISCOVER_FEED_LIKE_KEY, JSON.stringify(discoverLikeState));
+      } catch (error) {
+        console.warn('无法保存发现页点赞状态', error);
+      }
+    }
+
     function formatPublicDate(value) {
       if (!value) return '刚刚通过';
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return '刚刚通过';
       return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+    }
+
+    function formatLiveFeedTime(value) {
+      const timestamp = new Date(value || Date.now()).getTime();
+      if (Number.isNaN(timestamp)) return '刚刚';
+      const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+      if (minutes < 1) return '刚刚';
+      if (minutes < 60) return `${minutes} 分钟前`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours} 小时前`;
+      return formatPublicDate(timestamp);
     }
 
     function getPublicAssetLabel(item) {
@@ -2033,35 +2433,416 @@
       return '图像采集素材';
     }
 
-    function renderApprovedMedia(item) {
-      const url = item.thumbnailUrl || item.fileUrl || '';
-      const mime = item.mimeType || '';
-      const assetType = item.assetType || 'photo';
+    function getMatchedHeritageImage(item) {
+      return '';
+    }
 
-      if (!url) {
-        return `
-          <div class="h-40 bg-stone-100 flex items-center justify-center text-stone-400">
-            <i data-lucide="image-off" class="w-8 h-8"></i>
-          </div>
-        `;
+    function getStableDiscoverFeedItems() {
+      const itemMap = new Map();
+      [...approvedSubmissionItems, ...discoverFeaturedShareItems, ...discoverLiveFeedItems].forEach(item => {
+        const key = item.feedId || item.id || `${item.title || ''}-${item.createdAt || ''}`;
+        if (!key || itemMap.has(key)) return;
+        itemMap.set(key, item);
+      });
+      return [...itemMap.values()];
+    }
+
+    function getDiscoverSearchTerm() {
+      const input = document.getElementById('discover-search-input');
+      return input ? input.value.trim().toLowerCase() : '';
+    }
+
+    function matchesDiscoverSearch(item, term = getDiscoverSearchTerm()) {
+      if (!term) return true;
+      const haystack = [
+        item.title,
+        item.description,
+        item.region,
+        item.regionName,
+        item.author,
+        item.contributorName,
+        item.researchValue
+      ].filter(Boolean).join(' ').toLowerCase();
+      return haystack.includes(term);
+    }
+
+    function setDiscoverBoardFilter(board) {
+      activeDiscoverBoard = board === 'needs' ? 'needs' : 'share';
+      const shareBtn = document.getElementById('discover-board-share');
+      const needsBtn = document.getElementById('discover-board-needs');
+      if (shareBtn) {
+        shareBtn.className = activeDiscoverBoard === 'share'
+          ? 'rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold shadow-sm'
+          : 'rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-600 shadow-sm';
       }
+      if (needsBtn) {
+        needsBtn.className = activeDiscoverBoard === 'needs'
+          ? 'rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold shadow-sm'
+          : 'rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-600 shadow-sm';
+      }
+      renderDiscoverFeed();
+      lucide.createIcons();
+    }
 
-      if (assetType === 'audio' || mime.startsWith('audio/')) {
+    function renderPhotoReviewPlaceholder(region) {
+      return `
+        <div class="flex h-44 w-full flex-col items-center justify-center rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 text-center text-stone-500">
+          <i data-lucide="camera" class="h-7 w-7 text-deepTeal"></i>
+          <p class="mt-2 text-xs font-bold text-stone-700">该采集点需要拍照补充图片</p>
+          <p class="mt-1 text-[10px] leading-relaxed text-stone-500">${escapeHtml(region || '采集点')} 暂无可确认匹配实拍图，请上传现场图片或馆藏授权图。</p>
+        </div>
+      `;
+    }
+
+    function getDiscoverSupplementRewards() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(DISCOVER_SUPPLEMENT_REWARD_KEY) || '{}');
+        return saved && typeof saved === 'object' ? saved : {};
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function saveDiscoverSupplementRewards(rewards) {
+      try {
+        localStorage.setItem(DISCOVER_SUPPLEMENT_REWARD_KEY, JSON.stringify(rewards));
+      } catch (error) {
+        console.warn('无法保存补充资料积分状态', error);
+      }
+    }
+
+    function getSupplementRewardKey(itemId, slotId) {
+      return `${itemId}::${slotId}`;
+    }
+
+    function getDefaultSupplementSlots(item) {
+      if (Array.isArray(item.supplementSlots) && item.supplementSlots.length) return item.supplementSlots;
+      const assetType = item.assetType || item.contentType || 'photo';
+      if (assetType === 'audio' || assetType === 'oral') {
+        return [
+          { id: 'oral-consent', title: '补充讲述授权记录', desc: '上传授权音频或文字照片，说明公开范围。', accept: 'audio/*,image/*', reward: 30 },
+          { id: 'oral-context', title: '补充技艺或地点背景', desc: '上传与口述对象相关的现场照片或资料页。', accept: 'image/*', reward: 35 }
+        ];
+      }
+      return [
+        { id: 'detail-photo', title: '补充关键细节照片', desc: '拍清纹样、铭文、构件或保存状态，不使用泛图替代。', accept: 'image/*', reward: 35 },
+        { id: 'context-photo', title: '补充点位环境照片', desc: '拍摄对象与景点、展陈或现场位置的关系。', accept: 'image/*', reward: 30 }
+      ];
+    }
+
+    function getDiscoverBoard(item) {
+      if (item.board === 'share' || item.board === 'needs') return item.board;
+      const completeness = Number(item.completeness || item.qualityScore || 0);
+      return completeness >= 82 ? 'share' : 'needs';
+    }
+
+    function getDiscoverCompleteness(item) {
+      const value = Number(item.completeness || item.qualityScore || 0);
+      if (Number.isFinite(value) && value > 0) return Math.min(100, Math.max(0, Math.round(value)));
+      return getDiscoverBoard(item) === 'share' ? 86 : 48;
+    }
+
+    function getDiscoverFeedItemById(id) {
+      return discoverLiveFeedItems.find(item => item.id === id)
+        || discoverLiveCandidates.find(item => item.id === id)
+        || approvedSubmissionItems.find(item => item.id === id || item.feedId === id)
+        || null;
+    }
+
+    function renderDiscoverDetailMedia(item) {
+      if (item.contentType === 'oral' || item.assetType === 'audio') {
         return `
           <div class="bg-stone-50 border border-stone-100 rounded-xl p-3 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-deepTeal text-sandGold flex items-center justify-center shrink-0">
-              <i data-lucide="file-audio" class="w-5 h-5"></i>
+            <button onclick="event.stopPropagation(); toggleAudio(this)" class="w-10 h-10 rounded-full bg-deepTeal text-sandGold flex items-center justify-center shrink-0 shadow">
+              <i data-lucide="play" class="w-5 h-5 ml-0.5"></i>
+            </button>
+            <div class="flex-1">
+              <div class="flex items-end justify-between h-6 space-x-0.5 px-1">
+                <div class="w-1 bg-stone-300 h-2"></div>
+                <div class="w-1 bg-stone-300 h-5"></div>
+                <div class="w-1 bg-deepTeal h-4"></div>
+                <div class="w-1 bg-deepTeal h-6"></div>
+                <div class="w-1 bg-stone-300 h-3"></div>
+                <div class="w-1 bg-stone-300 h-5"></div>
+                <div class="w-1 bg-stone-300 h-2"></div>
+              </div>
+              <p class="mt-1 text-[10px] text-stone-400">${escapeHtml(item.duration || '口述音频已入库')}</p>
             </div>
-            <audio src="${escapeHtml(item.fileUrl || url)}" controls class="w-full"></audio>
           </div>
         `;
       }
 
-      if (assetType === 'video' || mime.startsWith('video/')) {
-        return `<video src="${escapeHtml(item.fileUrl || url)}" controls class="w-full max-h-56 bg-stone-950"></video>`;
+      const imageUrl = item.imageUrl || item.thumbnailUrl || item.fileUrl || getMatchedHeritageImage(item);
+      if (!imageUrl) return renderPhotoReviewPlaceholder(item.regionName || item.region);
+      return `
+        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.imageAlt || item.title || '采集详情')}" class="h-48 w-full object-cover saturate-[1.12] contrast-[1.04] brightness-[1.03]" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
+        <div class="hidden">${renderPhotoReviewPlaceholder(item.regionName || item.region)}</div>
+      `;
+    }
+
+    function renderDiscoverScienceContent(item) {
+      const container = document.getElementById('discover-science-content');
+      if (!container) return;
+      const points = Array.isArray(item.sciencePoints) ? item.sciencePoints : [];
+      if (!points.length) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        return;
       }
 
-      return `<img src="${escapeHtml(url)}" alt="${escapeHtml(item.title || '用户通过素材')}" class="w-full h-40 object-cover">`;
+      container.classList.remove('hidden');
+      container.innerHTML = `
+        <div class="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
+          <div class="flex items-center justify-between">
+            <p class="flex items-center text-[11px] font-bold text-deepTeal">
+              <i data-lucide="book-open-check" class="mr-1.5 h-3.5 w-3.5"></i> 图文科普
+            </p>
+            <span class="rounded-full bg-sandGold/20 px-2 py-0.5 text-[10px] font-bold text-deepTeal">已完善</span>
+          </div>
+          <div class="mt-2 space-y-3">
+            ${points.map(point => `
+              <section class="rounded-lg bg-stone-50 p-2.5">
+                ${point.imageUrl ? `
+                  <div class="mb-2 overflow-hidden rounded-lg bg-stone-100">
+                    <img src="${escapeHtml(point.imageUrl)}" alt="${escapeHtml(point.imageAlt || point.title || item.title)}" class="h-32 w-full object-cover saturate-[1.12] contrast-[1.04] brightness-[1.03]" loading="lazy" onerror="this.closest('div').remove();">
+                  </div>
+                ` : ''}
+                <h4 class="text-xs font-bold text-stone-800">${escapeHtml(point.title || '科普要点')}</h4>
+                <p class="mt-1 text-[11px] leading-relaxed text-stone-600">${escapeHtml(point.text || '')}</p>
+                ${point.sourceName ? `
+                  <a href="${escapeHtml(point.sourceUrl || '#')}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="mt-2 inline-flex items-center text-[10px] font-bold text-deepTeal hover:underline">
+                    <i data-lucide="external-link" class="mr-1 h-3 w-3"></i>${escapeHtml(point.sourceName)}
+                  </a>
+                ` : ''}
+              </section>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSupplementSlots(item) {
+      const container = document.getElementById('discover-supplement-slots');
+      if (!container) return;
+      const rewards = getDiscoverSupplementRewards();
+      const slots = getDefaultSupplementSlots(item);
+      container.innerHTML = slots.map(slot => {
+        const rewardKey = getSupplementRewardKey(item.id, slot.id);
+        const isDone = Boolean(rewards[rewardKey]);
+        return `
+          <div class="rounded-xl border ${isDone ? 'border-emerald-200 bg-emerald-50' : 'border-stone-200 bg-white'} p-3">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-bold text-stone-800">${escapeHtml(slot.title)}</p>
+                <p class="mt-1 text-[10px] leading-relaxed text-stone-500">${escapeHtml(slot.desc)}</p>
+              </div>
+              <span class="shrink-0 rounded-full ${isDone ? 'bg-emerald-100 text-emerald-700' : 'bg-sandGold/20 text-deepTeal'} px-2 py-0.5 text-[10px] font-bold">+${Number(slot.reward || 30)}</span>
+            </div>
+            <button type="button" onclick="triggerDiscoverSupplementUpload('${escapeJsString(item.id)}', '${escapeJsString(slot.id)}')" class="mt-2 flex w-full items-center justify-center rounded-lg ${isDone ? 'bg-emerald-600 text-white' : 'bg-deepTeal text-sandGold'} px-3 py-2 text-xs font-bold">
+              <i data-lucide="${isDone ? 'check-circle' : 'upload-cloud'}" class="mr-1.5 h-3.5 w-3.5"></i> ${isDone ? '已补充并获得积分' : '上传补充资料'}
+            </button>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function openDiscoverDetail(itemId) {
+      const item = getDiscoverFeedItemById(itemId);
+      if (!item) {
+        showToast('未找到这条采集内容', 'alert-circle');
+        return;
+      }
+      activeDiscoverDetailItem = item;
+      document.getElementById('discover-detail-region').innerText = item.regionName || item.region || '湖北';
+      document.getElementById('discover-detail-title').innerText = item.title || '未命名采集内容';
+      document.getElementById('discover-detail-meta').innerText = `${item.author || item.contributorName || '社区采集人'} · ${formatLiveFeedTime(item.createdAt || item.reviewedAt)}`;
+      document.getElementById('discover-detail-desc').innerText = item.description || item.category || '该线索已进入社区采集流，等待补充资料与复核。';
+      document.getElementById('discover-detail-value').innerText = item.researchValue || '该线索与景点、文物或技艺衍生相关，可通过更多现场资料提升历史脉络复核价值。';
+      document.getElementById('discover-detail-media').innerHTML = renderDiscoverDetailMedia(item);
+      renderDiscoverScienceContent(item);
+      renderSupplementSlots(item);
+      document.getElementById('discover-detail-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeDiscoverDetailModal() {
+      document.getElementById('discover-detail-modal').classList.add('hidden');
+      activeDiscoverDetailItem = null;
+      activeSupplementSlot = null;
+      const input = document.getElementById('discover-supplement-file');
+      if (input) input.value = '';
+    }
+
+    function triggerDiscoverSupplementUpload(itemId, slotId) {
+      const item = getDiscoverFeedItemById(itemId);
+      if (!item) return;
+      const slot = getDefaultSupplementSlots(item).find(entry => entry.id === slotId);
+      if (!slot) return;
+      activeDiscoverDetailItem = item;
+      activeSupplementSlot = slot;
+      const input = document.getElementById('discover-supplement-file');
+      input.accept = slot.accept || 'image/*,audio/*,video/*';
+      input.click();
+    }
+
+    function handleDiscoverSupplementUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file || !activeDiscoverDetailItem || !activeSupplementSlot) return;
+      const rewards = getDiscoverSupplementRewards();
+      const rewardKey = getSupplementRewardKey(activeDiscoverDetailItem.id, activeSupplementSlot.id);
+      const reward = Number(activeSupplementSlot.reward || 30);
+
+      if (!rewards[rewardKey]) {
+        rewards[rewardKey] = {
+          fileName: file.name,
+          slotTitle: activeSupplementSlot.title,
+          itemTitle: activeDiscoverDetailItem.title,
+          reward,
+          submittedAt: new Date().toISOString()
+        };
+        saveDiscoverSupplementRewards(rewards);
+        updateUserPoints(reward);
+        showToast(`补充资料上传成功，+${reward} 积分已到账`, 'award');
+      } else {
+        showToast('该位置已补充过资料，本次不重复发放积分', 'check-circle');
+      }
+
+      renderSupplementSlots(activeDiscoverDetailItem);
+      renderDiscoverFeed();
+      event.target.value = '';
+    }
+
+    function getFeedLikeCount(id, baseLikes) {
+      return Number(baseLikes || 0) + (discoverLikeState[id] ? 1 : 0);
+    }
+
+    function renderFeedActions(item, disputeTitle, disputeRegion) {
+      const id = item.feedId || item.id || `submission-${item.title || disputeTitle || ''}`;
+      const baseLikes = Number(item.baseLikes || item.likes || item.likeCount || 0);
+      const isLiked = Boolean(discoverLikeState[id]);
+      const commentCount = Number(item.comments || item.commentCount || 0);
+      return `
+        <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-stone-100 text-xs">
+          <div class="flex items-center space-x-4 text-stone-500">
+            <button type="button" onclick="event.stopPropagation(); toggleSubmissionLike('${escapeJsString(id)}')" data-like-button="${escapeHtml(id)}" data-like-base="${baseLikes}" class="flex items-center font-semibold transition-colors ${isLiked ? 'text-cinnabarRed' : 'hover:text-deepTeal'}">
+              <i data-lucide="thumbs-up" class="w-4 h-4 mr-1 ${isLiked ? 'fill-current' : ''}"></i> <span data-like-count="${escapeHtml(id)}">${getFeedLikeCount(id, baseLikes)}</span>
+            </button>
+            <button type="button" onclick="event.stopPropagation(); openDiscoverDetail('${escapeJsString(id)}')" class="flex items-center hover:text-deepTeal">
+              <i data-lucide="message-square" class="w-4 h-4 mr-1"></i> <span>${commentCount}</span>
+            </button>
+          </div>
+          <button onclick="event.stopPropagation(); openDisputeModal('${escapeJsString(disputeTitle || item.title)}', '${escapeJsString(disputeRegion || item.region || item.regionName)}')" class="text-cinnabarRed font-bold flex items-center hover:underline">
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1"></i> 我有质疑/纠错
+          </button>
+        </div>
+      `;
+    }
+
+    function renderLiveSubmissionCard(item) {
+      const board = getDiscoverBoard(item);
+      const completeness = getDiscoverCompleteness(item);
+      const statusText = board === 'share'
+        ? `采集完善度 ${completeness}% · 科普分享`
+        : `采集完善度 ${completeness}% · 等待补充`;
+      const statusClass = board === 'share'
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        : 'border-amber-200 bg-amber-50 text-amber-700';
+      if (item.contentType === 'oral') {
+        return `
+          <article onclick="openDiscoverDetail('${escapeJsString(item.id)}')" class="cursor-pointer bg-white rounded-xl border border-stone-200 shadow-sm p-3">
+            <div class="flex justify-between items-start">
+              <span class="bg-sandGold/20 text-deepTeal text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center">
+                <i data-lucide="mic" class="w-3 h-3 mr-0.5"></i> 荆楚民间口述
+              </span>
+              <span class="text-stone-400 text-[10px]">${formatLiveFeedTime(item.createdAt)} · ${escapeHtml(item.region || '湖北')}</span>
+            </div>
+            <h5 class="cultural-font font-bold text-stone-800 text-sm mt-2">${escapeHtml(item.title)}</h5>
+
+            <div class="mt-3 bg-stone-50 border border-stone-100 rounded-xl p-2.5 flex items-center space-x-3">
+              <button onclick="event.stopPropagation(); toggleAudio(this)" class="w-9 h-9 rounded-full bg-deepTeal text-sandGold flex items-center justify-center shrink-0 shadow">
+                <i data-lucide="play" class="w-5 h-5 ml-0.5"></i>
+              </button>
+              <div class="flex-1">
+                <div class="flex items-end justify-between h-5 space-x-0.5 px-1">
+                  <div class="w-1 bg-stone-300 h-2"></div>
+                  <div class="w-1 bg-stone-300 h-4"></div>
+                  <div class="w-1 bg-stone-300 h-3"></div>
+                  <div class="w-1 bg-deepTeal h-5"></div>
+                  <div class="w-1 bg-deepTeal h-2"></div>
+                  <div class="w-1 bg-stone-300 h-4"></div>
+                  <div class="w-1 bg-stone-300 h-1"></div>
+                  <div class="w-1 bg-stone-300 h-3"></div>
+                  <div class="w-1 bg-stone-300 h-5"></div>
+                  <div class="w-1 bg-stone-300 h-2"></div>
+                  <div class="w-1 bg-stone-300 h-3"></div>
+                </div>
+                <div class="flex justify-between text-[9px] text-stone-400 mt-1">
+                  <span>${escapeHtml(item.duration || '0:00 / 1:00')}</span>
+                  <span class="text-emerald-600 font-semibold flex items-center">
+                    <i data-lucide="shield-check" class="w-3 h-3 mr-0.5"></i> 已注入隐形声纹水印
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-xs text-stone-500 mt-2 line-clamp-2">${escapeHtml(item.description)}</p>
+            <div class="mt-3 rounded-lg border ${statusClass} p-2">
+              <p class="text-[10px] font-bold">${statusText}</p>
+            </div>
+            ${renderFeedActions(item, item.title, item.region)}
+          </article>
+        `;
+      }
+
+      const imageUrl = item.imageUrl || getMatchedHeritageImage(item);
+      return `
+        <article onclick="openDiscoverDetail('${escapeJsString(item.id)}')" class="cursor-pointer bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+          <div class="p-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex min-w-0 items-center gap-2.5">
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-deepTeal text-xs font-bold text-sandGold">${escapeHtml(item.avatar || '采')}</div>
+                <div class="min-w-0">
+                  <p class="truncate text-xs font-bold text-stone-800">${escapeHtml(item.author || '社区采集人')}</p>
+                  <p class="text-[10px] text-stone-400">${formatLiveFeedTime(item.createdAt)} · ${escapeHtml(item.region || '湖北')}</p>
+                </div>
+              </div>
+              <span class="shrink-0 rounded-full bg-sandGold/20 px-2 py-0.5 text-[10px] font-bold text-deepTeal">${escapeHtml(item.badge || '实时采集')}</span>
+            </div>
+
+            <h5 class="cultural-font mt-3 text-sm font-bold text-stone-800">${escapeHtml(item.title)}</h5>
+            <p class="mt-1 text-xs leading-relaxed text-stone-600">${escapeHtml(item.description)}</p>
+
+            <div class="relative mt-3 overflow-hidden rounded-xl bg-stone-100">
+              ${imageUrl ? `
+                <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.imageAlt || item.title)}" class="h-48 w-full object-cover saturate-[1.12] contrast-[1.04] brightness-[1.03]" loading="lazy" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.add('hidden'); this.parentElement.querySelector('[data-photo-fallback]').classList.remove('hidden');">
+                <div class="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-xs">
+                  <i data-lucide="map-pin" class="mr-0.5 inline-block h-3 w-3 text-sandGold"></i>${escapeHtml(item.region || '湖北')}
+                </div>
+                <div data-photo-fallback class="hidden">${renderPhotoReviewPlaceholder(item.region)}</div>
+              ` : renderPhotoReviewPlaceholder(item.region)}
+            </div>
+
+            <div class="mt-3 rounded-lg border ${statusClass} p-2">
+              <p class="text-[10px] font-bold">${statusText}</p>
+            </div>
+
+            ${renderFeedActions(item, item.title, item.region)}
+          </div>
+        </article>
+      `;
+    }
+
+    function renderApprovedMedia(item) {
+      const assetType = item.assetType || 'photo';
+      const mime = item.mimeType || '';
+      const canUseUploadedMedia = !['audio', 'video'].includes(assetType) && !mime.startsWith('audio/') && !mime.startsWith('video/');
+      const url = item.thumbnailUrl || (canUseUploadedMedia ? item.fileUrl : '') || getMatchedHeritageImage(item);
+      if (!url) return renderPhotoReviewPlaceholder(item.regionName || item.region);
+      return `
+        <img src="${escapeHtml(url)}" alt="${escapeHtml(item.title || '用户通过素材')}" class="w-full h-48 object-cover saturate-[1.12] contrast-[1.04] brightness-[1.03]" loading="lazy" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
+        <div class="hidden">${renderPhotoReviewPlaceholder(item.regionName || item.region)}</div>
+      `;
     }
 
     function renderApprovedSubmissionCard(item) {
@@ -2069,72 +2850,166 @@
       const region = item.regionName || '湖北';
       const scoreText = Number.isFinite(Number(item.qualityScore)) ? `${item.qualityScore}/100` : '人工复核';
       const description = item.description || item.category || '该素材已通过管理员审核，进入公开展示区。';
-      const isVisual = !['audio', 'video'].includes(item.assetType || '');
+      const feedItem = {
+        ...item,
+        id: item.feedId || `approved-${item.id || title}`,
+        baseLikes: Number(item.likes || item.likeCount || 12),
+        comments: Number(item.comments || 0),
+        board: getDiscoverBoard(item),
+        completeness: getDiscoverCompleteness(item)
+      };
+      const approvedBoard = getDiscoverBoard(feedItem);
+      const approvedCompleteness = getDiscoverCompleteness(feedItem);
+      const approvedStatusClass = approvedBoard === 'share'
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        : 'border-amber-200 bg-amber-50 text-amber-700';
+      const approvedStatusText = approvedBoard === 'share'
+        ? `采集完善度 ${approvedCompleteness}% · 科普分享`
+        : `采集完善度 ${approvedCompleteness}% · 等待补充`;
+
+      if ((item.assetType || '') === 'audio') {
+        return `
+          <article onclick="openDiscoverDetail('${escapeJsString(feedItem.id)}')" class="cursor-pointer bg-white rounded-xl border border-stone-200 shadow-sm p-3">
+            <div class="flex justify-between items-start">
+              <span class="bg-sandGold/20 text-deepTeal text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center">
+                <i data-lucide="mic" class="w-3 h-3 mr-0.5"></i> ${getPublicAssetLabel(item)}
+              </span>
+              <span class="text-stone-400 text-[10px]">通过于 ${formatPublicDate(item.reviewedAt || item.createdAt)}</span>
+            </div>
+            <h5 class="cultural-font font-bold text-stone-800 text-sm mt-2">${escapeHtml(title)}</h5>
+            <div class="mt-3 bg-stone-50 border border-stone-100 rounded-xl p-3 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-deepTeal text-sandGold flex items-center justify-center shrink-0">
+                <i data-lucide="file-audio" class="w-5 h-5"></i>
+              </div>
+              ${item.fileUrl ? `<audio src="${escapeHtml(item.fileUrl)}" controls class="w-full"></audio>` : '<p class="text-xs text-stone-500">口述音频已入库，待管理员开放播放。</p>'}
+            </div>
+            <p class="text-xs text-stone-500 mt-2 line-clamp-2">${escapeHtml(description)}</p>
+            <div class="mt-3 flex justify-between items-center text-xs">
+              <span class="text-stone-400 text-[10px]">采集人：${escapeHtml(item.contributorName || '楚韵链迹守护者')}</span>
+            </div>
+            <div class="mt-3 rounded-lg border ${approvedStatusClass} p-2">
+              <p class="text-[10px] font-bold">${approvedStatusText}</p>
+            </div>
+            ${renderFeedActions(feedItem, title, region)}
+          </article>
+        `;
+      }
 
       return `
-        <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
-          ${isVisual ? `
-            <div class="relative">
-              ${renderApprovedMedia(item)}
-              <div class="absolute top-2 right-2 bg-emerald-600/90 text-white text-[10px] px-2 py-0.5 rounded flex items-center font-semibold">
-                <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i> 管理员已通过
-              </div>
-              <div class="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded flex items-center backdrop-blur-xs">
-                <i data-lucide="map-pin" class="w-3 h-3 mr-0.5 text-sandGold"></i> ${escapeHtml(region)}
-              </div>
+        <article onclick="openDiscoverDetail('${escapeJsString(feedItem.id)}')" class="cursor-pointer bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+          <div class="relative">
+            ${renderApprovedMedia(item)}
+            <div class="absolute top-2 right-2 bg-emerald-600/90 text-white text-[10px] px-2 py-0.5 rounded flex items-center font-semibold">
+              <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i> 管理员已通过
             </div>
-          ` : `
-            <div class="p-3 pb-0">
-              <div class="flex justify-between items-start">
-                <span class="bg-sandGold/20 text-deepTeal text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center">
-                  <i data-lucide="${item.assetType === 'video' ? 'video' : 'mic'}" class="w-3 h-3 mr-0.5"></i> ${getPublicAssetLabel(item)}
-                </span>
-                <span class="text-stone-400 text-[10px]">通过于 ${formatPublicDate(item.reviewedAt || item.createdAt)}</span>
-              </div>
-              <div class="mt-3">${renderApprovedMedia(item)}</div>
+            <div class="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded flex items-center backdrop-blur-xs">
+              <i data-lucide="map-pin" class="w-3 h-3 mr-0.5 text-sandGold"></i> ${escapeHtml(region)}
             </div>
-          `}
+          </div>
           <div class="p-3">
             <div class="flex items-start justify-between gap-2">
               <h5 class="cultural-font font-bold text-stone-800 text-sm">${escapeHtml(title)}</h5>
               <span class="shrink-0 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(scoreText)}</span>
             </div>
             <p class="text-xs text-stone-500 mt-1 line-clamp-2">${escapeHtml(description)}</p>
-            <div class="mt-3 bg-stone-50 rounded-lg p-2 border border-sandGold/20 flex items-center justify-between">
-              <div class="flex items-center space-x-2">
-                <span class="w-2 h-2 rounded-full bg-sandGold"></span>
-                <p class="text-[10px] text-deepTeal font-semibold">公开展示：${escapeHtml(region)} · ${escapeHtml(getPublicAssetLabel(item))}</p>
-              </div>
-              <span class="text-[10px] text-stone-400">采集人：${escapeHtml(item.contributorName || '楚韵链迹守护者')}</span>
+            <div class="mt-3 bg-stone-50 rounded-lg p-2 border border-sandGold/20 flex items-center justify-between gap-2">
+              <p class="text-[10px] text-deepTeal font-semibold">公开展示：${escapeHtml(region)} · ${escapeHtml(getPublicAssetLabel(item))}</p>
+              <span class="shrink-0 text-[10px] text-stone-400">采集人：${escapeHtml(item.contributorName || '楚韵链迹守护者')}</span>
             </div>
-            <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-stone-100 text-xs">
-              <span class="text-stone-400 text-[10px]">通过于 ${formatPublicDate(item.reviewedAt || item.createdAt)}</span>
-              <button onclick="openDisputeModal('${escapeJsString(title)}', '${escapeJsString(region)}')" class="text-cinnabarRed font-bold flex items-center hover:underline">
-                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1"></i> 我有质疑/纠错
-              </button>
+            <div class="mt-3 rounded-lg border ${approvedStatusClass} p-2">
+              <p class="text-[10px] font-bold">${approvedStatusText}</p>
             </div>
+            ${renderFeedActions(feedItem, title, region)}
           </div>
-        </div>
+        </article>
       `;
     }
 
-    let curatedSubmissionFeedHtml = '';
+    function renderDiscoverFeed() {
+      const shareSection = document.getElementById('discover-share-section');
+      const needsSection = document.getElementById('discover-needs-section');
+      const shareFeed = document.getElementById('discover-share-feed');
+      const needsFeed = document.getElementById('discover-needs-feed');
+      if (!shareFeed || !needsFeed) return;
+
+      const allItems = getStableDiscoverFeedItems();
+      const searchTerm = getDiscoverSearchTerm();
+      const shareItems = allItems.filter(item => getDiscoverBoard(item) === 'share' && matchesDiscoverSearch(item, searchTerm));
+      const needsItems = allItems.filter(item => getDiscoverBoard(item) === 'needs' && matchesDiscoverSearch(item, searchTerm));
+
+      if (shareSection) shareSection.classList.toggle('hidden', activeDiscoverBoard !== 'share');
+      if (needsSection) needsSection.classList.toggle('hidden', activeDiscoverBoard !== 'needs');
+
+      shareFeed.innerHTML = shareItems.length
+        ? shareItems.map(item => item.feedId ? renderApprovedSubmissionCard(item) : renderLiveSubmissionCard(item)).join('')
+        : '<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">当前搜索下暂无高完善度采集内容。</div>';
+      needsFeed.innerHTML = needsItems.length
+        ? needsItems.map(item => item.feedId ? renderApprovedSubmissionCard(item) : renderLiveSubmissionCard(item)).join('')
+        : '<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">当前搜索下暂无待补充采集内容。</div>';
+      lucide.createIcons();
+    }
+
+    function toggleSubmissionLike(id) {
+      discoverLikeState[id] = !discoverLikeState[id];
+      saveDiscoverLikes();
+      let baseLikesForId = 0;
+      document.querySelectorAll('[data-like-button]').forEach(button => {
+        if (button.getAttribute('data-like-button') !== id) return;
+        const baseLikes = Number(button.getAttribute('data-like-base') || 0);
+        baseLikesForId = baseLikes;
+        button.classList.toggle('text-cinnabarRed', Boolean(discoverLikeState[id]));
+        button.classList.toggle('hover:text-deepTeal', !discoverLikeState[id]);
+        const icon = button.querySelector('svg');
+        if (icon) icon.classList.toggle('fill-current', Boolean(discoverLikeState[id]));
+      });
+      document.querySelectorAll('[data-like-count]').forEach(count => {
+        if (count.getAttribute('data-like-count') !== id) return;
+        count.innerText = getFeedLikeCount(id, baseLikesForId);
+      });
+      showToast(discoverLikeState[id] ? '已点赞这条采集内容' : '已取消点赞', 'thumbs-up');
+    }
+
+    function startDiscoverLiveTicker() {
+      if (discoverLiveTimer) return;
+      discoverLiveTimer = setInterval(() => {
+        const discoverView = document.getElementById('view-discover');
+        if (!discoverView || discoverView.classList.contains('hidden')) return;
+        const candidate = discoverLiveCandidates[discoverNextLiveIndex % discoverLiveCandidates.length];
+        discoverNextLiveIndex += 1;
+        const nextLiveItem = {
+          ...candidate,
+          id: `${candidate.id}-${Date.now()}`,
+          createdAt: Date.now()
+        };
+        const shareItems = discoverLiveFeedItems.filter(item => getDiscoverBoard(item) === 'share');
+        const needsItems = discoverLiveFeedItems.filter(item => getDiscoverBoard(item) === 'needs');
+        discoverLiveFeedItems.splice(0, discoverLiveFeedItems.length, ...shareItems, nextLiveItem, ...needsItems.slice(0, 5));
+        renderDiscoverFeed();
+      }, 18000);
+    }
+
     function loadApprovedSubmissionFeed() {
-      const feed = document.getElementById('approved-submission-feed');
-      if (!feed || typeof fetch !== 'function') return;
-      if (!curatedSubmissionFeedHtml) {
-        curatedSubmissionFeedHtml = feed.innerHTML;
-      }
+      loadDiscoverLikes();
+      renderDiscoverFeed();
+      startDiscoverLiveTicker();
+      if (typeof fetch !== 'function') return;
 
       fetch(`${LOCAL_API_BASE_URL}/api/public/submissions?limit=10`)
         .then(response => response.json())
         .then(data => {
           if (!data || !data.success || !Array.isArray(data.items) || data.items.length === 0) return;
-          feed.innerHTML = `${data.items.map(renderApprovedSubmissionCard).join('')}${curatedSubmissionFeedHtml}`;
-          lucide.createIcons();
+          approvedSubmissionItems = data.items.map(item => {
+            const feedId = `approved-${item.id || item.title || item.createdAt}`;
+            return {
+              ...item,
+              id: feedId,
+              feedId
+            };
+          });
+          renderDiscoverFeed();
         })
         .catch(() => {
-          // Keep the curated example cards when the local backend is not running.
+          // 本地后台未启动时，保留前端实时采集流。
         });
     }
 
@@ -2250,16 +3125,15 @@
         currentNav.classList.add('text-sandGold');
       }
 
-      if (tabId === 'discover' && window.discoverFeedController) {
-        window.discoverFeedController.render();
-      }
-
       if (tabId === 'map') {
         initHeritageMap();
         if (heritageMap) {
           setTimeout(() => heritageMap.invalidateSize(), 120);
         }
         closeLandmarkDrawer();
+      }
+      if (tabId === 'community') {
+        renderCommunityRouteCard();
       }
     }
 
@@ -2366,9 +3240,770 @@
     let communityQuizCompleted = false;
     let communityRouteProgress = 0;
 
+    function getDistanceBetweenCoords(origin, target) {
+      if (!origin || !target || !Array.isArray(target)) return Number.POSITIVE_INFINITY;
+      const [targetLat, targetLon] = target;
+      const lat = Number(origin.latitude);
+      const lon = Number(origin.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(targetLat) || !Number.isFinite(targetLon)) {
+        return Number.POSITIVE_INFINITY;
+      }
+      const dLat = (targetLat - lat) * 111.0;
+      const dLon = (targetLon - lon) * 111.0 * Math.cos((lat * Math.PI) / 180);
+      return Math.max(1, Math.round(Math.sqrt(dLat * dLat + dLon * dLon)));
+    }
+
+    function getRecommendedCommunityRoute() {
+      if (!currentLocation || !currentLocation.isReal) {
+        return {
+          route: communityRoutePlans[0],
+          distanceKm: null,
+          reason: '默认推荐'
+        };
+      }
+
+      const rankedRoutes = communityRoutePlans
+        .map(route => ({
+          route,
+          distanceKm: getDistanceBetweenCoords(currentLocation, route.center)
+        }))
+        .sort((a, b) => a.distanceKm - b.distanceKm);
+
+      return {
+        route: rankedRoutes[0].route,
+        distanceKm: rankedRoutes[0].distanceKm,
+        reason: '按定位推荐'
+      };
+    }
+
+    function getRouteStepCoords(step, route) {
+      const landmark = step && step.landmarkId
+        ? heritageLandmarks.find(item => item.id === step.landmarkId)
+        : null;
+      if (landmark && Array.isArray(landmark.coords)) return landmark.coords;
+      return route && Array.isArray(route.center) ? route.center : [30.5928, 114.3055];
+    }
+
+    function getActivityRouteOrigin() {
+      if (currentLocation && currentLocation.isReal) {
+        return {
+          title: '我的位置',
+          coords: [currentLocation.latitude, currentLocation.longitude],
+          note: Number.isFinite(currentLocation.accuracy) ? `真实定位 · 精度约 ${Math.round(currentLocation.accuracy)} 米` : '真实定位',
+          isReal: true
+        };
+      }
+
+      return {
+        title: '我的位置',
+        coords: [30.5928, 114.3055],
+        note: '未授权定位 · 暂用武汉市中心估算',
+        isReal: false
+      };
+    }
+
+    function getDistanceBetweenLatLonPoints(originCoords, targetCoords) {
+      if (!Array.isArray(originCoords) || !Array.isArray(targetCoords)) return Number.POSITIVE_INFINITY;
+      const [originLat, originLon] = originCoords.map(Number);
+      const [targetLat, targetLon] = targetCoords.map(Number);
+      if (![originLat, originLon, targetLat, targetLon].every(Number.isFinite)) return Number.POSITIVE_INFINITY;
+      const dLat = (targetLat - originLat) * 111.0;
+      const dLon = (targetLon - originLon) * 111.0 * Math.cos((originLat * Math.PI) / 180);
+      return Math.max(0.2, Math.sqrt(dLat * dLat + dLon * dLon));
+    }
+
+    function formatTravelMinutes(minutes) {
+      const rounded = Math.max(8, Math.round(minutes));
+      if (rounded < 60) return `约 ${rounded} 分钟`;
+      const hours = Math.floor(rounded / 60);
+      const rest = rounded % 60;
+      return rest ? `约 ${hours} 小时 ${rest} 分钟` : `约 ${hours} 小时`;
+    }
+
+    function estimateActivityTravel(originCoords, targetCoords) {
+      const distanceKm = getDistanceBetweenLatLonPoints(originCoords, targetCoords);
+      let mode = '步行/骑行';
+      let minutes = distanceKm * 16;
+
+      if (distanceKm > 180) {
+        mode = '高铁/动车 + 当地接驳';
+        minutes = distanceKm / 150 * 60 + 75;
+      } else if (distanceKm > 45) {
+        mode = '城际铁路/客运 + 网约车';
+        minutes = distanceKm / 85 * 60 + 45;
+      } else if (distanceKm > 15) {
+        mode = '地铁/公交 + 网约车';
+        minutes = distanceKm / 35 * 60 + 20;
+      } else if (distanceKm > 2.5) {
+        mode = '地铁/公交 + 步行';
+        minutes = distanceKm / 24 * 60 + 12;
+      }
+
+      return {
+        distanceKm,
+        distanceLabel: distanceKm < 1 ? '1km 内' : `约 ${Math.round(distanceKm)}km`,
+        mode,
+        minutes,
+        timeLabel: formatTravelMinutes(minutes)
+      };
+    }
+
+    function projectRouteGraphNodes(nodes) {
+      const lats = nodes.map(node => node.coords[0]);
+      const lons = nodes.map(node => node.coords[1]);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLon = Math.min(...lons);
+      const maxLon = Math.max(...lons);
+      const latSpan = Math.max(0.01, maxLat - minLat);
+      const lonSpan = Math.max(0.01, maxLon - minLon);
+      const seen = {};
+
+      return nodes.map((node, index) => {
+        const key = `${node.coords[0].toFixed(3)}-${node.coords[1].toFixed(3)}`;
+        seen[key] = (seen[key] || 0) + 1;
+        const offsetIndex = seen[key] - 1;
+        const x = 28 + ((node.coords[1] - minLon) / lonSpan) * 264 + (offsetIndex % 2 ? 12 : -8) * offsetIndex;
+        const y = 174 - ((node.coords[0] - minLat) / latSpan) * 146 + (offsetIndex % 2 ? -10 : 10) * offsetIndex;
+        return {
+          ...node,
+          x: Math.min(300, Math.max(20, x)),
+          y: Math.min(184, Math.max(24, y)),
+          index
+        };
+      });
+    }
+
+    function renderActivityRouteGraph(route) {
+      const origin = getActivityRouteOrigin();
+      const targets = route.steps.map((step, index) => {
+        const coords = getRouteStepCoords(step, route);
+        const travel = estimateActivityTravel(origin.coords, coords);
+        return {
+          id: step.landmarkId || `${route.id}-step-${index}`,
+          title: step.title,
+          desc: step.desc,
+          coords,
+          landmarkId: step.landmarkId || '',
+          order: index + 1,
+          travel
+        };
+      });
+      const nodes = projectRouteGraphNodes([
+        { id: 'origin', title: origin.title, coords: origin.coords, type: 'origin', note: origin.note },
+        ...targets.map(target => ({ ...target, type: 'target' }))
+      ]);
+      const originNode = nodes[0];
+      const targetNodes = nodes.slice(1);
+      const routePath = [originNode, ...targetNodes].map(node => `${node.x.toFixed(1)},${node.y.toFixed(1)}`).join(' ');
+
+      return `
+        <svg viewBox="0 0 320 210" class="h-[210px] w-full" role="img" aria-label="活动路线图谱">
+          <defs>
+            <pattern id="route-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#e7e1d5" stroke-width="1"/>
+            </pattern>
+            <marker id="route-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#294343"/>
+            </marker>
+          </defs>
+          <rect x="0" y="0" width="320" height="210" rx="14" fill="#fbfaf7"/>
+          <rect x="10" y="10" width="300" height="190" rx="12" fill="url(#route-grid)" stroke="#d7cab7"/>
+          <text x="286" y="30" text-anchor="middle" fill="#8a7b66" font-size="10" font-weight="700">北</text>
+          <path d="M286 48 L286 34 M280 40 L286 34 L292 40" stroke="#8a7b66" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          ${targetNodes.map(node => `
+            <line x1="${originNode.x.toFixed(1)}" y1="${originNode.y.toFixed(1)}" x2="${node.x.toFixed(1)}" y2="${node.y.toFixed(1)}" stroke="#d8c28b" stroke-width="1.2" stroke-dasharray="4 4"/>
+          `).join('')}
+          <polyline points="${routePath}" fill="none" stroke="#294343" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#route-arrow)"/>
+          <g transform="translate(${originNode.x.toFixed(1)}, ${originNode.y.toFixed(1)})">
+            <circle r="11" fill="#b4553f"/>
+            <circle r="16" fill="#b4553f" opacity="0.15"/>
+            <text text-anchor="middle" y="3.5" fill="white" font-size="10" font-weight="800">我</text>
+          </g>
+          ${targetNodes.map(node => `
+            <g transform="translate(${node.x.toFixed(1)}, ${node.y.toFixed(1)})" ${node.landmarkId ? `onclick="openCommunityMapPoint('${escapeJsString(node.landmarkId)}')"` : ''} class="${node.landmarkId ? 'cursor-pointer' : ''}">
+              <circle r="10" fill="#294343"/>
+              <circle r="14" fill="#294343" opacity="0.12"/>
+              <text text-anchor="middle" y="3.5" fill="#d6b66a" font-size="10" font-weight="800">${node.order}</text>
+              <text x="0" y="25" text-anchor="middle" fill="#403a34" font-size="9" font-weight="700">${escapeHtml(node.title).slice(0, 8)}</text>
+            </g>
+          `).join('')}
+        </svg>
+      `;
+    }
+
+    function renderActivityRouteGraphList(route) {
+      const origin = getActivityRouteOrigin();
+      return route.steps.map((step, index) => {
+        const coords = getRouteStepCoords(step, route);
+        const travel = estimateActivityTravel(origin.coords, coords);
+        return `
+          <button type="button" onclick="${step.landmarkId ? `openCommunityMapPoint('${escapeJsString(step.landmarkId)}')` : "switchTab('collect')"}" class="w-full rounded-xl border border-stone-200 bg-white p-3 text-left shadow-sm">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-xs font-bold text-stone-800">${index + 1}. ${escapeHtml(step.title)}</p>
+                <p class="mt-0.5 text-[10px] leading-relaxed text-stone-500">${escapeHtml(step.desc)}</p>
+              </div>
+              <span class="shrink-0 rounded-full bg-sandGold/20 px-2 py-0.5 text-[10px] font-bold text-deepTeal">${escapeHtml(travel.distanceLabel)}</span>
+            </div>
+            <div class="mt-2 grid grid-cols-2 gap-2 text-[10px]">
+              <span class="rounded-lg bg-stone-50 px-2 py-1.5 font-bold text-deepTeal">${escapeHtml(travel.timeLabel)}</span>
+              <span class="rounded-lg bg-stone-50 px-2 py-1.5 font-bold text-stone-600">${escapeHtml(travel.mode)}</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function openActivityRouteGraphModal() {
+      const recommendation = getRecommendedCommunityRoute();
+      const route = activeCommunityRoute || recommendation.route;
+      activeCommunityRoute = route;
+      const origin = getActivityRouteOrigin();
+      const title = document.getElementById('activity-route-graph-title');
+      const subtitle = document.getElementById('activity-route-graph-subtitle');
+      const map = document.getElementById('activity-route-graph-map');
+      const list = document.getElementById('activity-route-graph-list');
+      const modal = document.getElementById('activity-route-graph-modal');
+      if (!route || !map || !list || !modal) return;
+
+      if (title) title.innerText = route.title;
+      if (subtitle) {
+        subtitle.innerText = `${origin.note} · ${route.city} · ${route.duration}`;
+      }
+      map.innerHTML = renderActivityRouteGraph(route);
+      list.innerHTML = `
+        <div class="rounded-xl border border-sandGold/25 bg-sandGold/10 p-3">
+          <p class="text-[11px] font-bold text-deepTeal">${escapeHtml(origin.title)}</p>
+          <p class="mt-0.5 text-[10px] text-stone-500">${escapeHtml(origin.note)}</p>
+        </div>
+        ${renderActivityRouteGraphList(route)}
+      `;
+      modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeActivityRouteGraphModal() {
+      const modal = document.getElementById('activity-route-graph-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function openActiveRouteInMap() {
+      const route = activeCommunityRoute || getRecommendedCommunityRoute().route;
+      openActivityRoutesOnMap(route ? route.id : null);
+    }
+
+    function getRankedCommunityRouteOptions(limit = 3) {
+      const selectedRoute = activeCommunityRoute || getRecommendedCommunityRoute().route;
+      const rankedRoutes = communityRoutePlans
+        .map(route => ({
+          route,
+          distanceKm: currentLocation && currentLocation.isReal
+            ? getDistanceBetweenCoords(currentLocation, route.center)
+            : null
+        }))
+        .sort((a, b) => {
+          if (a.route.id === selectedRoute.id) return -1;
+          if (b.route.id === selectedRoute.id) return 1;
+          if (a.distanceKm === null || b.distanceKm === null) {
+            return communityRoutePlans.indexOf(a.route) - communityRoutePlans.indexOf(b.route);
+          }
+          return a.distanceKm - b.distanceKm;
+        });
+
+      return rankedRoutes.slice(0, limit);
+    }
+
+    function getRouteSequentialSummary(route, originCoords) {
+      let previousCoords = originCoords;
+      let totalDistanceKm = 0;
+      let totalMinutes = 0;
+      (route.steps || []).forEach(step => {
+        const coords = getRouteStepCoords(step, route);
+        const travel = estimateActivityTravel(previousCoords, coords);
+        totalDistanceKm += travel.distanceKm;
+        totalMinutes += travel.minutes;
+        previousCoords = coords;
+      });
+
+      return {
+        distanceLabel: totalDistanceKm < 1 ? '1km 内' : `约 ${Math.round(totalDistanceKm)}km`,
+        timeLabel: formatTravelMinutes(totalMinutes),
+        totalMinutes
+      };
+    }
+
+    function getMapRouteColor(index, isSelected) {
+      if (isSelected) return '#2C4C4E';
+      return ['#C5A880', '#8A7B66', '#962D2D'][index % 3];
+    }
+
+    function createRoutePointIcon(label, type = 'target', muted = false) {
+      const className = type === 'origin' ? 'route-marker origin' : `route-marker${muted ? ' muted' : ''}`;
+      return L.divIcon({
+        className: '',
+        html: `<div class="${className}">${escapeHtml(label)}</div>`,
+        iconSize: muted ? [22, 22] : [28, 28],
+        iconAnchor: muted ? [11, 11] : [14, 14]
+      });
+    }
+
+    function createRouteArrowIcon(color, bearing) {
+      return L.divIcon({
+        className: '',
+        html: `<div class="route-arrow-marker" style="--route-color:${escapeHtml(color)}; transform: rotate(${Number(bearing).toFixed(1)}deg);"></div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+    }
+
+    function interpolateRouteCoord(startCoords, endCoords, t) {
+      return [
+        startCoords[0] + (endCoords[0] - startCoords[0]) * t,
+        startCoords[1] + (endCoords[1] - startCoords[1]) * t
+      ];
+    }
+
+    function getRouteBearing(startCoords, endCoords) {
+      const dLat = endCoords[0] - startCoords[0];
+      const dLon = endCoords[1] - startCoords[1];
+      return (Math.atan2(dLat, dLon) * 180 / Math.PI + 360) % 360;
+    }
+
+    function createVisualRouteSegment(startCoords, endCoords, segmentIndex, routeIndex) {
+      const distanceKm = getDistanceBetweenLatLonPoints(startCoords, endCoords);
+      if (distanceKm < 1.2) return [startCoords, endCoords];
+
+      const dLat = endCoords[0] - startCoords[0];
+      const dLon = endCoords[1] - startCoords[1];
+      const length = Math.max(0.0001, Math.sqrt(dLat * dLat + dLon * dLon));
+      const direction = (segmentIndex + routeIndex) % 2 === 0 ? 1 : -1;
+      const offset = Math.min(0.075, Math.max(0.008, distanceKm / 1300)) * direction;
+      const normalLat = -dLon / length;
+      const normalLon = dLat / length;
+      const bendA = interpolateRouteCoord(startCoords, endCoords, 0.34);
+      const bendB = interpolateRouteCoord(startCoords, endCoords, 0.68);
+
+      return [
+        startCoords,
+        [bendA[0] + normalLat * offset, bendA[1] + normalLon * offset],
+        [bendB[0] + normalLat * offset * 0.72, bendB[1] + normalLon * offset * 0.72],
+        endCoords
+      ];
+    }
+
+    function getVisualRoutePathCoords(nodes, routeIndex) {
+      const pathCoords = [];
+      nodes.forEach((node, index) => {
+        if (index === 0) {
+          pathCoords.push(node.displayCoords || node.coords);
+          return;
+        }
+
+        const previousCoords = nodes[index - 1].displayCoords || nodes[index - 1].coords;
+        const currentCoords = node.displayCoords || node.coords;
+        const segment = createVisualRouteSegment(previousCoords, currentCoords, index - 1, routeIndex);
+        segment.slice(1).forEach(coords => pathCoords.push(coords));
+      });
+      return pathCoords;
+    }
+
+    function addRouteDirectionMarkers(pathCoords, color, isSelected) {
+      if (!isSelected || !Array.isArray(pathCoords) || pathCoords.length < 2) return;
+      for (let index = 1; index < pathCoords.length; index += 2) {
+        const startCoords = pathCoords[index - 1];
+        const endCoords = pathCoords[index];
+        const middleCoords = interpolateRouteCoord(startCoords, endCoords, 0.5);
+        L.marker(getMapLatLng(middleCoords), {
+          icon: createRouteArrowIcon(color, getRouteBearing(startCoords, endCoords)),
+          interactive: false,
+          zIndexOffset: 780
+        }).addTo(mapRouteLayerGroup);
+      }
+    }
+
+    function getRouteMapNodes(route, origin) {
+      const seenCoords = {};
+      const getDisplayCoords = (coords) => {
+        const key = `${Number(coords[0]).toFixed(4)}-${Number(coords[1]).toFixed(4)}`;
+        const count = seenCoords[key] || 0;
+        seenCoords[key] = count + 1;
+        if (count === 0) return coords;
+        const offsets = [
+          [0.0022, 0.0022],
+          [-0.0022, 0.0022],
+          [0.0022, -0.0022],
+          [-0.0022, -0.0022]
+        ];
+        const offset = offsets[(count - 1) % offsets.length];
+        return [coords[0] + offset[0], coords[1] + offset[1]];
+      };
+
+      return [
+        {
+          id: `${route.id}-origin`,
+          title: origin.title,
+          desc: origin.note,
+          coords: origin.coords,
+          displayCoords: origin.coords,
+          type: 'origin'
+        },
+        ...(route.steps || []).map((step, index) => ({
+          id: step.landmarkId || `${route.id}-step-${index}`,
+          title: step.title,
+          desc: step.desc,
+          coords: getRouteStepCoords(step, route),
+          displayCoords: getDisplayCoords(getRouteStepCoords(step, route)),
+          landmarkId: step.landmarkId || '',
+          action: step.action || '',
+          type: 'target',
+          order: index + 1
+        }))
+      ];
+    }
+
+    function createRouteStepPopup(route, node, index, originCoords, previousCoords) {
+      const directTravel = estimateActivityTravel(originCoords, node.coords);
+      const legTravel = estimateActivityTravel(previousCoords, node.coords);
+      const actionButton = node.landmarkId
+        ? `<button class="map-popup-nav" onclick="openLandmarkNavigationById('${escapeJsString(node.landmarkId)}')">打开系统地图导航</button>`
+        : '<button class="map-popup-nav" onclick="switchTab(\'collect\')">上传采集资料</button>';
+
+      return `
+        <div>
+          <div class="map-popup-title">${index + 1}. ${escapeHtml(node.title)}</div>
+          <div class="map-popup-desc">${escapeHtml(route.title)} · ${escapeHtml(node.desc || '')}</div>
+          <div class="route-popup-kv">
+            <span>从我这里 ${escapeHtml(directTravel.timeLabel)}</span>
+            <span>${escapeHtml(directTravel.mode)}</span>
+            <span>${escapeHtml(directTravel.distanceLabel)}</span>
+            <span>第 ${index + 1} 站</span>
+          </div>
+          <div class="map-popup-desc">上一站到这里：${escapeHtml(legTravel.timeLabel)} · ${escapeHtml(legTravel.mode)} · ${escapeHtml(legTravel.distanceLabel)}</div>
+          ${actionButton}
+        </div>
+      `;
+    }
+
+    function clearMapRouteLayers() {
+      if (mapRouteLayerGroup) {
+        mapRouteLayerGroup.clearLayers();
+      }
+    }
+
+    function renderMapRoutePanel(routeOptions, selectedRouteId, origin) {
+      const panel = document.getElementById('map-route-panel');
+      const title = document.getElementById('map-route-title');
+      const subtitle = document.getElementById('map-route-subtitle');
+      const options = document.getElementById('map-route-options');
+      if (!panel || !options) return;
+
+      const selected = routeOptions.find(item => item.route.id === selectedRouteId) || routeOptions[0];
+      const summary = getRouteSequentialSummary(selected.route, origin.coords);
+      if (title) title.innerText = selected.route.title;
+      if (subtitle) {
+        subtitle.innerText = `${origin.note} · ${summary.timeLabel} · ${summary.distanceLabel}`;
+      }
+      options.innerHTML = routeOptions.map((item, index) => {
+        const isSelected = item.route.id === selected.route.id;
+        const routeSummary = getRouteSequentialSummary(item.route, origin.coords);
+        const distanceText = item.distanceKm ? `距路线中心约 ${item.distanceKm}km` : item.route.city;
+        return `
+          <button type="button" onclick="selectMapRoute('${escapeJsString(item.route.id)}')" class="min-w-[156px] rounded-xl border px-3 py-2 text-left ${isSelected ? 'border-deepTeal bg-deepTeal text-sandGold' : 'border-stone-200 bg-stone-50 text-stone-700'}">
+            <div class="flex items-center justify-between gap-2">
+              <span class="truncate text-[11px] font-black">${index === 0 ? '推荐' : `方案 ${index + 1}`}</span>
+              <span class="rounded-full ${isSelected ? 'bg-white/15 text-white' : 'bg-white text-stone-500'} px-1.5 py-0.5 text-[9px] font-bold">${escapeHtml(item.route.city)}</span>
+            </div>
+            <p class="mt-1 truncate text-xs font-bold">${escapeHtml(item.route.title)}</p>
+            <p class="mt-1 text-[9px] leading-snug ${isSelected ? 'text-stone-100' : 'text-stone-500'}">${escapeHtml(routeSummary.timeLabel)} · ${escapeHtml(routeSummary.distanceLabel)} · ${escapeHtml(distanceText)}</p>
+          </button>
+        `;
+      }).join('');
+      panel.classList.remove('hidden');
+      mapRoutePanelActive = true;
+      lucide.createIcons();
+    }
+
+    function drawCommunityRouteOnMap(route, routeIndex, selectedRouteId, origin) {
+      const isSelected = route.id === selectedRouteId;
+      const color = getMapRouteColor(routeIndex, isSelected);
+      const nodes = getRouteMapNodes(route, origin);
+      const pathCoords = getVisualRoutePathCoords(nodes, routeIndex);
+      const latLngs = pathCoords.map(coords => getMapLatLng(coords));
+      const line = L.polyline(latLngs, {
+        color,
+        weight: isSelected ? 5 : 3,
+        opacity: isSelected ? 0.94 : 0.55,
+        dashArray: isSelected ? null : '7 8',
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(mapRouteLayerGroup);
+      line.on('click', () => selectMapRoute(route.id));
+      addRouteDirectionMarkers(pathCoords, color, isSelected);
+
+      nodes.forEach((node, nodeIndex) => {
+        if (node.type === 'origin') {
+          if (!isSelected) return;
+          L.marker(getMapLatLng(node.displayCoords || node.coords), {
+            icon: createRoutePointIcon('我', 'origin'),
+            zIndexOffset: 900
+          })
+          .addTo(mapRouteLayerGroup)
+          .bindTooltip('我的位置', { direction: 'top', offset: [0, -10] });
+          return;
+        }
+
+        const marker = L.marker(getMapLatLng(node.displayCoords || node.coords), {
+          icon: createRoutePointIcon(String(node.order), 'target', !isSelected),
+          zIndexOffset: isSelected ? 850 : 650
+        }).addTo(mapRouteLayerGroup);
+
+        if (isSelected) {
+          const previousNode = nodes[nodeIndex - 1] || nodes[0];
+          marker
+            .bindPopup(createRouteStepPopup(route, node, node.order - 1, origin.coords, previousNode.coords))
+            .bindTooltip(node.title, { direction: 'top', offset: [0, -10] });
+          marker.on('click', () => {
+            closeLandmarkDrawer();
+            marker.openPopup();
+          });
+        } else {
+          marker
+            .bindTooltip(`${route.title} · 点选切换`, { direction: 'top', offset: [0, -8] })
+            .on('click', () => selectMapRoute(route.id, { focusFirstPoint: true }));
+        }
+      });
+
+      return isSelected ? latLngs : null;
+    }
+
+    function renderActivityRoutesOnMap(options = {}) {
+      if (!heritageMap || typeof L === 'undefined') return;
+      if (!mapRouteLayerGroup) {
+        mapRouteLayerGroup = L.layerGroup().addTo(heritageMap);
+      }
+      clearMapRouteLayers();
+      closeLandmarkDrawer();
+
+      const origin = getActivityRouteOrigin();
+      const routeOptions = getRankedCommunityRouteOptions(3);
+      const selectedRouteId = options.selectedRouteId
+        || activeMapRouteId
+        || (activeCommunityRoute && activeCommunityRoute.id)
+        || routeOptions[0].route.id;
+      const selectedRoute = routeOptions.find(item => item.route.id === selectedRouteId) || routeOptions[0];
+      activeCommunityRoute = selectedRoute.route;
+      activeMapRouteId = selectedRoute.route.id;
+
+      let selectedLatLngs = null;
+      routeOptions.forEach((item, index) => {
+        const latLngs = drawCommunityRouteOnMap(item.route, index, selectedRoute.route.id, origin);
+        if (latLngs) selectedLatLngs = latLngs;
+      });
+
+      renderMapRoutePanel(routeOptions, selectedRoute.route.id, origin);
+      if (selectedLatLngs && selectedLatLngs.length > 1) {
+        const bounds = L.latLngBounds(selectedLatLngs);
+        heritageMap.fitBounds(bounds, {
+          paddingTopLeft: [28, 60],
+          paddingBottomRight: [28, 170],
+          maxZoom: 12,
+          animate: true
+        });
+      }
+
+      if (options.focusFirstPoint) {
+        const firstStep = selectedRoute.route.steps.find(step => step.landmarkId || step.action);
+        const nodeIndex = firstStep ? selectedRoute.route.steps.indexOf(firstStep) + 1 : 1;
+        const nodes = getRouteMapNodes(selectedRoute.route, origin);
+        const targetNode = nodes[nodeIndex];
+        if (targetNode) {
+          setTimeout(() => {
+            heritageMap.setView(getMapLatLng(targetNode.displayCoords || targetNode.coords), Math.max(heritageMap.getZoom(), 12), { animate: true });
+          }, 160);
+        }
+      }
+    }
+
+    function openActivityRoutesOnMap(routeId = null) {
+      if (routeId) activeMapRouteId = routeId;
+      switchTab('map');
+      setTimeout(() => {
+        initHeritageMap();
+        if (heritageMap) {
+          renderActivityRoutesOnMap({ selectedRouteId: routeId || activeMapRouteId, focusFirstPoint: true });
+        }
+      }, 140);
+    }
+
+    function selectMapRoute(routeId, options = {}) {
+      activeMapRouteId = routeId;
+      const selectedRoute = communityRoutePlans.find(route => route.id === routeId);
+      if (selectedRoute) activeCommunityRoute = selectedRoute;
+      renderActivityRoutesOnMap({ selectedRouteId: routeId, ...options });
+      showToast('已切换路线方案，点击点位查看时间。', 'route');
+    }
+
+    function closeMapRoutePanel() {
+      const panel = document.getElementById('map-route-panel');
+      if (panel) panel.classList.add('hidden');
+      mapRoutePanelActive = false;
+      activeMapRouteId = null;
+      clearMapRouteLayers();
+    }
+
+    function buildRouteServiceUrl(platform, keyword, serviceType, route) {
+      const routeCity = route && route.city ? route.city : '武汉';
+      const cityConfig = routePlatformCityConfig[routeCity] || routePlatformCityConfig['武汉'];
+      const compactKeyword = String(keyword || '').replace(/\s+/g, '');
+      const encoded = encodeURIComponent(compactKeyword);
+      const dianpingCategory = serviceType === 'hotel' ? '60' : '10';
+      if (platform === 'dianping') {
+        if (cityConfig.dianpingCityId) {
+          return `https://www.dianping.com/search/keyword/${cityConfig.dianpingCityId}/${dianpingCategory}_${encoded}/o3`;
+        }
+        return `https://www.dianping.com/${cityConfig.dianpingSlug}/ch${dianpingCategory}/o3`;
+      }
+      return `https://${cityConfig.meituanHost}/s/${encoded}/?sort=rating&sortId=rating&cityName=${encodeURIComponent(cityConfig.meituanCityName)}`;
+    }
+
+    function openRouteService(serviceType, platform) {
+      const route = activeCommunityRoute || getRecommendedCommunityRoute().route;
+      const service = route && route.services ? route.services[serviceType] : null;
+      if (!service) {
+        showToast('暂未配置该路线周边服务', 'map-pin');
+        return;
+      }
+
+      window.open(buildRouteServiceUrl(platform, service.keyword, serviceType, route), '_blank', 'noopener');
+    }
+
+    function handleCommunityRouteStep(stepIndex) {
+      const route = activeCommunityRoute || getRecommendedCommunityRoute().route;
+      const step = route && route.steps ? route.steps[stepIndex] : null;
+      if (!step) return;
+
+      updateCommunityProgress();
+      if (step.action === 'collect') {
+        switchTab('collect');
+        return;
+      }
+      if (step.landmarkId) {
+        openCommunityMapPoint(step.landmarkId);
+      }
+    }
+
+    function renderCommunityRouteCard() {
+      const container = document.getElementById('community-route-card');
+      if (!container) return;
+
+      const recommendation = getRecommendedCommunityRoute();
+      const route = recommendation.route;
+      activeCommunityRoute = route;
+      const distanceLabel = recommendation.distanceKm ? `约 ${recommendation.distanceKm}km` : recommendation.reason;
+
+      container.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="bg-sandGold/20 text-deepTeal text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(route.city)}</span>
+              <span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(route.badge)}</span>
+              <span class="bg-stone-100 text-stone-500 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(distanceLabel)}</span>
+            </div>
+            <h5 class="cultural-font font-bold text-stone-800 text-sm mt-2">${escapeHtml(route.title)}</h5>
+            <p class="text-[10px] text-stone-500 mt-1 leading-relaxed">${escapeHtml(route.desc)}</p>
+          </div>
+          <span class="shrink-0 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(route.duration)}</span>
+        </div>
+
+        <div class="mt-3 grid grid-cols-3 gap-2 text-[10px]">
+          ${route.steps.map((step, index) => `
+            <button type="button" onclick="handleCommunityRouteStep(${index})" class="bg-stone-50 border border-stone-200 rounded-lg p-2 text-left hover:border-sandGold transition-colors">
+              <p class="font-bold ${step.action === 'collect' ? 'text-deepTeal' : 'text-stone-800'}">${index + 1}. ${escapeHtml(step.title)}</p>
+              <p class="text-[9px] text-stone-500 mt-0.5">${escapeHtml(step.desc)}</p>
+            </button>
+          `).join('')}
+        </div>
+
+        <button type="button" onclick="openActivityRoutesOnMap('${escapeJsString(route.id)}')" class="mt-3 flex w-full items-center justify-center rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold">
+          <i data-lucide="route" class="mr-1.5 h-3.5 w-3.5"></i> 查看地图路线
+        </button>
+
+        <div class="mt-3 rounded-xl border border-sandGold/25 bg-sandGold/5 p-3">
+          <div class="flex items-center justify-between">
+            <h5 class="text-xs font-bold text-stone-700 flex items-center">
+              <i data-lucide="map-pinned" class="w-3.5 h-3.5 mr-1 text-deepTeal"></i> 路线周边
+            </h5>
+            <span class="text-[9px] text-stone-400">城市站评分优先</span>
+          </div>
+          <div class="mt-2 grid grid-cols-2 gap-2">
+            ${renderRouteServicePanel('food', route.services.food, 'utensils')}
+            ${renderRouteServicePanel('hotel', route.services.hotel, 'bed')}
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function renderRouteServicePanel(type, service, icon) {
+      return `
+        <div class="rounded-lg border border-stone-200 bg-white p-2">
+          <div class="flex items-start gap-2">
+            <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-deepTeal text-sandGold">
+              <i data-lucide="${icon}" class="h-3.5 w-3.5"></i>
+            </div>
+            <div class="min-w-0">
+              <p class="text-[11px] font-bold text-stone-800">${escapeHtml(service.title)}</p>
+              <p class="mt-0.5 text-[9px] leading-snug text-stone-500">${escapeHtml(service.desc)}</p>
+            </div>
+          </div>
+          <div class="mt-2 grid grid-cols-2 gap-1.5">
+            <button type="button" onclick="openRouteService('${type}', 'dianping')" class="rounded-md border border-stone-200 bg-stone-50 px-1.5 py-1 text-[9px] font-bold text-deepTeal">
+              点评好评
+            </button>
+            <button type="button" onclick="openRouteService('${type}', 'meituan')" class="rounded-md bg-deepTeal px-1.5 py-1 text-[9px] font-bold text-sandGold">
+              美团好评
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
     function joinCommunityActivity(name) {
       markTaskCompleted('activity');
-      showToast(`已报名「${name}」，可从推荐路线开始探索。`, 'ticket-check');
+      showCommunitySignupSuccess(name);
+    }
+
+    function showCommunitySignupSuccess(name) {
+      const modal = document.getElementById('activity-success-modal');
+      const title = document.getElementById('activity-success-title');
+      if (title) {
+        title.innerText = `已报名「${name}」`;
+      }
+      if (modal) {
+        modal.classList.remove('hidden');
+      }
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    function closeActivitySuccessModal() {
+      const modal = document.getElementById('activity-success-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function goActivityRouteFromSuccess() {
+      closeActivitySuccessModal();
+      openActivityRoutesOnMap(activeCommunityRoute ? activeCommunityRoute.id : null);
+      if (!currentLocation || !currentLocation.isReal) {
+        showToast('正在尝试获取你的位置并重算地图路线。', 'route');
+        refreshGPS();
+      } else {
+        showToast('已按你的真实定位生成地图路线。', 'route');
+      }
     }
 
     function updateCommunityProgress() {
@@ -2416,8 +4051,571 @@
       showDailyQuizResult(question, state, true);
     }
 
-    function openLearningTip(title) {
-      showToast(`已打开「${title}」速学卡，完成后可获得 20 积分。`, 'graduation-cap');
+    const QUICK_LEARNING_REWARD = 10;
+    const QUICK_LEARNING_LAST_SET_KEY = 'chulink-quick-learning-last-set';
+    const QUICK_LEARNING_COMPLETED_KEY = 'chulink-quick-learning-completed';
+    const QUICK_LEARNING_DAILY_REWARD_KEY = 'chulink-quick-learning-daily-rewards';
+    const quickLearningKnowledgeBase = [
+      {
+        id: 'pre-scope-permission',
+        phase: '采集前',
+        title: '先判断能不能采',
+        subtitle: '明确边界、授权和公开范围，避免线索不可用。',
+        icon: 'shield-question',
+        level: '基础',
+        minutes: 3,
+        reward: QUICK_LEARNING_REWARD,
+        skills: ['采集范围判断', '知情同意', '隐私边界'],
+        steps: [
+          {
+            title: '确认对象属性',
+            body: '先判断对象是公共空间遗存、馆藏展品、私人财物，还是仍在使用的宗教/生活空间。不同对象对应不同采集边界。',
+            checklist: ['公共空间可记录外观和环境', '私人空间先征得所有者同意', '涉及祭祀、墓葬、儿童或住户信息时降低公开细节'],
+            action: '不确定能不能公开时，先采“非敏感线索”，把详细位置和人物信息留给人工复核。'
+          },
+          {
+            title: '说明采集用途',
+            body: '对讲述者、守护人或管理方说明平台用途、可能公开的内容，以及他们可以拒绝或撤回。',
+            checklist: ['用一句话说明采集目的', '确认对方同意录音/拍照/公开', '记录同意方式和时间'],
+            action: '口头同意也要在备注里写清楚：谁同意、同意什么、是否允许公开姓名。'
+          },
+          {
+            title: '排除敏感信息',
+            body: '采集时主动避开身份证件、手机号、住址门牌、未成年人正脸和贵重私人物品。',
+            checklist: ['照片边缘检查是否带入隐私', '音频里出现手机号要备注剪除', '上传前再看一遍预览'],
+            action: '发现误拍隐私，不要靠滤镜遮挡原图，重新采或在上传备注里标记需脱敏。'
+          },
+          {
+            title: '留下复核线索',
+            body: '把授权、限制和现场条件写进备注，专家才能判断这条资料能否公开、如何公开。',
+            checklist: ['写明采集对象权属或管理方', '写明是否允许公开具体点位', '写明是否需要匿名'],
+            action: '完成本课后再去采集页，优先补全“备注”和“公开范围”。'
+          }
+        ]
+      },
+      {
+        id: 'field-safety-boundary',
+        phase: '采集中',
+        title: '现场安全与非接触',
+        subtitle: '人身安全和文物安全永远排在素材完整之前。',
+        icon: 'hard-hat',
+        level: '基础',
+        minutes: 3,
+        reward: QUICK_LEARNING_REWARD,
+        skills: ['安全距离', '非接触记录', '风险上报'],
+        steps: [
+          {
+            title: '先看环境风险',
+            body: '到达现场先观察地面、围挡、坠落物、水边、车流和动物活动，不急着靠近拍摄。',
+            checklist: ['站在稳定地面', '避开破损屋檐和临水边缘', '夜间或恶劣天气不进入陌生区域'],
+            action: '发现危险区域，用远景和备注记录，不为了近景越过围挡。'
+          },
+          {
+            title: '坚持不触碰',
+            body: '不要擦拭、描红、拓印、搬动、摇晃或试图打开任何构件。采集者的职责是记录，不是处理。',
+            checklist: ['不清洁锈层和灰尘', '不用粉笔描碑刻', '不拆取松动构件'],
+            action: '需要尺度参照时，用随身卡片或手掌放在旁边，不贴压在文物表面。'
+          },
+          {
+            title: '多人同行更稳妥',
+            body: '偏远点位、古建高处、临水点位和口述拜访，尽量两人同行并提前告知行程。',
+            checklist: ['手机电量充足', '保留返程路线', '不单独进入封闭空间'],
+            action: '路线变化时先更新同行人或家人的位置消息。'
+          },
+          {
+            title: '异常及时上报',
+            body: '发现盗挖、坍塌、火灾隐患或人为破坏，不现场制止冲突，先离开风险点并报告管理方。',
+            checklist: ['记录时间和大致位置', '远距离拍摄现状', '备注“需人工优先复核”'],
+            action: '上传时选择最能说明风险的一张全景和一张细节。'
+          }
+        ]
+      },
+      {
+        id: 'photo-evidence-package',
+        phase: '采集中',
+        title: '照片证据三件套',
+        subtitle: '全貌、细节、尺度参照，让专家能复核。',
+        icon: 'camera',
+        level: '核心',
+        minutes: 4,
+        reward: QUICK_LEARNING_REWARD,
+        skills: ['全景构图', '细节记录', '尺度参照'],
+        steps: [
+          {
+            title: '先拍全貌',
+            body: '全貌照交代对象与周边环境的关系，能帮助复核位置、保存状态和是否为同一对象。',
+            checklist: ['横向或竖向各拍一张', '包含地面或附近参照物', '不要只拍局部纹样'],
+            action: '全貌照宁可朴素清晰，也不要过度裁切成“好看”的图。'
+          },
+          {
+            title: '再拍细节',
+            body: '细节照要对准纹样、题记、榫卯、裂缝、锈蚀等核心信息，保证画面稳定。',
+            checklist: ['点击对焦后再拍', '避开强反光', '同一细节拍 2 张备份'],
+            action: '文字类对象尽量斜侧补一张，低角度光线有时能显出笔画。'
+          },
+          {
+            title: '补尺度参照',
+            body: '尺度参照能让后续研究判断大小、比例和病害范围。没有专业尺时也可以用标准卡片。',
+            checklist: ['参照物不遮挡主体', '放在同一平面附近', '备注参照物实际尺寸'],
+            action: '不要把参照物贴到易损表面，保持一点距离即可。'
+          },
+          {
+            title: '保留原始文件',
+            body: '原图包含拍摄时间、设备信息和更多细节，能支持真实性核验。',
+            checklist: ['不先压缩再上传', '不加滤镜和美颜', '失败照片也可作为现场条件说明'],
+            action: '上传前选择最清晰的原图，备注里说明天气、光线或遮挡情况。'
+          }
+        ]
+      },
+      {
+        id: 'oral-history-audio',
+        phase: '采集中',
+        title: '口述史收音与追问',
+        subtitle: '把故事采清楚，也要尊重讲述者。',
+        icon: 'file-audio',
+        level: '核心',
+        minutes: 4,
+        reward: QUICK_LEARNING_REWARD,
+        skills: ['环境降噪', '开放式提问', '授权记录'],
+        steps: [
+          {
+            title: '先取得同意',
+            body: '录音前说明采集用途、公开范围和预计时长，请讲述者明确同意。',
+            checklist: ['开头录入“是否同意录音”', '询问是否可公开姓名', '允许对方随时暂停'],
+            action: '对方只愿匿名时，备注里写“匿名公开”，不要在标题暴露身份。'
+          },
+          {
+            title: '找低噪位置',
+            body: '风声、车流和人声会让口述难以转写。优先选择背风、离路口远的位置。',
+            checklist: ['手机麦克风朝向讲述者', '距离约一臂以内', '先试录 10 秒回听'],
+            action: '室外有风时用衣袖挡风但不要摩擦麦克风。'
+          },
+          {
+            title: '用开放式追问',
+            body: '不要只问“是不是”。围绕人物、时间、地点、做法、变化和见证人展开。',
+            checklist: ['这件事最早是什么时候', '谁教会了这门手艺', '现在和过去有什么不同'],
+            action: '听到地名、人名、年代，复述确认一次，避免后期误写。'
+          },
+          {
+            title: '结束后做摘要',
+            body: '上传前写 3 句话摘要，标出关键词和不确定处，方便专家复核。',
+            checklist: ['摘要不夸张改写', '标记方言词或听不清处', '补充讲述者关系'],
+            action: '不确定的字词用“疑似”标注，不要硬填。'
+          }
+        ]
+      },
+      {
+        id: 'location-metadata',
+        phase: '采集前',
+        title: '位置与元数据补齐',
+        subtitle: '坐标之外，还要让别人找得到、核得准。',
+        icon: 'map-pin',
+        level: '核心',
+        minutes: 3,
+        reward: QUICK_LEARNING_REWARD,
+        skills: ['定位校验', '行政区划', '现场方向'],
+        steps: [
+          {
+            title: '校验 GPS',
+            body: '手机定位会受楼宇、山谷和天气影响。采集时要看精度，并用地标交叉验证。',
+            checklist: ['等待定位稳定', '记录精度提示', '坐标异常时重新刷新'],
+            action: '如果定位漂移，备注“坐标可能偏移”，补写附近明显地标。'
+          },
+          {
+            title: '补行政区划',
+            body: '省、市、县、乡镇、村社或街区信息能降低坐标误差带来的复核成本。',
+            checklist: ['写到县/区一级', '偏远点位补村名', '城市点位补街道或园区'],
+            action: '不要只写俗称，比如“老祠堂”，要补“某村西侧老祠堂”。'
+          },
+          {
+            title: '记录方向关系',
+            body: '方向和相对位置能帮助后续队伍重访，尤其适合古桥、碑刻、老井和散落构件。',
+            checklist: ['在入口的哪一侧', '距离道路约多少米', '朝向或背靠什么'],
+            action: '用“面向河道”“在主殿右侧”等现场语言描述，比只写经纬度更可复核。'
+          },
+          {
+            title: '处理敏感点位',
+            body: '未开放遗址、私人藏品、易盗扰地点不宜公开精确坐标。',
+            checklist: ['选择模糊公开范围', '备注需管理员审核', '不在图片中暴露门牌'],
+            action: '敏感位置先保护，再传播。'
+          }
+        ]
+      },
+      {
+        id: 'video-scan-route',
+        phase: '采集中',
+        title: '视频扫拍路线',
+        subtitle: '用短视频记录空间关系和行进路径。',
+        icon: 'video',
+        level: '进阶',
+        minutes: 4,
+        reward: QUICK_LEARNING_REWARD,
+        skills: ['稳定运镜', '空间关系', '语音标注'],
+        steps: [
+          {
+            title: '规划 15 秒路线',
+            body: '视频不是越长越好。先确定起点、主体、细节和结束点。',
+            checklist: ['从入口或地标开始', '慢慢移向主体', '最后停在关键细节'],
+            action: '每段 15 到 30 秒足够，复杂对象分段拍。'
+          },
+          {
+            title: '慢速移动',
+            body: '快速晃动的视频难以复核。保持双手稳定，移动时身体比手先转。',
+            checklist: ['每个关键画面停 2 秒', '不要边走边大幅变焦', '避免逆光直拍'],
+            action: '能站定就站定，不能站定就拍照片补细节。'
+          },
+          {
+            title: '现场口播标注',
+            body: '轻声说出对象、方向、位置和发现点，后续整理会更快。',
+            checklist: ['说清“现在拍的是...”', '说出朝向或方位', '标记裂缝、题记等细节'],
+            action: '口播不需要文采，准确比流畅重要。'
+          },
+          {
+            title: '补一张封面图',
+            body: '视频上传后仍需要清晰封面或对应照片，方便审核快速定位重点。',
+            checklist: ['封面包含主体', '对应视频中的关键点', '备注视频拍摄路线'],
+            action: '视频负责空间，照片负责细节，两者配套最稳。'
+          }
+        ]
+      },
+      {
+        id: 'condition-description',
+        phase: '采集中',
+        title: '保存状态怎么写',
+        subtitle: '把“看起来旧”写成可复核的状态描述。',
+        icon: 'clipboard-pen',
+        level: '核心',
+        minutes: 3,
+        reward: QUICK_LEARNING_REWARD,
+        skills: ['病害描述', '客观记录', '优先级判断'],
+        steps: [
+          {
+            title: '描述可见现象',
+            body: '用裂缝、缺角、风化、虫蛀、霉斑、锈蚀、褪色等可观察词，少用“很珍贵”“很破”。',
+            checklist: ['写出现象位置', '写出范围大小', '避免主观判断年代'],
+            action: '不会判断原因时，只写“可见表面剥落”，不要写“人为破坏”。'
+          },
+          {
+            title: '区分轻重缓急',
+            body: '影响结构安全、持续扩大、暴露在雨水中的问题优先级更高。',
+            checklist: ['是否影响承重', '是否近期新出现', '是否继续受水火虫害影响'],
+            action: '紧急问题在备注开头写“急需复核”。'
+          },
+          {
+            title: '关联照片编号',
+            body: '描述和照片要对应，否则审核者不知道你说的是哪一处。',
+            checklist: ['第 1 张全貌', '第 2 张裂缝近景', '第 3 张尺度参照'],
+            action: '上传多张图时按“全貌到细节”的顺序选择。'
+          },
+          {
+            title: '保留不确定性',
+            body: '民间称呼、年代和材质不确定时，用“疑似”“当地称为”标注。',
+            checklist: ['疑似木雕/石雕', '当地称为某某', '年代待核验'],
+            action: '不确定不是扣分点，装确定才会降低资料可信度。'
+          }
+        ]
+      },
+      {
+        id: 'upload-review',
+        phase: '采集后',
+        title: '上传前复核清单',
+        subtitle: '减少退回补采，让素材一次通过。',
+        icon: 'upload-cloud',
+        level: '基础',
+        minutes: 3,
+        reward: QUICK_LEARNING_REWARD,
+        skills: ['素材筛选', '备注完整', '质量自检'],
+        steps: [
+          {
+            title: '筛掉不可用素材',
+            body: '上传前删除严重模糊、误拍隐私、主体太小或重复度太高的素材。',
+            checklist: ['放大看主体是否清晰', '检查边缘是否有隐私', '保留全貌和关键细节'],
+            action: '模糊照片若能说明现场条件，可作为补充，不要作为主图。'
+          },
+          {
+            title: '补齐标题',
+            body: '标题建议包含地点、对象和类型，便于检索和审核。',
+            checklist: ['地点：县区/村社/场馆', '对象：碑刻/花窗/老井', '类型：照片/音频/视频'],
+            action: '好标题示例：钟祥某村老宅花窗木雕细节。'
+          },
+          {
+            title: '写明采集背景',
+            body: '备注里说明为什么采、怎么采、有什么限制，会显著提高复核效率。',
+            checklist: ['现场光线和遮挡', '是否取得同意', '是否需要匿名或模糊位置'],
+            action: '把“不确定”写出来，专家才知道从哪里复核。'
+          },
+          {
+            title: '提交后留意反馈',
+            body: '审核可能要求补拍尺度、位置或授权说明。及时补采能让线索更快入库。',
+            checklist: ['查看审核状态', '保留原始文件', '按反馈补充同一对象'],
+            action: '同一对象补采时沿用原标题，备注“补充第几处细节”。'
+          }
+        ]
+      },
+      {
+        id: 'light-shadow-check',
+        phase: '采集中',
+        title: '避开强反光',
+        subtitle: '文字、纹样和金属表面要先看光线。',
+        icon: 'sun-medium',
+        level: '基础',
+        minutes: 1,
+        reward: QUICK_LEARNING_REWARD,
+        skills: ['光线判断', '反光处理', '清晰拍摄'],
+        steps: [
+          {
+            title: '光线先检查',
+            body: '拍摄前先看屏幕里有没有大片反光、阴影遮挡或过曝。稍微换角度，比后期修图更可靠。',
+            checklist: ['避开正对强光', '文字碑刻可斜侧补拍', '金属器物不要开强闪光'],
+            action: '看不清时先换角度、等云遮光或补一张侧光照片。'
+          }
+        ]
+      },
+      {
+        id: 'quick-note-naming',
+        phase: '采集后',
+        title: '标题别太虚',
+        subtitle: '好标题让审核者一眼知道你采了什么。',
+        icon: 'text-cursor-input',
+        level: '基础',
+        minutes: 1,
+        reward: QUICK_LEARNING_REWARD,
+        skills: ['标题命名', '检索友好', '对象识别'],
+        steps: [
+          {
+            title: '地点 + 对象 + 细节',
+            body: '标题尽量包含地点、对象和采集重点，不要只写“老物件”“风景”“随手拍”。',
+            checklist: ['地点写到县区或村社', '对象写清碑刻/花窗/老井等', '细节写纹样/题记/裂缝等'],
+            action: '例如：钟祥某村老宅花窗木雕细节。'
+          }
+        ]
+      }
+    ];
+
+    let activeLearningModules = [];
+    let activeLearningModule = null;
+    let activeLearningStepIndex = 0;
+
+    function readQuickLearningCompleted() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(QUICK_LEARNING_COMPLETED_KEY) || '{}');
+        return saved && typeof saved === 'object' ? saved : {};
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function saveQuickLearningCompleted(completed) {
+      try {
+        localStorage.setItem(QUICK_LEARNING_COMPLETED_KEY, JSON.stringify(completed));
+      } catch (error) {
+        console.warn('无法保存速学完成状态', error);
+      }
+    }
+
+    function readQuickLearningDailyRewards() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(QUICK_LEARNING_DAILY_REWARD_KEY) || '{}');
+        return saved && typeof saved === 'object' ? saved : {};
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function saveQuickLearningDailyRewards(rewards) {
+      try {
+        localStorage.setItem(QUICK_LEARNING_DAILY_REWARD_KEY, JSON.stringify(rewards));
+      } catch (error) {
+        console.warn('无法保存速学每日积分状态', error);
+      }
+    }
+
+    function getQuickLearningTodayKey(date = new Date()) {
+      return getDailyQuizDateKey(date);
+    }
+
+    function hasClaimedQuickLearningRewardToday() {
+      return Boolean(readQuickLearningDailyRewards()[getQuickLearningTodayKey()]);
+    }
+
+    function getQuickLearningRewardTotal() {
+      return Object.keys(readQuickLearningDailyRewards()).length * QUICK_LEARNING_REWARD;
+    }
+
+    function shuffleQuickLearningModules() {
+      return [...quickLearningKnowledgeBase].sort(() => Math.random() - 0.5);
+    }
+
+    function refreshQuickLearningSet(shouldNotify = false) {
+      const lastSet = (() => {
+        try {
+          const saved = JSON.parse(localStorage.getItem(QUICK_LEARNING_LAST_SET_KEY) || '{}');
+          return Array.isArray(saved.ids) ? saved.ids : [];
+        } catch (error) {
+          return [];
+        }
+      })();
+
+      const shuffled = shuffleQuickLearningModules();
+      const freshFirst = shuffled.filter(module => !lastSet.includes(module.id));
+      const selected = [];
+
+      [...freshFirst, ...shuffled].forEach((module) => {
+        if (selected.length < 2 && !selected.some(item => item.id === module.id)) {
+          selected.push(module);
+        }
+      });
+
+      activeLearningModules = selected;
+      try {
+        localStorage.setItem(QUICK_LEARNING_LAST_SET_KEY, JSON.stringify({
+          ids: selected.map(module => module.id),
+          refreshedAt: new Date().toISOString()
+        }));
+      } catch (error) {
+        console.warn('无法保存本次速学推荐', error);
+      }
+
+      renderQuickLearning();
+      if (shouldNotify) {
+        showToast('已刷新本次速学知识卡', 'refresh-cw');
+      }
+    }
+
+    function initializeQuickLearning() {
+      const savedRewardTotal = getQuickLearningRewardTotal();
+      if (savedRewardTotal > 0) {
+        updateUserPoints(savedRewardTotal);
+      }
+      refreshQuickLearningSet(false);
+    }
+
+    function renderQuickLearning() {
+      const container = document.getElementById('quick-learning-list');
+      const summary = document.getElementById('quick-learning-summary');
+      if (!container) return;
+
+      const completed = readQuickLearningCompleted();
+      const hasClaimedToday = hasClaimedQuickLearningRewardToday();
+      if (summary && activeLearningModules.length) {
+        summary.innerText = hasClaimedToday
+          ? `今日速学积分已领取 · 知识库 ${quickLearningKnowledgeBase.length} 个点`
+          : `今日首学 +${QUICK_LEARNING_REWARD} 积分 · 知识库 ${quickLearningKnowledgeBase.length} 个点`;
+      }
+
+      container.innerHTML = activeLearningModules.map((module) => {
+        const isCompleted = Boolean(completed[module.id]);
+        const rewardText = hasClaimedToday ? '今日已领' : `今日+${module.reward}积分`;
+        return `
+          <button type="button" onclick="openLearningTip('${escapeJsString(module.id)}')" class="bg-white border ${isCompleted ? 'border-emerald-200' : 'border-stone-200'} rounded-xl p-3 shadow-sm text-left">
+            <div class="bg-deepTeal text-sandGold w-8 h-8 rounded-lg flex items-center justify-center mb-2">
+              <i data-lucide="${escapeHtml(module.icon)}" class="w-4 h-4"></i>
+            </div>
+            <h5 class="cultural-font font-bold text-xs text-stone-800">${escapeHtml(module.title)}</h5>
+            <p class="text-[10px] text-stone-400 mt-1">${escapeHtml(module.minutes)}分钟 · ${escapeHtml(rewardText)}</p>
+            ${isCompleted ? '<p class="mt-1 text-[9px] font-bold text-emerald-700">已学会</p>' : ''}
+          </button>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function openLearningTip(moduleIdOrTitle) {
+      const module = quickLearningKnowledgeBase.find(item => item.id === moduleIdOrTitle || item.title === moduleIdOrTitle);
+      if (!module) {
+        showToast('未找到该速学知识卡', 'graduation-cap');
+        return;
+      }
+
+      activeLearningModule = module;
+      activeLearningStepIndex = 0;
+      const modal = document.getElementById('learning-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+      }
+      renderLearningStep();
+    }
+
+    function closeLearningModule() {
+      const modal = document.getElementById('learning-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+      activeLearningModule = null;
+      activeLearningStepIndex = 0;
+    }
+
+    function renderLearningStep() {
+      if (!activeLearningModule) return;
+
+      const step = activeLearningModule.steps[0];
+      const completed = readQuickLearningCompleted();
+      const isCompleted = Boolean(completed[activeLearningModule.id]);
+      const hasClaimedToday = hasClaimedQuickLearningRewardToday();
+
+      document.getElementById('learning-tag').innerText = activeLearningModule.phase;
+      document.getElementById('learning-title').innerText = activeLearningModule.title;
+      document.getElementById('learning-subtitle').innerText = activeLearningModule.subtitle;
+      document.getElementById('learning-tip').innerText = step.body;
+      document.getElementById('learning-icon').innerHTML = `<i data-lucide="${escapeHtml(activeLearningModule.icon)}" class="h-4 w-4"></i>`;
+      document.getElementById('learning-points').innerHTML = step.checklist.map(item => `
+        <li class="flex items-start gap-2">
+          <i data-lucide="check-circle-2" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-deepTeal"></i>
+          <span>${escapeHtml(item)}</span>
+        </li>
+      `).join('');
+      document.getElementById('learning-complete-btn').innerText = hasClaimedToday ? '学会了，关闭' : `学会了 · 今日+${activeLearningModule.reward}积分`;
+      lucide.createIcons();
+    }
+
+    function goLearningStep(direction) {
+      if (!activeLearningModule) return;
+
+      const nextIndex = activeLearningStepIndex + direction;
+      if (nextIndex < 0) return;
+
+      if (nextIndex >= activeLearningModule.steps.length) {
+        completeLearningModule();
+        return;
+      }
+
+      activeLearningStepIndex = nextIndex;
+      renderLearningStep();
+    }
+
+    function completeLearningModule() {
+      if (!activeLearningModule) return;
+
+      const completed = readQuickLearningCompleted();
+      const alreadyCompleted = Boolean(completed[activeLearningModule.id]);
+      const rewards = readQuickLearningDailyRewards();
+      const todayKey = getQuickLearningTodayKey();
+      const hasClaimedToday = Boolean(rewards[todayKey]);
+
+      if (!alreadyCompleted) {
+        completed[activeLearningModule.id] = {
+          completedAt: new Date().toISOString(),
+          title: activeLearningModule.title
+        };
+        saveQuickLearningCompleted(completed);
+        markTaskCompleted('activity');
+      }
+
+      if (!hasClaimedToday) {
+        rewards[todayKey] = {
+          claimedAt: new Date().toISOString(),
+          moduleId: activeLearningModule.id,
+          title: activeLearningModule.title
+        };
+        saveQuickLearningDailyRewards(rewards);
+        updateUserPoints(activeLearningModule.reward);
+        showToast(`今日速学完成，+${activeLearningModule.reward} 积分`, 'award');
+      } else {
+        showToast(`已学会「${activeLearningModule.title}」，今日速学积分已领取`, 'book-open-check');
+      }
+
+      renderQuickLearning();
+      closeLearningModule();
     }
 
     // 4. 证据驱动的文化脉络图谱
@@ -2874,8 +5072,13 @@
           if (topGPS) topGPS.innerText = '真实定位';
           markTaskCompleted('location');
           updateMapUserLocation(longitude, latitude, accuracy);
-          if (window.discoverFeedController) {
-            window.discoverFeedController.render();
+          renderCommunityRouteCard();
+          if (mapRoutePanelActive && heritageMap) {
+            renderActivityRoutesOnMap({ selectedRouteId: activeMapRouteId, focusFirstPoint: true });
+          }
+          const routeGraphModal = document.getElementById('activity-route-graph-modal');
+          if (routeGraphModal && !routeGraphModal.classList.contains('hidden')) {
+            openActivityRouteGraphModal();
           }
           showToast('真实 GPS / 系统定位已更新成功！', 'map-pin');
         },
