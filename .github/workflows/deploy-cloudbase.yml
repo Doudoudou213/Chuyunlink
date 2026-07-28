@@ -1,0 +1,54 @@
+name: Deploy CloudBase
+
+on:
+  push:
+    branches:
+      - shan
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudbase-production
+  cancel-in-progress: false
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      TCB_ENV_ID: ${{ secrets.TCB_ENV_ID }}
+      TCB_SECRET_ID: ${{ secrets.TCB_SECRET_ID }}
+      TCB_SECRET_KEY: ${{ secrets.TCB_SECRET_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate CloudBase build
+        run: npm run check:cloudbase
+
+      - name: Check deployment secrets
+        shell: bash
+        run: |
+          test -n "$TCB_ENV_ID" || { echo "::error::Missing TCB_ENV_ID"; exit 1; }
+          test -n "$TCB_SECRET_ID" || { echo "::error::Missing TCB_SECRET_ID"; exit 1; }
+          test -n "$TCB_SECRET_KEY" || { echo "::error::Missing TCB_SECRET_KEY"; exit 1; }
+
+      - name: Log in to CloudBase
+        run: npx --yes --package @cloudbase/cli@3.6.4 tcb login --apiKeyId "$TCB_SECRET_ID" --apiKey "$TCB_SECRET_KEY"
+
+      - name: Deploy functions and static hosting
+        shell: pwsh
+        run: ./tools/deploy-cloudbase.ps1

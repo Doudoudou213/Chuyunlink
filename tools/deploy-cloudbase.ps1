@@ -10,7 +10,11 @@ if ($StaticOnly -and $FunctionsOnly) {
 }
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$environmentId = 'chulink-legacy-d8god1687a5d60743'
+$environmentId = if ($env:TCB_ENV_ID) {
+  $env:TCB_ENV_ID
+} else {
+  'chulink-legacy-d8god1687a5d60743'
+}
 $cloudbaseCliVersion = '3.6.4'
 $nodeCommand = Get-Command node -ErrorAction Stop
 $localTcb = Join-Path $projectRoot 'node_modules\.bin\tcb.cmd'
