@@ -2,6 +2,8 @@
   const ENV_ID = 'chulink-legacy-d8god1687a5d60743';
   const REGION = 'ap-shanghai';
   const CORE_FUNCTION = 'appCore';
+  const AI_REVIEW_FUNCTION = 'aiReview';
+  const AI_REVIEW_ENABLED = window.CHULINK_AI_REVIEW_ENABLED === true;
   const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
   let cloudApp = null;
@@ -83,13 +85,18 @@
     return cloudUser;
   }
 
-  async function callCore(data) {
+  async function callCloudFunction(name, data) {
     await ensureCloudUser();
-    const response = await cloudApp.callFunction({ name: CORE_FUNCTION, data });
+    const response = await cloudApp.callFunction({ name, data });
     let result = response && response.result !== undefined ? response.result : response;
     if (typeof result === 'string') {
       try { result = JSON.parse(result); } catch (_) {}
     }
+    return result;
+  }
+
+  async function callCore(data) {
+    const result = await callCloudFunction(CORE_FUNCTION, data);
     if (!result || result.ok !== true) {
       const error = result && result.error;
       const failure = new Error(error && error.message ? error.message : '云端请求失败');
@@ -97,6 +104,85 @@
       throw failure;
     }
     return result;
+  }
+
+  function deferredAiReview(regionName) {
+    return {
+      approved: false,
+      decision: 'needs_review',
+      qualityScore: 0,
+      category: '待人工复核素材',
+      provider: 'manual-review',
+      aiUsed: false,
+      issues: ['ai_review_not_enabled'],
+      suggestions: [`素材已保存到 ${regionName || '湖北'} 的 CloudBase 待审核池，等待管理员人工确认。`]
+    };
+  }
+
+  async function requestCloudAiReview(payload = {}) {
+    if (!AI_REVIEW_ENABLED) {
+      return { status: 202, data: deferredAiReview(payload.regionName) };
+    }
+    const result = await callCloudFunction(AI_REVIEW_FUNCTION, {
+      action: 'precheck',
+      regionName: payload.regionName || '湖北',
+      assetType: payload.assetType || 'image',
+      fileName: payload.fileName || '',
+      location: payload.locationPayload || null
+    });
+    if (!result || result.ok !== true) {
+      const error = result && result.error;
+      throw new Error(error && error.message ? error.message : '云端 AI 初筛失败');
+    }
+    return {
+      status: Number(result.status) || 200,
+      data: result.review || result
+    };
+  }
+
+  async function verifyCloudLocation(payload = {}) {
+    if (!AI_REVIEW_ENABLED) {
+      return {
+        status: 200,
+        data: { success: true, regionName: '湖北', provider: 'browser-gps' }
+      };
+    }
+    const result = await callCloudFunction(AI_REVIEW_FUNCTION, {
+      action: 'verifyLocation',
+      location: payload
+    });
+    if (!result || result.ok !== true) {
+      const error = result && result.error;
+      throw new Error(error && error.message ? error.message : '云端定位校验失败');
+    }
+    return {
+      status: Number(result.status) || 200,
+      data: result.location || result
+    };
+  }
+
+  async function enqueueCloudAiReview(submissionId) {
+    if (!AI_REVIEW_ENABLED || !submissionId) {
+      return { enabled: false, status: 'not_requested' };
+    }
+    try {
+      const result = await callCloudFunction(AI_REVIEW_FUNCTION, {
+        action: 'enqueue',
+        submissionId
+      });
+      if (!result || result.ok !== true) {
+        const error = result && result.error;
+        throw new Error(error && error.message ? error.message : 'AI 审核排队失败');
+      }
+      return {
+        enabled: true,
+        status: result.status || 'queued',
+        taskId: result.taskId || ''
+      };
+    } catch (error) {
+      console.warn('[CloudBase AI review]', error);
+      return { enabled: true, status: 'enqueue_failed', error: error.message || 'AI 审核排队失败' };
+    }
   }
 
   async function resolveFileUrls(items) {
@@ -374,9 +460,11 @@
         locationAccuracy: currentLocation.accuracy,
         regionName: '湖北'
       });
+      const aiTask = await enqueueCloudAiReview(result.submission.id);
 
       if (typeof showToast === 'function') {
-        showToast(`投稿成功，审核编号 ${result.submission.id || ''}`, 'check-circle');
+        const queueLabel = aiTask.status === 'queued' ? '，已进入 AI 初筛' : '，已进入人工审核';
+        showToast(`投稿成功${queueLabel}，审核编号 ${result.submission.id || ''}`, 'check-circle');
       }
       if (typeof resetFilePreview === 'function') {
         resetFilePreview({ stopPropagation() {} });
@@ -401,9 +489,7 @@
   function prepareFormalCloudUi() {
     injectAccountUi();
     injectLoginModal();
-    const toggle = document.getElementById('api-toggle-btn');
-    const localPanel = toggle && toggle.closest('.bg-amber-50');
-    if (localPanel) localPanel.classList.add('hidden');
+    if (typeof setCloudAiMode === 'function') setCloudAiMode(AI_REVIEW_ENABLED);
     const collectForm = document.getElementById('collect-form');
     const submitButton = collectForm && collectForm.querySelector('button[type="submit"] span');
     if (submitButton) submitButton.textContent = '上传云端并进入人工审核';
@@ -413,6 +499,12 @@
   handleUploadSubmit = submitToCloud;
   window.openCloudLogin = openCloudLogin;
   window.refreshCloudProfile = refreshCloudProfile;
+  window.requestCloudAiReview = requestCloudAiReview;
+  window.verifyCloudLocation = verifyCloudLocation;
+  window.submitCloudSubmission = submitToCloud;
+  window.submitCloudManualReview = async () => {
+    throw new Error('请使用正式提交按钮将素材写入 CloudBase 审核池');
+  };
 
   document.addEventListener('DOMContentLoaded', async () => {
     prepareFormalCloudUi();

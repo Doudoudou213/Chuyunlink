@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "check:cloudbase": "node tools/validate-cloudbase-build.js",
+    "deploy:cloudbase": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/deploy-cloudbase.ps1"
+  },
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1"

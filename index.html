@@ -503,20 +503,15 @@
         </div>
 
         <form id="collect-form" onsubmit="handleUploadSubmit(event)" class="space-y-4">
-          <!-- 🛡️ 本地 API 调试模式切换面板 -->
+          <!-- 云端审核说明：AI 能力将在 CloudBase 云函数中启用 -->
           <div class="bg-amber-50 border border-sandGold/30 rounded-2xl p-3 flex justify-between items-center text-xs">
             <div>
               <p class="font-bold text-stone-800 flex items-center">
-                <i data-lucide="server" class="w-3.5 h-3.5 mr-1 text-deepTeal"></i> API 本地联调模式
+                <i data-lucide="cloud-cog" class="w-3.5 h-3.5 mr-1 text-deepTeal"></i> CloudBase 云端审核
               </p>
-              <p class="text-[10px] text-stone-500">连接您本地 3000 端口服务进行真实碰撞</p>
+              <p class="text-[10px] text-stone-500">素材先进入人工审核；后续可无缝接入云端 AI 初筛、分类与相似度检索</p>
             </div>
-            <div class="flex items-center space-x-2">
-              <span id="mode-label" class="font-semibold text-emerald-700">仿真 Mock</span>
-              <button type="button" onclick="toggleApiMode()" id="api-toggle-btn" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-stone-300">
-                <span id="api-toggle-span" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out translate-x-0"></span>
-              </button>
-            </div>
+            <span class="shrink-0 rounded-full bg-deepTeal px-2 py-1 text-[9px] font-bold text-sandGold">云端链路</span>
           </div>
 
           <!-- 1. 类型选择 -->
@@ -615,7 +610,7 @@
                 <i data-lucide="refresh-cw" class="w-4 h-4"></i>
               </button>
             </div>
-            <p class="text-[10px] text-stone-400 mt-1">💡 提示：点击右侧刷新图标会请求系统真实定位权限，用于本地 API 地理围栏校验。</p>
+            <p class="text-[10px] text-stone-400 mt-1">💡 提示：点击右侧刷新图标会请求系统真实定位权限，用于 CloudBase 投稿记录与后续云端地理围栏校验。</p>
           </div>
 
           <!-- 4. 文本描述 -->
@@ -2992,25 +2987,7 @@
       loadDiscoverLikes();
       renderDiscoverFeed();
       startDiscoverLiveTicker();
-      if (typeof fetch !== 'function') return;
-
-      fetch(`${LOCAL_API_BASE_URL}/api/public/submissions?limit=10`)
-        .then(response => response.json())
-        .then(data => {
-          if (!data || !data.success || !Array.isArray(data.items) || data.items.length === 0) return;
-          approvedSubmissionItems = data.items.map(item => {
-            const feedId = `approved-${item.id || item.title || item.createdAt}`;
-            return {
-              ...item,
-              id: feedId,
-              feedId
-            };
-          });
-          renderDiscoverFeed();
-        })
-        .catch(() => {
-          // 本地后台未启动时，保留前端实时采集流。
-        });
+      // 正式数据由 static/cloudbase-app.js 通过 appCore 云函数加载。
     }
 
     function createLandmarkPopup(item) {
@@ -5101,38 +5078,14 @@
     let currentFileName = ""; 
     let selectedUploadFile = null;
     let manualReviewContext = null;
-    const LOCAL_API_BASE_URL = 'http://localhost:3000';
-    const EXPECTED_SERVER_BUILD = 'admin-submissions-2026-06-27c';
-
-    // 7. 调试模式：切换本地 API / 仿真 Mock
-    let localApiMode = false;
+    // AI 审核入口由 CloudBase 覆盖层控制；页面中不再存在本地端口模式。
+    let cloudAiMode = false;
     let mediaRecorder = null;
     let audioChunks = [];
     let audioRecordTimer = null;
     let audioRecordSeconds = 0;
-    function toggleApiMode() {
-      localApiMode = !localApiMode;
-      const btn = document.getElementById('api-toggle-btn');
-      const span = document.getElementById('api-toggle-span');
-      const label = document.getElementById('mode-label');
-      
-      if (localApiMode) {
-        btn.classList.remove('bg-stone-300');
-        btn.classList.add('bg-deepTeal');
-        span.classList.remove('translate-x-0');
-        span.classList.add('translate-x-5');
-        label.innerText = "本地 API";
-        label.className = "font-semibold text-deepTeal";
-        showToast("已切换为本地 API 模式，请确保 node tools/server.js 正在运行！", "server");
-      } else {
-        btn.classList.remove('bg-deepTeal');
-        btn.classList.add('bg-stone-300');
-        span.classList.remove('translate-x-5');
-        span.classList.add('translate-x-0');
-        label.innerText = "仿真 Mock";
-        label.className = "font-semibold text-emerald-700";
-        showToast("已恢复至本地仿真沙盒模式", "shield-check");
-      }
+    function setCloudAiMode(enabled) {
+      cloudAiMode = enabled === true;
     }
 
     // 8. 采集表单：选择本地图片与预览，并关联记录文件名
@@ -5428,38 +5381,29 @@
     }
 
     function requestQualityCheck(locationPayload, regionName) {
-      // 兼容本地服务器的多维质检模块，如果服务器没有部署多维质检，该 fetch 会失败，前端进入友好容错
-      return fetch(`${LOCAL_API_BASE_URL}/api/quality-check`, {
-        method: 'POST',
-        body: buildQualityCheckFormData(locationPayload, regionName)
-      }).then(response => response.json().then(data => {
-        if (data && data.serverBuild && data.serverBuild !== EXPECTED_SERVER_BUILD) {
-          throw new Error(`后端版本不一致: ${data.serverBuild}`);
-        }
-
-        if (!data || !data.serverBuild) {
-          throw new Error('当前 3000 端口仍是旧版质检服务，请停止旧 node 进程后重启 tools/server.js');
-        }
-
-        return { status: response.status, data };
-      }));
+      if (typeof window.requestCloudAiReview !== 'function') {
+        return Promise.resolve({
+          status: 202,
+          data: buildManualReviewQuality(regionName)
+        });
+      }
+      return window.requestCloudAiReview({
+        locationPayload,
+        regionName,
+        assetType: getSelectedAssetType(),
+        fileName: currentFileName
+      });
     }
 
     function requestSaveSubmission(locationPayload, regionName, qualityData) {
-      return fetch(`${LOCAL_API_BASE_URL}/api/submissions`, {
-        method: 'POST',
-        body: buildSubmissionFormData(locationPayload, regionName, qualityData)
-      }).then(response => response.json().then(data => {
-        if (data && data.serverBuild && data.serverBuild !== EXPECTED_SERVER_BUILD) {
-          throw new Error(`后端版本不一致: ${data.serverBuild}`);
-        }
-
-        if (!response.ok || !data || !data.success) {
-          throw new Error((data && data.message) || `submission_save_failed_${response.status}`);
-        }
-
-        return { status: response.status, data };
-      }));
+      if (typeof window.submitCloudManualReview !== 'function') {
+        return Promise.reject(new Error('CloudBase 投稿模块尚未加载'));
+      }
+      return window.submitCloudManualReview({
+        locationPayload,
+        regionName,
+        qualityData
+      });
     }
 
     function buildManualReviewQuality(regionName) {
@@ -5511,7 +5455,7 @@
         ? data.suggestions
         : ['请补充更清晰的实拍图片、地点说明或文化背景后再提交。'];
       const score = Number.isFinite(Number(data && data.qualityScore)) ? Number(data.qualityScore) : 0;
-      const providerLabel = data && data.aiUsed ? 'Gemini 已调用' : '本地规则兜底';
+      const providerLabel = data && data.aiUsed ? '云端 AI 已调用' : '人工审核兜底';
       const aiErrorText = data && data.aiError ? `<p class="text-[10px] text-red-500 pl-5">Gemini状态: ${data.aiError}</p>` : '';
       const manualReviewButton = reviewContext ? `
         <button type="button" id="manual-review-appeal-btn" onclick="submitBlockedForManualReview()" class="mt-2 w-full bg-stone-900 text-white py-2 rounded-lg text-xs font-bold flex items-center justify-center">
@@ -5583,14 +5527,13 @@
       const resultEl = document.getElementById('ai-success-result');
       resultEl.className = "bg-amber-50 rounded-xl p-3 border border-amber-200 space-y-1";
       resultEl.innerHTML = `
-        <div class="flex items-center text-amber-800 text-xs font-bold">
-          <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> AI 质检接口连接失败
-        </div>
-        <p class="text-[10px] text-stone-600 pl-5">请确认本地后端已启动：</p>
-        <p class="text-[10px] font-mono bg-stone-100 p-1 rounded text-stone-800 pl-5">node tools/server.js</p>
-        <p class="text-[10px] text-amber-600 pl-5">接口目标: ${LOCAL_API_BASE_URL}/api/quality-check</p>
-        <p class="text-[10px] text-stone-500 pl-5">错误信息: ${(err && err.message) || 'network_error'}</p>
-      `;
+          <div class="flex items-center text-amber-800 text-xs font-bold">
+            <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> AI 质检接口连接失败
+          </div>
+          <p class="text-[10px] text-stone-600 pl-5">素材仍可进入 CloudBase 人工审核，不会因为 AI 暂不可用而丢失。</p>
+          <p class="text-[10px] text-amber-600 pl-5">AI 接口目标: CloudBase 云函数 aiReview</p>
+          <p class="text-[10px] text-stone-500 pl-5">错误信息: ${(err && err.message) || 'network_error'}</p>
+        `;
       resultEl.classList.remove('hidden');
       setAiCloseButton("flex-1 bg-stone-800 text-white py-2 rounded-xl text-xs font-bold w-full", '关闭调试窗口');
       lucide.createIcons();
@@ -5598,14 +5541,14 @@
 
     function finishReviewSubmission(regionData, qualityData, savedData = null) {
       const qualityScore = Number.isFinite(Number(qualityData.qualityScore)) ? Number(qualityData.qualityScore) : 0;
-      const providerLabel = qualityData.aiUsed ? 'Gemini 已调用' : '本地规则兜底';
+      const providerLabel = qualityData.aiUsed ? '云端 AI 已调用' : '人工审核兜底';
       const submission = savedData && savedData.submission ? savedData.submission : null;
       const submissionLine = submission
-        ? `<p class="text-[10px] text-amber-700 pl-5">本地审核编号: <strong class="font-mono">#${submission.id}</strong>；原始文件已保存</p>`
+        ? `<p class="text-[10px] text-amber-700 pl-5">云端审核编号: <strong class="font-mono">#${submission.id}</strong>；原始文件已保存</p>`
         : '';
 
       updateStepStatus('step-deepfake', 'success', `AI初筛完成 (质量评分: ${qualityScore}/100)`);
-      updateStepStatus('step-watermark', submission ? 'success' : 'waiting', submission ? '原始素材已保存到本地待审核库' : '待人工复核，暂不写入积分水印');
+      updateStepStatus('step-watermark', submission ? 'success' : 'waiting', submission ? '原始素材已保存到 CloudBase 待审核库' : '待人工复核，暂不写入积分水印');
       updateStepStatus('step-milvus', 'waiting', '待人工复核后再关联馆藏图谱');
 
       const resultEl = document.getElementById('ai-success-result');
@@ -5632,7 +5575,7 @@
     }
 
     function showSubmissionSaveError(err) {
-      updateStepStatus('step-watermark', 'error', '本地提交存储失败');
+      updateStepStatus('step-watermark', 'error', '云端提交存储失败');
       updateStepStatus('step-milvus', 'waiting', '未进入管理员审核池');
 
       const resultEl = document.getElementById('ai-success-result');
@@ -5641,7 +5584,7 @@
         <div class="flex items-center text-red-800 text-xs font-bold">
           <i data-lucide="database-x" class="w-4 h-4 mr-1"></i> 素材保存失败
         </div>
-        <p class="text-[10px] text-red-600 pl-5">AI 初筛已完成，但没有写入本地审核池。</p>
+        <p class="text-[10px] text-red-600 pl-5">AI 初筛已完成，但没有写入 CloudBase 审核池。</p>
         <p class="text-[10px] text-red-500 pl-5">错误信息: ${(err && err.message) || 'submission_save_failed'}</p>
       `;
       resultEl.classList.remove('hidden');
@@ -5671,7 +5614,7 @@
               <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> Gemini 校验通过：物理及内容可信度核验无误！
             </div>
             <p class="text-[10px] text-emerald-600 pl-5">识别区域: <strong class="font-bold">${regionData.regionName}</strong></p>
-            <p class="text-[10px] text-emerald-600 pl-5">检测来源: <strong class="font-bold">${qualityData.aiUsed ? 'Gemini 已调用' : '本地规则兜底'}</strong></p>
+            <p class="text-[10px] text-emerald-600 pl-5">检测来源: <strong class="font-bold">${qualityData.aiUsed ? '云端 AI 已调用' : '人工审核兜底'}</strong></p>
             <p class="text-[10px] text-emerald-600 pl-5">质量评分: <strong class="font-bold">${qualityScore}/100</strong>；实拍可信度: <strong class="font-bold">${authenticity}%</strong></p>
             <p class="text-[10px] text-emerald-600 pl-5">内容判定: <strong class="font-bold">${qualityData.category || '湖北文化遗产实拍素材'}</strong></p>
             <p class="text-[10px] text-emerald-600 pl-5">优化建议: <span class="text-stone-700">${firstSuggestion}</span></p>
@@ -5686,17 +5629,17 @@
       }, 1000);
     }
 
-    // 10. 表单提交与双模式检测
+    // 10. 表单提交与 AI 检测展示（正式提交由 CloudBase 覆盖层接管）
     function handleUploadSubmit(event) {
       event.preventDefault();
 
-      if (localApiMode && !selectedUploadFile) {
-        showToast('本地 API 模式需要先选择或录制一个真实素材', 'upload-cloud');
+      if (cloudAiMode && !selectedUploadFile) {
+        showToast('云端 AI 审核需要先选择或录制一个真实素材', 'upload-cloud');
         return;
       }
 
-      if (localApiMode && !currentLocation.isReal) {
-        showToast('本地 API 模式需要先点击刷新图标获取真实 GPS 定位', 'map-pin');
+      if (cloudAiMode && !currentLocation.isReal) {
+        showToast('云端 AI 审核需要先点击刷新图标获取真实 GPS 定位', 'map-pin');
         return;
       }
       
@@ -5721,24 +5664,20 @@
       const isFileNameAi = lowerName.includes('ai') || lowerName.includes('fake') || lowerName.includes('sd') || lowerName.includes('midjourney');
       const isAiDetected = isFileNameAi; 
 
-      // 🔴 模式 1: 连接本地真实 Express + PostGIS 数据库进行空间碰撞
-      if (localApiMode) {
+      // 云端 AI 启用后，由 CloudBase 服务完成定位校验与内容初筛。
+      if (cloudAiMode) {
         const payloadData = buildSignedLocationPayload(lon, lat, timestamp, deviceId);
 
-        // 完美对齐本地 server.js 的 /api/verify-location JSON 接收端
-        fetch(`${LOCAL_API_BASE_URL}/api/verify-location`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payloadData)
-        })
-        .then(response => {
-          return response.json().then(data => ({ status: response.status, data }));
-        })
+        const verifyPromise = typeof window.verifyCloudLocation === 'function'
+          ? window.verifyCloudLocation(payloadData)
+          : Promise.resolve({
+              status: 200,
+              data: { success: true, regionName: '湖北', provider: 'browser-gps' }
+            });
+
+        verifyPromise
         .then(({ status, data }) => {
           if (status === 200 && data.success) {
-            // PostGIS 围栏判定放行！
             setTimeout(() => {
               updateStepStatus('step-gps', 'success', `GPS定位认证完成 (${data.regionName})`);
               updateStepStatus('step-deepfake', 'loading', getSelectedAssetType() === 'image' ? '正在进行 AIGC 图像篡改与内容质量检测...' : '音视频素材进入人工初筛队列...');
@@ -5759,7 +5698,7 @@
                     return Promise.reject({ handled: true });
                   }
 
-                  updateStepStatus('step-watermark', 'loading', '正在保存原始素材到本地待审核库...');
+                  updateStepStatus('step-watermark', 'loading', '正在保存原始素材到 CloudBase 待审核库...');
                   return requestSaveSubmission(payloadData, data.regionName, qualityData)
                     .catch(err => {
                       err.stage = 'save';
@@ -5779,7 +5718,6 @@
                 });
             }, 1000);
           } else {
-            // PostGIS 判定失败（越界异常）或数据库等服务挂起
             setTimeout(() => {
               updateStepStatus('step-gps', 'error', `GPS校验被拦截！`);
               
@@ -5787,11 +5725,11 @@
               resultEl.className = "bg-red-50 rounded-xl p-3 border border-red-200 space-y-1";
               
               let titleText = "湖北省行政边界安全防御拦截！";
-              let errorTip = "该坐标未命中 PostgreSQL 导入的湖北边界表，地理围栏防御阻断了写入请求！";
+              let errorTip = "该坐标未通过云端地理围栏校验，服务已阻断本次写入。";
               
               if (status === 500) {
-                titleText = "本地系统服务连接异常！";
-                errorTip = "数据库异常！请确认您本地 tools/server.js 第 20 行密码配置是否与本地 PostgreSQL 真实密码一致！";
+                titleText = "CloudBase 审核服务连接异常！";
+                errorTip = "云端服务暂不可用，请稍后重试；素材不会写入不完整的审核记录。";
               } else if (status === 401) {
                 errorTip = "安全特征数字签名验证失败！经纬度或时间戳数据涉嫌中途遭篡改抓包。";
               } else if (status === 403) {
@@ -5815,24 +5753,23 @@
               btn.disabled = false;
               btn.classList.remove('bg-stone-100', 'text-stone-400');
               btn.classList.add('bg-cinnabarRed', 'text-white');
-              btn.innerText = status === 500 ? '重试本地服务' : '重新回到采集区';
+              btn.innerText = status === 500 ? '重试云端服务' : '重新回到采集区';
               btn.setAttribute('onclick', 'closeAiModalWithError()');
             }, 1000);
           }
         })
         .catch(err => {
-          // 本地服务器没有开启时的温馨警报
           setTimeout(() => {
-            updateStepStatus('step-gps', 'error', `本地服务器未响应`);
+            updateStepStatus('step-gps', 'error', `CloudBase 审核服务未响应`);
             const resultEl = document.getElementById('ai-success-result');
             resultEl.className = "bg-amber-50 rounded-xl p-3 border border-amber-200 space-y-1";
             resultEl.innerHTML = `
               <div class="flex items-center text-amber-800 text-xs font-bold">
-                <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> 连接本地 3000 服务端失败！
+                <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> CloudBase 审核服务暂不可用
               </div>
-              <p class="text-[10px] text-stone-600 pl-5">请在 HBuilderX 内置终端（D:\\数字文旅\\数字文旅>）中重新运行后台：</p>
-              <p class="text-[10px] font-mono bg-stone-100 p-1 rounded text-stone-800 pl-5">node tools/server.js</p>
-              <p class="text-[10px] text-amber-600 pl-5">接口目标: http://localhost:3000/api/verify-location</p>
+              <p class="text-[10px] text-stone-600 pl-5">当前仍可使用正式 CloudBase 投稿链路进入人工审核。</p>
+              <p class="text-[10px] text-amber-600 pl-5">未来接口目标: CloudBase 云函数 aiReview</p>
+              <p class="text-[10px] text-stone-500 pl-5">错误信息: ${(err && err.message) || 'cloud_service_unavailable'}</p>
             `;
             resultEl.classList.remove('hidden');
             lucide.createIcons();
@@ -5841,13 +5778,13 @@
             btn.disabled = false;
             btn.classList.remove('bg-stone-100', 'text-stone-400');
             btn.classList.add('bg-stone-800', 'text-white');
-            btn.innerText = '关闭调试窗口';
+            btn.innerText = '关闭提示';
             btn.setAttribute('onclick', 'closeAiModalWithError()');
           }, 1000);
         });
 
       } else {
-        // 🟢 模式 2: 纯前端仿真沙盒模式 (本地没有运行服务器时的沙盒运行环境)
+        // AI 尚未启用时保留展示逻辑；正式数据仍只写入 CloudBase 人工审核池。
         setTimeout(() => {
           updateStepStatus('step-gps', 'success', 'GPS定位认证完成 (沙盒通过)');
           updateStepStatus('step-deepfake', 'loading', '正在进行 AIGC 图像篡改深度特征对比...');

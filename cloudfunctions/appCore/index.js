@@ -65,7 +65,13 @@ function submissionView(item, includeOwnerDetails = false) {
     createdAt: item.createdAt || null,
     updatedAt: item.updatedAt || null,
     reviewedAt: item.reviewedAt || null,
-    reviewNote: item.reviewNote || ''
+    reviewNote: item.reviewNote || '',
+    reviewPipelineVersion: Number(item.reviewPipelineVersion) || 1,
+    aiReviewStatus: item.aiReviewStatus || 'not_requested',
+    aiReviewDecision: item.aiReviewDecision || '',
+    aiReviewProvider: item.aiReviewProvider || '',
+    aiReviewSummary: item.aiReviewSummary || '',
+    aiReviewUpdatedAt: item.aiReviewUpdatedAt || null
   };
   if (includeOwnerDetails) view.userId = item.userId || '';
   return view;
@@ -214,6 +220,12 @@ async function createSubmission(uid, userInfo, event) {
     regionName: cleanText(event.regionName, 80) || '湖北',
     status: 'pending',
     rewardPoints: 100,
+    reviewPipelineVersion: 1,
+    aiReviewStatus: 'not_requested',
+    aiReviewDecision: '',
+    aiReviewProvider: '',
+    aiReviewSummary: '',
+    aiReviewUpdatedAt: null,
     source: 'cloudbase_formal_web',
     createdAt: db.serverDate(),
     updatedAt: db.serverDate()

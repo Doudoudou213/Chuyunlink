@@ -62,8 +62,7 @@ function serializeSubmission(item) {
     updatedAt: item.updatedAt || null,
     reviewedAt: item.reviewedAt || null,
     reviewerId: item.reviewerId || '',
-    reviewNote: item.reviewNote || ''
-    ,
+    reviewNote: item.reviewNote || '',
     title: item.title || '',
     assetType: item.assetType || 'image',
     mimeType: item.mimeType || '',
@@ -72,7 +71,13 @@ function serializeSubmission(item) {
     rewardPoints: Number(item.rewardPoints) || 100,
     longitude: Number.isFinite(Number(item.longitude)) ? Number(item.longitude) : null,
     latitude: Number.isFinite(Number(item.latitude)) ? Number(item.latitude) : null,
-    regionName: item.regionName || '湖北'
+    regionName: item.regionName || '湖北',
+    reviewPipelineVersion: Number(item.reviewPipelineVersion) || 1,
+    aiReviewStatus: item.aiReviewStatus || 'not_requested',
+    aiReviewDecision: item.aiReviewDecision || '',
+    aiReviewProvider: item.aiReviewProvider || '',
+    aiReviewSummary: item.aiReviewSummary || '',
+    aiReviewUpdatedAt: item.aiReviewUpdatedAt || null
   };
 }
 
@@ -193,6 +198,10 @@ async function reviewSubmission(event, reviewerId) {
       reviewerId,
       submitterId: current.userId || '',
       rewardPoints,
+      aiReviewStatus: current.aiReviewStatus || 'not_requested',
+      aiReviewDecision: current.aiReviewDecision || '',
+      aiReviewProvider: current.aiReviewProvider || '',
+      aiReviewSummary: current.aiReviewSummary || '',
       createdAt: db.serverDate()
     });
 
