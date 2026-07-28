@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>楚韵链迹 · CloudBase 审核台</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    body { margin: 0; background: #f5f7fb; color: #172033; }
+    main { width: min(1080px, calc(100% - 32px)); margin: 36px auto 72px; }
+    h1 { margin-bottom: 8px; }
+    .muted { color: #667085; }
+    .panel, .card { background: #fff; border: 1px solid #e3e8ef; border-radius: 14px; box-shadow: 0 8px 24px rgba(20, 36, 64, .06); }
+    .panel { padding: 20px; margin: 20px 0; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+    label { display: grid; gap: 6px; font-size: 14px; }
+    input, select, textarea, button { font: inherit; }
+    input, select, textarea { border: 1px solid #cfd7e3; border-radius: 9px; padding: 10px 12px; }
+    input { min-width: 280px; }
+    button { border: 0; border-radius: 9px; padding: 10px 15px; color: #fff; background: #2256d8; cursor: pointer; }
+    button.secondary { background: #475467; }
+    button.danger { background: #b42318; }
+    button.warn { background: #b54708; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    #identity, #message { white-space: pre-wrap; word-break: break-word; }
+    #message.error { color: #b42318; }
+    #message.success { color: #067647; }
+    #list { display: grid; gap: 16px; }
+    .card { display: grid; grid-template-columns: 180px 1fr; gap: 18px; padding: 16px; }
+    .preview { width: 180px; height: 140px; object-fit: cover; border-radius: 10px; background: #eef2f6; }
+    .meta { font-size: 13px; color: #667085; word-break: break-all; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    textarea { width: min(620px, calc(100% - 26px)); min-height: 64px; resize: vertical; }
+    @media (max-width: 680px) {
+      .card { grid-template-columns: 1fr; }
+      .preview { width: 100%; height: 220px; }
+      input { min-width: 0; width: calc(100vw - 82px); }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CloudBase 管理员审核试验</h1>
+    <p class="muted">待审数据由云函数读取；审核状态只能由云函数修改，并同时写入审核日志。</p>
+
+    <section class="panel">
+      <div class="toolbar">
+        <label>
+          CloudBase 环境 ID
+          <input id="env-id" value="chulink-legacy-d8god1687a5d60743" autocomplete="off">
+        </label>
+        <label>
+          地域
+          <select id="region">
+            <option value="ap-shanghai">上海（ap-shanghai）</option>
+          </select>
+        </label>
+        <button id="connect">连接并检查管理员身份</button>
+        <button id="refresh" class="secondary" disabled>刷新待审列表</button>
+      </div>
+      <p id="identity" class="muted">尚未连接</p>
+      <p id="message" class="muted"></p>
+    </section>
+
+    <section id="list"></section>
+  </main>
+
+  <script src="https://static.cloudbase.net/cloudbase-js-sdk/2.28.6/cloudbase.full.js"></script>
+  <script>
+    const FUNCTION_NAME = "adminSubmissions";
+    let currentApp = null;
+    let currentUid = "";
+
+    const connectButton = document.getElementById("connect");
+    const refreshButton = document.getElementById("refresh");
+    const identity = document.getElementById("identity");
+    const message = document.getElementById("message");
+    const list = document.getElementById("list");
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function setMessage(text, type = "") {
+      message.className = type || "muted";
+      message.textContent = text;
+    }
+
+    async function ensureAnonymousUser(auth) {
+      let state = await auth.getLoginState();
+      if (!state) {
+        await auth.anonymousAuthProvider().signIn();
+        state = await auth.getLoginState();
+      }
+      const user = state && state.user;
+      return (user && (user.uid || user.id)) || "";
+    }
+
+    async function callAdmin(data) {
+      const response = await currentApp.callFunction({
+        name: FUNCTION_NAME,
+        data
+      });
+      let result = response && response.result !== undefined ? response.result : response;
+      if (typeof result === "string") {
+        try { result = JSON.parse(result); } catch (_) {}
+      }
+      if (!result || result.ok !== true) {
+        const error = result && result.error;
+        const failure = new Error(error && error.message ? error.message : "云函数返回失败");
+        failure.code = error && error.code ? error.code : "FUNCTION_FAILED";
+        throw failure;
+      }
+      return result;
+    }
+
+    async function connect() {
+      if (!window.cloudbase) return setMessage("CloudBase SDK 加载失败，请检查网络。", "error");
+      const env = document.getElementById("env-id").value.trim();
+      const region = document.getElementById("region").value;
+      if (!env) return setMessage("请填写环境 ID。", "error");
+
+      connectButton.disabled = true;
+      refreshButton.disabled = true;
+      setMessage("正在登录并调用管理员身份检查……");
+      try {
+        localStorage.setItem("chulink_cloudbase_env", env);
+        localStorage.setItem("chulink_cloudbase_region", region);
+        currentApp = cloudbase.init({ env, region });
+        currentUid = await ensureAnonymousUser(currentApp.auth({ persistence: "local" }));
+        const result = await callAdmin({ action: "whoami" });
+        identity.textContent =
+          `当前 UID：${result.uid || currentUid || "未取得"}\n` +
+          `管理员：${result.isAdmin ? "是" : "否"}\n` +
+          `管理员名单已配置：${result.adminConfigured ? "是" : "否"}`;
+
+        if (!result.adminConfigured) {
+          throw Object.assign(new Error("请先在云函数环境变量中配置 ADMIN_UIDS。"), { code: "ADMIN_NOT_CONFIGURED" });
+        }
+        if (!result.isAdmin) {
+          throw Object.assign(new Error("当前 UID 不在 ADMIN_UIDS 中。"), { code: "FORBIDDEN" });
+        }
+        refreshButton.disabled = false;
+        setMessage("管理员身份验证通过。", "success");
+        await loadPending();
+      } catch (error) {
+        setMessage(`${error.code || "ERROR"}：${error.message}`, "error");
+      } finally {
+        connectButton.disabled = false;
+      }
+    }
+
+    async function resolvePreviewUrls(items) {
+      const fileList = items.map((item) => item.imageFileID).filter(Boolean);
+      if (!fileList.length) return new Map();
+      const result = await currentApp.getTempFileURL({ fileList });
+      const map = new Map();
+      for (const item of result.fileList || []) {
+        map.set(item.fileID, item.tempFileURL || item.download_url || "");
+      }
+      return map;
+    }
+
+    async function loadPending() {
+      refreshButton.disabled = true;
+      setMessage("正在读取待审投稿……");
+      try {
+        const result = await callAdmin({ action: "list", status: "pending", limit: 30 });
+        const items = result.items || [];
+        let previewUrls = new Map();
+        try { previewUrls = await resolvePreviewUrls(items); } catch (_) {}
+        renderItems(items, previewUrls);
+        setMessage(`已读取 ${items.length} 条待审投稿。`, "success");
+      } catch (error) {
+        setMessage(`${error.code || "ERROR"}：${error.message}`, "error");
+      } finally {
+        refreshButton.disabled = false;
+      }
+    }
+
+    function renderItems(items, previewUrls) {
+      if (!items.length) {
+        list.innerHTML = '<section class="panel muted">当前没有待审投稿。</section>';
+        return;
+      }
+      list.innerHTML = items.map((item) => {
+        const id = escapeHtml(item.id);
+        const imageUrl = escapeHtml(previewUrls.get(item.imageFileID) || "");
+        return `
+          <article class="card" data-id="${id}">
+            ${imageUrl
+              ? `<img class="preview" src="${imageUrl}" alt="投稿图片">`
+              : '<div class="preview"></div>'}
+            <div>
+              <strong>${escapeHtml(item.description || "（未填写说明）")}</strong>
+              <p class="meta">投稿 ID：${id}<br>投稿人：${escapeHtml(item.userId || "未知")}<br>文件：${escapeHtml(item.imageCloudPath || item.imageFileID || "")}</p>
+              <textarea aria-label="审核说明" placeholder="拒绝或要求修改时必须填写；通过时可选"></textarea>
+              <div class="actions">
+                <button data-status="approved">通过</button>
+                <button data-status="needs_revision" class="warn">要求修改</button>
+                <button data-status="rejected" class="danger">拒绝</button>
+              </div>
+            </div>
+          </article>`;
+      }).join("");
+    }
+
+    async function review(card, status) {
+      const submissionId = card.dataset.id;
+      const reviewNote = card.querySelector("textarea").value.trim();
+      if (status !== "approved" && !reviewNote) {
+        return setMessage("拒绝或要求修改时，请先填写审核说明。", "error");
+      }
+      const buttons = card.querySelectorAll("button");
+      buttons.forEach((button) => { button.disabled = true; });
+      setMessage(`正在提交 ${status} 审核结果……`);
+      try {
+        await callAdmin({ action: "review", submissionId, status, reviewNote });
+        card.remove();
+        setMessage(`审核完成：${submissionId} → ${status}`, "success");
+        if (!list.querySelector(".card")) {
+          list.innerHTML = '<section class="panel muted">当前没有待审投稿。</section>';
+        }
+      } catch (error) {
+        buttons.forEach((button) => { button.disabled = false; });
+        setMessage(`${error.code || "ERROR"}：${error.message}`, "error");
+      }
+    }
+
+    list.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-status]");
+      const card = event.target.closest(".card");
+      if (button && card) review(card, button.dataset.status);
+    });
+    connectButton.addEventListener("click", connect);
+    refreshButton.addEventListener("click", loadPending);
+
+    document.getElementById("env-id").value =
+      localStorage.getItem("chulink_cloudbase_env") || "chulink-legacy-d8god1687a5d60743";
+    document.getElementById("region").value =
+      localStorage.getItem("chulink_cloudbase_region") || "ap-shanghai";
+  </script>
+</body>
+</html>

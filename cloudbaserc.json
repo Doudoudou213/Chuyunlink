@@ -1,0 +1,25 @@
+{
+  "envId": "chulink-legacy-d8god1687a5d60743",
+  "functionRoot": "./cloudfunctions",
+  "functions": [
+    {
+      "name": "appCore",
+      "runtime": "Nodejs18.15",
+      "handler": "index.main",
+      "timeout": 15,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "adminSubmissions",
+      "runtime": "Nodejs18.15",
+      "handler": "index.main",
+      "timeout": 15,
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "ADMIN_UIDS": "lqdTAYa24yVmQUMTrbhs_g,2081931527223812098"
+      }
+    }
+  ]
+}

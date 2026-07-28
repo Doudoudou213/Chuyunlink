@@ -20,6 +20,10 @@ const DATA_DIR = path.join(ROOT_DIR, 'data');
 const SUBMISSIONS_FILE = path.join(DATA_DIR, 'submissions.json');
 const POSTS_FILE = path.join(DATA_DIR, 'posts.json');
 const HUBEI_GEOJSON_FILE = path.join(ROOT_DIR, 'hubei_boundary.geojson');
+const CLOUDBASE_DEMO_FILE = path.join(ROOT_DIR, 'cloudbase-demo.html');
+const CLOUDBASE_ADMIN_DEMO_FILE = path.join(ROOT_DIR, 'cloudbase-admin-demo.html');
+const INDEX_FILE = path.join(ROOT_DIR, 'index.html');
+const STATIC_DIR = path.join(ROOT_DIR, 'static');
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const ALLOWED_MEDIA_TYPES = new Set([
   'image/jpeg',
@@ -59,6 +63,7 @@ let postWriteQueue = Promise.resolve();
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(UPLOAD_DIR));
+app.use('/static', express.static(STATIC_DIR));
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -137,6 +142,18 @@ app.get('/api/gemini-diagnostics', async (req, res) => {
 
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(ROOT_DIR, 'admin.html'));
+});
+
+app.get('/', (req, res) => {
+  res.sendFile(INDEX_FILE);
+});
+
+app.get('/cloudbase-demo', (req, res) => {
+  res.sendFile(CLOUDBASE_DEMO_FILE);
+});
+
+app.get('/cloudbase-admin-demo', (req, res) => {
+  res.sendFile(CLOUDBASE_ADMIN_DEMO_FILE);
 });
 
 function loadHubeiBoundary() {
