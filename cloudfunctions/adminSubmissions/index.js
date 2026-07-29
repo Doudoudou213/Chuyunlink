@@ -9,12 +9,13 @@ const db = app.database();
 const REPORT_COLLECTION = 'content_reports';
 const COMMENT_COLLECTION = 'submission_comments';
 const SUBMISSION_COLLECTION = 'submissions';
+const FEEDBACK_COLLECTION = 'system_feedback';
 let interactionCollectionsReady = null;
 
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-      [REPORT_COLLECTION, COMMENT_COLLECTION, 'submission_likes'].map(async (name) => {
+      [REPORT_COLLECTION, COMMENT_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {
@@ -359,6 +360,74 @@ async function resolveReport(event, reviewerId) {
   });
 }
 
+async function listFeedback(event) {
+  await ensureInteractionCollections();
+  const requestedLimit = Number(event.limit);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.max(1, Math.min(Math.floor(requestedLimit), 50))
+    : 30;
+  const result = await db.collection(FEEDBACK_COLLECTION)
+    .where({ status: 'open' })
+    .limit(limit)
+    .get();
+  const items = [...(result.data || [])]
+    .sort((left, right) => {
+      const leftTime = new Date(left.createdAt || 0).getTime() || 0;
+      const rightTime = new Date(right.createdAt || 0).getTime() || 0;
+      return rightTime - leftTime;
+    })
+    .map((item) => ({
+      id: item._id || item.id || '',
+      userId: item.userId || '',
+      userName: item.userName || '社区用户',
+      type: item.type || 'other',
+      content: item.content || '',
+      page: item.page || '',
+      createdAt: item.createdAt || null
+    }));
+  return { ok: true, action: 'listFeedback', items };
+}
+
+async function resolveFeedback(event, reviewerId) {
+  const feedbackId = cleanId(event.feedbackId);
+  const resolution = cleanText(event.resolution, 32);
+  const response = cleanText(event.response, 800);
+  if (!['resolved', 'dismissed'].includes(resolution)) {
+    const error = new Error('反馈处理结果不正确');
+    error.code = 'INVALID_FEEDBACK_RESOLUTION';
+    throw error;
+  }
+  if (resolution === 'resolved' && !response) {
+    const error = new Error('请填写给用户的处理回复');
+    error.code = 'FEEDBACK_RESPONSE_REQUIRED';
+    throw error;
+  }
+  const ref = db.collection(FEEDBACK_COLLECTION).doc(feedbackId);
+  const current = firstDocument(await ref.get());
+  if (!current || current.status !== 'open') {
+    const error = new Error('反馈不存在或已处理');
+    error.code = 'FEEDBACK_NOT_OPEN';
+    throw error;
+  }
+  await ref.update({
+    status: resolution,
+    response,
+    resolvedBy: reviewerId,
+    resolvedAt: db.serverDate(),
+    updatedAt: db.serverDate()
+  });
+  await db.collection('moderation_logs').add({
+    type: 'system_feedback',
+    feedbackId,
+    resolution,
+    response,
+    reviewerId,
+    userId: current.userId || '',
+    createdAt: db.serverDate()
+  });
+  return { ok: true, action: 'resolveFeedback', feedbackId, resolution };
+}
+
 exports.main = async (event = {}) => {
   try {
     const userInfo = app.auth().getUserInfo() || {};
@@ -403,6 +472,8 @@ exports.main = async (event = {}) => {
     if (action === 'review') return await reviewSubmission(event, callerUid);
     if (action === 'listReports') return await listReports(event);
     if (action === 'resolveReport') return await resolveReport(event, callerUid);
+    if (action === 'listFeedback') return await listFeedback(event);
+    if (action === 'resolveFeedback') return await resolveFeedback(event, callerUid);
 
     return {
       ok: false,

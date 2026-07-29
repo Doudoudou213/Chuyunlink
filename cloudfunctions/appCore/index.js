@@ -12,15 +12,17 @@ const SUBMISSION_COLLECTION = 'submissions';
 const COMMENT_COLLECTION = 'submission_comments';
 const LIKE_COLLECTION = 'submission_likes';
 const REPORT_COLLECTION = 'content_reports';
+const FEEDBACK_COLLECTION = 'system_feedback';
 const ALLOWED_ASSET_TYPES = new Set(['image', 'audio', 'video']);
 const ALLOWED_REPORT_REASONS = new Set(['spam', 'abuse', 'false_information', 'copyright', 'other']);
+const ALLOWED_FEEDBACK_TYPES = new Set(['suggestion', 'bug', 'content', 'other']);
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 let interactionCollectionsReady = null;
 
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-      [COMMENT_COLLECTION, LIKE_COLLECTION, REPORT_COLLECTION].map(async (name) => {
+      [COMMENT_COLLECTION, LIKE_COLLECTION, REPORT_COLLECTION, FEEDBACK_COLLECTION].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {
@@ -184,11 +186,33 @@ async function listPublic(limit = 30, viewerUid = '') {
   }));
 }
 
+function feedbackView(item) {
+  return {
+    id: item._id || item.id || '',
+    type: item.type || 'other',
+    content: item.content || '',
+    status: item.status || 'open',
+    response: item.response || '',
+    createdAt: item.createdAt || null,
+    resolvedAt: item.resolvedAt || null
+  };
+}
+
+async function listOwnFeedback(uid, limit = 10) {
+  await ensureInteractionCollections();
+  const result = await db.collection(FEEDBACK_COLLECTION)
+    .where({ userId: uid })
+    .limit(Math.max(1, Math.min(Number(limit) || 10, 30)))
+    .get();
+  return sortNewest(result.data || []).map(feedbackView);
+}
+
 async function bootstrap(uid, userInfo) {
   const profile = await ensureProfile(uid, userInfo);
-  const [mySubmissions, publicSubmissions] = await Promise.all([
+  const [mySubmissions, publicSubmissions, myFeedback] = await Promise.all([
     listOwn(uid, 50),
-    listPublic(30, uid)
+    listPublic(30, uid),
+    listOwnFeedback(uid, 10)
   ]);
   const stats = mySubmissions.reduce((result, item) => {
     result.total += 1;
@@ -202,7 +226,8 @@ async function bootstrap(uid, userInfo) {
     profile: publicProfile(profile),
     stats,
     mySubmissions,
-    publicSubmissions
+    publicSubmissions,
+    myFeedback
   };
 }
 
@@ -470,6 +495,52 @@ async function createReport(uid, userInfo, event) {
   return { ok: true, action: 'createReport', reportId };
 }
 
+async function createFeedback(uid, userInfo, event) {
+  requireStableAccount(userInfo);
+  await ensureInteractionCollections();
+  const profile = await ensureProfile(uid, userInfo);
+  const type = cleanText(event.type || 'suggestion', 32);
+  const content = cleanText(event.content, 1200);
+  const page = cleanText(event.page, 120);
+  if (!ALLOWED_FEEDBACK_TYPES.has(type)) {
+    const error = new Error('反馈类型不正确');
+    error.code = 'INVALID_FEEDBACK_TYPE';
+    throw error;
+  }
+  if (content.length < 5) {
+    const error = new Error('请至少填写 5 个字，方便我们理解问题');
+    error.code = 'FEEDBACK_TOO_SHORT';
+    throw error;
+  }
+  const result = await db.collection(FEEDBACK_COLLECTION).add({
+    userId: uid,
+    userName: profile.nickname || '社区用户',
+    type,
+    content,
+    page,
+    status: 'open',
+    response: '',
+    createdAt: db.serverDate(),
+    updatedAt: db.serverDate(),
+    resolvedAt: null,
+    resolvedBy: ''
+  });
+  return {
+    ok: true,
+    action: 'createFeedback',
+    feedbackId: result.id || result._id || '',
+    feedback: {
+      id: result.id || result._id || '',
+      type,
+      content,
+      status: 'open',
+      response: '',
+      createdAt: new Date().toISOString(),
+      resolvedAt: null
+    }
+  };
+}
+
 async function updateProfile(uid, userInfo, event) {
   await ensureProfile(uid, userInfo);
   const nickname = cleanText(event.nickname, 40);
@@ -595,6 +666,9 @@ exports.main = async (event = {}) => {
     if (action === 'getMySubmissions') {
       return { ok: true, action, items: await listOwn(uid, event.limit) };
     }
+    if (action === 'getMyFeedback') {
+      return { ok: true, action, items: await listOwnFeedback(uid, event.limit) };
+    }
     if (action === 'updateProfile') return await updateProfile(uid, userInfo, event);
     if (action === 'createSubmission') return await createSubmission(uid, userInfo, event);
     if (action === 'getInteractions') return await getInteractions(uid, event);
@@ -602,6 +676,7 @@ exports.main = async (event = {}) => {
     if (action === 'createComment') return await createComment(uid, userInfo, event);
     if (action === 'deleteComment') return await deleteComment(uid, userInfo, event);
     if (action === 'createReport') return await createReport(uid, userInfo, event);
+    if (action === 'createFeedback') return await createFeedback(uid, userInfo, event);
 
     return { ok: false, error: { code: 'INVALID_ACTION', message: '不支持的操作' } };
   } catch (error) {

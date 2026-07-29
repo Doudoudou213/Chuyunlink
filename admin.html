@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>楚韵链迹 · 云端管理审核台</title>
+  <title>楚韵链迹 · 内容管理</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -14,8 +14,8 @@
   <header class="bg-[#123c3a] text-white shadow-lg">
     <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
       <div>
-        <h1 class="text-xl font-bold text-[#d9ad52]">楚韵链迹 · 云端管理审核台</h1>
-        <p class="mt-1 text-xs text-stone-300">稳定账号登录 · CloudBase 云函数审核 · 自动发放积分</p>
+        <h1 class="text-xl font-bold text-[#d9ad52]">楚韵链迹 · 内容管理</h1>
+        <p class="mt-1 text-xs text-stone-300">投稿审核、内容举报与用户反馈</p>
       </div>
       <div class="flex gap-2">
         <a href="./index.html" class="rounded-lg border border-white/20 px-3 py-2 text-xs font-bold">返回前台</a>
@@ -27,11 +27,11 @@
   <main class="mx-auto max-w-6xl space-y-5 px-4 py-6">
     <section id="login-panel" class="mx-auto max-w-md rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
       <h2 class="text-base font-bold">管理员登录</h2>
-      <p class="mt-1 text-xs text-stone-500">使用 CloudBase 中创建的邮箱或用户名账号。</p>
+      <p class="mt-1 text-xs text-stone-500">使用已授权的管理员账号登录。</p>
       <form id="login-form" class="mt-4 space-y-3">
         <input id="username" autocomplete="username" placeholder="邮箱或用户名" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-[#d9ad52]" required>
         <input id="password" type="password" autocomplete="current-password" placeholder="密码" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-[#d9ad52]" required>
-        <button type="submit" class="w-full rounded-xl bg-[#123c3a] px-3 py-2.5 text-sm font-bold text-[#d9ad52]">登录并验证管理员身份</button>
+        <button type="submit" class="w-full rounded-xl bg-[#123c3a] px-3 py-2.5 text-sm font-bold text-[#d9ad52]">登录</button>
       </form>
       <p id="login-message" class="mt-3 min-h-5 whitespace-pre-wrap text-xs text-stone-500"></p>
     </section>
@@ -43,11 +43,16 @@
             <p id="identity" class="break-all text-xs text-stone-600"></p>
             <p id="message" class="mt-2 text-xs text-emerald-700"></p>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <button id="refresh" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">待审投稿</button>
-            <button id="report-refresh" class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-700">内容举报</button>
+          <div id="admin-navigation" class="flex flex-wrap gap-2">
+            <button id="refresh" data-admin-view="submissions" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">待审投稿</button>
+            <button id="report-refresh" data-admin-view="reports" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">内容举报</button>
+            <button id="feedback-refresh" data-admin-view="feedback" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">用户反馈</button>
           </div>
         </div>
+      </div>
+      <div class="flex items-center justify-between px-1">
+        <h2 id="view-title" class="text-sm font-bold text-stone-800">待审投稿</h2>
+        <span id="view-count" class="text-xs text-stone-400"></span>
       </div>
       <div id="list" class="grid gap-4"></div>
     </section>
@@ -68,6 +73,8 @@
     const message = document.getElementById("message");
     const list = document.getElementById("list");
     const logoutButton = document.getElementById("logout");
+    const viewTitle = document.getElementById("view-title");
+    const viewCount = document.getElementById("view-count");
 
     function escapeHtml(value) {
       return String(value == null ? "" : value)
@@ -127,7 +134,7 @@
         loginPanel.classList.add("hidden");
         adminPanel.classList.remove("hidden");
         logoutButton.classList.remove("hidden");
-        identity.textContent = `管理员：${user.email || user.username || user.phoneNumber || "已登录账号"} · UID ${uid}`;
+        identity.textContent = `管理员：${user.email || user.username || user.phoneNumber || "已登录账号"} · 账号 ${maskedUid(uid)}`;
         await loadPending();
       } catch (error) {
         loginMessage.className = "mt-3 min-h-5 whitespace-pre-wrap text-xs text-red-600";
@@ -167,6 +174,7 @@
     }
 
     async function loadPending() {
+      setActiveView("submissions", "待审投稿");
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在读取待审投稿...";
       try {
@@ -175,12 +183,39 @@
         let urls = new Map();
         try { urls = await resolveUrls(items); } catch (_) {}
         renderItems(items, urls);
+        viewCount.textContent = `${items.length} 条`;
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = `已读取 ${items.length} 条待审投稿。`;
       } catch (error) {
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
       }
+    }
+
+    function maskedUid(uid) {
+      const value = String(uid || "");
+      return value.length > 8 ? `${value.slice(0, 4)}…${value.slice(-4)}` : value;
+    }
+
+    function initialReviewLabel(status) {
+      return {
+        not_requested: "等待人工复核",
+        queued: "初审排队中",
+        processing: "初审中",
+        completed: "初审完成",
+        failed: "已转人工复核",
+        enqueue_failed: "已转人工复核"
+      }[status] || "等待人工复核";
+    }
+
+    function setActiveView(view, title) {
+      viewTitle.textContent = title;
+      document.querySelectorAll("[data-admin-view]").forEach((button) => {
+        const selected = button.dataset.adminView === view;
+        button.className = selected
+          ? "rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]"
+          : "rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600";
+      });
     }
 
     const reportReasonLabels = {
@@ -192,12 +227,14 @@
     };
 
     async function loadReports() {
+      setActiveView("reports", "内容举报");
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在读取待处理举报...";
       try {
         const result = await callAdmin({ action: "listReports", limit: 50 });
         const items = result.items || [];
         renderReports(items);
+        viewCount.textContent = `${items.length} 条`;
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = `已读取 ${items.length} 条待处理举报。`;
       } catch (error) {
@@ -223,6 +260,7 @@
               ${item.targetContent ? `<p class="mt-2 rounded-lg bg-stone-50 p-3 text-xs text-stone-700">被举报评论：${escapeHtml(item.targetContent)}</p>` : ""}
               <p class="mt-2 text-xs leading-relaxed text-stone-600">${escapeHtml(item.detail || "举报人未补充说明")}</p>
               <p class="mt-2 break-all text-[10px] text-stone-400">举报人：${escapeHtml(item.reporterName || item.reporterId)}<br>作品 ID：${escapeHtml(item.submissionId)}<br>目标 ID：${escapeHtml(item.targetId)}</p>
+              <textarea data-resolution-note rows="2" placeholder="填写处理说明（可选）" class="mt-3 w-full rounded-xl border border-stone-200 p-3 text-xs outline-none focus:border-[#123c3a]"></textarea>
             </div>
             <div class="flex shrink-0 flex-wrap gap-2">
               <button data-resolution="resolved" class="rounded-lg bg-red-700 px-3 py-2 text-xs font-bold text-white">${item.targetType === "comment" ? "确认违规并隐藏" : "确认并标记处理"}</button>
@@ -235,11 +273,7 @@
 
     async function resolveReport(card, resolution) {
       const reportId = card.dataset.reportId;
-      const resolutionNote = prompt(
-        resolution === "resolved" ? "填写处理说明（可选）" : "填写驳回原因（可选）",
-        ""
-      );
-      if (resolutionNote == null) return;
+      const resolutionNote = card.querySelector("[data-resolution-note]").value.trim();
       const buttons = card.querySelectorAll("button");
       buttons.forEach((button) => { button.disabled = true; });
       try {
@@ -256,6 +290,81 @@
           : "举报已处理。";
         if (!list.querySelector("article")) {
           list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待处理举报。</div>';
+        }
+      } catch (error) {
+        buttons.forEach((button) => { button.disabled = false; });
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    const feedbackTypeLabels = {
+      suggestion: "产品建议",
+      bug: "功能异常",
+      content: "内容问题",
+      other: "其他"
+    };
+
+    async function loadFeedback() {
+      setActiveView("feedback", "用户反馈");
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在读取待处理反馈...";
+      try {
+        const result = await callAdmin({ action: "listFeedback", limit: 50 });
+        const items = result.items || [];
+        renderFeedback(items);
+        viewCount.textContent = `${items.length} 条`;
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = `已读取 ${items.length} 条待处理反馈。`;
+      } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    function renderFeedback(items) {
+      if (!items.length) {
+        list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待处理反馈。</div>';
+        return;
+      }
+      list.innerHTML = items.map((item) => `
+        <article data-feedback-id="${escapeHtml(item.id)}" class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-bold text-stone-700">${escapeHtml(feedbackTypeLabels[item.type] || "其他")}</span>
+                <span class="text-[10px] text-stone-400">${escapeHtml(item.userName || "社区用户")}</span>
+              </div>
+              <p class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">${escapeHtml(item.content)}</p>
+              <p class="mt-2 text-[10px] text-stone-400">来源页面：${escapeHtml(item.page || "未记录")}</p>
+              <textarea data-feedback-response rows="3" placeholder="填写给用户的处理回复" class="mt-3 w-full rounded-xl border border-stone-200 p-3 text-xs outline-none focus:border-[#123c3a]"></textarea>
+            </div>
+            <div class="flex shrink-0 flex-wrap gap-2">
+              <button data-feedback-resolution="resolved" class="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white">回复并完成</button>
+              <button data-feedback-resolution="dismissed" class="rounded-lg bg-stone-200 px-3 py-2 text-xs font-bold text-stone-700">关闭</button>
+            </div>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    async function resolveFeedback(card, resolution) {
+      const feedbackId = card.dataset.feedbackId;
+      const response = card.querySelector("[data-feedback-response]").value.trim();
+      if (resolution === "resolved" && !response) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = "回复并完成时，请填写处理回复。";
+        return;
+      }
+      const buttons = card.querySelectorAll("button");
+      buttons.forEach((button) => { button.disabled = true; });
+      try {
+        await callAdmin({ action: "resolveFeedback", feedbackId, resolution, response });
+        card.remove();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = resolution === "resolved" ? "反馈已回复。" : "反馈已关闭。";
+        if (!list.querySelector("article")) {
+          list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待处理反馈。</div>';
         }
       } catch (error) {
         buttons.forEach((button) => { button.disabled = false; });
@@ -287,7 +396,7 @@
                 </div>
                 <span class="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700">待审核</span>
               </div>
-              <p class="mt-3 break-all text-[10px] leading-relaxed text-stone-400">投稿人：${escapeHtml(item.contributorName || item.userId)}<br>投稿 ID：${id}<br>位置：${escapeHtml(item.regionName || "湖北")} ${escapeHtml(item.longitude)}，${escapeHtml(item.latitude)}<br>AI 初筛：${escapeHtml(item.aiReviewStatus || "not_requested")}${item.aiReviewSummary ? ` · ${escapeHtml(item.aiReviewSummary)}` : " · 当前由人工审核兜底"}<br>通过奖励：${Number(item.rewardPoints || 100)} 积分</p>
+              <p class="mt-3 break-all text-[10px] leading-relaxed text-stone-400">投稿人：${escapeHtml(item.contributorName || item.userId)}<br>投稿 ID：${id}<br>位置：${escapeHtml(item.regionName || "湖北")} ${escapeHtml(item.longitude)}，${escapeHtml(item.latitude)}<br>初审状态：${escapeHtml(initialReviewLabel(item.aiReviewStatus))}${item.aiReviewSummary ? ` · ${escapeHtml(item.aiReviewSummary)}` : ""}<br>通过奖励：${Number(item.rewardPoints || 100)} 积分</p>
               <textarea rows="3" placeholder="拒绝或要求修改时必须填写审核说明" class="mt-3 w-full rounded-xl border border-stone-200 p-3 text-xs outline-none focus:border-[#d9ad52]"></textarea>
               <div class="mt-3 flex flex-wrap gap-2">
                 <button data-status="approved" class="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white">通过并发积分</button>
@@ -327,6 +436,7 @@
     document.getElementById("login-form").addEventListener("submit", login);
     document.getElementById("refresh").addEventListener("click", loadPending);
     document.getElementById("report-refresh").addEventListener("click", loadReports);
+    document.getElementById("feedback-refresh").addEventListener("click", loadFeedback);
     document.getElementById("list").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-status]");
       const card = event.target.closest("article[data-id]");
@@ -334,6 +444,11 @@
       const reportButton = event.target.closest("button[data-resolution]");
       const reportCard = event.target.closest("article[data-report-id]");
       if (reportButton && reportCard) resolveReport(reportCard, reportButton.dataset.resolution);
+      const feedbackButton = event.target.closest("button[data-feedback-resolution]");
+      const feedbackCard = event.target.closest("article[data-feedback-id]");
+      if (feedbackButton && feedbackCard) {
+        resolveFeedback(feedbackCard, feedbackButton.dataset.feedbackResolution);
+      }
     });
     logoutButton.addEventListener("click", async () => {
       await auth.signOut();

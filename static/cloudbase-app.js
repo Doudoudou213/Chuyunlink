@@ -60,15 +60,15 @@
     return Number.isNaN(date.getTime()) ? '刚刚' : date.toLocaleString('zh-CN');
   }
 
-  function aiReviewLabel(status) {
+  function reviewStageLabel(status) {
     return {
-      not_requested: '人工审核',
-      queued: 'AI 初审排队中',
-      processing: 'AI 初审中',
-      completed: 'AI 初审已完成',
-      failed: 'AI 初审失败，转人工',
-      enqueue_failed: 'AI 排队失败，转人工'
-    }[status] || '人工审核';
+      not_requested: '等待人工复核',
+      queued: '初审排队中',
+      processing: '初审中',
+      completed: '初审完成，待人工复核',
+      failed: '已转人工复核',
+      enqueue_failed: '已转人工复核'
+    }[status] || '等待人工复核';
   }
 
   function maskedUid(uid) {
@@ -236,15 +236,14 @@
     const profileView = document.getElementById('view-profile');
     if (!profileView || document.getElementById('cloud-profile-card')) return;
 
-    const legacyCard = profileView.firstElementChild;
-    if (legacyCard) legacyCard.classList.add('hidden');
+    Array.from(profileView.children).forEach((child) => child.classList.add('hidden'));
 
     profileView.insertAdjacentHTML('afterbegin', `
       <section id="cloud-profile-card" class="rounded-2xl border border-sandGold/30 bg-deepTeal p-4 text-white shadow-lg">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <p class="text-[10px] text-stone-300">我的云端身份</p>
+              <p class="text-[10px] text-stone-300">个人中心</p>
               <span id="cloud-account-badge" class="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[9px] font-bold text-stone-200">连接中</span>
             </div>
             <h4 id="cloud-profile-name" class="cultural-font mt-1 truncate text-base font-bold text-sandGold">正在连接...</h4>
@@ -262,15 +261,16 @@
           <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-attention" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">需处理</p></div>
         </div>
         <p id="cloud-account-hint" class="mt-3 rounded-lg border border-white/10 bg-black/10 px-2.5 py-2 text-[9px] leading-relaxed text-stone-300"></p>
-        <div class="mt-3 grid grid-cols-3 gap-2">
+        <div class="mt-3 grid grid-cols-2 gap-2">
           <button id="cloud-profile-upload" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">继续投稿</button>
-          <button id="cloud-profile-edit" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">修改昵称</button>
+          <button id="cloud-profile-edit" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">编辑资料</button>
+          <button id="cloud-feedback-open" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">意见反馈</button>
           <button id="cloud-account-action" type="button" class="rounded-lg bg-sandGold px-2 py-2 text-[10px] font-bold text-deepTeal">账号登录</button>
         </div>
       </section>
       <section class="space-y-2">
         <div class="flex items-center justify-between">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500">我的云端上传记录</h4>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500">我的投稿</h4>
           <button id="cloud-record-refresh" type="button" class="text-[10px] font-bold text-deepTeal">刷新</button>
         </div>
         <div id="cloud-record-filters" class="flex gap-1.5 overflow-x-auto pb-1">
@@ -283,9 +283,14 @@
           <div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">正在读取...</div>
         </div>
       </section>
-      <section class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[10px] leading-relaxed text-amber-800">
-        <p class="font-bold">数据说明</p>
-        <p class="mt-1">账号、投稿、审核结果、公开点赞评论和上方积分来自 CloudBase。下方徽章、答题奖励和积分兑换仍属于体验功能，暂不改变云端积分。</p>
+      <section class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500">我的反馈</h4>
+          <button id="cloud-feedback-add" type="button" class="text-[10px] font-bold text-deepTeal">提交反馈</button>
+        </div>
+        <div id="cloud-my-feedback" class="space-y-2">
+          <div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">正在读取...</div>
+        </div>
       </section>
     `);
 
@@ -300,6 +305,8 @@
       if (typeof switchTab === 'function') switchTab('collect');
     });
     document.getElementById('cloud-profile-edit').addEventListener('click', editCloudNickname);
+    document.getElementById('cloud-feedback-open').addEventListener('click', openCloudFeedback);
+    document.getElementById('cloud-feedback-add').addEventListener('click', openCloudFeedback);
     document.getElementById('cloud-record-refresh').addEventListener('click', refreshCloudProfile);
     document.getElementById('cloud-record-filters').addEventListener('click', (event) => {
       const button = event.target.closest('button[data-cloud-filter]');
@@ -316,8 +323,8 @@
         <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
           <div class="flex items-start justify-between">
             <div>
-              <h3 class="cultural-font text-lg font-bold text-deepTeal">登录云端账号</h3>
-              <p class="mt-1 text-[10px] text-stone-500">登录后可跨浏览器保留积分和上传记录。</p>
+              <h3 class="text-lg font-bold text-deepTeal">登录账号</h3>
+              <p class="mt-1 text-[10px] text-stone-500">登录后可在不同设备继续查看积分、投稿和反馈。</p>
             </div>
             <button id="cloud-login-close" type="button" class="text-stone-400">✕</button>
           </div>
@@ -327,12 +334,79 @@
             <p id="cloud-login-message" class="min-h-4 text-[10px] text-red-600"></p>
             <button type="submit" class="w-full rounded-xl bg-deepTeal px-3 py-2.5 text-sm font-bold text-sandGold">登录</button>
           </form>
-          <p class="mt-3 text-[9px] leading-relaxed text-stone-400">没有正式账号时可继续使用游客身份。管理员账号需在 CloudBase 身份认证中创建并加入管理员 UID 白名单。</p>
+          <p class="mt-3 text-[9px] leading-relaxed text-stone-400">没有正式账号时可先浏览；投稿记录仅会保留在当前游客身份下。</p>
         </div>
       </div>
     `);
     document.getElementById('cloud-login-close').addEventListener('click', closeCloudLogin);
     document.getElementById('cloud-login-form').addEventListener('submit', loginCloudAccount);
+  }
+
+  function injectProductModals() {
+    if (document.getElementById('cloud-profile-edit-modal')) return;
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="cloud-profile-edit-modal" class="hidden fixed inset-0 z-[90] flex items-center justify-center bg-black/70 p-4">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-base font-bold text-stone-900">编辑个人资料</h3>
+              <p class="mt-1 text-[10px] text-stone-500">昵称会展示在公开投稿、评论和点赞记录中。</p>
+            </div>
+            <button type="button" data-close-profile-edit class="text-stone-400">✕</button>
+          </div>
+          <form id="cloud-profile-edit-form" class="mt-4 space-y-3">
+            <div>
+              <label for="cloud-profile-nickname" class="text-xs font-bold text-stone-700">公开昵称</label>
+              <input id="cloud-profile-nickname" maxlength="40" class="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-deepTeal" required>
+            </div>
+            <p id="cloud-profile-edit-message" class="min-h-4 text-[10px] text-red-600"></p>
+            <div class="flex gap-2">
+              <button type="button" data-close-profile-edit class="flex-1 rounded-xl bg-stone-100 py-2.5 text-xs font-bold text-stone-600">取消</button>
+              <button type="submit" class="flex-1 rounded-xl bg-deepTeal py-2.5 text-xs font-bold text-sandGold">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div id="cloud-feedback-modal" class="hidden fixed inset-0 z-[90] flex items-center justify-center bg-black/70 p-4">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-base font-bold text-stone-900">意见反馈</h3>
+              <p class="mt-1 text-[10px] text-stone-500">反馈会进入管理台，处理结果可在个人中心查看。</p>
+            </div>
+            <button type="button" data-close-feedback class="text-stone-400">✕</button>
+          </div>
+          <form id="cloud-feedback-form" class="mt-4 space-y-3">
+            <div>
+              <label for="cloud-feedback-type" class="text-xs font-bold text-stone-700">反馈类型</label>
+              <select id="cloud-feedback-type" class="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-deepTeal">
+                <option value="suggestion">产品建议</option>
+                <option value="bug">功能异常</option>
+                <option value="content">内容问题</option>
+                <option value="other">其他</option>
+              </select>
+            </div>
+            <div>
+              <label for="cloud-feedback-content" class="text-xs font-bold text-stone-700">具体说明</label>
+              <textarea id="cloud-feedback-content" rows="5" maxlength="1200" placeholder="请说明遇到的问题、所在页面或希望增加的功能…" class="mt-1 w-full resize-none rounded-xl border border-stone-200 p-3 text-sm outline-none focus:border-deepTeal" required></textarea>
+            </div>
+            <p id="cloud-feedback-message" class="min-h-4 text-[10px] text-red-600"></p>
+            <div class="flex gap-2">
+              <button type="button" data-close-feedback class="flex-1 rounded-xl bg-stone-100 py-2.5 text-xs font-bold text-stone-600">取消</button>
+              <button type="submit" class="flex-1 rounded-xl bg-deepTeal py-2.5 text-xs font-bold text-sandGold">提交</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `);
+    document.querySelectorAll('[data-close-profile-edit]').forEach((button) => {
+      button.addEventListener('click', () => document.getElementById('cloud-profile-edit-modal').classList.add('hidden'));
+    });
+    document.querySelectorAll('[data-close-feedback]').forEach((button) => {
+      button.addEventListener('click', () => document.getElementById('cloud-feedback-modal').classList.add('hidden'));
+    });
+    document.getElementById('cloud-profile-edit-form').addEventListener('submit', saveCloudNickname);
+    document.getElementById('cloud-feedback-form').addEventListener('submit', submitCloudFeedback);
   }
 
   function openCloudLogin() {
@@ -382,15 +456,107 @@
       if (typeof showToast === 'function') showToast('登录正式账号后可长期保存个人昵称', 'log-in');
       return;
     }
-    const current = latestBootstrap.profile.nickname || '';
-    const nickname = prompt('请输入新的昵称（最多 40 个字）', current);
-    if (nickname == null || !nickname.trim()) return;
+    injectProductModals();
+    document.getElementById('cloud-profile-nickname').value = latestBootstrap.profile.nickname || '';
+    document.getElementById('cloud-profile-edit-message').textContent = '';
+    document.getElementById('cloud-profile-edit-modal').classList.remove('hidden');
+  }
+
+  async function saveCloudNickname(event) {
+    event.preventDefault();
+    const nickname = document.getElementById('cloud-profile-nickname').value.trim();
+    const message = document.getElementById('cloud-profile-edit-message');
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    if (!nickname) {
+      message.textContent = '昵称不能为空';
+      return;
+    }
+    button.disabled = true;
     try {
-      await callCore({ action: 'updateProfile', nickname: nickname.trim() });
+      await callCore({ action: 'updateProfile', nickname });
       await refreshCloudProfile();
-      if (typeof showToast === 'function') showToast('昵称已保存到云端', 'check-circle');
+      document.getElementById('cloud-profile-edit-modal').classList.add('hidden');
+      if (typeof showToast === 'function') showToast('个人资料已保存', 'check-circle');
     } catch (error) {
-      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+      message.textContent = error.message || '保存失败';
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function feedbackTypeLabel(type) {
+    return {
+      suggestion: '产品建议',
+      bug: '功能异常',
+      content: '内容问题',
+      other: '其他'
+    }[type] || '其他';
+  }
+
+  function feedbackStatusLabel(status) {
+    return {
+      open: '处理中',
+      resolved: '已回复',
+      dismissed: '已关闭'
+    }[status] || '处理中';
+  }
+
+  function renderCloudFeedback() {
+    const list = document.getElementById('cloud-my-feedback');
+    if (!list || !latestBootstrap) return;
+    const items = latestBootstrap.myFeedback || [];
+    list.innerHTML = items.length ? items.map((item) => `
+      <article class="rounded-xl border border-stone-200 bg-white p-3">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-xs font-bold text-stone-800">${safeText(feedbackTypeLabel(item.type))}</p>
+            <p class="mt-1 line-clamp-2 text-[10px] leading-relaxed text-stone-500">${safeText(item.content)}</p>
+          </div>
+          <span class="shrink-0 rounded-full bg-stone-100 px-2 py-1 text-[9px] font-bold text-stone-600">${safeText(feedbackStatusLabel(item.status))}</span>
+        </div>
+        ${item.response ? `<p class="mt-2 rounded-lg bg-emerald-50 p-2 text-[10px] leading-relaxed text-emerald-800">处理回复：${safeText(item.response)}</p>` : ''}
+        <p class="mt-2 text-[9px] text-stone-400">${safeText(displayDate(item.createdAt))}</p>
+      </article>
+    `).join('') : '<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">还没有提交过反馈。</div>';
+  }
+
+  function openCloudFeedback() {
+    if (!isStableAccount(cloudUser)) {
+      openCloudLogin();
+      if (typeof showToast === 'function') showToast('登录后可以提交反馈并查看处理结果', 'log-in');
+      return;
+    }
+    injectProductModals();
+    document.getElementById('cloud-feedback-message').textContent = '';
+    document.getElementById('cloud-feedback-modal').classList.remove('hidden');
+  }
+
+  async function submitCloudFeedback(event) {
+    event.preventDefault();
+    const type = document.getElementById('cloud-feedback-type').value;
+    const content = document.getElementById('cloud-feedback-content').value.trim();
+    const message = document.getElementById('cloud-feedback-message');
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    if (content.length < 5) {
+      message.textContent = '请至少填写 5 个字';
+      return;
+    }
+    button.disabled = true;
+    try {
+      await callCore({
+        action: 'createFeedback',
+        type,
+        content,
+        page: location.pathname || '/'
+      });
+      event.currentTarget.reset();
+      document.getElementById('cloud-feedback-modal').classList.add('hidden');
+      await refreshCloudProfile();
+      if (typeof showToast === 'function') showToast('反馈已提交，我们会在个人中心回复', 'check-circle');
+    } catch (error) {
+      message.textContent = error.message || '提交失败';
+    } finally {
+      button.disabled = false;
     }
   }
 
@@ -422,7 +588,7 @@
           <span class="shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold ${statusClass(item.status)}">${safeText(statusLabel(item.status))}</span>
         </div>
         <div class="mt-2 flex flex-wrap gap-1.5 text-[9px]">
-          <span class="rounded-full bg-stone-100 px-2 py-0.5 text-stone-600">${safeText(aiReviewLabel(item.aiReviewStatus))}</span>
+          <span class="rounded-full bg-stone-100 px-2 py-0.5 text-stone-600">${safeText(reviewStageLabel(item.aiReviewStatus))}</span>
           <span class="rounded-full bg-stone-100 px-2 py-0.5 text-stone-600">审核编号 ${safeText(item.id)}</span>
         </div>
         ${item.reviewNote ? `<p class="mt-2 rounded-lg bg-stone-50 p-2 text-[10px] text-stone-600">审核意见：${safeText(item.reviewNote)}</p>` : ''}
@@ -443,7 +609,7 @@
     document.getElementById('cloud-profile-uid').textContent = `身份编号 ${maskedUid(uid)}`;
     document.getElementById('cloud-account-badge').textContent = stable ? '正式账号' : '游客';
     document.getElementById('cloud-account-hint').textContent = stable
-      ? '当前资料、积分和投稿记录已绑定账号，可在其他设备登录后继续使用。'
+      ? '资料、积分、投稿和反馈已同步，可在其他设备登录后继续使用。'
       : '当前为游客身份：本机可以投稿和查看记录，但清理浏览器数据或更换设备后可能无法找回。建议登录正式账号。';
     document.getElementById('cloud-profile-points').textContent = Number(profile.points || 0).toLocaleString();
     document.getElementById('cloud-stat-total').textContent = Number(stats.total || 0);
@@ -456,6 +622,7 @@
     if (legacyPoints) legacyPoints.textContent = Number(profile.points || 0).toLocaleString();
     try { userPoints = Number(profile.points || 0); } catch (_) {}
     renderCloudSubmissionRecords();
+    renderCloudFeedback();
   }
 
   async function refreshCloudProfile() {
@@ -801,7 +968,7 @@
     const submitButton = event.currentTarget.querySelector('button[type="submit"]');
     const originalHtml = submitButton.innerHTML;
     submitButton.disabled = true;
-    submitButton.textContent = '正在上传 CloudBase...';
+      submitButton.textContent = '正在上传...';
     let uploadedFileID = '';
     try {
       const user = await ensureCloudUser();
@@ -835,7 +1002,7 @@
       const aiTask = await enqueueCloudAiReview(result.submission.id);
 
       if (typeof showToast === 'function') {
-        const queueLabel = aiTask.status === 'queued' ? '，已进入 AI 初筛' : '，已进入人工审核';
+        const queueLabel = aiTask.status === 'queued' ? '，已进入初审' : '，已进入人工审核';
         showToast(`投稿成功${queueLabel}，审核编号 ${result.submission.id || ''}`, 'check-circle');
       }
       if (typeof resetFilePreview === 'function') {
@@ -861,10 +1028,11 @@
   function prepareFormalCloudUi() {
     injectAccountUi();
     injectLoginModal();
+    injectProductModals();
     if (typeof setCloudAiMode === 'function') setCloudAiMode(AI_REVIEW_ENABLED);
     const collectForm = document.getElementById('collect-form');
     const submitButton = collectForm && collectForm.querySelector('button[type="submit"] span');
-    if (submitButton) submitButton.textContent = '上传云端并进入人工审核';
+    if (submitButton) submitButton.textContent = '上传并提交审核';
   }
 
   loadApprovedSubmissionFeed = loadCloudPublicFeed;
