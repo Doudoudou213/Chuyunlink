@@ -13,6 +13,10 @@
   let latestBootstrap = null;
   let activeInteractionSubmissionId = '';
   let activeReplyCommentId = '';
+  let loadedInteractionComments = [];
+  let interactionHasMoreComments = false;
+  let activeReportTargetType = 'submission';
+  let activeReportTargetId = '';
   const legacyToggleSubmissionLike = typeof toggleSubmissionLike === 'function'
     ? toggleSubmissionLike
     : null;
@@ -456,10 +460,21 @@
     const panel = document.getElementById('cloud-interaction-panel');
     const summary = document.getElementById('cloud-interaction-summary');
     const list = document.getElementById('cloud-comment-list');
+    const likeUsers = document.getElementById('cloud-like-users');
+    const loadMore = document.getElementById('cloud-comment-load-more');
     if (!panel || !summary || !list) return;
     panel.classList.remove('hidden');
     summary.textContent = `${Number(result.likeCount || 0)} 个赞 · ${Number(result.commentCount || 0)} 条评论`;
-    const comments = result.comments || [];
+    const likers = result.likers || [];
+    if (likeUsers) {
+      likeUsers.classList.toggle('hidden', !likers.length);
+      likeUsers.classList.toggle('flex', Boolean(likers.length));
+      likeUsers.innerHTML = likers.length
+        ? `<span class="text-[9px] text-stone-400">最近点赞</span>${likers.map((name) => `<span class="rounded-full bg-sandGold/15 px-2 py-1 text-[9px] font-bold text-deepTeal">${safeText(name)}</span>`).join('')}`
+        : '';
+    }
+    if (loadMore) loadMore.classList.toggle('hidden', !interactionHasMoreComments);
+    const comments = loadedInteractionComments;
     list.innerHTML = comments.length ? comments.map((comment) => `
       <article class="${comment.parentId ? 'ml-5 border-l-2 border-sandGold/30 pl-2' : ''} rounded-lg bg-stone-50 p-2.5">
         <div class="flex items-start justify-between gap-2">
@@ -469,7 +484,7 @@
             <p class="mt-1 text-[9px] text-stone-400">${safeText(displayDate(comment.createdAt))}</p>
           </div>
           <div class="flex shrink-0 gap-2 text-[9px] font-bold">
-            <button type="button" onclick="window.replyCloudComment('${safeText(comment.id)}','${safeText(comment.authorName || '社区用户')}')" class="text-deepTeal">回复</button>
+            <button type="button" onclick="window.replyCloudComment('${safeText(comment.id)}')" class="text-deepTeal">回复</button>
             ${comment.isMine
               ? `<button type="button" onclick="window.deleteCloudComment('${safeText(comment.id)}')" class="text-red-600">删除</button>`
               : `<button type="button" onclick="window.reportCloudContent('comment','${safeText(comment.id)}')" class="text-red-600">举报</button>`}
@@ -479,7 +494,8 @@
     `).join('') : '<div class="rounded-lg bg-stone-50 p-3 text-center text-[10px] text-stone-400">还没有评论，来留下第一条友善交流吧。</div>';
   }
 
-  async function loadCloudInteractions(itemOrId) {
+  async function loadCloudInteractions(itemOrId, options = {}) {
+    const append = options.append === true;
     const item = typeof itemOrId === 'string' ? findApprovedItem(itemOrId) : itemOrId;
     const panel = document.getElementById('cloud-interaction-panel');
     if (!item || !String(item.feedId || item.id || '').startsWith('approved-')) {
@@ -487,16 +503,32 @@
       return;
     }
     activeInteractionSubmissionId = rawSubmissionId(item.id || item.feedId);
-    activeReplyCommentId = '';
-    updateReplyIndicator();
+    if (!append) {
+      activeReplyCommentId = '';
+      loadedInteractionComments = [];
+      interactionHasMoreComments = false;
+      updateReplyIndicator();
+    }
     if (panel) panel.classList.remove('hidden');
     const list = document.getElementById('cloud-comment-list');
-    if (list) list.innerHTML = '<div class="rounded-lg bg-stone-50 p-3 text-center text-[10px] text-stone-400">正在读取云端互动...</div>';
+    if (list && !append) list.innerHTML = '<div class="rounded-lg bg-stone-50 p-3 text-center text-[10px] text-stone-400">正在读取云端互动...</div>';
     try {
       const result = await callCore({
         action: 'getInteractions',
-        submissionId: activeInteractionSubmissionId
+        submissionId: activeInteractionSubmissionId,
+        commentOffset: append ? loadedInteractionComments.length : 0,
+        commentLimit: 10
       });
+      const incoming = result.comments || [];
+      if (append) {
+        const knownIds = new Set(loadedInteractionComments.map((comment) => comment.id));
+        loadedInteractionComments = loadedInteractionComments.concat(
+          incoming.filter((comment) => !knownIds.has(comment.id))
+        );
+      } else {
+        loadedInteractionComments = incoming;
+      }
+      interactionHasMoreComments = Boolean(result.hasMoreComments);
       updateApprovedInteractionState(activeInteractionSubmissionId, result);
       renderCloudComments(result);
       if (typeof renderDiscoverFeed === 'function') renderDiscoverFeed();
@@ -583,33 +615,64 @@
     }
   }
 
+  function closeCloudReportModal() {
+    const modal = document.getElementById('cloud-report-modal');
+    if (modal) modal.classList.add('hidden');
+    activeReportTargetType = 'submission';
+    activeReportTargetId = '';
+    const message = document.getElementById('cloud-report-message');
+    if (message) message.textContent = '';
+  }
+
   async function reportCloudContent(targetType, targetId) {
     try {
       await requireInteractiveAccount();
-      const choice = prompt('请选择举报原因：\\n1 垃圾广告\\n2 攻击或骚扰\\n3 虚假信息\\n4 侵权内容\\n5 其他', '5');
-      if (choice == null) return;
-      const reasonMap = {
-        '1': 'spam',
-        '2': 'abuse',
-        '3': 'false_information',
-        '4': 'copyright',
-        '5': 'other'
-      };
-      const reason = reasonMap[String(choice).trim()];
-      if (!reason) throw new Error('请输入 1 到 5 之间的举报原因编号');
-      const detail = prompt('请补充举报说明（最多 500 字）', '');
-      if (detail == null) return;
+      activeReportTargetType = targetType === 'comment' ? 'comment' : 'submission';
+      activeReportTargetId = targetId || activeInteractionSubmissionId;
+      const modal = document.getElementById('cloud-report-modal');
+      const label = document.getElementById('cloud-report-target-label');
+      const detail = document.getElementById('cloud-report-detail');
+      const message = document.getElementById('cloud-report-message');
+      if (label) label.textContent = activeReportTargetType === 'comment' ? '举报这条评论' : '举报当前作品';
+      if (detail) detail.value = '';
+      if (message) message.textContent = '';
+      if (modal) modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    } catch (error) {
+      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+    }
+  }
+
+  async function submitCloudReport(event) {
+    event.preventDefault();
+    const reason = document.getElementById('cloud-report-reason').value;
+    const detail = document.getElementById('cloud-report-detail').value.trim();
+    const message = document.getElementById('cloud-report-message');
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    button.disabled = true;
+    if (message) {
+      message.className = 'min-h-4 text-[10px] text-stone-500';
+      message.textContent = '正在提交举报...';
+    }
+    try {
+      await requireInteractiveAccount();
       await callCore({
         action: 'createReport',
         submissionId: activeInteractionSubmissionId,
-        targetType,
-        targetId: targetId || activeInteractionSubmissionId,
+        targetType: activeReportTargetType,
+        targetId: activeReportTargetId || activeInteractionSubmissionId,
         reason,
         detail
       });
+      closeCloudReportModal();
       if (typeof showToast === 'function') showToast('举报已提交，管理员将进行处理', 'shield-check');
     } catch (error) {
-      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+      if (message) {
+        message.className = 'min-h-4 text-[10px] text-red-600';
+        message.textContent = error.message;
+      }
+    } finally {
+      button.disabled = false;
     }
   }
 
@@ -725,9 +788,10 @@
   window.submitCloudSubmission = submitToCloud;
   window.toggleSubmissionLike = toggleCloudLike;
   window.openDiscoverDetail = openCloudDiscoverDetail;
-  window.replyCloudComment = (commentId, authorName) => {
+  window.replyCloudComment = (commentId) => {
     activeReplyCommentId = commentId;
-    updateReplyIndicator(authorName);
+    const comment = loadedInteractionComments.find((item) => item.id === commentId);
+    updateReplyIndicator(comment && comment.authorName);
     const input = document.getElementById('cloud-comment-input');
     if (input) input.focus();
   };
@@ -750,6 +814,21 @@
     if (reportSubmission) reportSubmission.addEventListener('click', () => {
       reportCloudContent('submission', activeInteractionSubmissionId);
     });
+    const loadMoreComments = document.getElementById('cloud-comment-load-more');
+    if (loadMoreComments) loadMoreComments.addEventListener('click', async () => {
+      loadMoreComments.disabled = true;
+      try {
+        await loadCloudInteractions(activeInteractionSubmissionId, { append: true });
+      } finally {
+        loadMoreComments.disabled = false;
+      }
+    });
+    const reportForm = document.getElementById('cloud-report-form');
+    if (reportForm) reportForm.addEventListener('submit', submitCloudReport);
+    const reportClose = document.getElementById('cloud-report-close');
+    if (reportClose) reportClose.addEventListener('click', closeCloudReportModal);
+    const reportCancel = document.getElementById('cloud-report-cancel');
+    if (reportCancel) reportCancel.addEventListener('click', closeCloudReportModal);
     await refreshCloudProfile();
     await loadCloudPublicFeed();
   });

@@ -221,11 +221,19 @@ async function getApprovedSubmission(submissionId) {
 async function getInteractions(uid, event) {
   const submissionId = cleanResourceId(event.submissionId, '作品');
   const submission = await getApprovedSubmission(submissionId);
+  const requestedOffset = Number(event.commentOffset);
+  const requestedLimit = Number(event.commentLimit);
+  const commentOffset = Number.isFinite(requestedOffset)
+    ? Math.max(0, Math.min(Math.floor(requestedOffset), 100))
+    : 0;
+  const commentLimit = Number.isFinite(requestedLimit)
+    ? Math.max(1, Math.min(Math.floor(requestedLimit), 20))
+    : 10;
   const result = await db.collection(COMMENT_COLLECTION)
     .where({ submissionId, status: 'visible' })
     .limit(100)
     .get();
-  const comments = [...(result.data || [])]
+  const allComments = [...(result.data || [])]
     .sort((left, right) => {
       const leftTime = new Date(left.createdAt || 0).getTime() || 0;
       const rightTime = new Date(right.createdAt || 0).getTime() || 0;
@@ -239,18 +247,51 @@ async function getInteractions(uid, event) {
       createdAt: comment.createdAt || null,
       isMine: comment.userId === uid
     }));
+  const comments = allComments.slice(commentOffset, commentOffset + commentLimit);
   let viewerLiked = false;
+  let likers = [];
   try {
     const likeId = `${submissionId}_${uid}`;
     viewerLiked = Boolean(firstDocument(await db.collection(LIKE_COLLECTION).doc(likeId).get()));
+  } catch (_) {}
+  try {
+    const liked = await db.collection(LIKE_COLLECTION)
+      .where({ submissionId })
+      .limit(20)
+      .get();
+    const likedWithNames = await Promise.all([...(liked.data || [])].map(async (item) => {
+      let userName = cleanText(item.userName, 40);
+      if (!userName && item.userId) {
+        try {
+          const profile = firstDocument(
+            await db.collection(PROFILE_COLLECTION).doc(item.userId).get()
+          );
+          userName = cleanText(profile && profile.nickname, 40);
+        } catch (_) {}
+      }
+      return { ...item, resolvedUserName: userName };
+    }));
+    likers = likedWithNames
+      .sort((left, right) => {
+        const leftTime = new Date(left.createdAt || 0).getTime() || 0;
+        const rightTime = new Date(right.createdAt || 0).getTime() || 0;
+        return rightTime - leftTime;
+      })
+      .map((item) => item.resolvedUserName)
+      .filter(Boolean)
+      .slice(0, 12);
   } catch (_) {}
   return {
     ok: true,
     action: 'getInteractions',
     submissionId,
     likeCount: Math.max(0, Number(submission.likeCount) || 0),
-    commentCount: comments.length,
+    commentCount: allComments.length,
+    commentOffset,
+    commentLimit,
+    hasMoreComments: commentOffset + comments.length < allComments.length,
     viewerLiked,
+    likers,
     comments
   };
 }
@@ -258,6 +299,7 @@ async function getInteractions(uid, event) {
 async function toggleLike(uid, userInfo, event) {
   requireStableAccount(userInfo);
   const submissionId = cleanResourceId(event.submissionId, '作品');
+  const profile = await ensureProfile(uid, userInfo);
   const likeId = `${submissionId}_${uid}`;
   return db.runTransaction(async (transaction) => {
     const submissionRef = transaction.collection(SUBMISSION_COLLECTION).doc(submissionId);
@@ -281,6 +323,7 @@ async function toggleLike(uid, userInfo, event) {
       await likeRef.set({
         submissionId,
         userId: uid,
+        userName: profile.nickname || '社区用户',
         createdAt: db.serverDate()
       });
       await submissionRef.update({

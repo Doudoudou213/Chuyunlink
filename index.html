@@ -1319,7 +1319,11 @@
             举报作品
           </button>
         </div>
+        <div id="cloud-like-users" class="mt-2 hidden flex-wrap items-center gap-1.5"></div>
         <div id="cloud-comment-list" class="mt-3 space-y-2"></div>
+        <button id="cloud-comment-load-more" type="button" class="mt-2 hidden w-full rounded-lg border border-stone-200 bg-white py-2 text-[10px] font-bold text-deepTeal">
+          加载更多评论
+        </button>
         <form id="cloud-comment-form" class="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
           <div id="cloud-reply-indicator" class="mb-2 hidden items-center justify-between rounded-lg bg-sandGold/15 px-2 py-1.5 text-[10px] text-deepTeal">
             <span id="cloud-reply-label"></span>
@@ -1334,6 +1338,44 @@
       </section>
 
       <input id="discover-supplement-file" type="file" class="hidden" onchange="handleDiscoverSupplementUpload(event)">
+    </div>
+  </div>
+
+  <!-- 正式内容举报弹层 -->
+  <div id="cloud-report-modal" class="hidden fixed inset-0 z-[75] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs">
+    <div class="w-full max-w-sm rounded-3xl border border-stone-200 bg-white p-5 shadow-2xl">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-red-600">内容安全</p>
+          <h3 class="mt-1 text-base font-bold text-stone-800">提交举报</h3>
+          <p id="cloud-report-target-label" class="mt-1 text-[10px] text-stone-400">举报当前作品</p>
+        </div>
+        <button id="cloud-report-close" type="button" class="text-stone-400 hover:text-stone-600">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+      </div>
+      <form id="cloud-report-form" class="mt-4 space-y-3">
+        <div>
+          <label for="cloud-report-reason" class="text-xs font-bold text-stone-600">举报原因</label>
+          <select id="cloud-report-reason" class="mt-1 w-full rounded-xl border border-stone-200 bg-stone-50 p-2.5 text-xs outline-none focus:border-red-400">
+            <option value="spam">垃圾广告</option>
+            <option value="abuse">攻击、骚扰或不友善内容</option>
+            <option value="false_information">虚假或误导信息</option>
+            <option value="copyright">侵权或盗用内容</option>
+            <option value="other">其他问题</option>
+          </select>
+        </div>
+        <div>
+          <label for="cloud-report-detail" class="text-xs font-bold text-stone-600">补充说明</label>
+          <textarea id="cloud-report-detail" rows="4" maxlength="500" placeholder="请说明问题所在，便于管理员核实…" class="mt-1 w-full resize-none rounded-xl border border-stone-200 bg-stone-50 p-2.5 text-xs outline-none focus:border-red-400"></textarea>
+          <p class="mt-1 text-right text-[9px] text-stone-400">最多 500 字</p>
+        </div>
+        <div id="cloud-report-message" class="min-h-4 text-[10px] text-stone-500"></div>
+        <div class="flex gap-2 pt-1">
+          <button id="cloud-report-cancel" type="button" class="flex-1 rounded-xl bg-stone-100 py-2.5 text-xs font-bold text-stone-600">取消</button>
+          <button type="submit" class="flex-1 rounded-xl bg-red-700 py-2.5 text-xs font-bold text-white">提交管理员处理</button>
+        </div>
+      </form>
     </div>
   </div>
 
