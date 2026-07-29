@@ -2804,8 +2804,8 @@
       const board = getDiscoverBoard(item);
       const completeness = getDiscoverCompleteness(item);
       const statusText = board === 'share'
-        ? `采集完善度 ${completeness}% · 科普分享`
-        : `采集完善度 ${completeness}% · 等待补充`;
+        ? `内容完整度 ${completeness}% · 科普分享`
+        : `内容完整度 ${completeness}% · 等待补充`;
       const statusClass = board === 'share'
         ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
         : 'border-amber-200 bg-amber-50 text-amber-700';
@@ -2814,7 +2814,7 @@
           <article onclick="openDiscoverDetail('${escapeJsString(item.id)}')" class="cursor-pointer bg-white rounded-xl border border-stone-200 shadow-sm p-3">
             <div class="flex justify-between items-start">
               <span class="bg-sandGold/20 text-deepTeal text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center">
-                <i data-lucide="mic" class="w-3 h-3 mr-0.5"></i> 荆楚民间口述
+                <i data-lucide="mic" class="w-3 h-3 mr-0.5"></i> 荆楚民间口述 · 策展内容
               </span>
               <span class="text-stone-400 text-[10px]">${formatLiveFeedTime(item.createdAt)} · ${escapeHtml(item.region || '湖北')}</span>
             </div>
@@ -2868,7 +2868,7 @@
                   <p class="text-[10px] text-stone-400">${formatLiveFeedTime(item.createdAt)} · ${escapeHtml(item.region || '湖北')}</p>
                 </div>
               </div>
-              <span class="shrink-0 rounded-full bg-sandGold/20 px-2 py-0.5 text-[10px] font-bold text-deepTeal">${escapeHtml(item.badge || '实时采集')}</span>
+              <span class="shrink-0 rounded-full bg-sandGold/20 px-2 py-0.5 text-[10px] font-bold text-deepTeal">${escapeHtml(item.badge || '策展内容')}</span>
             </div>
 
             <h5 class="cultural-font mt-3 text-sm font-bold text-stone-800">${escapeHtml(item.title)}</h5>
@@ -3031,28 +3031,13 @@
     }
 
     function startDiscoverLiveTicker() {
-      if (discoverLiveTimer) return;
-      discoverLiveTimer = setInterval(() => {
-        const discoverView = document.getElementById('view-discover');
-        if (!discoverView || discoverView.classList.contains('hidden')) return;
-        const candidate = discoverLiveCandidates[discoverNextLiveIndex % discoverLiveCandidates.length];
-        discoverNextLiveIndex += 1;
-        const nextLiveItem = {
-          ...candidate,
-          id: `${candidate.id}-${Date.now()}`,
-          createdAt: Date.now()
-        };
-        const shareItems = discoverLiveFeedItems.filter(item => getDiscoverBoard(item) === 'share');
-        const needsItems = discoverLiveFeedItems.filter(item => getDiscoverBoard(item) === 'needs');
-        discoverLiveFeedItems.splice(0, discoverLiveFeedItems.length, ...shareItems, nextLiveItem, ...needsItems.slice(0, 5));
-        renderDiscoverFeed();
-      }, 18000);
+      // 实时内容只允许由 CloudBase 返回。保留空函数兼容旧页面调用，
+      // 避免再把本地模拟数据伪装成其他用户的新投稿。
     }
 
     function loadApprovedSubmissionFeed() {
       loadDiscoverLikes();
       renderDiscoverFeed();
-      startDiscoverLiveTicker();
       // 正式数据由 static/cloudbase-app.js 通过 appCore 云函数加载。
     }
 
@@ -5960,14 +5945,7 @@
     }
 
     function redeemCoupon(couponName, cost) {
-      if (userPoints < cost) {
-        showToast('流光积分不足，请积极采集或参与打卡任务！', 'alert-circle');
-        return;
-      }
-      
-      userPoints -= cost;
-      document.getElementById('user-points').innerText = userPoints.toLocaleString();
-      showToast(`兑换成功！${couponName}已存入微信卡包！`, 'gift');
+      showToast(`${couponName}仍为体验权益，暂未开放云端兑换，不会扣除 ${cost} 积分`, 'info');
     }
 
     // 13. 全局轻量通知吐司 (Toast)

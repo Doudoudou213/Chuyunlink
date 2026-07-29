@@ -17,6 +17,9 @@
   let interactionHasMoreComments = false;
   let activeReportTargetType = 'submission';
   let activeReportTargetId = '';
+  let activeSubmissionFilter = 'all';
+  let publicFeedRefreshTimer = null;
+  const PUBLIC_FEED_REFRESH_MS = 60 * 1000;
   const legacyToggleSubmissionLike = typeof toggleSubmissionLike === 'function'
     ? toggleSubmissionLike
     : null;
@@ -55,6 +58,23 @@
     if (!value) return '刚刚';
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? '刚刚' : date.toLocaleString('zh-CN');
+  }
+
+  function aiReviewLabel(status) {
+    return {
+      not_requested: '人工审核',
+      queued: 'AI 初审排队中',
+      processing: 'AI 初审中',
+      completed: 'AI 初审已完成',
+      failed: 'AI 初审失败，转人工',
+      enqueue_failed: 'AI 排队失败，转人工'
+    }[status] || '人工审核';
+  }
+
+  function maskedUid(uid) {
+    const value = String(uid || '');
+    if (value.length <= 8) return value;
+    return `${value.slice(0, 4)}…${value.slice(-4)}`;
   }
 
   function randomPart() {
@@ -223,7 +243,10 @@
       <section id="cloud-profile-card" class="rounded-2xl border border-sandGold/30 bg-deepTeal p-4 text-white shadow-lg">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-[10px] text-stone-300">CloudBase 云端身份</p>
+            <div class="flex items-center gap-2">
+              <p class="text-[10px] text-stone-300">我的云端身份</p>
+              <span id="cloud-account-badge" class="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[9px] font-bold text-stone-200">连接中</span>
+            </div>
             <h4 id="cloud-profile-name" class="cultural-font mt-1 truncate text-base font-bold text-sandGold">正在连接...</h4>
             <p id="cloud-profile-uid" class="mt-1 break-all font-mono text-[9px] text-stone-300"></p>
           </div>
@@ -232,14 +255,17 @@
             <p id="cloud-profile-points" class="text-xl font-bold text-sandGold">0</p>
           </div>
         </div>
-        <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+        <div class="mt-3 grid grid-cols-4 gap-2 text-center">
           <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-total" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">全部投稿</p></div>
           <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-pending" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">待审核</p></div>
           <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-approved" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">已通过</p></div>
+          <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-attention" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">需处理</p></div>
         </div>
-        <div class="mt-3 flex gap-2">
-          <button id="cloud-profile-edit" type="button" class="flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-[10px] font-bold">修改昵称</button>
-          <button id="cloud-account-action" type="button" class="flex-1 rounded-lg bg-sandGold px-3 py-2 text-[10px] font-bold text-deepTeal">账号登录</button>
+        <p id="cloud-account-hint" class="mt-3 rounded-lg border border-white/10 bg-black/10 px-2.5 py-2 text-[9px] leading-relaxed text-stone-300"></p>
+        <div class="mt-3 grid grid-cols-3 gap-2">
+          <button id="cloud-profile-upload" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">继续投稿</button>
+          <button id="cloud-profile-edit" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">修改昵称</button>
+          <button id="cloud-account-action" type="button" class="rounded-lg bg-sandGold px-2 py-2 text-[10px] font-bold text-deepTeal">账号登录</button>
         </div>
       </section>
       <section class="space-y-2">
@@ -247,9 +273,19 @@
           <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500">我的云端上传记录</h4>
           <button id="cloud-record-refresh" type="button" class="text-[10px] font-bold text-deepTeal">刷新</button>
         </div>
+        <div id="cloud-record-filters" class="flex gap-1.5 overflow-x-auto pb-1">
+          <button type="button" data-cloud-filter="all" class="shrink-0 rounded-full bg-deepTeal px-2.5 py-1 text-[9px] font-bold text-white">全部</button>
+          <button type="button" data-cloud-filter="pending" class="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[9px] font-bold text-stone-500">待审核</button>
+          <button type="button" data-cloud-filter="approved" class="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[9px] font-bold text-stone-500">已通过</button>
+          <button type="button" data-cloud-filter="attention" class="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[9px] font-bold text-stone-500">需处理</button>
+        </div>
         <div id="cloud-my-submissions" class="space-y-2">
           <div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">正在读取...</div>
         </div>
+      </section>
+      <section class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[10px] leading-relaxed text-amber-800">
+        <p class="font-bold">数据说明</p>
+        <p class="mt-1">账号、投稿、审核结果、公开点赞评论和上方积分来自 CloudBase。下方徽章、答题奖励和积分兑换仍属于体验功能，暂不改变云端积分。</p>
       </section>
     `);
 
@@ -260,8 +296,17 @@
         openCloudLogin();
       }
     });
+    document.getElementById('cloud-profile-upload').addEventListener('click', () => {
+      if (typeof switchTab === 'function') switchTab('collect');
+    });
     document.getElementById('cloud-profile-edit').addEventListener('click', editCloudNickname);
     document.getElementById('cloud-record-refresh').addEventListener('click', refreshCloudProfile);
+    document.getElementById('cloud-record-filters').addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-cloud-filter]');
+      if (!button) return;
+      activeSubmissionFilter = button.dataset.cloudFilter || 'all';
+      renderCloudSubmissionRecords();
+    });
   }
 
   function injectLoginModal() {
@@ -332,6 +377,11 @@
 
   async function editCloudNickname() {
     if (!latestBootstrap) return;
+    if (!isStableAccount(cloudUser)) {
+      openCloudLogin();
+      if (typeof showToast === 'function') showToast('登录正式账号后可长期保存个人昵称', 'log-in');
+      return;
+    }
     const current = latestBootstrap.profile.nickname || '';
     const nickname = prompt('请输入新的昵称（最多 40 个字）', current);
     if (nickname == null || !nickname.trim()) return;
@@ -344,25 +394,24 @@
     }
   }
 
-  function renderCloudProfile(data) {
-    latestBootstrap = data;
-    const profile = data.profile || {};
-    const stats = data.stats || {};
-    const uid = profile.uid || cloudUser && (cloudUser.uid || cloudUser.id) || '';
-    document.getElementById('cloud-profile-name').textContent = profile.nickname || '楚韵守护者';
-    document.getElementById('cloud-profile-uid').textContent =
-      `${isStableAccount(cloudUser) ? '正式账号' : '游客身份'} · UID ${uid}`;
-    document.getElementById('cloud-profile-points').textContent = Number(profile.points || 0).toLocaleString();
-    document.getElementById('cloud-stat-total').textContent = Number(stats.total || 0);
-    document.getElementById('cloud-stat-pending').textContent = Number(stats.pending || 0);
-    document.getElementById('cloud-stat-approved').textContent = Number(stats.approved || 0);
-    document.getElementById('cloud-account-action').textContent = isStableAccount(cloudUser) ? '退出账号' : '账号登录';
-    const legacyPoints = document.getElementById('user-points');
-    if (legacyPoints) legacyPoints.textContent = Number(profile.points || 0).toLocaleString();
-    try { userPoints = Number(profile.points || 0); } catch (_) {}
-
+  function renderCloudSubmissionRecords() {
     const list = document.getElementById('cloud-my-submissions');
-    const items = data.mySubmissions || [];
+    if (!list || !latestBootstrap) return;
+    const allItems = latestBootstrap.mySubmissions || [];
+    const items = allItems.filter((item) => {
+      if (activeSubmissionFilter === 'all') return true;
+      if (activeSubmissionFilter === 'attention') {
+        return item.status === 'rejected' || item.status === 'needs_revision';
+      }
+      return item.status === activeSubmissionFilter;
+    });
+    document.querySelectorAll('[data-cloud-filter]').forEach((button) => {
+      const selected = button.dataset.cloudFilter === activeSubmissionFilter;
+      button.classList.toggle('bg-deepTeal', selected);
+      button.classList.toggle('text-white', selected);
+      button.classList.toggle('bg-stone-100', !selected);
+      button.classList.toggle('text-stone-500', !selected);
+    });
     list.innerHTML = items.length ? items.map((item) => `
       <article class="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
         <div class="flex items-start justify-between gap-2">
@@ -372,10 +421,41 @@
           </div>
           <span class="shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold ${statusClass(item.status)}">${safeText(statusLabel(item.status))}</span>
         </div>
+        <div class="mt-2 flex flex-wrap gap-1.5 text-[9px]">
+          <span class="rounded-full bg-stone-100 px-2 py-0.5 text-stone-600">${safeText(aiReviewLabel(item.aiReviewStatus))}</span>
+          <span class="rounded-full bg-stone-100 px-2 py-0.5 text-stone-600">审核编号 ${safeText(item.id)}</span>
+        </div>
         ${item.reviewNote ? `<p class="mt-2 rounded-lg bg-stone-50 p-2 text-[10px] text-stone-600">审核意见：${safeText(item.reviewNote)}</p>` : ''}
         ${item.status === 'approved' ? `<p class="mt-2 text-[10px] font-bold text-emerald-600">已发放 +${Number(item.rewardPoints || 100)} 流光积分</p>` : ''}
       </article>
-    `).join('') : '<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">还没有云端上传记录。</div>';
+    `).join('') : `<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">${
+      allItems.length ? '当前筛选条件下没有投稿。' : '还没有云端上传记录。'
+    }</div>`;
+  }
+
+  function renderCloudProfile(data) {
+    latestBootstrap = data;
+    const profile = data.profile || {};
+    const stats = data.stats || {};
+    const uid = profile.uid || cloudUser && (cloudUser.uid || cloudUser.id) || '';
+    const stable = isStableAccount(cloudUser);
+    document.getElementById('cloud-profile-name').textContent = profile.nickname || '楚韵守护者';
+    document.getElementById('cloud-profile-uid').textContent = `身份编号 ${maskedUid(uid)}`;
+    document.getElementById('cloud-account-badge').textContent = stable ? '正式账号' : '游客';
+    document.getElementById('cloud-account-hint').textContent = stable
+      ? '当前资料、积分和投稿记录已绑定账号，可在其他设备登录后继续使用。'
+      : '当前为游客身份：本机可以投稿和查看记录，但清理浏览器数据或更换设备后可能无法找回。建议登录正式账号。';
+    document.getElementById('cloud-profile-points').textContent = Number(profile.points || 0).toLocaleString();
+    document.getElementById('cloud-stat-total').textContent = Number(stats.total || 0);
+    document.getElementById('cloud-stat-pending').textContent = Number(stats.pending || 0);
+    document.getElementById('cloud-stat-approved').textContent = Number(stats.approved || 0);
+    document.getElementById('cloud-stat-attention').textContent =
+      Number(stats.rejected || 0) + Number(stats.needs_revision || 0);
+    document.getElementById('cloud-account-action').textContent = stable ? '退出账号' : '账号登录';
+    const legacyPoints = document.getElementById('user-points');
+    if (legacyPoints) legacyPoints.textContent = Number(profile.points || 0).toLocaleString();
+    try { userPoints = Number(profile.points || 0); } catch (_) {}
+    renderCloudSubmissionRecords();
   }
 
   async function refreshCloudProfile() {
@@ -685,7 +765,6 @@
   async function loadCloudPublicFeed() {
     try {
       if (typeof loadDiscoverLikes === 'function') loadDiscoverLikes();
-      if (typeof startDiscoverLiveTicker === 'function') startDiscoverLiveTicker();
       const result = await callCore({ action: 'getPublic', limit: 50 });
       approvedSubmissionItems = await mapPublicItems(result.items || []);
       if (typeof renderDiscoverFeed === 'function') renderDiscoverFeed();
@@ -693,6 +772,15 @@
       console.warn('[CloudBase public feed]', error);
       if (typeof renderDiscoverFeed === 'function') renderDiscoverFeed();
     }
+  }
+
+  function scheduleCloudPublicFeedRefresh() {
+    if (publicFeedRefreshTimer) return;
+    publicFeedRefreshTimer = setInterval(() => {
+      const discoverView = document.getElementById('view-discover');
+      if (!discoverView || discoverView.classList.contains('hidden') || document.hidden) return;
+      loadCloudPublicFeed();
+    }, PUBLIC_FEED_REFRESH_MS);
   }
 
   async function submitToCloud(event) {
@@ -831,5 +919,6 @@
     if (reportCancel) reportCancel.addEventListener('click', closeCloudReportModal);
     await refreshCloudProfile();
     await loadCloudPublicFeed();
+    scheduleCloudPublicFeedRefresh();
   });
 })();
