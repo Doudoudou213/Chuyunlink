@@ -11,6 +11,14 @@
   let cloudUser = null;
   let bootstrapPromise = null;
   let latestBootstrap = null;
+  let activeInteractionSubmissionId = '';
+  let activeReplyCommentId = '';
+  const legacyToggleSubmissionLike = typeof toggleSubmissionLike === 'function'
+    ? toggleSubmissionLike
+    : null;
+  const legacyOpenDiscoverDetail = typeof openDiscoverDetail === 'function'
+    ? openDiscoverDetail
+    : null;
 
   function safeText(value) {
     return String(value == null ? '' : value)
@@ -381,7 +389,7 @@
     return (items || []).map((item) => {
       const fileID = item.fileID || item.imageFileID || '';
       const fileUrl = item.fileUrl || '';
-      return {
+      const mapped = {
         ...item,
         id: `approved-${item.id}`,
         feedId: `approved-${item.id}`,
@@ -390,12 +398,225 @@
         regionName: item.regionName || '湖北',
         contributorName: item.contributorName || '楚韵守护者',
         qualityScore: null,
-        comments: 0,
-        likes: 0,
+        comments: Number(item.commentCount || 0),
+        commentCount: Number(item.commentCount || 0),
+        likes: Number(item.likeCount || 0),
+        likeCount: Number(item.likeCount || 0),
         board: 'share',
         completeness: 100
       };
+      if (typeof discoverLikeState !== 'undefined') {
+        discoverLikeState[mapped.feedId] = Boolean(item.viewerLiked);
+      }
+      return mapped;
     });
+  }
+
+  function rawSubmissionId(value) {
+    return String(value || '').replace(/^approved-/, '');
+  }
+
+  function findApprovedItem(value) {
+    const id = String(value || '');
+    if (typeof approvedSubmissionItems === 'undefined') return null;
+    return approvedSubmissionItems.find((item) =>
+      item.id === id || item.feedId === id || rawSubmissionId(item.id) === rawSubmissionId(id)
+    ) || null;
+  }
+
+  async function requireInteractiveAccount() {
+    const user = await ensureCloudUser();
+    if (!isStableAccount(user)) {
+      openCloudLogin();
+      const error = new Error('请先登录正式账号后再参与互动');
+      error.code = 'STABLE_ACCOUNT_REQUIRED';
+      throw error;
+    }
+    return user;
+  }
+
+  function updateApprovedInteractionState(submissionId, data) {
+    const item = findApprovedItem(submissionId);
+    if (!item) return;
+    if (data.likeCount != null) {
+      item.likes = Number(data.likeCount || 0);
+      item.likeCount = Number(data.likeCount || 0);
+    }
+    if (data.commentCount != null) {
+      item.comments = Number(data.commentCount || 0);
+      item.commentCount = Number(data.commentCount || 0);
+    }
+    if (data.viewerLiked != null && typeof discoverLikeState !== 'undefined') {
+      discoverLikeState[item.feedId || item.id] = Boolean(data.viewerLiked);
+      item.viewerLiked = Boolean(data.viewerLiked);
+    }
+  }
+
+  function renderCloudComments(result) {
+    const panel = document.getElementById('cloud-interaction-panel');
+    const summary = document.getElementById('cloud-interaction-summary');
+    const list = document.getElementById('cloud-comment-list');
+    if (!panel || !summary || !list) return;
+    panel.classList.remove('hidden');
+    summary.textContent = `${Number(result.likeCount || 0)} 个赞 · ${Number(result.commentCount || 0)} 条评论`;
+    const comments = result.comments || [];
+    list.innerHTML = comments.length ? comments.map((comment) => `
+      <article class="${comment.parentId ? 'ml-5 border-l-2 border-sandGold/30 pl-2' : ''} rounded-lg bg-stone-50 p-2.5">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="truncate text-[10px] font-bold text-deepTeal">${safeText(comment.authorName || '社区用户')}</p>
+            <p class="mt-1 whitespace-pre-wrap break-words text-[11px] leading-relaxed text-stone-600">${safeText(comment.content)}</p>
+            <p class="mt-1 text-[9px] text-stone-400">${safeText(displayDate(comment.createdAt))}</p>
+          </div>
+          <div class="flex shrink-0 gap-2 text-[9px] font-bold">
+            <button type="button" onclick="window.replyCloudComment('${safeText(comment.id)}','${safeText(comment.authorName || '社区用户')}')" class="text-deepTeal">回复</button>
+            ${comment.isMine
+              ? `<button type="button" onclick="window.deleteCloudComment('${safeText(comment.id)}')" class="text-red-600">删除</button>`
+              : `<button type="button" onclick="window.reportCloudContent('comment','${safeText(comment.id)}')" class="text-red-600">举报</button>`}
+          </div>
+        </div>
+      </article>
+    `).join('') : '<div class="rounded-lg bg-stone-50 p-3 text-center text-[10px] text-stone-400">还没有评论，来留下第一条友善交流吧。</div>';
+  }
+
+  async function loadCloudInteractions(itemOrId) {
+    const item = typeof itemOrId === 'string' ? findApprovedItem(itemOrId) : itemOrId;
+    const panel = document.getElementById('cloud-interaction-panel');
+    if (!item || !String(item.feedId || item.id || '').startsWith('approved-')) {
+      if (panel) panel.classList.add('hidden');
+      return;
+    }
+    activeInteractionSubmissionId = rawSubmissionId(item.id || item.feedId);
+    activeReplyCommentId = '';
+    updateReplyIndicator();
+    if (panel) panel.classList.remove('hidden');
+    const list = document.getElementById('cloud-comment-list');
+    if (list) list.innerHTML = '<div class="rounded-lg bg-stone-50 p-3 text-center text-[10px] text-stone-400">正在读取云端互动...</div>';
+    try {
+      const result = await callCore({
+        action: 'getInteractions',
+        submissionId: activeInteractionSubmissionId
+      });
+      updateApprovedInteractionState(activeInteractionSubmissionId, result);
+      renderCloudComments(result);
+      if (typeof renderDiscoverFeed === 'function') renderDiscoverFeed();
+    } catch (error) {
+      if (list) list.innerHTML = `<div class="rounded-lg bg-red-50 p-3 text-[10px] text-red-700">${safeText(error.message)}</div>`;
+    }
+  }
+
+  async function toggleCloudLike(id) {
+    if (!String(id || '').startsWith('approved-')) {
+      if (legacyToggleSubmissionLike) legacyToggleSubmissionLike(id);
+      return;
+    }
+    try {
+      await requireInteractiveAccount();
+      const result = await callCore({
+        action: 'toggleLike',
+        submissionId: rawSubmissionId(id)
+      });
+      updateApprovedInteractionState(id, {
+        likeCount: result.likeCount,
+        viewerLiked: result.liked
+      });
+      if (typeof renderDiscoverFeed === 'function') renderDiscoverFeed();
+      if (activeInteractionSubmissionId === rawSubmissionId(id)) {
+        await loadCloudInteractions(id);
+      }
+      if (typeof showToast === 'function') {
+        showToast(result.liked ? '点赞成功' : '已取消点赞', 'thumbs-up');
+      }
+    } catch (error) {
+      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+    }
+  }
+
+  function updateReplyIndicator(authorName = '') {
+    const indicator = document.getElementById('cloud-reply-indicator');
+    const label = document.getElementById('cloud-reply-label');
+    if (!indicator || !label) return;
+    indicator.classList.toggle('hidden', !activeReplyCommentId);
+    indicator.classList.toggle('flex', Boolean(activeReplyCommentId));
+    label.textContent = activeReplyCommentId ? `正在回复 ${authorName || '这条评论'}` : '';
+  }
+
+  async function submitCloudComment(event) {
+    event.preventDefault();
+    const input = document.getElementById('cloud-comment-input');
+    const content = input ? input.value.trim() : '';
+    if (!activeInteractionSubmissionId || !content) {
+      if (typeof showToast === 'function') showToast('请输入评论内容', 'message-square');
+      return;
+    }
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      await requireInteractiveAccount();
+      await callCore({
+        action: 'createComment',
+        submissionId: activeInteractionSubmissionId,
+        parentId: activeReplyCommentId,
+        content
+      });
+      input.value = '';
+      activeReplyCommentId = '';
+      updateReplyIndicator();
+      await loadCloudInteractions(activeInteractionSubmissionId);
+      if (typeof showToast === 'function') showToast('评论已发布', 'message-square');
+    } catch (error) {
+      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function deleteCloudComment(commentId) {
+    if (!confirm('确定删除这条评论吗？')) return;
+    try {
+      await requireInteractiveAccount();
+      await callCore({ action: 'deleteComment', commentId });
+      await loadCloudInteractions(activeInteractionSubmissionId);
+      if (typeof showToast === 'function') showToast('评论已删除', 'trash-2');
+    } catch (error) {
+      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+    }
+  }
+
+  async function reportCloudContent(targetType, targetId) {
+    try {
+      await requireInteractiveAccount();
+      const choice = prompt('请选择举报原因：\\n1 垃圾广告\\n2 攻击或骚扰\\n3 虚假信息\\n4 侵权内容\\n5 其他', '5');
+      if (choice == null) return;
+      const reasonMap = {
+        '1': 'spam',
+        '2': 'abuse',
+        '3': 'false_information',
+        '4': 'copyright',
+        '5': 'other'
+      };
+      const reason = reasonMap[String(choice).trim()];
+      if (!reason) throw new Error('请输入 1 到 5 之间的举报原因编号');
+      const detail = prompt('请补充举报说明（最多 500 字）', '');
+      if (detail == null) return;
+      await callCore({
+        action: 'createReport',
+        submissionId: activeInteractionSubmissionId,
+        targetType,
+        targetId: targetId || activeInteractionSubmissionId,
+        reason,
+        detail
+      });
+      if (typeof showToast === 'function') showToast('举报已提交，管理员将进行处理', 'shield-check');
+    } catch (error) {
+      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+    }
+  }
+
+  function openCloudDiscoverDetail(itemId) {
+    if (legacyOpenDiscoverDetail) legacyOpenDiscoverDetail(itemId);
+    const item = findApprovedItem(itemId);
+    loadCloudInteractions(item || itemId);
   }
 
   async function loadCloudPublicFeed() {
@@ -502,12 +723,33 @@
   window.requestCloudAiReview = requestCloudAiReview;
   window.verifyCloudLocation = verifyCloudLocation;
   window.submitCloudSubmission = submitToCloud;
+  window.toggleSubmissionLike = toggleCloudLike;
+  window.openDiscoverDetail = openCloudDiscoverDetail;
+  window.replyCloudComment = (commentId, authorName) => {
+    activeReplyCommentId = commentId;
+    updateReplyIndicator(authorName);
+    const input = document.getElementById('cloud-comment-input');
+    if (input) input.focus();
+  };
+  window.deleteCloudComment = deleteCloudComment;
+  window.reportCloudContent = reportCloudContent;
   window.submitCloudManualReview = async () => {
     throw new Error('请使用正式提交按钮将素材写入 CloudBase 审核池');
   };
 
   document.addEventListener('DOMContentLoaded', async () => {
     prepareFormalCloudUi();
+    const commentForm = document.getElementById('cloud-comment-form');
+    if (commentForm) commentForm.addEventListener('submit', submitCloudComment);
+    const cancelReply = document.getElementById('cloud-reply-cancel');
+    if (cancelReply) cancelReply.addEventListener('click', () => {
+      activeReplyCommentId = '';
+      updateReplyIndicator();
+    });
+    const reportSubmission = document.getElementById('cloud-report-submission');
+    if (reportSubmission) reportSubmission.addEventListener('click', () => {
+      reportCloudContent('submission', activeInteractionSubmissionId);
+    });
     await refreshCloudProfile();
     await loadCloudPublicFeed();
   });

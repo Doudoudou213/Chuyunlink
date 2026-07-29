@@ -43,7 +43,10 @@
             <p id="identity" class="break-all text-xs text-stone-600"></p>
             <p id="message" class="mt-2 text-xs text-emerald-700"></p>
           </div>
-          <button id="refresh" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">刷新待审列表</button>
+          <div class="flex flex-wrap gap-2">
+            <button id="refresh" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">待审投稿</button>
+            <button id="report-refresh" class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-700">内容举报</button>
+          </div>
         </div>
       </div>
       <div id="list" class="grid gap-4"></div>
@@ -180,6 +183,87 @@
       }
     }
 
+    const reportReasonLabels = {
+      spam: "垃圾广告",
+      abuse: "攻击或骚扰",
+      false_information: "虚假信息",
+      copyright: "侵权内容",
+      other: "其他"
+    };
+
+    async function loadReports() {
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在读取待处理举报...";
+      try {
+        const result = await callAdmin({ action: "listReports", limit: 50 });
+        const items = result.items || [];
+        renderReports(items);
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = `已读取 ${items.length} 条待处理举报。`;
+      } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    function renderReports(items) {
+      if (!items.length) {
+        list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待处理举报。</div>';
+        return;
+      }
+      list.innerHTML = items.map((item) => `
+        <article data-report-id="${escapeHtml(item.id)}" class="rounded-2xl border border-red-100 bg-white p-4 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-full bg-red-50 px-2 py-1 text-[10px] font-bold text-red-700">${escapeHtml(item.targetType === "comment" ? "评论举报" : "作品举报")}</span>
+                <span class="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-bold text-stone-600">${escapeHtml(reportReasonLabels[item.reason] || item.reason)}</span>
+              </div>
+              <h3 class="mt-2 text-sm font-bold text-stone-800">${escapeHtml(item.submissionTitle || "未命名作品")}</h3>
+              ${item.targetContent ? `<p class="mt-2 rounded-lg bg-stone-50 p-3 text-xs text-stone-700">被举报评论：${escapeHtml(item.targetContent)}</p>` : ""}
+              <p class="mt-2 text-xs leading-relaxed text-stone-600">${escapeHtml(item.detail || "举报人未补充说明")}</p>
+              <p class="mt-2 break-all text-[10px] text-stone-400">举报人：${escapeHtml(item.reporterName || item.reporterId)}<br>作品 ID：${escapeHtml(item.submissionId)}<br>目标 ID：${escapeHtml(item.targetId)}</p>
+            </div>
+            <div class="flex shrink-0 flex-wrap gap-2">
+              <button data-resolution="resolved" class="rounded-lg bg-red-700 px-3 py-2 text-xs font-bold text-white">${item.targetType === "comment" ? "确认违规并隐藏" : "确认并标记处理"}</button>
+              <button data-resolution="dismissed" class="rounded-lg bg-stone-200 px-3 py-2 text-xs font-bold text-stone-700">驳回举报</button>
+            </div>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    async function resolveReport(card, resolution) {
+      const reportId = card.dataset.reportId;
+      const resolutionNote = prompt(
+        resolution === "resolved" ? "填写处理说明（可选）" : "填写驳回原因（可选）",
+        ""
+      );
+      if (resolutionNote == null) return;
+      const buttons = card.querySelectorAll("button");
+      buttons.forEach((button) => { button.disabled = true; });
+      try {
+        const result = await callAdmin({
+          action: "resolveReport",
+          reportId,
+          resolution,
+          resolutionNote
+        });
+        card.remove();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = result.commentHidden
+          ? "举报已处理，被举报评论已隐藏。"
+          : "举报已处理。";
+        if (!list.querySelector("article")) {
+          list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待处理举报。</div>';
+        }
+      } catch (error) {
+        buttons.forEach((button) => { button.disabled = false; });
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
     function renderItems(items, urls) {
       if (!items.length) {
         list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待审投稿。</div>';
@@ -242,10 +326,14 @@
 
     document.getElementById("login-form").addEventListener("submit", login);
     document.getElementById("refresh").addEventListener("click", loadPending);
+    document.getElementById("report-refresh").addEventListener("click", loadReports);
     document.getElementById("list").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-status]");
       const card = event.target.closest("article[data-id]");
       if (button && card) review(card, button.dataset.status);
+      const reportButton = event.target.closest("button[data-resolution]");
+      const reportCard = event.target.closest("article[data-report-id]");
+      if (reportButton && reportCard) resolveReport(reportCard, reportButton.dataset.resolution);
     });
     logoutButton.addEventListener("click", async () => {
       await auth.signOut();

@@ -9,11 +9,55 @@ const db = app.database();
 
 const PROFILE_COLLECTION = 'user_profiles';
 const SUBMISSION_COLLECTION = 'submissions';
+const COMMENT_COLLECTION = 'submission_comments';
+const LIKE_COLLECTION = 'submission_likes';
+const REPORT_COLLECTION = 'content_reports';
 const ALLOWED_ASSET_TYPES = new Set(['image', 'audio', 'video']);
+const ALLOWED_REPORT_REASONS = new Set(['spam', 'abuse', 'false_information', 'copyright', 'other']);
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
+let interactionCollectionsReady = null;
+
+async function ensureInteractionCollections() {
+  if (!interactionCollectionsReady) {
+    interactionCollectionsReady = Promise.all(
+      [COMMENT_COLLECTION, LIKE_COLLECTION, REPORT_COLLECTION].map(async (name) => {
+        try {
+          await db.createCollection(name);
+        } catch (error) {
+          const message = String(error && error.message || '');
+          const code = String(error && error.code || '');
+          if (!/exist/i.test(message) && !/exist/i.test(code)) throw error;
+        }
+      })
+    ).catch((error) => {
+      interactionCollectionsReady = null;
+      throw error;
+    });
+  }
+  return interactionCollectionsReady;
+}
 
 function cleanText(value, maxLength) {
   return String(value == null ? '' : value).trim().slice(0, maxLength);
+}
+
+function cleanResourceId(value, label = '资源') {
+  const id = cleanText(value, 128).replace(/^approved-/, '');
+  if (!id || !/^[A-Za-z0-9_-]+$/.test(id)) {
+    const error = new Error(`${label} ID 格式不正确`);
+    error.code = 'INVALID_RESOURCE_ID';
+    throw error;
+  }
+  return id;
+}
+
+function requireStableAccount(userInfo) {
+  const loginType = cleanText(userInfo && userInfo.loginType, 40).toUpperCase();
+  if (!userInfo || !userInfo.uid || loginType === 'ANONYMOUS') {
+    const error = new Error('请先登录正式账号后再参与互动');
+    error.code = 'STABLE_ACCOUNT_REQUIRED';
+    throw error;
+  }
 }
 
 function firstDocument(result) {
@@ -71,7 +115,9 @@ function submissionView(item, includeOwnerDetails = false) {
     aiReviewDecision: item.aiReviewDecision || '',
     aiReviewProvider: item.aiReviewProvider || '',
     aiReviewSummary: item.aiReviewSummary || '',
-    aiReviewUpdatedAt: item.aiReviewUpdatedAt || null
+    aiReviewUpdatedAt: item.aiReviewUpdatedAt || null,
+    likeCount: Math.max(0, Number(item.likeCount) || 0),
+    commentCount: Math.max(0, Number(item.commentCount) || 0)
   };
   if (includeOwnerDetails) view.userId = item.userId || '';
   return view;
@@ -104,7 +150,8 @@ async function listOwn(uid, limit = 50) {
   return sortNewest(result.data || []).map((item) => submissionView(item, true));
 }
 
-async function listPublic(limit = 30) {
+async function listPublic(limit = 30, viewerUid = '') {
+  await ensureInteractionCollections();
   const result = await db.collection(SUBMISSION_COLLECTION)
     .where({ status: 'approved' })
     .limit(Math.max(1, Math.min(Number(limit) || 30, 100)))
@@ -118,14 +165,30 @@ async function listPublic(limit = 30) {
   const urls = new Map(
     (fileResult.fileList || []).map((file) => [file.fileID, file.tempFileURL || ''])
   );
-  return items.map((item) => ({ ...item, fileUrl: urls.get(item.fileID) || '' }));
+  let likedSubmissionIds = new Set();
+  if (viewerUid) {
+    try {
+      const liked = await db.collection(LIKE_COLLECTION)
+        .where({ userId: viewerUid })
+        .limit(100)
+        .get();
+      likedSubmissionIds = new Set((liked.data || []).map((item) => item.submissionId));
+    } catch (error) {
+      console.warn('[appCore] unable to load viewer likes', error);
+    }
+  }
+  return items.map((item) => ({
+    ...item,
+    fileUrl: urls.get(item.fileID) || '',
+    viewerLiked: likedSubmissionIds.has(item.id)
+  }));
 }
 
 async function bootstrap(uid, userInfo) {
   const profile = await ensureProfile(uid, userInfo);
   const [mySubmissions, publicSubmissions] = await Promise.all([
     listOwn(uid, 50),
-    listPublic(30)
+    listPublic(30, uid)
   ]);
   const stats = mySubmissions.reduce((result, item) => {
     result.total += 1;
@@ -141,6 +204,227 @@ async function bootstrap(uid, userInfo) {
     mySubmissions,
     publicSubmissions
   };
+}
+
+async function getApprovedSubmission(submissionId) {
+  const submission = firstDocument(
+    await db.collection(SUBMISSION_COLLECTION).doc(submissionId).get()
+  );
+  if (!submission || submission.status !== 'approved') {
+    const error = new Error('该作品不存在或尚未公开');
+    error.code = 'SUBMISSION_NOT_PUBLIC';
+    throw error;
+  }
+  return submission;
+}
+
+async function getInteractions(uid, event) {
+  const submissionId = cleanResourceId(event.submissionId, '作品');
+  const submission = await getApprovedSubmission(submissionId);
+  const result = await db.collection(COMMENT_COLLECTION)
+    .where({ submissionId, status: 'visible' })
+    .limit(100)
+    .get();
+  const comments = [...(result.data || [])]
+    .sort((left, right) => {
+      const leftTime = new Date(left.createdAt || 0).getTime() || 0;
+      const rightTime = new Date(right.createdAt || 0).getTime() || 0;
+      return leftTime - rightTime;
+    })
+    .map((comment) => ({
+      id: comment._id || '',
+      parentId: comment.parentId || '',
+      content: comment.content || '',
+      authorName: comment.authorName || '社区用户',
+      createdAt: comment.createdAt || null,
+      isMine: comment.userId === uid
+    }));
+  let viewerLiked = false;
+  try {
+    const likeId = `${submissionId}_${uid}`;
+    viewerLiked = Boolean(firstDocument(await db.collection(LIKE_COLLECTION).doc(likeId).get()));
+  } catch (_) {}
+  return {
+    ok: true,
+    action: 'getInteractions',
+    submissionId,
+    likeCount: Math.max(0, Number(submission.likeCount) || 0),
+    commentCount: comments.length,
+    viewerLiked,
+    comments
+  };
+}
+
+async function toggleLike(uid, userInfo, event) {
+  requireStableAccount(userInfo);
+  const submissionId = cleanResourceId(event.submissionId, '作品');
+  const likeId = `${submissionId}_${uid}`;
+  return db.runTransaction(async (transaction) => {
+    const submissionRef = transaction.collection(SUBMISSION_COLLECTION).doc(submissionId);
+    const likeRef = transaction.collection(LIKE_COLLECTION).doc(likeId);
+    const submission = firstDocument(await submissionRef.get());
+    if (!submission || submission.status !== 'approved') {
+      const error = new Error('该作品不存在或尚未公开');
+      error.code = 'SUBMISSION_NOT_PUBLIC';
+      throw error;
+    }
+    const existingLike = firstDocument(await likeRef.get());
+    const wasLiked = Boolean(existingLike);
+    const currentCount = Math.max(0, Number(submission.likeCount) || 0);
+    if (wasLiked) {
+      await likeRef.remove();
+      await submissionRef.update({
+        likeCount: Math.max(0, currentCount - 1),
+        updatedAt: db.serverDate()
+      });
+    } else {
+      await likeRef.set({
+        submissionId,
+        userId: uid,
+        createdAt: db.serverDate()
+      });
+      await submissionRef.update({
+        likeCount: currentCount + 1,
+        updatedAt: db.serverDate()
+      });
+    }
+    return {
+      ok: true,
+      action: 'toggleLike',
+      submissionId,
+      liked: !wasLiked,
+      likeCount: wasLiked ? Math.max(0, currentCount - 1) : currentCount + 1
+    };
+  });
+}
+
+async function createComment(uid, userInfo, event) {
+  requireStableAccount(userInfo);
+  const submissionId = cleanResourceId(event.submissionId, '作品');
+  const parentId = event.parentId ? cleanResourceId(event.parentId, '评论') : '';
+  const content = cleanText(event.content, 500);
+  if (!content) {
+    const error = new Error('评论内容不能为空');
+    error.code = 'COMMENT_REQUIRED';
+    throw error;
+  }
+  await getApprovedSubmission(submissionId);
+  if (parentId) {
+    const parent = firstDocument(await db.collection(COMMENT_COLLECTION).doc(parentId).get());
+    if (!parent || parent.submissionId !== submissionId || parent.status !== 'visible') {
+      const error = new Error('要回复的评论不存在');
+      error.code = 'PARENT_COMMENT_NOT_FOUND';
+      throw error;
+    }
+  }
+  const profile = await ensureProfile(uid, userInfo);
+  const commentId = `${Date.now().toString(36)}_${uid.slice(-10)}_${Math.random().toString(36).slice(2, 8)}`;
+  await db.runTransaction(async (transaction) => {
+    const submissionRef = transaction.collection(SUBMISSION_COLLECTION).doc(submissionId);
+    const commentRef = transaction.collection(COMMENT_COLLECTION).doc(commentId);
+    const submission = firstDocument(await submissionRef.get());
+    if (!submission || submission.status !== 'approved') {
+      const error = new Error('该作品不存在或尚未公开');
+      error.code = 'SUBMISSION_NOT_PUBLIC';
+      throw error;
+    }
+    await commentRef.set({
+      submissionId,
+      userId: uid,
+      parentId,
+      content,
+      authorName: profile.nickname || '社区用户',
+      status: 'visible',
+      createdAt: db.serverDate(),
+      updatedAt: db.serverDate()
+    });
+    await submissionRef.update({
+      commentCount: Math.max(0, Number(submission.commentCount) || 0) + 1,
+      updatedAt: db.serverDate()
+    });
+  });
+  return { ok: true, action: 'createComment', submissionId, commentId };
+}
+
+async function deleteComment(uid, userInfo, event) {
+  requireStableAccount(userInfo);
+  const commentId = cleanResourceId(event.commentId, '评论');
+  return db.runTransaction(async (transaction) => {
+    const commentRef = transaction.collection(COMMENT_COLLECTION).doc(commentId);
+    const comment = firstDocument(await commentRef.get());
+    if (!comment || comment.status !== 'visible') {
+      const error = new Error('评论不存在或已删除');
+      error.code = 'COMMENT_NOT_FOUND';
+      throw error;
+    }
+    if (comment.userId !== uid) {
+      const error = new Error('只能删除自己的评论');
+      error.code = 'FORBIDDEN';
+      throw error;
+    }
+    const submissionRef = transaction.collection(SUBMISSION_COLLECTION).doc(comment.submissionId);
+    const submission = firstDocument(await submissionRef.get());
+    await commentRef.update({
+      status: 'deleted',
+      content: '',
+      deletedAt: db.serverDate(),
+      updatedAt: db.serverDate()
+    });
+    if (submission) {
+      await submissionRef.update({
+        commentCount: Math.max(0, (Number(submission.commentCount) || 0) - 1),
+        updatedAt: db.serverDate()
+      });
+    }
+    return { ok: true, action: 'deleteComment', commentId, submissionId: comment.submissionId };
+  });
+}
+
+async function createReport(uid, userInfo, event) {
+  requireStableAccount(userInfo);
+  const submissionId = cleanResourceId(event.submissionId, '作品');
+  const targetType = cleanText(event.targetType || 'submission', 20);
+  const targetId = targetType === 'comment'
+    ? cleanResourceId(event.targetId, '评论')
+    : submissionId;
+  const reason = cleanText(event.reason, 40);
+  const detail = cleanText(event.detail, 500);
+  if (!['submission', 'comment'].includes(targetType) || !ALLOWED_REPORT_REASONS.has(reason)) {
+    const error = new Error('举报类型或原因不正确');
+    error.code = 'INVALID_REPORT';
+    throw error;
+  }
+  await getApprovedSubmission(submissionId);
+  if (targetType === 'comment') {
+    const comment = firstDocument(await db.collection(COMMENT_COLLECTION).doc(targetId).get());
+    if (!comment || comment.submissionId !== submissionId || comment.status !== 'visible') {
+      const error = new Error('被举报的评论不存在');
+      error.code = 'COMMENT_NOT_FOUND';
+      throw error;
+    }
+  }
+  const reportId = `${targetType}_${targetId}_${uid}`;
+  const reportRef = db.collection(REPORT_COLLECTION).doc(reportId);
+  const existing = firstDocument(await reportRef.get());
+  if (existing && existing.status === 'pending') {
+    const error = new Error('你已经举报过该内容，请等待管理员处理');
+    error.code = 'REPORT_EXISTS';
+    throw error;
+  }
+  const profile = await ensureProfile(uid, userInfo);
+  await reportRef.set({
+    submissionId,
+    targetType,
+    targetId,
+    reporterId: uid,
+    reporterName: profile.nickname || '社区用户',
+    reason,
+    detail,
+    status: 'pending',
+    createdAt: db.serverDate(),
+    updatedAt: db.serverDate()
+  });
+  return { ok: true, action: 'createReport', reportId };
 }
 
 async function updateProfile(uid, userInfo, event) {
@@ -226,6 +510,8 @@ async function createSubmission(uid, userInfo, event) {
     aiReviewProvider: '',
     aiReviewSummary: '',
     aiReviewUpdatedAt: null,
+    likeCount: 0,
+    commentCount: 0,
     source: 'cloudbase_formal_web',
     createdAt: db.serverDate(),
     updatedAt: db.serverDate()
@@ -261,13 +547,18 @@ exports.main = async (event = {}) => {
     const action = cleanText(event.action, 40);
     if (action === 'bootstrap') return await bootstrap(uid, userInfo);
     if (action === 'getPublic') {
-      return { ok: true, action, items: await listPublic(event.limit) };
+      return { ok: true, action, items: await listPublic(event.limit, uid) };
     }
     if (action === 'getMySubmissions') {
       return { ok: true, action, items: await listOwn(uid, event.limit) };
     }
     if (action === 'updateProfile') return await updateProfile(uid, userInfo, event);
     if (action === 'createSubmission') return await createSubmission(uid, userInfo, event);
+    if (action === 'getInteractions') return await getInteractions(uid, event);
+    if (action === 'toggleLike') return await toggleLike(uid, userInfo, event);
+    if (action === 'createComment') return await createComment(uid, userInfo, event);
+    if (action === 'deleteComment') return await deleteComment(uid, userInfo, event);
+    if (action === 'createReport') return await createReport(uid, userInfo, event);
 
     return { ok: false, error: { code: 'INVALID_ACTION', message: '不支持的操作' } };
   } catch (error) {

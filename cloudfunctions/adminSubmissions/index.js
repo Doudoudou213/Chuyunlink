@@ -6,6 +6,30 @@ const app = cloudbase.init({
   env: process.env.TCB_ENV || cloudbase.SYMBOL_CURRENT_ENV
 });
 const db = app.database();
+const REPORT_COLLECTION = 'content_reports';
+const COMMENT_COLLECTION = 'submission_comments';
+const SUBMISSION_COLLECTION = 'submissions';
+let interactionCollectionsReady = null;
+
+async function ensureInteractionCollections() {
+  if (!interactionCollectionsReady) {
+    interactionCollectionsReady = Promise.all(
+      [REPORT_COLLECTION, COMMENT_COLLECTION, 'submission_likes'].map(async (name) => {
+        try {
+          await db.createCollection(name);
+        } catch (error) {
+          const message = String(error && error.message || '');
+          const code = String(error && error.code || '');
+          if (!/exist/i.test(message) && !/exist/i.test(code)) throw error;
+        }
+      })
+    ).catch((error) => {
+      interactionCollectionsReady = null;
+      throw error;
+    });
+  }
+  return interactionCollectionsReady;
+}
 
 const ALLOWED_LIST_STATUSES = new Set([
   'pending',
@@ -218,6 +242,123 @@ async function reviewSubmission(event, reviewerId) {
   });
 }
 
+async function listReports(event) {
+  await ensureInteractionCollections();
+  const requestedLimit = Number(event.limit);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.max(1, Math.min(Math.floor(requestedLimit), 50))
+    : 30;
+  const result = await db.collection(REPORT_COLLECTION)
+    .where({ status: 'pending' })
+    .limit(limit)
+    .get();
+  const reports = [...(result.data || [])].sort((left, right) => {
+    const leftTime = new Date(left.createdAt || 0).getTime() || 0;
+    const rightTime = new Date(right.createdAt || 0).getTime() || 0;
+    return rightTime - leftTime;
+  });
+  const items = await Promise.all(reports.map(async (report) => {
+    let targetContent = '';
+    let submissionTitle = '';
+    try {
+      const submission = firstDocument(
+        await db.collection(SUBMISSION_COLLECTION).doc(report.submissionId).get()
+      );
+      submissionTitle = submission && submission.title ? submission.title : '';
+    } catch (_) {}
+    if (report.targetType === 'comment') {
+      try {
+        const comment = firstDocument(
+          await db.collection(COMMENT_COLLECTION).doc(report.targetId).get()
+        );
+        targetContent = comment && comment.content ? comment.content : '';
+      } catch (_) {}
+    }
+    return {
+      id: report._id || '',
+      submissionId: report.submissionId || '',
+      submissionTitle,
+      targetType: report.targetType || 'submission',
+      targetId: report.targetId || '',
+      targetContent,
+      reporterId: report.reporterId || '',
+      reporterName: report.reporterName || '社区用户',
+      reason: report.reason || 'other',
+      detail: report.detail || '',
+      createdAt: report.createdAt || null
+    };
+  }));
+  return { ok: true, action: 'listReports', items };
+}
+
+async function resolveReport(event, reviewerId) {
+  const reportId = cleanId(event.reportId);
+  const resolution = cleanText(event.resolution, 32);
+  const resolutionNote = cleanText(event.resolutionNote, 500);
+  if (!['resolved', 'dismissed'].includes(resolution)) {
+    const error = new Error('举报处理结果不正确');
+    error.code = 'INVALID_REPORT_RESOLUTION';
+    throw error;
+  }
+  return db.runTransaction(async (transaction) => {
+    const reportRef = transaction.collection(REPORT_COLLECTION).doc(reportId);
+    const report = firstDocument(await reportRef.get());
+    if (!report || report.status !== 'pending') {
+      const error = new Error('举报不存在或已处理');
+      error.code = 'REPORT_NOT_PENDING';
+      throw error;
+    }
+    let commentHidden = false;
+    if (resolution === 'resolved' && report.targetType === 'comment') {
+      const commentRef = transaction.collection(COMMENT_COLLECTION).doc(report.targetId);
+      const comment = firstDocument(await commentRef.get());
+      if (comment && comment.status === 'visible') {
+        await commentRef.update({
+          status: 'hidden',
+          hiddenBy: reviewerId,
+          hiddenAt: db.serverDate(),
+          updatedAt: db.serverDate()
+        });
+        const submissionRef = transaction.collection(SUBMISSION_COLLECTION).doc(report.submissionId);
+        const submission = firstDocument(await submissionRef.get());
+        if (submission) {
+          await submissionRef.update({
+            commentCount: Math.max(0, (Number(submission.commentCount) || 0) - 1),
+            updatedAt: db.serverDate()
+          });
+        }
+        commentHidden = true;
+      }
+    }
+    await reportRef.update({
+      status: resolution,
+      resolutionNote,
+      resolvedBy: reviewerId,
+      resolvedAt: db.serverDate(),
+      updatedAt: db.serverDate()
+    });
+    await transaction.collection('moderation_logs').add({
+      type: 'content_report',
+      reportId,
+      submissionId: report.submissionId || '',
+      targetType: report.targetType || '',
+      targetId: report.targetId || '',
+      resolution,
+      resolutionNote,
+      reviewerId,
+      commentHidden,
+      createdAt: db.serverDate()
+    });
+    return {
+      ok: true,
+      action: 'resolveReport',
+      reportId,
+      resolution,
+      commentHidden
+    };
+  });
+}
+
 exports.main = async (event = {}) => {
   try {
     const userInfo = app.auth().getUserInfo() || {};
@@ -260,6 +401,8 @@ exports.main = async (event = {}) => {
 
     if (action === 'list') return await listSubmissions(event);
     if (action === 'review') return await reviewSubmission(event, callerUid);
+    if (action === 'listReports') return await listReports(event);
+    if (action === 'resolveReport') return await resolveReport(event, callerUid);
 
     return {
       ok: false,
