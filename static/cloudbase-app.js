@@ -236,7 +236,8 @@
     const profileView = document.getElementById('view-profile');
     if (!profileView || document.getElementById('cloud-profile-card')) return;
 
-    Array.from(profileView.children).forEach((child) => child.classList.add('hidden'));
+    const legacyCard = document.getElementById('legacy-profile-card');
+    if (legacyCard) legacyCard.classList.add('hidden');
 
     profileView.insertAdjacentHTML('afterbegin', `
       <section id="cloud-profile-card" class="rounded-2xl border border-sandGold/30 bg-deepTeal p-4 text-white shadow-lg">
@@ -266,6 +267,10 @@
           <button id="cloud-profile-edit" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">编辑资料</button>
           <button id="cloud-feedback-open" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">意见反馈</button>
           <button id="cloud-account-action" type="button" class="rounded-lg bg-sandGold px-2 py-2 text-[10px] font-bold text-deepTeal">账号登录</button>
+        </div>
+        <div class="mt-3 grid grid-cols-2 gap-2 border-t border-white/10 pt-3">
+          <button type="button" data-profile-feature="profile-badges-section" class="rounded-lg bg-white/10 px-2 py-2 text-[10px] font-bold text-stone-100">查看徽章</button>
+          <button type="button" data-profile-feature="profile-coupons-section" class="rounded-lg bg-white/10 px-2 py-2 text-[10px] font-bold text-stone-100">兑换优惠券</button>
         </div>
       </section>
       <section class="space-y-2">
@@ -314,6 +319,30 @@
       activeSubmissionFilter = button.dataset.cloudFilter || 'all';
       renderCloudSubmissionRecords();
     });
+    document.querySelectorAll('[data-profile-feature]').forEach((button) => {
+      button.addEventListener('click', () => toggleProfileFeature(button.dataset.profileFeature));
+    });
+  }
+
+  function toggleProfileFeature(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    const shouldOpen = section.classList.contains('hidden');
+    ['profile-badges-section', 'profile-coupons-section'].forEach((id) => {
+      const candidate = document.getElementById(id);
+      if (candidate) candidate.classList.add('hidden');
+    });
+    document.querySelectorAll('[data-profile-feature]').forEach((button) => {
+      const selected = shouldOpen && button.dataset.profileFeature === sectionId;
+      button.classList.toggle('bg-sandGold', selected);
+      button.classList.toggle('text-deepTeal', selected);
+      button.classList.toggle('bg-white/10', !selected);
+      button.classList.toggle('text-stone-100', !selected);
+    });
+    if (shouldOpen) {
+      section.classList.remove('hidden');
+      setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    }
   }
 
   function injectLoginModal() {
@@ -618,6 +647,14 @@
     document.getElementById('cloud-stat-attention').textContent =
       Number(stats.rejected || 0) + Number(stats.needs_revision || 0);
     document.getElementById('cloud-account-action').textContent = stable ? '退出账号' : '账号登录';
+    const headerAccount = document.getElementById('header-account-entry');
+    if (headerAccount) {
+      headerAccount.title = stable ? '打开个人中心' : '登录账号';
+      headerAccount.setAttribute('aria-label', stable ? '打开个人中心' : '登录账号');
+      headerAccount.classList.toggle('text-sandGold', stable);
+      headerAccount.classList.toggle('text-stone-200', !stable);
+      headerAccount.classList.toggle('border-sandGold/40', stable);
+    }
     const legacyPoints = document.getElementById('user-points');
     if (legacyPoints) legacyPoints.textContent = Number(profile.points || 0).toLocaleString();
     try { userPoints = Number(profile.points || 0); } catch (_) {}
@@ -1029,6 +1066,22 @@
     injectAccountUi();
     injectLoginModal();
     injectProductModals();
+    const headerAccount = document.getElementById('header-account-entry');
+    if (headerAccount && !headerAccount.dataset.cloudBound) {
+      headerAccount.dataset.cloudBound = 'true';
+      headerAccount.addEventListener('click', async () => {
+        try {
+          const user = await ensureCloudUser();
+          if (isStableAccount(user)) {
+            if (typeof switchTab === 'function') switchTab('profile');
+          } else {
+            openCloudLogin();
+          }
+        } catch (error) {
+          if (typeof showToast === 'function') showToast(error.message || '账号服务暂不可用', 'alert-circle');
+        }
+      });
+    }
     if (typeof setCloudAiMode === 'function') setCloudAiMode(AI_REVIEW_ENABLED);
     const collectForm = document.getElementById('collect-form');
     const submitButton = collectForm && collectForm.querySelector('button[type="submit"] span');

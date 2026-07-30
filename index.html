@@ -269,9 +269,17 @@
           <span class="text-[10px] text-stone-300">下沉荆楚文化遗产众包平台</span>
         </div>
       </div>
-      <div class="flex items-center space-x-1 bg-stone-800/60 px-2 py-1 rounded-full text-xs text-sandGold border border-sandGold/30 cursor-pointer" onclick="refreshGPS()">
-        <i data-lucide="map-pin" class="w-3.5 h-3.5 animate-bounce"></i>
-        <span id="current-gps" class="text-[11px] truncate max-w-[80px]">待定位</span>
+      <div class="flex items-center gap-1.5">
+        <button id="header-account-entry" type="button" class="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/10 text-stone-200" aria-label="登录或打开个人中心" title="登录或打开个人中心">
+          <i data-lucide="user-round" class="h-4 w-4"></i>
+        </button>
+        <button type="button" onclick="startOnboardingLearning()" class="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/10 text-stone-300" aria-label="使用帮助" title="使用帮助">
+          <i data-lucide="circle-help" class="h-4 w-4"></i>
+        </button>
+        <button type="button" class="flex items-center space-x-1 rounded-full border border-sandGold/30 bg-stone-800/60 px-2 py-1 text-xs text-sandGold" onclick="refreshGPS()">
+          <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+          <span id="current-gps" class="max-w-[58px] truncate text-[10px]">待定位</span>
+        </button>
       </div>
     </header>
 
@@ -280,7 +288,7 @@
       
       <!-- 页面 1：发现 (DISCOVER) -->
       <section id="view-discover" class="page-view space-y-4 py-4">
-        <div id="onboarding-card" class="px-4">
+        <div id="onboarding-card" class="hidden px-4">
           <div class="rounded-2xl border border-sandGold/20 bg-gradient-to-r from-deepTeal via-emerald-900 to-stone-900 p-4 text-white shadow-sm">
             <div class="flex items-start justify-between gap-3">
               <div>
@@ -764,7 +772,7 @@
       <!-- 页面 5：个人中心与商家反哺 (PROFILE) -->
       <section id="view-profile" class="page-view hidden space-y-4 py-4 px-4">
         <!-- 个人卡片 -->
-        <div class="bg-deepTeal rounded-2xl p-4 text-white flex items-center space-x-3 border-b-4 border-sandGold relative overflow-hidden shadow-lg">
+        <div id="legacy-profile-card" class="bg-deepTeal rounded-2xl p-4 text-white flex items-center space-x-3 border-b-4 border-sandGold relative overflow-hidden shadow-lg">
           <div class="w-12 h-12 rounded-full border-2 border-sandGold overflow-hidden bg-stone-700 shrink-0">
             <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200" class="w-full h-full object-cover">
           </div>
@@ -783,7 +791,7 @@
         </div>
 
         <!-- 数字化守护者多宝阁 -->
-        <div class="space-y-2">
+        <div id="profile-badges-section" class="hidden space-y-2">
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
               <i data-lucide="shield" class="w-4 h-4 mr-1 text-deepTeal"></i> 数字化守护者唯一徽章墙
@@ -901,7 +909,7 @@
         </div>
 
         <!-- 积分兑换反哺 (B端微赞助闭环) -->
-        <div class="space-y-2">
+        <div id="profile-coupons-section" class="hidden space-y-2">
           <div class="flex justify-between items-center">
             <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
               <i data-lucide="store" class="w-4 h-4 mr-1 text-deepTeal"></i> 乡村文旅赞助反哺专区
@@ -1434,7 +1442,7 @@
       const onboardingCard = document.getElementById('onboarding-card');
 
       if (onboardingCard) {
-        onboardingCard.classList.toggle('hidden', onboardingState.dismissed || isComplete);
+        onboardingCard.classList.add('hidden');
       }
 
       if (progressBar) {
@@ -1479,7 +1487,7 @@
 
     function showOnboardingModal(force = false) {
       const { isComplete } = getOnboardingProgress();
-      if (isComplete || onboardingState.dismissed) return;
+      if (!force && (isComplete || onboardingState.dismissed)) return;
       if (!force && onboardingState.seen) return;
       const modal = document.getElementById('welcome-guide-modal');
       if (modal) {
@@ -1790,9 +1798,6 @@
       renderCommunityRouteCard();
       initHeritageMap();
       loadApprovedSubmissionFeed();
-      if (!onboardingState.seen) {
-        showOnboardingModal(false);
-      }
     });
 
     // 真实地图瓦片配置
