@@ -18,6 +18,8 @@
   let activeReportTargetType = 'submission';
   let activeReportTargetId = '';
   let activeSubmissionFilter = 'all';
+  let activeCloudSupplement = null;
+  const cloudSupplementState = new Map();
   let publicFeedRefreshTimer = null;
   const PUBLIC_FEED_REFRESH_MS = 60 * 1000;
   const legacyToggleSubmissionLike = typeof toggleSubmissionLike === 'function'
@@ -25,6 +27,15 @@
     : null;
   const legacyOpenDiscoverDetail = typeof openDiscoverDetail === 'function'
     ? openDiscoverDetail
+    : null;
+  const legacyTriggerDiscoverSupplementUpload = typeof triggerDiscoverSupplementUpload === 'function'
+    ? triggerDiscoverSupplementUpload
+    : null;
+  const legacyRenderSupplementSlots = typeof renderSupplementSlots === 'function'
+    ? renderSupplementSlots
+    : null;
+  const legacyHandleDiscoverSupplementUpload = typeof handleDiscoverSupplementUpload === 'function'
+    ? handleDiscoverSupplementUpload
     : null;
 
   function safeText(value) {
@@ -685,13 +696,14 @@
         thumbnailUrl: item.assetType === 'image' ? fileUrl : '',
         regionName: item.regionName || '湖北',
         contributorName: item.contributorName || '楚韵守护者',
-        qualityScore: null,
+        qualityScore: Number(item.completeness || 60),
         comments: Number(item.commentCount || 0),
         commentCount: Number(item.commentCount || 0),
         likes: Number(item.likeCount || 0),
         likeCount: Number(item.likeCount || 0),
-        board: 'share',
-        completeness: 100
+        board: item.board || (Number(item.completeness || 60) >= 82 ? 'share' : 'needs'),
+        completeness: Number(item.completeness || 60),
+        approvedSupplements: item.approvedSupplements || []
       };
       if (typeof discoverLikeState !== 'undefined') {
         discoverLikeState[mapped.feedId] = Boolean(item.viewerLiked);
@@ -960,10 +972,150 @@
     }
   }
 
+  function cloudSupplementAssetType(file) {
+    const mime = String(file && file.type || '').toLowerCase();
+    if (mime.startsWith('audio/')) return 'audio';
+    if (mime.startsWith('video/')) return 'video';
+    return 'image';
+  }
+
+  function renderCloudSupplementSlots(item) {
+    if (!item || !String(item.feedId || item.id || '').startsWith('approved-')) {
+      if (legacyRenderSupplementSlots) legacyRenderSupplementSlots(item);
+      return;
+    }
+    const container = document.getElementById('discover-supplement-slots');
+    if (!container || typeof getDefaultSupplementSlots !== 'function') return;
+    const submissionId = rawSubmissionId(item.id || item.feedId);
+    const state = cloudSupplementState.get(submissionId);
+    const records = state && Array.isArray(state.items) ? state.items : [];
+    const slots = getDefaultSupplementSlots(item);
+    container.innerHTML = slots.map((slot) => {
+      const slotRecords = records.filter((record) => record.slotId === slot.id);
+      const mine = slotRecords.find((record) => ['pending', 'approved', 'rejected'].includes(record.status));
+      const approved = slotRecords.filter((record) => record.status === 'approved');
+      const isPending = mine && mine.status === 'pending';
+      const isMineApproved = mine && mine.status === 'approved';
+      const isRejected = mine && mine.status === 'rejected';
+      const disabled = Boolean(isPending || isMineApproved);
+      const buttonText = isPending
+        ? '已提交，等待管理员审核'
+        : isMineApproved
+          ? `审核已通过，获得 ${Number(mine.rewardPoints || slot.reward || 0)} 积分`
+          : isRejected
+            ? '按审核意见重新上传'
+            : approved.length
+              ? '继续补充新的佐证资料'
+              : '上传补充资料';
+      const evidence = approved.length
+        ? `<div class="mt-2 space-y-1.5">${approved.slice(0, 3).map((record) => `
+            <div class="flex items-center justify-between rounded-lg bg-emerald-50 px-2 py-1.5 text-[10px] text-emerald-800">
+              <span>已采纳 · ${safeText(record.contributorName || '社区用户')}</span>
+              ${record.fileUrl ? `<a href="${safeText(record.fileUrl)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="font-bold underline">查看资料</a>` : ''}
+            </div>
+          `).join('')}</div>`
+        : '';
+      return `
+        <div class="rounded-xl border ${approved.length ? 'border-emerald-200 bg-emerald-50/40' : 'border-stone-200 bg-white'} p-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-bold text-stone-800">${safeText(slot.title)}</p>
+              <p class="mt-1 text-[10px] leading-relaxed text-stone-500">${safeText(slot.desc)}</p>
+              ${isRejected && mine.reviewNote ? `<p class="mt-1 text-[10px] font-semibold text-red-600">审核意见：${safeText(mine.reviewNote)}</p>` : ''}
+            </div>
+            <span class="shrink-0 rounded-full bg-sandGold/20 px-2 py-0.5 text-[10px] font-bold text-deepTeal">+${Number(slot.reward || 30)}</span>
+          </div>
+          ${evidence}
+          <button type="button" ${disabled ? 'disabled' : ''} onclick="triggerDiscoverSupplementUpload('${safeText(item.id || item.feedId)}', '${safeText(slot.id)}')" class="mt-2 flex w-full items-center justify-center rounded-lg ${disabled ? 'cursor-not-allowed bg-stone-200 text-stone-500' : 'bg-deepTeal text-sandGold'} px-3 py-2 text-xs font-bold">
+            ${safeText(buttonText)}
+          </button>
+        </div>
+      `;
+    }).join('');
+    if (window.lucide) lucide.createIcons();
+  }
+
+  async function loadCloudSupplements(itemOrId) {
+    const item = typeof itemOrId === 'string' ? findApprovedItem(itemOrId) : itemOrId;
+    if (!item || !String(item.feedId || item.id || '').startsWith('approved-')) return;
+    const submissionId = rawSubmissionId(item.id || item.feedId);
+    try {
+      const result = await callCore({ action: 'getSupplements', submissionId });
+      cloudSupplementState.set(submissionId, result);
+      item.completeness = Number(result.completeness || item.completeness || 60);
+      item.qualityScore = item.completeness;
+      item.board = result.board || (item.completeness >= 82 ? 'share' : 'needs');
+      if (activeInteractionSubmissionId === submissionId || document.getElementById('discover-detail-modal')?.classList.contains('hidden') === false) {
+        renderCloudSupplementSlots(item);
+      }
+      if (typeof renderDiscoverFeed === 'function') renderDiscoverFeed();
+    } catch (error) {
+      console.warn('[CloudBase supplements]', error);
+    }
+  }
+
+  function triggerCloudSupplementUpload(itemId, slotId) {
+    const item = findApprovedItem(itemId);
+    if (!item) {
+      if (legacyTriggerDiscoverSupplementUpload) legacyTriggerDiscoverSupplementUpload(itemId, slotId);
+      return;
+    }
+    if (!isStableAccount(cloudUser)) {
+      openCloudLogin();
+      if (typeof showToast === 'function') showToast('登录正式账号后才能补充资料', 'log-in');
+      return;
+    }
+    activeCloudSupplement = { item, submissionId: rawSubmissionId(item.id || item.feedId), slotId };
+    if (legacyTriggerDiscoverSupplementUpload) legacyTriggerDiscoverSupplementUpload(itemId, slotId);
+  }
+
+  async function submitCloudSupplement(event) {
+    const input = event.target;
+    const file = input.files && input.files[0];
+    const context = activeCloudSupplement;
+    if (!file || !context) {
+      if (file && legacyHandleDiscoverSupplementUpload) legacyHandleDiscoverSupplementUpload(event);
+      return;
+    }
+    let uploadedFileID = '';
+    try {
+      await requireInteractiveAccount();
+      if (file.size <= 0 || file.size > MAX_FILE_BYTES) throw new Error('补充文件大小必须在 25MB 以内');
+      const assetType = cloudSupplementAssetType(file);
+      const uid = cloudUser.uid || cloudUser.id;
+      const cloudPath = `supplements/${uid}/${Date.now()}-${randomPart()}.${fileExtension(file)}`;
+      if (typeof showToast === 'function') showToast('正在上传补充资料…', 'upload-cloud');
+      const upload = await cloudApp.uploadFile({ cloudPath, filePath: file });
+      uploadedFileID = upload.fileID || '';
+      if (!uploadedFileID) throw new Error('云存储未返回 fileID');
+      await callCore({
+        action: 'createSupplement',
+        submissionId: context.submissionId,
+        slotId: context.slotId,
+        assetType,
+        mimeType: file.type || '',
+        size: file.size,
+        fileID: uploadedFileID,
+        cloudPath
+      });
+      await loadCloudSupplements(context.item);
+      if (typeof showToast === 'function') showToast('补充资料已提交，管理员通过后发放积分', 'clock');
+    } catch (error) {
+      if (uploadedFileID) {
+        try { await cloudApp.deleteFile({ fileList: [uploadedFileID] }); } catch (_) {}
+      }
+      if (typeof showToast === 'function') showToast(error.message || '补充资料提交失败', 'alert-circle');
+    } finally {
+      input.value = '';
+      activeCloudSupplement = null;
+    }
+  }
+
   function openCloudDiscoverDetail(itemId) {
     if (legacyOpenDiscoverDetail) legacyOpenDiscoverDetail(itemId);
     const item = findApprovedItem(itemId);
     loadCloudInteractions(item || itemId);
+    loadCloudSupplements(item || itemId);
   }
 
   async function loadCloudPublicFeed() {
@@ -1097,6 +1249,9 @@
   window.submitCloudSubmission = submitToCloud;
   window.toggleSubmissionLike = toggleCloudLike;
   window.openDiscoverDetail = openCloudDiscoverDetail;
+  window.renderSupplementSlots = renderCloudSupplementSlots;
+  window.triggerDiscoverSupplementUpload = triggerCloudSupplementUpload;
+  window.handleDiscoverSupplementUpload = submitCloudSupplement;
   window.replyCloudComment = (commentId) => {
     activeReplyCommentId = commentId;
     const comment = loadedInteractionComments.find((item) => item.id === commentId);

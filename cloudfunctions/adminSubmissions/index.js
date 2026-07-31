@@ -10,12 +10,13 @@ const REPORT_COLLECTION = 'content_reports';
 const COMMENT_COLLECTION = 'submission_comments';
 const SUBMISSION_COLLECTION = 'submissions';
 const FEEDBACK_COLLECTION = 'system_feedback';
+const SUPPLEMENT_COLLECTION = 'submission_supplements';
 let interactionCollectionsReady = null;
 
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-      [REPORT_COLLECTION, COMMENT_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION].map(async (name) => {
+      [REPORT_COLLECTION, COMMENT_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {
@@ -239,6 +240,162 @@ async function reviewSubmission(event, reviewerId) {
       reviewNote,
       reviewerId,
       rewardPoints
+    };
+  });
+}
+
+function serializeSupplement(item) {
+  return {
+    id: item._id || item.id || '',
+    submissionId: item.submissionId || '',
+    submissionTitle: item.submissionTitle || '',
+    slotId: item.slotId || '',
+    slotTitle: item.slotTitle || '',
+    userId: item.userId || '',
+    contributorName: item.contributorName || '社区用户',
+    assetType: item.assetType || 'image',
+    mimeType: item.mimeType || '',
+    size: Number(item.size) || 0,
+    fileID: item.fileID || '',
+    cloudPath: item.cloudPath || '',
+    status: item.status || 'pending',
+    rewardPoints: Number(item.rewardPoints) || 0,
+    completenessGain: Number(item.completenessGain) || 18,
+    createdAt: item.createdAt || null
+  };
+}
+
+async function listSupplements(event) {
+  await ensureInteractionCollections();
+  const requestedLimit = Number(event.limit);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.max(1, Math.min(Math.floor(requestedLimit), 50))
+    : 30;
+  const result = await db.collection(SUPPLEMENT_COLLECTION)
+    .where({ status: 'pending' })
+    .limit(limit)
+    .get();
+  const items = [...(result.data || [])]
+    .sort((left, right) => {
+      const leftTime = new Date(left.createdAt || 0).getTime() || 0;
+      const rightTime = new Date(right.createdAt || 0).getTime() || 0;
+      return rightTime - leftTime;
+    })
+    .map(serializeSupplement);
+  const fileIDs = items.map((item) => item.fileID).filter(Boolean).slice(0, 50);
+  let urls = new Map();
+  if (fileIDs.length) {
+    const fileResult = await app.getTempFileURL({
+      fileList: fileIDs.map((fileID) => ({ fileID, maxAge: 7200 }))
+    });
+    urls = new Map((fileResult.fileList || []).map((file) => [file.fileID, file.tempFileURL || '']));
+  }
+  return {
+    ok: true,
+    action: 'listSupplements',
+    items: items.map((item) => ({ ...item, fileUrl: urls.get(item.fileID) || '' }))
+  };
+}
+
+async function reviewSupplement(event, reviewerId) {
+  const supplementId = cleanId(event.supplementId);
+  const nextStatus = cleanText(event.status, 32);
+  const reviewNote = cleanText(event.reviewNote, 500);
+  if (!['approved', 'rejected'].includes(nextStatus)) {
+    const error = new Error('补充资料审核结果不正确');
+    error.code = 'INVALID_REVIEW_STATUS';
+    throw error;
+  }
+  if (nextStatus === 'rejected' && !reviewNote) {
+    const error = new Error('退回补充资料时必须填写原因');
+    error.code = 'REVIEW_NOTE_REQUIRED';
+    throw error;
+  }
+  return db.runTransaction(async (transaction) => {
+    const supplementRef = transaction.collection(SUPPLEMENT_COLLECTION).doc(supplementId);
+    const supplement = firstDocument(await supplementRef.get());
+    if (!supplement || supplement.status !== 'pending') {
+      const error = new Error('补充资料不存在或已审核，请刷新列表');
+      error.code = 'STATUS_CONFLICT';
+      throw error;
+    }
+    const submissionRef = transaction.collection(SUBMISSION_COLLECTION).doc(supplement.submissionId);
+    const submission = firstDocument(await submissionRef.get());
+    if (!submission || submission.status !== 'approved') {
+      const error = new Error('原作品不存在或已停止公开');
+      error.code = 'SUBMISSION_NOT_PUBLIC';
+      throw error;
+    }
+    const reviewedAt = db.serverDate();
+    const rewardPoints = nextStatus === 'approved'
+      ? Math.max(0, Math.min(Number(supplement.rewardPoints) || 0, 200))
+      : 0;
+    await supplementRef.update({
+      status: nextStatus,
+      reviewNote,
+      reviewerId,
+      reviewedAt,
+      updatedAt: reviewedAt
+    });
+    let completeness = Number(submission.completeness) || 60;
+    let board = submission.board || (completeness >= 82 ? 'share' : 'needs');
+    if (nextStatus === 'approved') {
+      completeness = Math.min(100, completeness + Math.max(1, Math.min(Number(supplement.completenessGain) || 18, 30)));
+      board = completeness >= 82 ? 'share' : 'needs';
+      const approvedSupplements = Array.isArray(submission.approvedSupplements)
+        ? submission.approvedSupplements.slice(-11)
+        : [];
+      approvedSupplements.push({
+        id: supplementId,
+        slotId: supplement.slotId || '',
+        slotTitle: supplement.slotTitle || '',
+        assetType: supplement.assetType || 'image',
+        fileID: supplement.fileID || '',
+        contributorName: supplement.contributorName || '社区用户',
+        approvedAt: new Date()
+      });
+      await submissionRef.update({
+        completeness,
+        board,
+        supplementCount: Math.max(0, Number(submission.supplementCount) || 0) + 1,
+        approvedSupplements,
+        updatedAt: reviewedAt
+      });
+      if (supplement.userId && rewardPoints > 0) {
+        const profileRef = transaction.collection('user_profiles').doc(supplement.userId);
+        const profile = firstDocument(await profileRef.get());
+        if (profile) {
+          await profileRef.update({
+            points: Math.max(0, Number(profile.points) || 0) + rewardPoints,
+            updatedAt: reviewedAt
+          });
+        }
+      }
+    }
+    await transaction.collection('moderation_logs').add({
+      type: 'submission_supplement',
+      supplementId,
+      submissionId: supplement.submissionId || '',
+      slotId: supplement.slotId || '',
+      fromStatus: 'pending',
+      toStatus: nextStatus,
+      reviewNote,
+      reviewerId,
+      submitterId: supplement.userId || '',
+      rewardPoints,
+      completeness,
+      board,
+      createdAt: db.serverDate()
+    });
+    return {
+      ok: true,
+      action: 'reviewSupplement',
+      supplementId,
+      submissionId: supplement.submissionId || '',
+      status: nextStatus,
+      rewardPoints,
+      completeness,
+      board
     };
   });
 }
@@ -470,6 +627,8 @@ exports.main = async (event = {}) => {
 
     if (action === 'list') return await listSubmissions(event);
     if (action === 'review') return await reviewSubmission(event, callerUid);
+    if (action === 'listSupplements') return await listSupplements(event);
+    if (action === 'reviewSupplement') return await reviewSupplement(event, callerUid);
     if (action === 'listReports') return await listReports(event);
     if (action === 'resolveReport') return await resolveReport(event, callerUid);
     if (action === 'listFeedback') return await listFeedback(event);

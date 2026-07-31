@@ -236,20 +236,168 @@
       0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(44,76,78,0.35); }
       50% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(44,76,78,0); }
     }
+    html {
+      background: #f1eee6;
+      scroll-behavior: smooth;
+    }
+    body {
+      min-height: 100vh;
+      background: #f1eee6;
+      color: #292524;
+    }
+    #app-shell {
+      width: 100%;
+      min-height: 100vh;
+      height: auto;
+      overflow: visible;
+      border: 0;
+      border-radius: 0;
+      background: #f9f8f4;
+      box-shadow: none;
+    }
+    #phone-notch,
+    #phone-status {
+      display: none;
+    }
+    #platform-header {
+      order: 1;
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      min-height: 64px;
+      padding-left: max(1rem, calc((100vw - 1120px) / 2));
+      padding-right: max(1rem, calc((100vw - 1120px) / 2));
+      box-shadow: 0 1px 0 rgba(197, 168, 128, 0.16);
+    }
+    #app-navigation {
+      order: 2;
+      position: sticky !important;
+      inset: auto !important;
+      top: 64px !important;
+      width: 100%;
+      height: 58px;
+      justify-content: center;
+      gap: 0.5rem;
+      border-top: 0;
+      border-bottom: 1px solid rgba(197, 168, 128, 0.22);
+      padding: 0 1rem;
+      z-index: 50;
+    }
+    #app-navigation .nav-item,
+    #app-navigation #nav-collect {
+      width: auto;
+      min-width: 104px;
+      height: 40px;
+      flex-direction: row;
+      gap: 0.45rem;
+      justify-content: center;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 0 0.9rem;
+      transform: none !important;
+      box-shadow: none;
+    }
+    #app-navigation #nav-collect {
+      border-color: rgba(197, 168, 128, 0.45);
+    }
+    #app-navigation #nav-collect svg {
+      width: 18px;
+      height: 18px;
+    }
+    #app-viewport {
+      order: 3;
+      display: block;
+      width: 100%;
+      min-height: calc(100vh - 122px);
+      overflow: visible;
+      padding-bottom: 3rem;
+    }
+    #app-viewport > .page-view {
+      width: min(100%, 1120px);
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #view-collect,
+    #view-profile {
+      max-width: 760px;
+    }
+    #view-community {
+      max-width: 960px;
+    }
+    #view-map {
+      min-height: calc(100vh - 122px);
+    }
+    #toast-notification {
+      position: fixed;
+      top: 76px;
+    }
+    @media (max-width: 767px) {
+      #platform-header {
+        min-height: 60px;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+      }
+      #platform-header h1 {
+        font-size: 0.95rem;
+      }
+      #platform-header h1 + span {
+        display: none;
+      }
+      #app-viewport {
+        order: 2;
+        min-height: calc(100vh - 60px);
+        padding-bottom: 5.5rem;
+      }
+      #app-navigation {
+        order: 3;
+        position: fixed !important;
+        top: auto !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        height: 64px;
+        justify-content: space-around;
+        gap: 0;
+        padding: 0 0.25rem;
+        border-top: 1px solid rgba(197, 168, 128, 0.22);
+        border-bottom: 0;
+      }
+      #app-navigation .nav-item,
+      #app-navigation #nav-collect {
+        min-width: 0;
+        width: 20%;
+        height: 56px;
+        flex-direction: column;
+        gap: 0.1rem;
+        border: 0;
+        border-radius: 0;
+        padding: 0;
+        background: transparent;
+      }
+      #app-navigation #nav-collect {
+        color: #C5A880;
+      }
+      #view-map {
+        min-height: calc(100vh - 124px);
+      }
+      #toast-notification {
+        top: 68px;
+      }
+    }
   </style>
 </head>
-<body class="flex justify-center items-center min-h-screen bg-neutral-950 p-2 md:p-6">
+<body class="min-h-screen bg-parchment">
 
-  <!-- 外层手机外壳仿真器 -->
-  <div class="relative w-full max-w-[412px] h-[844px] bg-neutral-900 rounded-[48px] shadow-2xl border-8 border-neutral-800 overflow-hidden flex flex-col">
+  <!-- 响应式网页应用外壳 -->
+  <div id="app-shell" class="relative flex min-h-screen w-full flex-col bg-parchment">
     <!-- 手机听筒/摄像头胶囊区域 -->
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-full z-50 flex items-center justify-center">
+    <div id="phone-notch" class="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-full z-50 flex items-center justify-center">
       <div class="w-3 h-3 bg-neutral-900 rounded-full mr-2"></div>
       <div class="w-12 h-1 bg-neutral-800 rounded-full"></div>
     </div>
 
     <!-- 顶部状态栏 -->
-    <div class="h-10 pt-4 px-6 flex justify-between items-center bg-deepTeal text-xs text-stone-300 select-none shrink-0 z-40">
+    <div id="phone-status" class="h-10 pt-4 px-6 flex justify-between items-center bg-deepTeal text-xs text-stone-300 select-none shrink-0 z-40">
       <span class="font-medium">10:42</span>
       <div class="flex items-center space-x-2">
         <i data-lucide="signal" class="w-3.5 h-3.5"></i>
@@ -259,7 +407,7 @@
     </div>
 
     <!-- 平台顶部标题栏 -->
-    <header class="bg-deepTeal px-4 py-3 flex items-center justify-between border-b border-sandGold/20 shrink-0 z-40">
+    <header id="platform-header" class="bg-deepTeal px-4 py-3 flex items-center justify-between border-b border-sandGold/20 shrink-0 z-40">
       <div class="flex items-center space-x-2">
         <div class="bg-sandGold text-deepTeal p-1 rounded-lg">
           <i data-lucide="gem" class="w-5 h-5"></i>
@@ -956,7 +1104,7 @@
     </main>
 
     <!-- 底部 TabBar (5大主功能流路由) -->
-    <nav class="absolute bottom-0 inset-x-0 h-16 bg-deepTeal border-t border-sandGold/20 flex items-center justify-around px-2 z-40">
+    <nav id="app-navigation" class="absolute bottom-0 inset-x-0 h-16 bg-deepTeal border-t border-sandGold/20 flex items-center justify-around px-2 z-40">
       <button onclick="switchTab('discover')" id="nav-discover" class="nav-item text-sandGold flex flex-col items-center space-y-0.5">
         <i data-lucide="compass" class="w-5 h-5"></i>
         <span class="text-[10px]">发现</span>
@@ -968,6 +1116,7 @@
       <!-- 极度突出的采集大按钮 -->
       <button onclick="switchTab('collect')" id="nav-collect" class="relative -translate-y-4 w-12 h-12 rounded-full bg-sandGold text-deepTeal shadow-xl border-4 border-deepTeal flex items-center justify-center flex-col transform active:scale-95 transition-all">
         <i data-lucide="plus" class="w-6 h-6 stroke-[3px]"></i>
+        <span class="text-[10px]">采集</span>
       </button>
       <button onclick="switchTab('community')" id="nav-community" class="nav-item text-stone-400 flex flex-col items-center space-y-0.5">
         <i data-lucide="graduation-cap" class="w-5 h-5"></i>
@@ -1312,7 +1461,7 @@
       <div class="mt-4">
         <div class="flex items-center justify-between">
           <h4 class="text-xs font-bold text-stone-700">可补充资料位置</h4>
-          <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">上传成功发积分</span>
+          <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">审核通过后发积分</span>
         </div>
         <div id="discover-supplement-slots" class="mt-2 space-y-2"></div>
       </div>
@@ -3150,6 +3299,7 @@
       if (selectedView) {
         selectedView.classList.remove('hidden');
         document.getElementById('app-viewport').scrollTop = 0;
+        window.scrollTo({ top: 0, behavior: 'auto' });
       }
 
       const currentNav = document.getElementById(`nav-${tabId}`);

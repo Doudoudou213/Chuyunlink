@@ -45,6 +45,7 @@
           </div>
           <div id="admin-navigation" class="flex flex-wrap gap-2">
             <button id="refresh" data-admin-view="submissions" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">待审投稿</button>
+            <button id="supplement-refresh" data-admin-view="supplements" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">待审补充</button>
             <button id="report-refresh" data-admin-view="reports" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">内容举报</button>
             <button id="feedback-refresh" data-admin-view="feedback" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">用户反馈</button>
           </div>
@@ -187,6 +188,86 @@
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = `已读取 ${items.length} 条待审投稿。`;
       } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function loadSupplements() {
+      setActiveView("supplements", "待审补充资料");
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在读取待审补充资料...";
+      try {
+        const result = await callAdmin({ action: "listSupplements", limit: 50 });
+        const items = result.items || [];
+        renderSupplements(items);
+        viewCount.textContent = `${items.length} 条`;
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = `已读取 ${items.length} 条待审补充资料。`;
+      } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    function renderSupplements(items) {
+      if (!items.length) {
+        list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待审补充资料。</div>';
+        return;
+      }
+      list.innerHTML = items.map((item) => {
+        const preview = item.assetType === "image" && item.fileUrl
+          ? `<img src="${escapeHtml(item.fileUrl)}" alt="补充资料预览" class="mt-3 max-h-72 w-full rounded-xl bg-stone-100 object-contain">`
+          : item.assetType === "audio" && item.fileUrl
+            ? `<audio src="${escapeHtml(item.fileUrl)}" controls class="mt-3 w-full"></audio>`
+            : item.fileUrl
+              ? `<a href="${escapeHtml(item.fileUrl)}" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex rounded-lg bg-stone-100 px-3 py-2 text-xs font-bold text-[#123c3a]">打开补充文件</a>`
+              : '<p class="mt-3 text-xs text-amber-700">文件预览暂不可用，请刷新后重试。</p>';
+        return `
+          <article data-supplement-id="${escapeHtml(item.id)}" class="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700">补充资料</span>
+                  <span class="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-bold text-stone-600">${escapeHtml(item.slotTitle)}</span>
+                </div>
+                <h3 class="mt-2 text-sm font-bold text-stone-800">原内容：${escapeHtml(item.submissionTitle || item.submissionId)}</h3>
+                <p class="mt-1 text-xs text-stone-500">补充人：${escapeHtml(item.contributorName)} · 通过奖励 ${Number(item.rewardPoints || 0)} 积分</p>
+                ${preview}
+                <textarea rows="2" placeholder="退回时必须填写原因" class="mt-3 w-full rounded-xl border border-stone-200 p-3 text-xs outline-none focus:border-[#d9ad52]"></textarea>
+              </div>
+              <div class="flex shrink-0 flex-wrap gap-2">
+                <button data-supplement-status="approved" class="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white">通过并合并</button>
+                <button data-supplement-status="rejected" class="rounded-lg bg-red-700 px-4 py-2 text-xs font-bold text-white">退回</button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    async function reviewSupplement(card, status) {
+      const supplementId = card.dataset.supplementId;
+      const reviewNote = card.querySelector("textarea").value.trim();
+      if (status === "rejected" && !reviewNote) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = "退回补充资料时必须填写原因。";
+        return;
+      }
+      const buttons = card.querySelectorAll("button");
+      buttons.forEach((button) => { button.disabled = true; });
+      try {
+        const result = await callAdmin({ action: "reviewSupplement", supplementId, status, reviewNote });
+        card.remove();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = status === "approved"
+          ? `补充资料已合并，内容完善度更新为 ${Number(result.completeness || 0)}%，已发放 ${Number(result.rewardPoints || 0)} 积分。`
+          : "补充资料已退回。";
+        if (!list.querySelector("article")) {
+          list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待审补充资料。</div>';
+        }
+      } catch (error) {
+        buttons.forEach((button) => { button.disabled = false; });
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
       }
@@ -435,12 +516,18 @@
 
     document.getElementById("login-form").addEventListener("submit", login);
     document.getElementById("refresh").addEventListener("click", loadPending);
+    document.getElementById("supplement-refresh").addEventListener("click", loadSupplements);
     document.getElementById("report-refresh").addEventListener("click", loadReports);
     document.getElementById("feedback-refresh").addEventListener("click", loadFeedback);
     document.getElementById("list").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-status]");
       const card = event.target.closest("article[data-id]");
       if (button && card) review(card, button.dataset.status);
+      const supplementButton = event.target.closest("button[data-supplement-status]");
+      const supplementCard = event.target.closest("article[data-supplement-id]");
+      if (supplementButton && supplementCard) {
+        reviewSupplement(supplementCard, supplementButton.dataset.supplementStatus);
+      }
       const reportButton = event.target.closest("button[data-resolution]");
       const reportCard = event.target.closest("article[data-report-id]");
       if (reportButton && reportCard) resolveReport(reportCard, reportButton.dataset.resolution);

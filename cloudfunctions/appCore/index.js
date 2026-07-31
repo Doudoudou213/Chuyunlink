@@ -13,6 +13,7 @@ const COMMENT_COLLECTION = 'submission_comments';
 const LIKE_COLLECTION = 'submission_likes';
 const REPORT_COLLECTION = 'content_reports';
 const FEEDBACK_COLLECTION = 'system_feedback';
+const SUPPLEMENT_COLLECTION = 'submission_supplements';
 const ALLOWED_ASSET_TYPES = new Set(['image', 'audio', 'video']);
 const ALLOWED_REPORT_REASONS = new Set(['spam', 'abuse', 'false_information', 'copyright', 'other']);
 const ALLOWED_FEEDBACK_TYPES = new Set(['suggestion', 'bug', 'content', 'other']);
@@ -22,7 +23,7 @@ let interactionCollectionsReady = null;
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-      [COMMENT_COLLECTION, LIKE_COLLECTION, REPORT_COLLECTION, FEEDBACK_COLLECTION].map(async (name) => {
+      [COMMENT_COLLECTION, LIKE_COLLECTION, REPORT_COLLECTION, FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {
@@ -90,6 +91,9 @@ function publicProfile(profile) {
 }
 
 function submissionView(item, includeOwnerDetails = false) {
+  const completeness = Number.isFinite(Number(item.completeness))
+    ? Math.max(0, Math.min(100, Math.round(Number(item.completeness))))
+    : 60;
   const view = {
     id: item._id || item.id || '',
     title: item.title || '',
@@ -119,7 +123,23 @@ function submissionView(item, includeOwnerDetails = false) {
     aiReviewSummary: item.aiReviewSummary || '',
     aiReviewUpdatedAt: item.aiReviewUpdatedAt || null,
     likeCount: Math.max(0, Number(item.likeCount) || 0),
-    commentCount: Math.max(0, Number(item.commentCount) || 0)
+    commentCount: Math.max(0, Number(item.commentCount) || 0),
+    completeness,
+    board: item.board === 'share' || item.board === 'needs'
+      ? item.board
+      : (completeness >= 82 ? 'share' : 'needs'),
+    supplementCount: Math.max(0, Number(item.supplementCount) || 0),
+    approvedSupplements: Array.isArray(item.approvedSupplements)
+      ? item.approvedSupplements.slice(-12).map((supplement) => ({
+        id: supplement.id || '',
+        slotId: supplement.slotId || '',
+        slotTitle: supplement.slotTitle || '',
+        assetType: supplement.assetType || 'image',
+        fileID: supplement.fileID || '',
+        contributorName: supplement.contributorName || '社区用户',
+        approvedAt: supplement.approvedAt || null
+      }))
+      : []
   };
   if (includeOwnerDetails) view.userId = item.userId || '';
   return view;
@@ -159,7 +179,10 @@ async function listPublic(limit = 30, viewerUid = '') {
     .limit(Math.max(1, Math.min(Number(limit) || 30, 100)))
     .get();
   const items = sortNewest(result.data || []).map((item) => submissionView(item, false));
-  const fileList = items.map((item) => item.fileID).filter(Boolean).slice(0, 50);
+  const fileList = [...new Set(items.flatMap((item) => [
+    item.fileID,
+    ...(item.approvedSupplements || []).map((supplement) => supplement.fileID)
+  ]).filter(Boolean))].slice(0, 50);
   if (!fileList.length) return items;
   const fileResult = await app.getTempFileURL({
     fileList: fileList.map((fileID) => ({ fileID, maxAge: 7200 }))
@@ -182,8 +205,149 @@ async function listPublic(limit = 30, viewerUid = '') {
   return items.map((item) => ({
     ...item,
     fileUrl: urls.get(item.fileID) || '',
+    approvedSupplements: (item.approvedSupplements || []).map((supplement) => ({
+      ...supplement,
+      fileUrl: urls.get(supplement.fileID) || ''
+    })),
     viewerLiked: likedSubmissionIds.has(item.id)
   }));
+}
+
+function supplementSlotFor(submission, requestedSlotId) {
+  const assetType = submission.assetType || 'image';
+  const slots = assetType === 'audio'
+    ? [
+      { id: 'oral-consent', title: '补充讲述授权记录', rewardPoints: 30, completenessGain: 18, accepts: ['audio', 'image'] },
+      { id: 'oral-context', title: '补充技艺或地点背景', rewardPoints: 35, completenessGain: 18, accepts: ['image'] }
+    ]
+    : [
+      { id: 'detail-photo', title: '补充关键细节照片', rewardPoints: 35, completenessGain: 18, accepts: ['image'] },
+      { id: 'context-photo', title: '补充点位环境照片', rewardPoints: 30, completenessGain: 18, accepts: ['image'] }
+    ];
+  return slots.find((slot) => slot.id === requestedSlotId) || null;
+}
+
+function supplementView(item, includePrivate = false) {
+  const view = {
+    id: item._id || item.id || '',
+    submissionId: item.submissionId || '',
+    slotId: item.slotId || '',
+    slotTitle: item.slotTitle || '',
+    assetType: item.assetType || 'image',
+    status: item.status || 'pending',
+    rewardPoints: Number(item.rewardPoints) || 0,
+    contributorName: item.contributorName || '社区用户',
+    createdAt: item.createdAt || null,
+    reviewedAt: item.reviewedAt || null,
+    reviewNote: item.reviewNote || ''
+  };
+  if (includePrivate || item.status === 'approved') {
+    view.fileID = item.fileID || '';
+    view.cloudPath = item.cloudPath || '';
+    view.mimeType = item.mimeType || '';
+    view.size = Number(item.size) || 0;
+  }
+  return view;
+}
+
+async function listSupplements(uid, event) {
+  await ensureInteractionCollections();
+  const submissionId = cleanResourceId(event.submissionId, '作品');
+  const submission = await getApprovedSubmission(submissionId);
+  const result = await db.collection(SUPPLEMENT_COLLECTION)
+    .where({ submissionId })
+    .limit(100)
+    .get();
+  const items = sortNewest(result.data || [])
+    .filter((item) => item.status === 'approved' || item.userId === uid)
+    .map((item) => supplementView(item, item.userId === uid));
+  const fileIDs = [...new Set(items.map((item) => item.fileID).filter(Boolean))].slice(0, 50);
+  let urls = new Map();
+  if (fileIDs.length) {
+    const fileResult = await app.getTempFileURL({
+      fileList: fileIDs.map((fileID) => ({ fileID, maxAge: 7200 }))
+    });
+    urls = new Map((fileResult.fileList || []).map((file) => [file.fileID, file.tempFileURL || '']));
+  }
+  return {
+    ok: true,
+    action: 'getSupplements',
+    submissionId,
+    completeness: Number(submission.completeness) || 60,
+    board: submission.board || ((Number(submission.completeness) || 60) >= 82 ? 'share' : 'needs'),
+    items: items.map((item) => ({ ...item, fileUrl: urls.get(item.fileID) || '' }))
+  };
+}
+
+async function createSupplement(uid, userInfo, event) {
+  requireStableAccount(userInfo);
+  await ensureInteractionCollections();
+  const submissionId = cleanResourceId(event.submissionId, '作品');
+  const slotId = cleanResourceId(event.slotId, '补充位置');
+  const submission = await getApprovedSubmission(submissionId);
+  const slot = supplementSlotFor(submission, slotId);
+  if (!slot) {
+    const error = new Error('该作品没有这个补充位置');
+    error.code = 'INVALID_SUPPLEMENT_SLOT';
+    throw error;
+  }
+  const assetType = cleanText(event.assetType, 20);
+  const mimeType = cleanText(event.mimeType, 120);
+  const size = Number(event.size);
+  const fileID = cleanText(event.fileID, 1000);
+  const cloudPath = cleanText(event.cloudPath, 500);
+  if (!ALLOWED_ASSET_TYPES.has(assetType) || !slot.accepts.includes(assetType)) {
+    const error = new Error('文件类型不符合该补充位置要求');
+    error.code = 'INVALID_SUPPLEMENT_TYPE';
+    throw error;
+  }
+  if (!fileID.startsWith('cloud://') ||
+      !cloudPath.startsWith(`supplements/${uid}/`) ||
+      !fileID.endsWith(`/${cloudPath}`)) {
+    const error = new Error('补充文件路径与当前用户不匹配');
+    error.code = 'FILE_OWNER_MISMATCH';
+    throw error;
+  }
+  if (!Number.isFinite(size) || size <= 0 || size > MAX_FILE_BYTES) {
+    const error = new Error('补充文件大小必须在 25MB 以内');
+    error.code = 'INVALID_FILE_SIZE';
+    throw error;
+  }
+  const profile = await ensureProfile(uid, userInfo);
+  const recordId = `${submissionId}_${slotId}_${uid}`;
+  const ref = db.collection(SUPPLEMENT_COLLECTION).doc(recordId);
+  const existing = firstDocument(await ref.get());
+  if (existing && ['pending', 'approved'].includes(existing.status)) {
+    const error = new Error(existing.status === 'pending' ? '这项资料已经在等待审核' : '你已经完成过这项补充');
+    error.code = 'SUPPLEMENT_EXISTS';
+    throw error;
+  }
+  await ref.set({
+    submissionId,
+    submissionTitle: submission.title || '未命名采集内容',
+    slotId,
+    slotTitle: slot.title,
+    userId: uid,
+    contributorName: profile.nickname || '社区用户',
+    assetType,
+    mimeType,
+    size,
+    fileID,
+    cloudPath,
+    status: 'pending',
+    rewardPoints: slot.rewardPoints,
+    completenessGain: slot.completenessGain,
+    reviewNote: '',
+    reviewerId: '',
+    reviewedAt: null,
+    createdAt: db.serverDate(),
+    updatedAt: db.serverDate()
+  });
+  return {
+    ok: true,
+    action: 'createSupplement',
+    supplement: { id: recordId, submissionId, slotId, slotTitle: slot.title, status: 'pending' }
+  };
 }
 
 function feedbackView(item) {
@@ -585,6 +749,11 @@ async function createSubmission(uid, userInfo, event) {
     error.code = 'FILE_OWNER_MISMATCH';
     throw error;
   }
+  if (!fileID.startsWith('cloud://') || !fileID.endsWith(`/${cloudPath}`)) {
+    const error = new Error('云存储文件标识与文件路径不匹配');
+    error.code = 'FILE_ID_MISMATCH';
+    throw error;
+  }
   if (size <= 0 || size > MAX_FILE_BYTES) {
     const error = new Error('文件大小必须在 25MB 以内');
     error.code = 'INVALID_FILE_SIZE';
@@ -626,6 +795,10 @@ async function createSubmission(uid, userInfo, event) {
     aiReviewUpdatedAt: null,
     likeCount: 0,
     commentCount: 0,
+    completeness: 60,
+    board: 'needs',
+    supplementCount: 0,
+    approvedSupplements: [],
     source: 'cloudbase_formal_web',
     createdAt: db.serverDate(),
     updatedAt: db.serverDate()
@@ -671,6 +844,8 @@ exports.main = async (event = {}) => {
     }
     if (action === 'updateProfile') return await updateProfile(uid, userInfo, event);
     if (action === 'createSubmission') return await createSubmission(uid, userInfo, event);
+    if (action === 'getSupplements') return await listSupplements(uid, event);
+    if (action === 'createSupplement') return await createSupplement(uid, userInfo, event);
     if (action === 'getInteractions') return await getInteractions(uid, event);
     if (action === 'toggleLike') return await toggleLike(uid, userInfo, event);
     if (action === 'createComment') return await createComment(uid, userInfo, event);
