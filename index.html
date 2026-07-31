@@ -4038,16 +4038,54 @@
     function buildRouteServiceUrl(platform, keyword, serviceType, route) {
       const routeCity = route && route.city ? route.city : '武汉';
       const cityConfig = routePlatformCityConfig[routeCity] || routePlatformCityConfig['武汉'];
-      const compactKeyword = String(keyword || '').replace(/\s+/g, '');
-      const encoded = encodeURIComponent(compactKeyword);
-      const dianpingCategory = serviceType === 'hotel' ? '60' : '10';
+      const searchKeyword = String(keyword || '').trim().replace(/\s+/g, ' ');
+      const encoded = encodeURIComponent(searchKeyword);
       if (platform === 'dianping') {
-        if (cityConfig.dianpingCityId) {
-          return `https://www.dianping.com/search/keyword/${cityConfig.dianpingCityId}/${dianpingCategory}_${encoded}/o3`;
-        }
-        return `https://www.dianping.com/${cityConfig.dianpingSlug}/ch${dianpingCategory}/o3`;
+        const cityId = Number(cityConfig.dianpingCityId) || 0;
+        return `https://m.dianping.com/search/keyword/${cityId}/0_${encoded}`;
       }
-      return `https://${cityConfig.meituanHost}/s/${encoded}/?sort=rating&sortId=rating&cityName=${encodeURIComponent(cityConfig.meituanCityName)}`;
+      return `https://i.meituan.com/s/${encoded}`;
+    }
+
+    function buildRouteServiceAppUrl(platform, keyword) {
+      const searchKeyword = String(keyword || '').trim().replace(/\s+/g, ' ');
+      const encoded = encodeURIComponent(searchKeyword);
+      if (platform === 'dianping') {
+        return `dianping://searchshoplist?keyword=${encoded}`;
+      }
+      return `imeituan://www.meituan.com/search?q=${encoded}`;
+    }
+
+    function isMobileBrowser() {
+      return /Android|iPhone|iPad|iPod|HarmonyOS|Mobile/i.test(navigator.userAgent || '');
+    }
+
+    function openServiceAppWithFallback(appUrl, webUrl, platformLabel) {
+      let appOpened = false;
+      let fallbackTimer = null;
+      const markAppOpened = () => {
+        if (document.hidden) appOpened = true;
+      };
+      const cleanup = () => {
+        document.removeEventListener('visibilitychange', markAppOpened);
+        window.removeEventListener('pagehide', markAppOpened);
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+      };
+
+      document.addEventListener('visibilitychange', markAppOpened);
+      window.addEventListener('pagehide', markAppOpened, { once: true });
+      fallbackTimer = setTimeout(() => {
+        cleanup();
+        if (!appOpened && !document.hidden) window.location.assign(webUrl);
+      }, 1400);
+
+      showToast(`正在尝试打开${platformLabel} App…`, 'external-link');
+      try {
+        window.location.href = appUrl;
+      } catch (_) {
+        cleanup();
+        window.location.assign(webUrl);
+      }
     }
 
     function openRouteService(serviceType, platform) {
@@ -4058,7 +4096,18 @@
         return;
       }
 
-      window.open(buildRouteServiceUrl(platform, service.keyword, serviceType, route), '_blank', 'noopener');
+      const webUrl = buildRouteServiceUrl(platform, service.keyword, serviceType, route);
+      if (isMobileBrowser()) {
+        const platformLabel = platform === 'dianping' ? '大众点评' : '美团';
+        openServiceAppWithFallback(
+          buildRouteServiceAppUrl(platform, service.keyword),
+          webUrl,
+          platformLabel
+        );
+        return;
+      }
+      const opened = window.open(webUrl, '_blank', 'noopener,noreferrer');
+      if (!opened) window.location.assign(webUrl);
     }
 
     function handleCommunityRouteStep(stepIndex) {

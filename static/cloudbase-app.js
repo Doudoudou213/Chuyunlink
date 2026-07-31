@@ -19,6 +19,8 @@
   let activeReportTargetId = '';
   let activeSubmissionFilter = 'all';
   let activeCloudSupplement = null;
+  let registerVerificationInfo = null;
+  let resetVerificationInfo = null;
   const cloudSupplementState = new Map();
   let publicFeedRefreshTimer = null;
   const PUBLIC_FEED_REFRESH_MS = 60 * 1000;
@@ -363,23 +365,59 @@
         <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
           <div class="flex items-start justify-between">
             <div>
-              <h3 class="text-lg font-bold text-deepTeal">登录账号</h3>
-              <p class="mt-1 text-[10px] text-stone-500">登录后可在不同设备继续查看积分、投稿和反馈。</p>
+              <h3 id="cloud-auth-title" class="text-lg font-bold text-deepTeal">登录账号</h3>
+              <p id="cloud-auth-subtitle" class="mt-1 text-[10px] text-stone-500">登录后可在不同设备继续查看积分、投稿和反馈。</p>
             </div>
             <button id="cloud-login-close" type="button" class="text-stone-400">✕</button>
           </div>
-          <form id="cloud-login-form" class="mt-4 space-y-3">
+          <div class="mt-4 grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
+            <button type="button" data-auth-mode="login" class="rounded-lg bg-white px-2 py-2 text-[10px] font-bold text-deepTeal shadow-sm">登录</button>
+            <button type="button" data-auth-mode="register" class="rounded-lg px-2 py-2 text-[10px] font-bold text-stone-500">注册</button>
+            <button type="button" data-auth-mode="reset" class="rounded-lg px-2 py-2 text-[10px] font-bold text-stone-500">忘记密码</button>
+          </div>
+          <form id="cloud-login-form" data-auth-panel="login" class="mt-4 space-y-3">
             <input id="cloud-login-username" autocomplete="username" placeholder="邮箱或用户名" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
             <input id="cloud-login-password" type="password" autocomplete="current-password" placeholder="密码" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
             <p id="cloud-login-message" class="min-h-4 text-[10px] text-red-600"></p>
             <button type="submit" class="w-full rounded-xl bg-deepTeal px-3 py-2.5 text-sm font-bold text-sandGold">登录</button>
           </form>
-          <p class="mt-3 text-[9px] leading-relaxed text-stone-400">没有正式账号时可先浏览；投稿记录仅会保留在当前游客身份下。</p>
+          <form id="cloud-register-form" data-auth-panel="register" class="mt-4 hidden space-y-3">
+            <input id="cloud-register-email" type="email" autocomplete="email" placeholder="邮箱" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
+            <div class="flex gap-2">
+              <input id="cloud-register-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 位验证码" class="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
+              <button id="cloud-register-send-code" type="button" class="shrink-0 rounded-xl border border-deepTeal px-3 py-2 text-[10px] font-bold text-deepTeal">发送验证码</button>
+            </div>
+            <input id="cloud-register-username" autocomplete="username" minlength="5" maxlength="24" placeholder="登录用户名（5-24 位字母、数字、_ 或 -）" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
+            <input id="cloud-register-nickname" autocomplete="nickname" maxlength="40" placeholder="公开昵称" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
+            <input id="cloud-register-password" type="password" autocomplete="new-password" minlength="8" placeholder="密码（至少 8 位，包含字母和数字）" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
+            <input id="cloud-register-confirm" type="password" autocomplete="new-password" minlength="8" placeholder="再次输入密码" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
+            <p id="cloud-register-message" class="min-h-4 text-[10px] text-red-600"></p>
+            <button type="submit" class="w-full rounded-xl bg-deepTeal px-3 py-2.5 text-sm font-bold text-sandGold">注册并登录</button>
+          </form>
+          <form id="cloud-reset-form" data-auth-panel="reset" class="mt-4 hidden space-y-3">
+            <input id="cloud-reset-email" type="email" autocomplete="email" placeholder="注册邮箱" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
+            <div class="flex gap-2">
+              <input id="cloud-reset-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 位验证码" class="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
+              <button id="cloud-reset-send-code" type="button" class="shrink-0 rounded-xl border border-deepTeal px-3 py-2 text-[10px] font-bold text-deepTeal">发送验证码</button>
+            </div>
+            <input id="cloud-reset-password" type="password" autocomplete="new-password" minlength="8" placeholder="新密码（至少 8 位，包含字母和数字）" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
+            <input id="cloud-reset-confirm" type="password" autocomplete="new-password" minlength="8" placeholder="再次输入新密码" class="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-sandGold" required>
+            <p id="cloud-reset-message" class="min-h-4 text-[10px] text-red-600"></p>
+            <button type="submit" class="w-full rounded-xl bg-deepTeal px-3 py-2.5 text-sm font-bold text-sandGold">确认重设密码</button>
+          </form>
+          <p class="mt-3 text-[9px] leading-relaxed text-stone-400">验证码和密码由 CloudBase 身份认证处理；平台不会在业务数据库中保存密码。</p>
         </div>
       </div>
     `);
     document.getElementById('cloud-login-close').addEventListener('click', closeCloudLogin);
     document.getElementById('cloud-login-form').addEventListener('submit', loginCloudAccount);
+    document.getElementById('cloud-register-form').addEventListener('submit', registerCloudAccount);
+    document.getElementById('cloud-reset-form').addEventListener('submit', resetCloudPassword);
+    document.getElementById('cloud-register-send-code').addEventListener('click', () => sendCloudEmailCode('register'));
+    document.getElementById('cloud-reset-send-code').addEventListener('click', () => sendCloudEmailCode('reset'));
+    document.querySelectorAll('[data-auth-mode]').forEach((button) => {
+      button.addEventListener('click', () => switchCloudAuthMode(button.dataset.authMode));
+    });
   }
 
   function injectProductModals() {
@@ -451,12 +489,211 @@
 
   function openCloudLogin() {
     injectLoginModal();
+    switchCloudAuthMode('login');
     document.getElementById('cloud-login-modal').classList.remove('hidden');
   }
 
   function closeCloudLogin() {
     const modal = document.getElementById('cloud-login-modal');
     if (modal) modal.classList.add('hidden');
+  }
+
+  function switchCloudAuthMode(mode) {
+    const selectedMode = ['login', 'register', 'reset'].includes(mode) ? mode : 'login';
+    const titles = {
+      login: ['登录账号', '登录后可在不同设备继续查看积分、投稿和反馈。'],
+      register: ['创建普通用户账号', '使用邮箱验证码注册，成功后会自动登录。'],
+      reset: ['重设密码', '验证注册邮箱后设置一个新密码。']
+    };
+    const [title, subtitle] = titles[selectedMode];
+    const titleNode = document.getElementById('cloud-auth-title');
+    const subtitleNode = document.getElementById('cloud-auth-subtitle');
+    if (titleNode) titleNode.textContent = title;
+    if (subtitleNode) subtitleNode.textContent = subtitle;
+    document.querySelectorAll('[data-auth-panel]').forEach((panel) => {
+      panel.classList.toggle('hidden', panel.dataset.authPanel !== selectedMode);
+    });
+    document.querySelectorAll('[data-auth-mode]').forEach((button) => {
+      const selected = button.dataset.authMode === selectedMode;
+      button.className = selected
+        ? 'rounded-lg bg-white px-2 py-2 text-[10px] font-bold text-deepTeal shadow-sm'
+        : 'rounded-lg px-2 py-2 text-[10px] font-bold text-stone-500';
+    });
+  }
+
+  function isValidCloudEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+  }
+
+  function isStrongCloudPassword(value) {
+    const password = String(value || '');
+    return password.length >= 8 && password.length <= 64 && /[A-Za-z]/.test(password) && /\d/.test(password);
+  }
+
+  function cloudAuthErrorMessage(error, fallback) {
+    const code = String(error && (error.code || error.error_code) || '').toLowerCase();
+    const message = String(error && error.message || '');
+    if (/verification.*(invalid|wrong)|invalid.*verification/.test(code + message)) return '验证码不正确，请重新输入';
+    if (/verification.*expired|expired.*verification/.test(code + message)) return '验证码已过期，请重新发送';
+    if (/email.*(exist|bound|register)|already.*email/.test(code + message)) return '该邮箱已经注册，请直接登录或重设密码';
+    if (/username.*(exist|bound|register)|already.*username/.test(code + message)) return '该登录用户名已被使用，请换一个';
+    if (/too.*many|frequency|rate.*limit|429/.test(code + message)) return '操作过于频繁，请稍后再试';
+    if (/password/.test(code) && /invalid|weak|format/.test(code + message)) return '密码不符合要求，请使用 8-64 位且包含字母和数字';
+    return message || fallback;
+  }
+
+  function startCloudCodeCountdown(button) {
+    let remaining = 60;
+    button.disabled = true;
+    button.classList.add('opacity-50', 'cursor-not-allowed');
+    button.textContent = `${remaining} 秒后重发`;
+    const timer = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(timer);
+        button.disabled = false;
+        button.classList.remove('opacity-50', 'cursor-not-allowed');
+        button.textContent = '重新发送';
+        return;
+      }
+      button.textContent = `${remaining} 秒后重发`;
+    }, 1000);
+  }
+
+  async function sendCloudEmailCode(mode) {
+    const isRegister = mode === 'register';
+    const emailInput = document.getElementById(isRegister ? 'cloud-register-email' : 'cloud-reset-email');
+    const message = document.getElementById(isRegister ? 'cloud-register-message' : 'cloud-reset-message');
+    const button = document.getElementById(isRegister ? 'cloud-register-send-code' : 'cloud-reset-send-code');
+    const email = emailInput.value.trim().toLowerCase();
+    if (!isValidCloudEmail(email)) {
+      message.className = 'min-h-4 text-[10px] text-red-600';
+      message.textContent = '请输入有效邮箱地址';
+      emailInput.focus();
+      return;
+    }
+    button.disabled = true;
+    message.className = 'min-h-4 text-[10px] text-stone-500';
+    message.textContent = '正在发送验证码...';
+    try {
+      await ensureCloudUser();
+      const verificationInfo = await cloudAuth.getVerification({ email });
+      if (isRegister && verificationInfo && verificationInfo.is_user) {
+        throw Object.assign(new Error('该邮箱已经注册，请直接登录或重设密码'), { code: 'EMAIL_ALREADY_REGISTERED' });
+      }
+      const record = { email, verificationInfo };
+      if (isRegister) registerVerificationInfo = record;
+      else resetVerificationInfo = record;
+      message.className = 'min-h-4 text-[10px] text-emerald-600';
+      message.textContent = '验证码已发送，请检查收件箱和垃圾邮件';
+      startCloudCodeCountdown(button);
+    } catch (error) {
+      button.disabled = false;
+      message.className = 'min-h-4 text-[10px] text-red-600';
+      message.textContent = cloudAuthErrorMessage(error, '验证码发送失败，请稍后重试');
+    }
+  }
+
+  async function registerCloudAccount(event) {
+    event.preventDefault();
+    const email = document.getElementById('cloud-register-email').value.trim().toLowerCase();
+    const verificationCode = document.getElementById('cloud-register-code').value.trim();
+    const username = document.getElementById('cloud-register-username').value.trim();
+    const nickname = document.getElementById('cloud-register-nickname').value.trim();
+    const password = document.getElementById('cloud-register-password').value;
+    const confirmPassword = document.getElementById('cloud-register-confirm').value;
+    const message = document.getElementById('cloud-register-message');
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    const fail = (text) => {
+      message.className = 'min-h-4 text-[10px] text-red-600';
+      message.textContent = text;
+    };
+    if (!registerVerificationInfo || registerVerificationInfo.email !== email) return fail('请先向当前邮箱发送验证码');
+    if (!/^\d{6}$/.test(verificationCode)) return fail('请输入邮件中的 6 位验证码');
+    if (!/^[A-Za-z0-9_-]{5,24}$/.test(username)) return fail('登录用户名需为 5-24 位字母、数字、_ 或 -');
+    if (!nickname || nickname.length > 40) return fail('请输入 1-40 个字的公开昵称');
+    if (!isStrongCloudPassword(password)) return fail('密码需为 8-64 位，并同时包含字母和数字');
+    if (password !== confirmPassword) return fail('两次输入的密码不一致');
+    button.disabled = true;
+    message.className = 'min-h-4 text-[10px] text-stone-500';
+    message.textContent = '正在验证并创建账号...';
+    try {
+      const usernameUsed = await cloudAuth.isUsernameRegistered(username);
+      if (usernameUsed) throw Object.assign(new Error('该登录用户名已被使用，请换一个'), { code: 'USERNAME_EXISTS' });
+      const tokenResult = await cloudAuth.verify({
+        verification_id: registerVerificationInfo.verificationInfo.verification_id,
+        verification_code: verificationCode
+      });
+      const verificationToken = tokenResult.verification_token || tokenResult.verificationToken;
+      if (!verificationToken) throw new Error('验证码验证未返回有效凭证');
+      if (await cloudAuth.getLoginState()) await cloudAuth.signOut();
+      await cloudAuth.signUp({
+        email,
+        username,
+        name: nickname,
+        password,
+        verification_code: verificationCode,
+        verification_token: verificationToken
+      });
+      registerVerificationInfo = null;
+      message.className = 'min-h-4 text-[10px] text-emerald-600';
+      message.textContent = '注册成功，正在进入个人中心...';
+      setTimeout(() => location.reload(), 700);
+    } catch (error) {
+      message.className = 'min-h-4 text-[10px] text-red-600';
+      message.textContent = cloudAuthErrorMessage(error, '注册失败，请检查信息后重试');
+      try {
+        if (!await cloudAuth.getLoginState()) await cloudAuth.anonymousAuthProvider().signIn();
+      } catch (_) {}
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function resetCloudPassword(event) {
+    event.preventDefault();
+    const email = document.getElementById('cloud-reset-email').value.trim().toLowerCase();
+    const verificationCode = document.getElementById('cloud-reset-code').value.trim();
+    const password = document.getElementById('cloud-reset-password').value;
+    const confirmPassword = document.getElementById('cloud-reset-confirm').value;
+    const message = document.getElementById('cloud-reset-message');
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    const fail = (text) => {
+      message.className = 'min-h-4 text-[10px] text-red-600';
+      message.textContent = text;
+    };
+    if (!resetVerificationInfo || resetVerificationInfo.email !== email) return fail('请先向当前邮箱发送验证码');
+    if (!/^\d{6}$/.test(verificationCode)) return fail('请输入邮件中的 6 位验证码');
+    if (!isStrongCloudPassword(password)) return fail('新密码需为 8-64 位，并同时包含字母和数字');
+    if (password !== confirmPassword) return fail('两次输入的新密码不一致');
+    button.disabled = true;
+    message.className = 'min-h-4 text-[10px] text-stone-500';
+    message.textContent = '正在验证并重设密码...';
+    try {
+      const tokenResult = await cloudAuth.verify({
+        verification_id: resetVerificationInfo.verificationInfo.verification_id,
+        verification_code: verificationCode
+      });
+      const verificationToken = tokenResult.verification_token || tokenResult.verificationToken;
+      if (!verificationToken) throw new Error('验证码验证未返回有效凭证');
+      await cloudAuth.resetPassword({
+        email,
+        new_password: password,
+        verification_token: verificationToken
+      });
+      resetVerificationInfo = null;
+      event.currentTarget.reset();
+      document.getElementById('cloud-login-username').value = email;
+      document.getElementById('cloud-login-message').className = 'min-h-4 text-[10px] text-emerald-600';
+      document.getElementById('cloud-login-message').textContent = '密码已重设，请使用新密码登录';
+      switchCloudAuthMode('login');
+      document.getElementById('cloud-login-password').focus();
+    } catch (error) {
+      message.className = 'min-h-4 text-[10px] text-red-600';
+      message.textContent = cloudAuthErrorMessage(error, '密码重设失败，请重新发送验证码后再试');
+    } finally {
+      button.disabled = false;
+    }
   }
 
   async function loginCloudAccount(event) {
