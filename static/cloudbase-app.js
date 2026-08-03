@@ -151,6 +151,14 @@
     return result;
   }
 
+  async function planCloudRoute(payload = {}) {
+    return callCore({
+      action: 'planRoute',
+      mode: payload.mode || 'transit',
+      points: Array.isArray(payload.points) ? payload.points : []
+    });
+  }
+
   function deferredAiReview(regionName) {
     return {
       approved: false,
@@ -1497,6 +1505,7 @@
   window.refreshCloudProfile = refreshCloudProfile;
   window.requestCloudAiReview = requestCloudAiReview;
   window.verifyCloudLocation = verifyCloudLocation;
+  window.planCloudRoute = planCloudRoute;
   window.submitCloudSubmission = submitToCloud;
   window.toggleSubmissionLike = toggleCloudLike;
   window.openDiscoverDetail = openCloudDiscoverDetail;

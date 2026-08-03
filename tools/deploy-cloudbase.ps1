@@ -1,12 +1,16 @@
 param(
   [switch]$StaticOnly,
-  [switch]$FunctionsOnly
+  [switch]$FunctionsOnly,
+  [switch]$FullFunctionDeploy
 )
 
 $ErrorActionPreference = 'Stop'
 
 if ($StaticOnly -and $FunctionsOnly) {
   throw 'StaticOnly and FunctionsOnly cannot be used together.'
+}
+if ($StaticOnly -and $FullFunctionDeploy) {
+  throw 'FullFunctionDeploy cannot be combined with StaticOnly.'
 }
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -89,11 +93,20 @@ try {
   Test-JavaScriptSyntax -ScriptPath $adminSubmissionsScript
 
   if (-not $StaticOnly) {
-    Write-Host 'Deploying appCore...'
-    Invoke-CloudBaseCli -CliArguments @('fn', 'deploy', 'appCore', '-e', $environmentId, '--deployMode', 'zip', '--force')
+    if ($FullFunctionDeploy) {
+      Write-Warning 'Full function deployment may update runtime configuration. Confirm cloud environment variables before using this mode.'
+      Write-Host 'Fully deploying appCore...'
+      Invoke-CloudBaseCli -CliArguments @('fn', 'deploy', 'appCore', '-e', $environmentId, '--deployMode', 'zip', '--force')
 
-    Write-Host 'Deploying adminSubmissions...'
-    Invoke-CloudBaseCli -CliArguments @('fn', 'deploy', 'adminSubmissions', '-e', $environmentId, '--deployMode', 'zip', '--force')
+      Write-Host 'Fully deploying adminSubmissions...'
+      Invoke-CloudBaseCli -CliArguments @('fn', 'deploy', 'adminSubmissions', '-e', $environmentId, '--deployMode', 'zip', '--force')
+    } else {
+      Write-Host 'Updating appCore code while preserving cloud configuration...'
+      Invoke-CloudBaseCli -CliArguments @('fn', 'code', 'update', 'appCore', '-e', $environmentId, '--deployMode', 'zip', '--yes')
+
+      Write-Host 'Updating adminSubmissions code while preserving cloud configuration...'
+      Invoke-CloudBaseCli -CliArguments @('fn', 'code', 'update', 'adminSubmissions', '-e', $environmentId, '--deployMode', 'zip', '--yes')
+    }
   }
 
   if (-not $FunctionsOnly) {

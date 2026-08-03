@@ -1,6 +1,8 @@
 'use strict';
 
 const cloudbase = require('@cloudbase/node-sdk');
+const crypto = require('crypto');
+const https = require('https');
 
 const app = cloudbase.init({
   env: process.env.TCB_ENV || cloudbase.SYMBOL_CURRENT_ENV
@@ -14,16 +16,26 @@ const LIKE_COLLECTION = 'submission_likes';
 const REPORT_COLLECTION = 'content_reports';
 const FEEDBACK_COLLECTION = 'system_feedback';
 const SUPPLEMENT_COLLECTION = 'submission_supplements';
+const ROUTE_USAGE_COLLECTION = 'route_usage';
 const ALLOWED_ASSET_TYPES = new Set(['image', 'audio', 'video']);
 const ALLOWED_REPORT_REASONS = new Set(['spam', 'abuse', 'false_information', 'copyright', 'other']);
 const ALLOWED_FEEDBACK_TYPES = new Set(['suggestion', 'bug', 'content', 'other']);
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 let interactionCollectionsReady = null;
 
+const AMAP_ROUTE_ENDPOINTS = {
+  walk: 'https://restapi.amap.com/v3/direction/walking',
+  car: 'https://restapi.amap.com/v3/direction/driving',
+  transit: 'https://restapi.amap.com/v3/direction/transit/integrated'
+};
+const ROUTE_USAGE_WINDOW_MS = 10 * 60 * 1000;
+const ROUTE_USAGE_MAX_LEGS = 40;
+const ROUTE_MAX_POINTS = 9;
+
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-      [COMMENT_COLLECTION, LIKE_COLLECTION, REPORT_COLLECTION, FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION].map(async (name) => {
+      [COMMENT_COLLECTION, LIKE_COLLECTION, REPORT_COLLECTION, FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, ROUTE_USAGE_COLLECTION].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {
@@ -42,6 +54,246 @@ async function ensureInteractionCollections() {
 
 function cleanText(value, maxLength) {
   return String(value == null ? '' : value).trim().slice(0, maxLength);
+}
+
+function routeFailure(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
+function normalizeRoutePoint(value, index) {
+  const longitude = Number(value && value.longitude);
+  const latitude = Number(value && value.latitude);
+  if (!Number.isFinite(longitude) || !Number.isFinite(latitude) ||
+      longitude < 73 || longitude > 136 || latitude < 3 || latitude > 54) {
+    throw routeFailure('INVALID_ROUTE_POINT', `第 ${index + 1} 个路线点坐标无效`);
+  }
+  return {
+    longitude: Number(longitude.toFixed(6)),
+    latitude: Number(latitude.toFixed(6)),
+    title: cleanText(value && value.title, 80) || `第 ${index + 1} 站`,
+    city: cleanText(value && value.city, 30)
+  };
+}
+
+function coordinateText(point) {
+  return `${point.longitude.toFixed(6)},${point.latitude.toFixed(6)}`;
+}
+
+function asArray(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function parseAmapPolyline(value) {
+  return cleanText(value, 100000)
+    .split(';')
+    .map((pair) => pair.split(',').map(Number))
+    .filter((pair) => pair.length === 2 && pair.every(Number.isFinite))
+    .map(([longitude, latitude]) => [latitude, longitude]);
+}
+
+function appendRoutePath(target, points) {
+  for (const point of points) {
+    const previous = target[target.length - 1];
+    if (!previous || Math.abs(previous[0] - point[0]) > 0.000001 || Math.abs(previous[1] - point[1]) > 0.000001) {
+      target.push(point);
+    }
+  }
+}
+
+function requestAmapJson(endpoint, parameters) {
+  const url = new URL(endpoint);
+  Object.entries(parameters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
+  });
+
+  return new Promise((resolve, reject) => {
+    const request = https.get(url, {
+      timeout: 8000,
+      headers: { 'User-Agent': 'ChuLink-CloudBase/1.0' }
+    }, (response) => {
+      let body = '';
+      response.setEncoding('utf8');
+      response.on('data', (chunk) => {
+        body += chunk;
+        if (body.length > 2 * 1024 * 1024) {
+          request.destroy(routeFailure('ROUTE_RESPONSE_TOO_LARGE', '路线服务返回内容过大'));
+        }
+      });
+      response.on('end', () => {
+        if (response.statusCode !== 200) {
+          reject(routeFailure('ROUTE_SERVICE_UNAVAILABLE', '高德路线服务暂时不可用'));
+          return;
+        }
+        try {
+          resolve(JSON.parse(body));
+        } catch (_) {
+          reject(routeFailure('ROUTE_RESPONSE_INVALID', '路线服务返回了无法解析的数据'));
+        }
+      });
+    });
+    request.on('timeout', () => request.destroy(routeFailure('ROUTE_SERVICE_TIMEOUT', '路线服务响应超时')));
+    request.on('error', (error) => {
+      if (error && error.code && String(error.code).startsWith('ROUTE_')) reject(error);
+      else reject(routeFailure('ROUTE_SERVICE_UNAVAILABLE', '暂时无法连接高德路线服务'));
+    });
+  });
+}
+
+async function consumeRouteQuota(uid, legCount) {
+  await ensureInteractionCollections();
+  const bucket = Math.floor(Date.now() / ROUTE_USAGE_WINDOW_MS);
+  const identity = crypto.createHash('sha256').update(uid).digest('hex').slice(0, 32);
+  const documentId = `${identity}_${bucket}`;
+  await db.runTransaction(async (transaction) => {
+    const ref = transaction.collection(ROUTE_USAGE_COLLECTION).doc(documentId);
+    const existing = firstDocument(await ref.get());
+    const usedLegs = Math.max(0, Number(existing && existing.usedLegs) || 0);
+    if (usedLegs + legCount > ROUTE_USAGE_MAX_LEGS) {
+      throw routeFailure('ROUTE_RATE_LIMITED', '路线规划请求较频繁，请稍后再试');
+    }
+    await ref.set({
+      usedLegs: usedLegs + legCount,
+      bucket,
+      updatedAt: db.serverDate()
+    });
+  });
+}
+
+function parseStandardRouteLeg(payload, start, end, mode) {
+  const path = payload && payload.route && asArray(payload.route.paths)[0];
+  if (!path) throw routeFailure('ROUTE_NOT_FOUND', `未找到从“${start.title}”到“${end.title}”的路线`);
+  const polyline = [];
+  const steps = asArray(path.steps).map((step) => {
+    appendRoutePath(polyline, parseAmapPolyline(step.polyline));
+    return {
+      instruction: cleanText(step.instruction, 240),
+      road: cleanText(step.road, 80),
+      distance: Math.max(0, Number(step.distance) || 0),
+      duration: Math.max(0, Number(step.duration) || 0)
+    };
+  }).filter((step) => step.instruction);
+  if (!polyline.length) appendRoutePath(polyline, [[start.latitude, start.longitude], [end.latitude, end.longitude]]);
+  return {
+    mode,
+    from: start.title,
+    to: end.title,
+    distance: Math.max(0, Number(path.distance) || 0),
+    duration: Math.max(0, Number(path.duration) || 0),
+    polyline,
+    steps
+  };
+}
+
+function parseTransitRouteLeg(payload, start, end) {
+  const transit = payload && payload.route && asArray(payload.route.transits)[0];
+  if (!transit) throw routeFailure('ROUTE_NOT_FOUND', `未找到从“${start.title}”到“${end.title}”的公交路线`);
+  const polyline = [];
+  const steps = [];
+  let calculatedDistance = 0;
+  asArray(transit.segments).forEach((segment) => {
+    asArray(segment && segment.walking && segment.walking.steps).forEach((step) => {
+      appendRoutePath(polyline, parseAmapPolyline(step.polyline));
+      const distance = Math.max(0, Number(step.distance) || 0);
+      calculatedDistance += distance;
+      if (step.instruction) steps.push({ instruction: cleanText(step.instruction, 240), mode: 'walk', distance });
+    });
+    asArray(segment && segment.bus && segment.bus.buslines).forEach((line) => {
+      appendRoutePath(polyline, parseAmapPolyline(line.polyline));
+      const distance = Math.max(0, Number(line.distance) || 0);
+      calculatedDistance += distance;
+      const departure = cleanText(line.departure_stop && line.departure_stop.name, 60);
+      const arrival = cleanText(line.arrival_stop && line.arrival_stop.name, 60);
+      steps.push({
+        instruction: `乘坐 ${cleanText(line.name, 100) || '公共交通'}${departure && arrival ? `（${departure} → ${arrival}）` : ''}`,
+        mode: 'transit',
+        distance,
+        duration: Math.max(0, Number(line.duration) || 0)
+      });
+    });
+    const railway = segment && segment.railway;
+    if (railway && (railway.name || railway.trip)) {
+      const departure = cleanText(railway.departure_stop && railway.departure_stop.name, 60);
+      const arrival = cleanText(railway.arrival_stop && railway.arrival_stop.name, 60);
+      appendRoutePath(polyline, parseAmapPolyline(railway.departure_stop && railway.departure_stop.location));
+      appendRoutePath(polyline, parseAmapPolyline(railway.arrival_stop && railway.arrival_stop.location));
+      steps.push({
+        instruction: `乘坐 ${cleanText(railway.name || railway.trip, 100)}${departure && arrival ? `（${departure} → ${arrival}）` : ''}`,
+        mode: 'railway',
+        distance: Math.max(0, Number(railway.distance) || 0),
+        duration: Math.max(0, Number(railway.time) || 0)
+      });
+    }
+  });
+  if (!polyline.length) appendRoutePath(polyline, [[start.latitude, start.longitude], [end.latitude, end.longitude]]);
+  return {
+    mode: 'transit',
+    from: start.title,
+    to: end.title,
+    distance: Math.max(calculatedDistance, Number(transit.walking_distance) || 0),
+    duration: Math.max(0, Number(transit.duration) || 0),
+    cost: Math.max(0, Number(transit.cost) || 0),
+    polyline,
+    steps
+  };
+}
+
+async function requestAmapRouteLeg(key, mode, start, end) {
+  const parameters = {
+    key,
+    origin: coordinateText(start),
+    destination: coordinateText(end),
+    output: 'JSON',
+    extensions: 'all'
+  };
+  if (mode === 'car') parameters.strategy = 10;
+  if (mode === 'transit') {
+    parameters.city = start.city || end.city || '武汉';
+    if (end.city && end.city !== parameters.city) parameters.cityd = end.city;
+    parameters.strategy = 0;
+    parameters.nightflag = 0;
+  }
+  const payload = await requestAmapJson(AMAP_ROUTE_ENDPOINTS[mode], parameters);
+  if (!payload || String(payload.status) !== '1') {
+    const info = cleanText(payload && payload.info, 80);
+    throw routeFailure('AMAP_ROUTE_FAILED', info && info !== 'OK' ? `高德路线规划失败：${info}` : '高德路线规划失败');
+  }
+  return mode === 'transit'
+    ? parseTransitRouteLeg(payload, start, end)
+    : parseStandardRouteLeg(payload, start, end, mode);
+}
+
+async function planRoute(uid, event) {
+  const key = cleanText(process.env.AMAP_WEB_SERVICE_KEY, 256);
+  if (!key) throw routeFailure('AMAP_KEY_NOT_CONFIGURED', '路线服务尚未完成云端配置');
+  const mode = cleanText(event.mode, 20);
+  if (!Object.prototype.hasOwnProperty.call(AMAP_ROUTE_ENDPOINTS, mode)) {
+    throw routeFailure('INVALID_ROUTE_MODE', '请选择公交地铁、驾车或步行');
+  }
+  const requestedPoints = Array.isArray(event.points) ? event.points : [];
+  if (requestedPoints.length < 2 || requestedPoints.length > ROUTE_MAX_POINTS) {
+    throw routeFailure('INVALID_ROUTE_POINTS', `路线需要 2-${ROUTE_MAX_POINTS} 个有效点位`);
+  }
+  const points = requestedPoints.map(normalizeRoutePoint);
+  const legCount = points.length - 1;
+  await consumeRouteQuota(uid, legCount);
+  const legs = await Promise.all(points.slice(0, -1).map((point, index) => (
+    requestAmapRouteLeg(key, mode, point, points[index + 1])
+  )));
+  const polyline = [];
+  legs.forEach((leg) => appendRoutePath(polyline, leg.polyline));
+  return {
+    ok: true,
+    action: 'planRoute',
+    provider: 'amap-web-service',
+    mode,
+    distance: legs.reduce((total, leg) => total + (Number(leg.distance) || 0), 0),
+    duration: legs.reduce((total, leg) => total + (Number(leg.duration) || 0), 0),
+    polyline,
+    legs
+  };
 }
 
 function cleanResourceId(value, label = '资源') {
@@ -842,6 +1094,7 @@ exports.main = async (event = {}) => {
     if (action === 'getMyFeedback') {
       return { ok: true, action, items: await listOwnFeedback(uid, event.limit) };
     }
+    if (action === 'planRoute') return await planRoute(uid, event);
     if (action === 'updateProfile') return await updateProfile(uid, userInfo, event);
     if (action === 'createSubmission') return await createSubmission(uid, userInfo, event);
     if (action === 'getSupplements') return await listSupplements(uid, event);

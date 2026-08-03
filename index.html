@@ -715,7 +715,7 @@
                   <span class="text-[9px] text-stone-400">影响打开导航的方式</span>
                 </div>
                 <div id="map-planner-mode-options" class="mt-2 grid grid-cols-3 gap-1.5"></div>
-                <p class="mt-2 text-[9px] leading-relaxed text-stone-500">当前阶段提供点位顺序与逐站导航；实时公交、地铁换乘和 AI 行程说明将在地图路线服务接入后生成。</p>
+                <div id="map-planner-route-status" class="mt-2 text-[9px] leading-relaxed text-stone-500">选择交通偏好后点击“地图预览”，将生成真实道路路线与逐段交通提示。</div>
               </section>
             </div>
 
@@ -2327,6 +2327,7 @@
     let mapPlannerActiveId = heritageLandmarks[0].id;
     let mapPlannerMode = 'transit';
     let mapPlannerDraggingId = null;
+    let mapPlannerRouteRequestId = 0;
 
     const communityRoutePlans = [
       {
@@ -3709,7 +3710,87 @@
       if (mapPlannerLayerGroup) mapPlannerLayerGroup.clearLayers();
     }
 
-    function previewMapPlannerRoute(options = {}) {
+    function setMapPlannerRouteStatus(content, tone = 'muted') {
+      const status = document.getElementById('map-planner-route-status');
+      if (!status) return;
+      status.className = `mt-2 rounded-lg px-2.5 py-2 text-[9px] leading-relaxed ${tone === 'success'
+        ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+        : tone === 'error'
+          ? 'border border-amber-200 bg-amber-50 text-amber-800'
+          : 'text-stone-500'}`;
+      status.innerHTML = content;
+    }
+
+    function getMapPlannerCity(item) {
+      const area = getMapPlannerDetail(item.id).area || '武汉';
+      return String(area).split('·')[0].trim() || '武汉';
+    }
+
+    function buildMapPlannerRoutePoints(items) {
+      const points = [];
+      if (currentLocation && currentLocation.isReal) {
+        const origin = getMapLatLng([currentLocation.latitude, currentLocation.longitude], 'wgs84');
+        points.push({
+          title: '我的位置',
+          latitude: origin[0],
+          longitude: origin[1],
+          city: items[0] ? getMapPlannerCity(items[0]) : '武汉'
+        });
+      }
+      items.forEach(item => points.push({
+        title: item.title,
+        latitude: item.coords[0],
+        longitude: item.coords[1],
+        city: getMapPlannerCity(item)
+      }));
+      return points;
+    }
+
+    function drawMapPlannerPoints(items) {
+      items.forEach((item, index) => {
+        L.marker(getStaticMapLatLng(item.coords), {
+          icon: createRoutePointIcon(String(index + 1)),
+          zIndexOffset: 920
+        })
+        .addTo(mapPlannerLayerGroup)
+        .bindPopup(`<div><div class="map-popup-title">${index + 1}. ${escapeHtml(item.title)}</div><div class="map-popup-desc">${escapeHtml(getMapPlannerDetail(item.id).stay)} · ${escapeHtml(getMapPlannerDetail(item.id).area)}</div><button class="map-popup-nav" onclick="openMapPlannerNavigation('${escapeJsString(item.id)}')">按偏好导航到此站</button></div>`);
+      });
+    }
+
+    function fitMapPlannerBounds(latLngs, options = {}) {
+      if (options.fitBounds === false || !latLngs.length) return;
+      if (latLngs.length === 1) {
+        heritageMap.setView(latLngs[0], 13, { animate: true });
+        return;
+      }
+      const plannerPanel = document.getElementById('map-planner-panel');
+      const desktopPlannerOpen = window.matchMedia('(min-width: 768px)').matches
+        && plannerPanel
+        && !plannerPanel.classList.contains('is-collapsed');
+      heritageMap.fitBounds(L.latLngBounds(latLngs), {
+        paddingTopLeft: [28, 68],
+        paddingBottomRight: desktopPlannerOpen ? [390, 42] : [28, 42],
+        maxZoom: 13,
+        animate: true
+      });
+    }
+
+    function renderPlannedRouteStatus(result) {
+      const labels = { transit: '公交地铁', car: '驾车', walk: '步行' };
+      const minutes = Math.max(1, Math.ceil((Number(result.duration) || 0) / 60));
+      const distance = Number(result.distance) || 0;
+      const distanceLabel = distance < 1000 ? `${Math.round(distance)} 米` : `${(distance / 1000).toFixed(1)} 公里`;
+      const instructions = (result.legs || [])
+        .flatMap(leg => (leg.steps || []).map(step => step.instruction))
+        .filter(Boolean)
+        .slice(0, 6);
+      setMapPlannerRouteStatus(`
+        <div class="font-black">高德实时路线 · ${escapeHtml(labels[result.mode] || result.mode)} · 约 ${minutes} 分钟 · ${escapeHtml(distanceLabel)}</div>
+        ${instructions.length ? `<ol class="mt-1.5 space-y-1 border-t border-emerald-200 pt-1.5">${instructions.map((instruction, index) => `<li><span class="mr-1 font-black">${index + 1}.</span>${escapeHtml(instruction)}</li>`).join('')}</ol>` : ''}
+      `, 'success');
+    }
+
+    async function previewMapPlannerRoute(options = {}) {
       if (!heritageMap || typeof L === 'undefined') return;
       clearMapRouteLayers();
       closeMapRoutePanel();
@@ -3730,32 +3811,51 @@
           lineCap: 'round'
         }).addTo(mapPlannerLayerGroup);
       }
-      items.forEach((item, index) => {
-        L.marker(getStaticMapLatLng(item.coords), {
-          icon: createRoutePointIcon(String(index + 1)),
-          zIndexOffset: 920
-        })
-        .addTo(mapPlannerLayerGroup)
-        .bindPopup(`<div><div class="map-popup-title">${index + 1}. ${escapeHtml(item.title)}</div><div class="map-popup-desc">${escapeHtml(getMapPlannerDetail(item.id).stay)} · ${escapeHtml(getMapPlannerDetail(item.id).area)}</div><button class="map-popup-nav" onclick="openMapPlannerNavigation('${escapeJsString(item.id)}')">按偏好导航到此站</button></div>`);
-      });
-      if (options.fitBounds !== false) {
-        if (latLngs.length === 1) {
-          heritageMap.setView(latLngs[0], 13, { animate: true });
-        } else {
-          const plannerPanel = document.getElementById('map-planner-panel');
-          const desktopPlannerOpen = window.matchMedia('(min-width: 768px)').matches
-            && plannerPanel
-            && !plannerPanel.classList.contains('is-collapsed');
-          heritageMap.fitBounds(L.latLngBounds(latLngs), {
-            paddingTopLeft: [28, 68],
-            paddingBottomRight: desktopPlannerOpen ? [390, 42] : [28, 42],
-            maxZoom: 12,
-            animate: true
-          });
-        }
-      }
+      drawMapPlannerPoints(items);
+      fitMapPlannerBounds(latLngs, options);
       if (window.matchMedia('(max-width: 767px)').matches) toggleMapPlanner(false);
-      if (!options.silent) showToast('已按你的顺序标出点位，虚线表示游览顺序', 'route');
+      if (options.silent) {
+        setMapPlannerRouteStatus('路线顺序已更新；点击“地图预览”重新计算真实道路路线。');
+        return;
+      }
+
+      const routePoints = buildMapPlannerRoutePoints(items);
+      if (routePoints.length < 2) {
+        setMapPlannerRouteStatus('已标出当前点位。再加入一个点位，或允许定位后，即可计算真实路线。');
+        showToast('已在地图标出点位', 'map-pin');
+        return;
+      }
+      if (typeof window.planCloudRoute !== 'function') {
+        setMapPlannerRouteStatus('云端路线模块尚未加载，当前以虚线展示游览顺序。', 'error');
+        showToast('当前以虚线展示游览顺序', 'route');
+        return;
+      }
+
+      const requestId = ++mapPlannerRouteRequestId;
+      setMapPlannerRouteStatus('<span class="font-bold">正在通过高德计算真实道路路线…</span>');
+      showToast('正在计算真实道路路线', 'route');
+      try {
+        const result = await window.planCloudRoute({ mode: mapPlannerMode, points: routePoints });
+        if (requestId !== mapPlannerRouteRequestId) return;
+        const routeLatLngs = (result.polyline || []).map(coords => getStaticMapLatLng(coords));
+        if (routeLatLngs.length < 2) throw new Error('高德未返回可绘制的道路路线');
+        clearMapPlannerPreview();
+        L.polyline(routeLatLngs, {
+          color: '#2C4C4E',
+          weight: 5,
+          opacity: 0.94,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(mapPlannerLayerGroup);
+        drawMapPlannerPoints(items);
+        fitMapPlannerBounds(routeLatLngs, options);
+        renderPlannedRouteStatus(result);
+        showToast('真实道路路线已生成', 'route');
+      } catch (error) {
+        if (requestId !== mapPlannerRouteRequestId) return;
+        setMapPlannerRouteStatus(`${escapeHtml(error.message || '路线服务暂时不可用')}；已保留虚线顺序图，你仍可逐站打开导航。`, 'error');
+        showToast('真实路线生成失败，已保留顺序图', 'alert-circle');
+      }
     }
 
     function openMapPlannerNavigation(id) {
@@ -4376,9 +4476,11 @@
       return pathCoords;
     }
 
-    function addRouteDirectionMarkers(pathCoords, color, isSelected) {
-      if (!isSelected || !Array.isArray(pathCoords) || pathCoords.length < 2) return;
-      for (let index = 1; index < pathCoords.length; index += 2) {
+    function addRouteDirectionMarkers(pathCoords, color, isSelected, targetLayer = mapRouteLayerGroup) {
+      if (!isSelected || !targetLayer || !Array.isArray(pathCoords) || pathCoords.length < 2) return;
+      const maximumMarkers = 6;
+      const step = Math.max(1, Math.ceil((pathCoords.length - 1) / maximumMarkers));
+      for (let index = step; index < pathCoords.length; index += step) {
         const startCoords = pathCoords[index - 1];
         const endCoords = pathCoords[index];
         const middleCoords = interpolateRouteCoord(startCoords, endCoords, 0.5);
@@ -4386,7 +4488,7 @@
           icon: createRouteArrowIcon(color, getRouteBearing(startCoords, endCoords)),
           interactive: false,
           zIndexOffset: 780
-        }).addTo(mapRouteLayerGroup);
+        }).addTo(targetLayer);
       }
     }
 
