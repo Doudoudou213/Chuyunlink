@@ -63,6 +63,79 @@
       height: 100%;
       z-index: 0;
     }
+    #map-planner-panel {
+      position: absolute;
+      top: 58px;
+      right: 16px;
+      bottom: 16px;
+      z-index: 405;
+      width: min(370px, calc(100% - 32px));
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(197, 168, 128, 0.38);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: 0 20px 48px rgba(44, 76, 78, 0.22);
+      backdrop-filter: blur(12px);
+      transition: transform 220ms ease, opacity 220ms ease;
+    }
+    #map-planner-panel.is-collapsed {
+      transform: translateX(calc(100% + 28px));
+      opacity: 0;
+      pointer-events: none;
+    }
+    #map-planner-scroll {
+      min-height: 0;
+      min-width: 0;
+      width: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+    }
+    .planner-point-strip::-webkit-scrollbar,
+    #map-planner-scroll::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .planner-point-strip::-webkit-scrollbar-thumb,
+    #map-planner-scroll::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(44, 76, 78, 0.22);
+    }
+    .planner-route-item[draggable="true"] {
+      cursor: grab;
+    }
+    .planner-route-item.is-dragging {
+      opacity: 0.45;
+    }
+    @media (min-width: 768px) {
+      body.map-planner-visible #map-route-panel {
+        right: 402px;
+      }
+      body.map-planner-visible #landmark-drawer {
+        right: 402px;
+      }
+    }
+    @media (max-width: 767px) {
+      #map-planner-panel {
+        top: auto;
+        right: 8px;
+        bottom: 8px;
+        left: 8px;
+        width: auto;
+        max-height: min(72vh, 620px);
+        border-radius: 20px 20px 16px 16px;
+      }
+      #map-planner-panel.is-collapsed {
+        transform: translateY(calc(100% + 20px));
+      }
+      body.map-planner-visible #map-route-panel,
+      body.map-planner-visible #landmark-drawer {
+        display: none;
+      }
+    }
     .leaflet-container {
       font-family: 'Noto Sans SC', sans-serif;
       background: #e7e5df;
@@ -591,10 +664,71 @@
             <div id="map-source-label" class="bg-white/95 text-[10px] text-stone-700 px-2 py-1 rounded-lg shadow border border-stone-200">
               真实地图：高德在线瓦片
             </div>
-            <button type="button" onclick="refreshGPS()" class="pointer-events-auto bg-deepTeal text-sandGold px-2 py-1 rounded-lg shadow text-[10px] font-bold flex items-center">
-              <i data-lucide="locate-fixed" class="w-3 h-3 mr-1"></i> 定位
-            </button>
+            <div class="pointer-events-auto flex items-center gap-2">
+              <button type="button" onclick="toggleMapPlanner()" class="flex items-center rounded-lg border border-stone-200 bg-white/95 px-2.5 py-1.5 text-[10px] font-black text-deepTeal shadow">
+                <i data-lucide="route" class="mr-1 h-3.5 w-3.5"></i> 行程篮 <span id="map-planner-count" class="ml-1 rounded-full bg-sandGold/25 px-1.5 text-[9px]">0</span>
+              </button>
+              <button type="button" onclick="refreshGPS()" class="bg-deepTeal text-sandGold px-2.5 py-1.5 rounded-lg shadow text-[10px] font-bold flex items-center">
+                <i data-lucide="locate-fixed" class="w-3 h-3 mr-1"></i> 定位
+              </button>
+            </div>
           </div>
+
+          <!-- 自选点位与路线规划侧栏；移动端自动变为底部抽屉 -->
+          <aside id="map-planner-panel" aria-label="自选点位路线规划">
+            <div class="flex shrink-0 items-start justify-between gap-3 border-b border-stone-200 px-4 py-3">
+              <div>
+                <p class="text-[9px] font-black uppercase tracking-[0.18em] text-sandGold">Trip Builder</p>
+                <h3 class="cultural-font mt-0.5 text-base font-bold text-deepTeal">自选探索路线</h3>
+                <p class="mt-0.5 text-[10px] text-stone-500">挑选点位并安排自己的前往顺序</p>
+              </div>
+              <button type="button" onclick="toggleMapPlanner(false)" class="rounded-lg border border-stone-200 bg-stone-50 p-1.5 text-stone-500" aria-label="收起路线规划">
+                <i data-lucide="x" class="h-4 w-4"></i>
+              </button>
+            </div>
+
+            <div id="map-planner-scroll" class="flex-1 px-4 py-3 text-stone-700">
+              <section>
+                <div class="flex items-center justify-between">
+                  <h4 class="text-xs font-black text-stone-800">选择点位</h4>
+                  <span class="text-[9px] text-stone-400">点击查看具体内容</span>
+                </div>
+                <div id="map-planner-point-strip" class="planner-point-strip mt-2 flex gap-2 overflow-x-auto pb-1"></div>
+              </section>
+
+              <section id="map-planner-detail" class="mt-3 rounded-2xl border border-stone-200 bg-stone-50 p-3"></section>
+
+              <section class="mt-4 border-t border-stone-200 pt-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <h4 class="text-xs font-black text-stone-800">我的前往顺序</h4>
+                    <p class="mt-0.5 text-[9px] text-stone-400">拖动卡片，或使用上下按钮调整</p>
+                  </div>
+                  <button type="button" onclick="clearMapPlannerRoute()" class="text-[9px] font-bold text-stone-400 hover:text-cinnabarRed">清空</button>
+                </div>
+                <div id="map-planner-route-list" class="mt-2 space-y-2"></div>
+              </section>
+
+              <section class="mt-4 rounded-xl border border-sandGold/30 bg-sandGold/5 p-3">
+                <div class="flex items-center justify-between gap-2">
+                  <h4 class="text-xs font-black text-deepTeal">交通偏好</h4>
+                  <span class="text-[9px] text-stone-400">影响打开导航的方式</span>
+                </div>
+                <div id="map-planner-mode-options" class="mt-2 grid grid-cols-3 gap-1.5"></div>
+                <p class="mt-2 text-[9px] leading-relaxed text-stone-500">当前阶段提供点位顺序与逐站导航；实时公交、地铁换乘和 AI 行程说明将在地图路线服务接入后生成。</p>
+              </section>
+            </div>
+
+            <div class="grid shrink-0 grid-cols-2 gap-2 border-t border-stone-200 bg-white px-4 py-3">
+              <button type="button" onclick="previewMapPlannerRoute()" class="rounded-xl border border-deepTeal bg-white py-2 text-[11px] font-black text-deepTeal">
+                地图预览
+              </button>
+              <button type="button" onclick="startMapPlannerRoute()" class="rounded-xl bg-deepTeal py-2 text-[11px] font-black text-sandGold">
+                导航第一站
+              </button>
+            </div>
+          </aside>
+
           <div id="map-route-panel" class="pointer-events-auto hidden absolute bottom-4 left-3 right-3 z-[402] rounded-2xl border border-stone-200 bg-white/95 p-3 shadow-2xl backdrop-blur-sm">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
@@ -607,6 +741,7 @@
               </button>
             </div>
             <div id="map-route-options" class="mt-2 flex gap-2 overflow-x-auto pb-1"></div>
+            <p class="mt-2 text-[9px] leading-relaxed text-stone-400">地图线仅表示游览顺序；点击编号点位，再用“导航到这一站”获取真实道路引导。</p>
           </div>
           <!-- 伪造背景图 (以地图线条 and 地标模拟) -->
           <svg class="hidden absolute inset-0 w-full h-full text-stone-300 stroke-2 bg-stone-100" xmlns="http://www.w3.org/2000/svg">
@@ -1945,8 +2080,16 @@
       initializeDailyCommunityQuiz();
       initializeQuickLearning();
       renderCommunityRouteCard();
+      initializeMapPlanner();
       initHeritageMap();
       loadApprovedSubmissionFeed();
+      const requestedView = new URLSearchParams(window.location.search).get('view');
+      if (['discover', 'map', 'collect', 'community', 'profile'].includes(requestedView)) {
+        switchTab(requestedView);
+      }
+      if (new URLSearchParams(window.location.search).get('planner') === 'open') {
+        toggleMapPlanner(true);
+      }
     });
 
     // 真实地图瓦片配置
@@ -1954,6 +2097,8 @@
       tileUrl: 'https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}',
       attribution: '&copy; 高德地图',
       coordinateSystem: 'gcj02',
+      // 静态点位按高德地图选点结果保存，已经是 GCJ-02；浏览器 GPS 才是 WGS84。
+      dataCoordinateSystem: 'gcj02',
       minZoom: 6,
       maxZoom: 18,
       maxNativeZoom: 18,
@@ -2003,18 +2148,22 @@
       return [latitude + dLat, longitude + dLng];
     }
 
-    function getMapLatLng(coords) {
+    function getMapLatLng(coords, sourceCoordinateSystem = 'wgs84') {
       if (!Array.isArray(coords)) return coords;
       const [latitude, longitude] = coords;
-      if (heritageMapConfig.coordinateSystem === 'gcj02') {
+      if (heritageMapConfig.coordinateSystem === 'gcj02' && sourceCoordinateSystem === 'wgs84') {
         return wgs84ToGcj02(latitude, longitude);
       }
       return [latitude, longitude];
     }
 
+    function getStaticMapLatLng(coords) {
+      return getMapLatLng(coords, heritageMapConfig.dataCoordinateSystem || 'gcj02');
+    }
+
     function getMapBounds(bounds) {
       if (!Array.isArray(bounds)) return bounds;
-      return bounds.map(point => getMapLatLng(point));
+      return bounds.map(point => getStaticMapLatLng(point));
     }
 
     const heritageLandmarks = [
@@ -2050,7 +2199,7 @@
         title: '武汉黄鹤楼周边碑刻',
         desc: '待用户探索：补充碑刻纹样、题刻与周边口述资料',
         points: 60,
-        coords: [30.5465, 114.3026],
+        coords: [30.5442, 114.3062],
         status: 'explore',
         label: '探索'
       },
@@ -2100,13 +2249,84 @@
         label: '探索'
       }
     ];
+    const mapPlannerDetails = {
+      'zenghou-archway': {
+        area: '随州 · 曾都',
+        stay: '建议停留 45–60 分钟',
+        access: ['城区公交/出租车', '网约车', '末段步行'],
+        collect: ['牌楼整体与周边环境', '榫卯、构件和纹样细节', '裂损位置与保存状态'],
+        arrival: '建议先在外围确认安全范围，再按“全景—构件—损伤”顺序记录。'
+      },
+      'wudang-stone-niche': {
+        area: '十堰 · 武当山',
+        stay: '建议停留 60–90 分钟',
+        access: ['景区接驳', '索道/步行游线', '网约车至游客中心'],
+        collect: ['石龛整体形制', '题记和装饰纹样', '环境关系与保护说明'],
+        arrival: '山地游线受景区开放安排影响，先到游客中心确认当日接驳与开放范围。'
+      },
+      'pengjiazhai-stilt-house': {
+        area: '恩施 · 宣恩',
+        stay: '建议停留 90–120 分钟',
+        access: ['县城客运/旅游接驳', '自驾', '景区内步行'],
+        collect: ['吊脚楼聚落全景', '穿斗、柱础和榫卯细节', '经同意的生活口述'],
+        arrival: '先拍聚落空间关系，再进入开放区域记录建筑细节；不要打扰居民生活。'
+      },
+      'yellow-crane-tower': {
+        area: '武汉 · 武昌',
+        stay: '建议停留 60–90 分钟',
+        access: ['地铁 + 步行', '城市公交', '网约车/出租车'],
+        collect: ['园区导览图', '碑刻、题记与纹样', '建筑与城市空间关系'],
+        arrival: '从开放入口进入后先看园区导览，再按碑廊—题刻—建筑细部完成采集。'
+      },
+      'hubei-museum': {
+        area: '武汉 · 东湖',
+        stay: '建议停留 90–150 分钟',
+        access: ['地铁/公交 + 步行', '城市公交', '网约车/出租车'],
+        collect: ['馆外公共导览', '楚文化传播线索', '周边公共文化设施'],
+        arrival: '馆内拍摄以现场规定为准；本任务优先补充馆外导览和公共文化信息。'
+      },
+      'mingxianling': {
+        area: '荆门 · 钟祥',
+        stay: '建议停留 90–120 分钟',
+        access: ['城区公交/旅游接驳', '出租车/网约车', '景区内步行'],
+        collect: ['神道节点顺序', '石像生细节', '现场保护与导览信息'],
+        arrival: '按神道游览顺序连续记录，照片中保留方位与前后节点关系。'
+      },
+      'chibi-ancient-battlefield': {
+        area: '咸宁 · 赤壁',
+        stay: '建议停留 90–120 分钟',
+        access: ['旅游接驳', '自驾', '出租车/网约车'],
+        collect: ['摩崖题刻与环境', '古战场导览节点', '空间关系和游客叙事'],
+        arrival: '先确认开放游线和题刻位置，避免把现代景观说明误作历史证据。'
+      },
+      'three-gorges-dam': {
+        area: '宜昌 · 夷陵',
+        stay: '建议停留 120–180 分钟',
+        access: ['旅游专线/大巴', '自驾换乘', '景区接驳'],
+        collect: ['工程记忆与时间线', '移民叙事线索', '观景点与公共导览'],
+        arrival: '坝区可能实行预约、换乘和安检，请以当天官方开放与交通安排为准。'
+      },
+      'shennongjia-muyu': {
+        area: '神农架 · 木鱼镇',
+        stay: '建议停留 60–120 分钟',
+        access: ['城际客运', '自驾', '镇区步行/出租车'],
+        collect: ['山地民俗与地方物候', '经同意的口述资料', '镇区文化标识'],
+        arrival: '口述录音前先征得同意，并记录时间、地点及内容是否需要匿名。'
+      }
+    };
+    const MAP_PLANNER_STORAGE_KEY = 'chulink-map-planner-v1';
     let heritageMap = null;
     let userLocationMarker = null;
     let mapRouteLayerGroup = null;
+    let mapPlannerLayerGroup = null;
     let mapRoutePanelActive = false;
     let activeLandmark = heritageLandmarks[0];
     let activeCommunityRoute = null;
     let activeMapRouteId = null;
+    let mapPlannerSelectedIds = [];
+    let mapPlannerActiveId = heritageLandmarks[0].id;
+    let mapPlannerMode = 'transit';
+    let mapPlannerDraggingId = null;
 
     const communityRoutePlans = [
       {
@@ -2118,9 +2338,29 @@
         duration: '约 3h',
         badge: '都市文脉',
         steps: [
-          { title: '省博曾侯乙', desc: '看编钟与楚式纹样', landmarkId: 'hubei-museum' },
-          { title: '东湖导览线索', desc: '记录公共文化节点', landmarkId: 'hubei-museum' },
-          { title: '黄鹤楼碑刻', desc: '补采题刻与纹样', landmarkId: 'yellow-crane-tower' }
+          {
+            title: '湖北省博物馆',
+            desc: '先看曾侯乙编钟与楚式纹样，建立今天的观察线索。',
+            landmarkId: 'hubei-museum',
+            coords: [30.5619, 114.3679],
+            stay: '建议 70 分钟',
+            guide: '优先看曾侯乙展厅；拍摄前先确认馆内规定，记录纹样名称而不是只拍全景。'
+          },
+          {
+            title: '东湖听涛片区',
+            desc: '沿湖观察公共导览、纪念性景观与城市文化表达。',
+            coords: [30.5684, 114.3798],
+            stay: '建议 45 分钟',
+            guide: '从省博一侧进入听涛片区，重点记录导览牌、地名故事和公共文化设施。'
+          },
+          {
+            title: '黄鹤楼公园',
+            desc: '以碑廊和题刻为重点，补充纹样、文字与现场空间关系。',
+            landmarkId: 'yellow-crane-tower',
+            coords: [30.5442, 114.3062],
+            stay: '建议 60 分钟',
+            guide: '到达后先看园区导览图，再按碑廊—题刻—建筑细部的顺序采集，避免遗漏位置关系。'
+          }
         ],
         services: {
           food: {
@@ -2144,9 +2384,9 @@
         duration: '约 4h',
         badge: '峡江文化',
         steps: [
-          { title: '三峡坝区节点', desc: '记录工程叙事', landmarkId: 'three-gorges-dam' },
-          { title: '游客中心周边', desc: '补充导览与口述', landmarkId: 'three-gorges-dam' },
-          { title: '上传现场资料', desc: '整理照片/音频入链', action: 'collect' }
+          { title: '三峡坝区节点', desc: '先了解工程背景，再记录展陈如何讲述峡江变迁。', landmarkId: 'three-gorges-dam', stay: '建议 90 分钟', guide: '先看总览与时间线，再拍摄可公开记录的导览信息。' },
+          { title: '游客中心周边', desc: '在同一游览区内补充导览、交通与游客口述线索。', landmarkId: 'three-gorges-dam', onsite: true, stay: '建议 40 分钟', guide: '这是景区内任务，不单独生成一个虚假地图点；沿现场开放路线完成即可。' },
+          { title: '整理并上传', desc: '离开前检查照片、音频和地点备注是否能相互对应。', action: 'collect', onsite: true, stay: '约 15 分钟', guide: '至少保留一张环境全景、一张细节和一段文字说明。' }
         ],
         services: {
           food: {
@@ -2170,9 +2410,9 @@
         duration: '约 3h',
         badge: '山地民俗',
         steps: [
-          { title: '木鱼镇民俗点', desc: '记录地方口述', landmarkId: 'shennongjia-muyu' },
-          { title: '镇区服务节点', desc: '补充导览与标识', landmarkId: 'shennongjia-muyu' },
-          { title: '上传口述摘要', desc: '整理音频与备注', action: 'collect' }
+          { title: '木鱼镇民俗点', desc: '从当地人的生活线索开始，记录地名、物候与地方口述。', landmarkId: 'shennongjia-muyu', stay: '建议 60 分钟', guide: '录音前先征得同意，并同步记下讲述者、时间和大致地点。' },
+          { title: '镇区服务节点', desc: '在镇区步行观察导览标识与地方文化表达。', landmarkId: 'shennongjia-muyu', onsite: true, stay: '建议 40 分钟', guide: '这是镇区内探索任务，优先记录有明确出处的文字和实物。' },
+          { title: '整理口述摘要', desc: '将录音整理成可检索的关键词和简短摘要。', action: 'collect', onsite: true, stay: '约 20 分钟', guide: '避免上传敏感个人信息；不确定的内容标为“待核实”。' }
         ],
         services: {
           food: {
@@ -2196,9 +2436,9 @@
         duration: '约 3.5h',
         badge: '土家建筑',
         steps: [
-          { title: '彭家寨吊脚楼', desc: '拍外立面和榫卯', landmarkId: 'pengjiazhai-stilt-house' },
-          { title: '廊桥与耍耍街', desc: '补充空间关系', landmarkId: 'pengjiazhai-stilt-house' },
-          { title: '上传建筑线索', desc: '整理全貌与细节', action: 'collect' }
+          { title: '彭家寨吊脚楼', desc: '先从聚落全貌进入，再观察外立面与结构构件。', landmarkId: 'pengjiazhai-stilt-house', stay: '建议 70 分钟', guide: '先拍全貌和相邻关系，再拍柱础、穿斗与榫卯细节。' },
+          { title: '廊桥与村寨空间', desc: '沿开放步道补充建筑之间的空间关系。', landmarkId: 'pengjiazhai-stilt-house', onsite: true, stay: '建议 50 分钟', guide: '这是村寨内步行任务；用连续照片说明“从哪里走到哪里”。' },
+          { title: '整理建筑线索', desc: '将全景、构件细节和位置说明配对上传。', action: 'collect', onsite: true, stay: '约 20 分钟', guide: '不确定的建筑年代不要猜测，可提交给管理员继续核验。' }
         ],
         services: {
           food: {
@@ -2222,9 +2462,9 @@
         duration: '约 2.5h',
         badge: '曾侯遗韵',
         steps: [
-          { title: '曾侯遗韵牌楼', desc: '拍构件和裂损', landmarkId: 'zenghou-archway' },
-          { title: '周边纹样线索', desc: '记录位置和尺度', landmarkId: 'zenghou-archway' },
-          { title: '上传复核资料', desc: '补标题和保存状态', action: 'collect' }
+          { title: '曾侯遗韵牌楼', desc: '从整体形制开始，记录构件与可见保存状态。', landmarkId: 'zenghou-archway', stay: '建议 50 分钟', guide: '保持安全距离，先拍正立面，再记录裂损所在构件和方向。' },
+          { title: '周边纹样线索', desc: '在同一现场补充纹样的位置、尺度与上下文。', landmarkId: 'zenghou-archway', onsite: true, stay: '建议 35 分钟', guide: '放入可比较尺度的参照物，但不要触碰或攀爬构件。' },
+          { title: '上传复核资料', desc: '补充标题、方位、保存状态与待核实问题。', action: 'collect', onsite: true, stay: '约 15 分钟', guide: '把观察事实和个人判断分开填写，方便管理员复核。' }
         ],
         services: {
           food: {
@@ -3195,6 +3435,344 @@
       // 正式数据由 static/cloudbase-app.js 通过 appCore 云函数加载。
     }
 
+    function initializeMapPlanner() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(MAP_PLANNER_STORAGE_KEY) || '{}');
+        if (Array.isArray(saved.selectedIds)) {
+          mapPlannerSelectedIds = saved.selectedIds.filter(id => heritageLandmarks.some(item => item.id === id)).slice(0, 8);
+        }
+        if (heritageLandmarks.some(item => item.id === saved.activeId)) mapPlannerActiveId = saved.activeId;
+        if (['transit', 'car', 'walk'].includes(saved.mode)) mapPlannerMode = saved.mode;
+      } catch (error) {
+        mapPlannerSelectedIds = [];
+      }
+
+      const shouldOpen = window.matchMedia('(min-width: 768px)').matches;
+      toggleMapPlanner(shouldOpen);
+      renderMapPlanner();
+    }
+
+    function saveMapPlannerState() {
+      localStorage.setItem(MAP_PLANNER_STORAGE_KEY, JSON.stringify({
+        selectedIds: mapPlannerSelectedIds,
+        activeId: mapPlannerActiveId,
+        mode: mapPlannerMode
+      }));
+    }
+
+    function toggleMapPlanner(forceOpen) {
+      const panel = document.getElementById('map-planner-panel');
+      if (!panel) return;
+      const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : panel.classList.contains('is-collapsed');
+      panel.classList.toggle('is-collapsed', !shouldOpen);
+      document.body.classList.toggle('map-planner-visible', shouldOpen);
+      if (shouldOpen) renderMapPlanner();
+      if (heritageMap) setTimeout(() => heritageMap.invalidateSize(), 240);
+    }
+
+    function getMapPlannerDetail(id) {
+      return mapPlannerDetails[id] || {
+        area: '湖北',
+        stay: '建议停留 45–60 分钟',
+        access: ['公共交通 + 步行', '网约车/出租车'],
+        collect: ['地点全景', '文化细节', '位置与现场说明'],
+        arrival: '到达后先确认开放范围和拍摄规定，再完成现场记录。'
+      };
+    }
+
+    function getMapPlannerStatus(item) {
+      if (item.status === 'verified') return { label: '已认证', classes: 'bg-emerald-100 text-emerald-800' };
+      if (item.status === 'pending') return { label: '急需采集', classes: 'bg-red-50 text-cinnabarRed' };
+      return { label: '待探索', classes: 'bg-amber-50 text-amber-800' };
+    }
+
+    function renderMapPlannerPointStrip() {
+      const container = document.getElementById('map-planner-point-strip');
+      if (!container) return;
+      container.innerHTML = heritageLandmarks.map(item => {
+        const active = item.id === mapPlannerActiveId;
+        const selected = mapPlannerSelectedIds.includes(item.id);
+        return `
+          <button type="button" onclick="selectMapPlannerPoint('${escapeJsString(item.id)}')" class="min-w-[112px] rounded-xl border p-2 text-left transition-colors ${active ? 'border-deepTeal bg-deepTeal text-white' : 'border-stone-200 bg-white text-stone-700'}">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[9px] font-bold ${active ? 'text-sandGold' : 'text-stone-400'}">${escapeHtml(getMapPlannerDetail(item.id).area)}</span>
+              ${selected ? `<span class="flex h-4 w-4 items-center justify-center rounded-full ${active ? 'bg-sandGold text-deepTeal' : 'bg-deepTeal text-sandGold'} text-[9px] font-black">${mapPlannerSelectedIds.indexOf(item.id) + 1}</span>` : ''}
+            </div>
+            <p class="mt-1 line-clamp-2 text-[10px] font-black leading-snug">${escapeHtml(item.title)}</p>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderMapPlannerDetail() {
+      const container = document.getElementById('map-planner-detail');
+      const item = heritageLandmarks.find(point => point.id === mapPlannerActiveId) || heritageLandmarks[0];
+      if (!container || !item) return;
+      const detail = getMapPlannerDetail(item.id);
+      const status = getMapPlannerStatus(item);
+      const selected = mapPlannerSelectedIds.includes(item.id);
+      const distance = currentLocation && currentLocation.isReal
+        ? getDistanceBetweenCoords(currentLocation, item.coords)
+        : null;
+      container.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="rounded-full px-2 py-0.5 text-[9px] font-bold ${status.classes}">${status.label}</span>
+              <span class="text-[9px] font-bold text-stone-400">${escapeHtml(detail.area)}</span>
+              ${distance ? `<span class="text-[9px] font-bold text-deepTeal">距你约 ${distance}km</span>` : ''}
+            </div>
+            <h4 class="cultural-font mt-1.5 text-sm font-bold text-stone-800">${escapeHtml(item.title)}</h4>
+            <p class="mt-1 text-[10px] leading-relaxed text-stone-500">${escapeHtml(item.desc)}</p>
+          </div>
+          <span class="shrink-0 rounded-lg bg-sandGold/15 px-2 py-1 text-[9px] font-black text-deepTeal">+${Number(item.points || 0)} 积分</span>
+        </div>
+
+        <div class="mt-3 grid grid-cols-2 gap-2">
+          <div class="rounded-xl border border-stone-200 bg-white p-2.5">
+            <p class="flex items-center text-[10px] font-black text-deepTeal"><i data-lucide="bus-front" class="mr-1 h-3.5 w-3.5"></i>怎么到达</p>
+            <div class="mt-1.5 flex flex-wrap gap-1">${detail.access.map(mode => `<span class="rounded bg-stone-100 px-1.5 py-1 text-[9px] font-bold text-stone-600">${escapeHtml(mode)}</span>`).join('')}</div>
+          </div>
+          <div class="rounded-xl border border-stone-200 bg-white p-2.5">
+            <p class="flex items-center text-[10px] font-black text-deepTeal"><i data-lucide="clock-3" class="mr-1 h-3.5 w-3.5"></i>游览时间</p>
+            <p class="mt-1.5 text-[9px] font-bold leading-relaxed text-stone-600">${escapeHtml(detail.stay)}</p>
+          </div>
+        </div>
+
+        <div class="mt-2 rounded-xl border border-stone-200 bg-white p-2.5">
+          <p class="flex items-center text-[10px] font-black text-deepTeal"><i data-lucide="camera" class="mr-1 h-3.5 w-3.5"></i>这里可以收集</p>
+          <ul class="mt-1.5 space-y-1">${detail.collect.map(content => `<li class="flex gap-1.5 text-[9px] leading-relaxed text-stone-600"><span class="mt-1 h-1 w-1 shrink-0 rounded-full bg-sandGold"></span>${escapeHtml(content)}</li>`).join('')}</ul>
+        </div>
+        <p class="mt-2 rounded-lg bg-sandGold/10 px-2.5 py-2 text-[9px] leading-relaxed text-stone-600"><span class="font-black text-deepTeal">到达提示：</span>${escapeHtml(detail.arrival)}</p>
+
+        <div class="mt-3 grid grid-cols-2 gap-2">
+          <button type="button" onclick="openMapPlannerNavigation('${escapeJsString(item.id)}')" class="rounded-lg border border-deepTeal bg-white py-2 text-[10px] font-black text-deepTeal">直接导航</button>
+          <button type="button" onclick="${selected ? `removeMapPlannerPoint('${escapeJsString(item.id)}')` : `addMapPlannerPoint('${escapeJsString(item.id)}')`}" class="rounded-lg ${selected ? 'bg-stone-200 text-stone-600' : 'bg-deepTeal text-sandGold'} py-2 text-[10px] font-black">${selected ? '移出路线' : '加入我的路线'}</button>
+        </div>
+      `;
+    }
+
+    function getMapPlannerRouteDistance() {
+      if (mapPlannerSelectedIds.length < 2) return 0;
+      let total = 0;
+      for (let index = 1; index < mapPlannerSelectedIds.length; index += 1) {
+        const previous = heritageLandmarks.find(item => item.id === mapPlannerSelectedIds[index - 1]);
+        const current = heritageLandmarks.find(item => item.id === mapPlannerSelectedIds[index]);
+        if (previous && current) total += getDistanceBetweenLatLonPoints(previous.coords, current.coords);
+      }
+      return total;
+    }
+
+    function renderMapPlannerRouteList() {
+      const container = document.getElementById('map-planner-route-list');
+      const count = document.getElementById('map-planner-count');
+      if (count) count.innerText = String(mapPlannerSelectedIds.length);
+      if (!container) return;
+      if (!mapPlannerSelectedIds.length) {
+        container.innerHTML = '<div class="rounded-xl border border-dashed border-stone-300 bg-stone-50 px-3 py-4 text-center"><p class="text-[10px] font-bold text-stone-500">还没有选择点位</p><p class="mt-1 text-[9px] text-stone-400">从上方点位详情中加入，最多可选 8 个</p></div>';
+        return;
+      }
+      const distance = getMapPlannerRouteDistance();
+      container.innerHTML = `
+        ${mapPlannerSelectedIds.map((id, index) => {
+          const item = heritageLandmarks.find(point => point.id === id);
+          if (!item) return '';
+          return `
+            <div class="planner-route-item flex items-center gap-2 rounded-xl border border-stone-200 bg-white p-2 shadow-sm" draggable="true" data-planner-id="${escapeHtml(id)}" ondragstart="handleMapPlannerDragStart(event, '${escapeJsString(id)}')" ondragend="handleMapPlannerDragEnd(event)" ondragover="event.preventDefault()" ondrop="handleMapPlannerDrop(event, '${escapeJsString(id)}')">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-deepTeal text-[10px] font-black text-sandGold">${index + 1}</span>
+              <button type="button" onclick="selectMapPlannerPoint('${escapeJsString(id)}')" class="min-w-0 flex-1 text-left">
+                <p class="truncate text-[10px] font-black text-stone-800">${escapeHtml(item.title)}</p>
+                <p class="mt-0.5 truncate text-[9px] text-stone-400">${escapeHtml(getMapPlannerDetail(id).area)} · ${escapeHtml(getMapPlannerDetail(id).stay)}</p>
+              </button>
+              <div class="flex shrink-0 items-center gap-0.5">
+                <button type="button" onclick="moveMapPlannerPoint('${escapeJsString(id)}', -1)" class="rounded p-1 text-stone-400 hover:bg-stone-100" aria-label="前移"><i data-lucide="chevron-up" class="h-3 w-3"></i></button>
+                <button type="button" onclick="moveMapPlannerPoint('${escapeJsString(id)}', 1)" class="rounded p-1 text-stone-400 hover:bg-stone-100" aria-label="后移"><i data-lucide="chevron-down" class="h-3 w-3"></i></button>
+                <button type="button" onclick="removeMapPlannerPoint('${escapeJsString(id)}')" class="rounded p-1 text-stone-400 hover:bg-red-50 hover:text-cinnabarRed" aria-label="移除"><i data-lucide="x" class="h-3 w-3"></i></button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+        <p class="px-1 text-[9px] text-stone-400">${mapPlannerSelectedIds.length} 个点位${distance ? ` · 点位间直线距离约 ${Math.round(distance)}km` : ''}，实际路程以地图导航为准。</p>
+      `;
+    }
+
+    function renderMapPlannerModeOptions() {
+      const container = document.getElementById('map-planner-mode-options');
+      if (!container) return;
+      const options = [
+        { id: 'transit', label: '公交地铁', icon: 'bus-front' },
+        { id: 'car', label: '驾车', icon: 'car-front' },
+        { id: 'walk', label: '步行', icon: 'footprints' }
+      ];
+      container.innerHTML = options.map(option => `
+        <button type="button" onclick="setMapPlannerMode('${option.id}')" class="flex items-center justify-center rounded-lg border px-1.5 py-2 text-[9px] font-black ${mapPlannerMode === option.id ? 'border-deepTeal bg-deepTeal text-sandGold' : 'border-stone-200 bg-white text-stone-500'}">
+          <i data-lucide="${option.icon}" class="mr-1 h-3 w-3"></i>${option.label}
+        </button>
+      `).join('');
+    }
+
+    function renderMapPlanner() {
+      renderMapPlannerPointStrip();
+      renderMapPlannerDetail();
+      renderMapPlannerRouteList();
+      renderMapPlannerModeOptions();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function selectMapPlannerPoint(id, options = {}) {
+      const item = heritageLandmarks.find(point => point.id === id);
+      if (!item) return;
+      mapPlannerActiveId = id;
+      activeLandmark = item;
+      saveMapPlannerState();
+      toggleMapPlanner(true);
+      renderMapPlanner();
+      if (heritageMap && options.focusMap !== false) {
+        heritageMap.setView(getStaticMapLatLng(item.coords), Math.max(heritageMap.getZoom(), 12), { animate: true });
+      }
+    }
+
+    function addMapPlannerPoint(id) {
+      if (mapPlannerSelectedIds.includes(id)) return;
+      if (mapPlannerSelectedIds.length >= 8) {
+        showToast('一次路线最多选择 8 个点位', 'route');
+        return;
+      }
+      mapPlannerSelectedIds.push(id);
+      saveMapPlannerState();
+      renderMapPlanner();
+      showToast('已加入我的探索路线', 'map-pin-plus');
+    }
+
+    function removeMapPlannerPoint(id) {
+      mapPlannerSelectedIds = mapPlannerSelectedIds.filter(itemId => itemId !== id);
+      saveMapPlannerState();
+      renderMapPlanner();
+      previewMapPlannerRoute({ fitBounds: false, silent: true });
+    }
+
+    function clearMapPlannerRoute() {
+      mapPlannerSelectedIds = [];
+      saveMapPlannerState();
+      clearMapPlannerPreview();
+      renderMapPlanner();
+    }
+
+    function moveMapPlannerPoint(id, direction) {
+      const index = mapPlannerSelectedIds.indexOf(id);
+      const targetIndex = index + Number(direction);
+      if (index < 0 || targetIndex < 0 || targetIndex >= mapPlannerSelectedIds.length) return;
+      const next = [...mapPlannerSelectedIds];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      mapPlannerSelectedIds = next;
+      saveMapPlannerState();
+      renderMapPlanner();
+      previewMapPlannerRoute({ fitBounds: false, silent: true });
+    }
+
+    function handleMapPlannerDragStart(event, id) {
+      mapPlannerDraggingId = id;
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+      if (event.currentTarget) event.currentTarget.classList.add('is-dragging');
+    }
+
+    function handleMapPlannerDragEnd(event) {
+      mapPlannerDraggingId = null;
+      if (event.currentTarget) event.currentTarget.classList.remove('is-dragging');
+    }
+
+    function handleMapPlannerDrop(event, targetId) {
+      event.preventDefault();
+      if (!mapPlannerDraggingId || mapPlannerDraggingId === targetId) return;
+      const sourceIndex = mapPlannerSelectedIds.indexOf(mapPlannerDraggingId);
+      const targetIndex = mapPlannerSelectedIds.indexOf(targetId);
+      if (sourceIndex < 0 || targetIndex < 0) return;
+      const next = [...mapPlannerSelectedIds];
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      mapPlannerSelectedIds = next;
+      mapPlannerDraggingId = null;
+      saveMapPlannerState();
+      renderMapPlanner();
+      previewMapPlannerRoute({ fitBounds: false, silent: true });
+    }
+
+    function setMapPlannerMode(mode) {
+      if (!['transit', 'car', 'walk'].includes(mode)) return;
+      mapPlannerMode = mode;
+      saveMapPlannerState();
+      renderMapPlannerModeOptions();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function clearMapPlannerPreview() {
+      if (mapPlannerLayerGroup) mapPlannerLayerGroup.clearLayers();
+    }
+
+    function previewMapPlannerRoute(options = {}) {
+      if (!heritageMap || typeof L === 'undefined') return;
+      clearMapRouteLayers();
+      closeMapRoutePanel();
+      if (!mapPlannerLayerGroup) mapPlannerLayerGroup = L.layerGroup().addTo(heritageMap);
+      clearMapPlannerPreview();
+      const items = mapPlannerSelectedIds.map(id => heritageLandmarks.find(item => item.id === id)).filter(Boolean);
+      if (!items.length) {
+        if (!options.silent) showToast('请先选择至少一个点位', 'route');
+        return;
+      }
+      const latLngs = items.map(item => getStaticMapLatLng(item.coords));
+      if (latLngs.length > 1) {
+        L.polyline(latLngs, {
+          color: '#2C4C4E',
+          weight: 4,
+          opacity: 0.82,
+          dashArray: '10 8',
+          lineCap: 'round'
+        }).addTo(mapPlannerLayerGroup);
+      }
+      items.forEach((item, index) => {
+        L.marker(getStaticMapLatLng(item.coords), {
+          icon: createRoutePointIcon(String(index + 1)),
+          zIndexOffset: 920
+        })
+        .addTo(mapPlannerLayerGroup)
+        .bindPopup(`<div><div class="map-popup-title">${index + 1}. ${escapeHtml(item.title)}</div><div class="map-popup-desc">${escapeHtml(getMapPlannerDetail(item.id).stay)} · ${escapeHtml(getMapPlannerDetail(item.id).area)}</div><button class="map-popup-nav" onclick="openMapPlannerNavigation('${escapeJsString(item.id)}')">按偏好导航到此站</button></div>`);
+      });
+      if (options.fitBounds !== false) {
+        if (latLngs.length === 1) {
+          heritageMap.setView(latLngs[0], 13, { animate: true });
+        } else {
+          const plannerPanel = document.getElementById('map-planner-panel');
+          const desktopPlannerOpen = window.matchMedia('(min-width: 768px)').matches
+            && plannerPanel
+            && !plannerPanel.classList.contains('is-collapsed');
+          heritageMap.fitBounds(L.latLngBounds(latLngs), {
+            paddingTopLeft: [28, 68],
+            paddingBottomRight: desktopPlannerOpen ? [390, 42] : [28, 42],
+            maxZoom: 12,
+            animate: true
+          });
+        }
+      }
+      if (window.matchMedia('(max-width: 767px)').matches) toggleMapPlanner(false);
+      if (!options.silent) showToast('已按你的顺序标出点位，虚线表示游览顺序', 'route');
+    }
+
+    function openMapPlannerNavigation(id) {
+      const item = heritageLandmarks.find(point => point.id === id);
+      if (!item) return;
+      openLandmarkNavigation({ ...item, navigationMode: mapPlannerMode });
+    }
+
+    function startMapPlannerRoute() {
+      const firstId = mapPlannerSelectedIds[0];
+      if (!firstId) {
+        showToast('请先选择你的第一站', 'route');
+        return;
+      }
+      openMapPlannerNavigation(firstId);
+    }
+
     function createLandmarkPopup(item) {
       return `
         <div>
@@ -3218,7 +3796,7 @@
       heritageMap = L.map(mapEl, {
         zoomControl: false,
         attributionControl: true
-      }).setView(getMapLatLng(heritageMapConfig.initialCenter), heritageMapConfig.initialZoom);
+      }).setView(getStaticMapLatLng(heritageMapConfig.initialCenter), heritageMapConfig.initialZoom);
 
       L.control.zoom({ position: 'bottomright' }).addTo(heritageMap);
       const tileLayerOptions = {
@@ -3233,14 +3811,17 @@
       L.tileLayer(heritageMapConfig.tileUrl, tileLayerOptions).addTo(heritageMap);
 
       heritageLandmarks.forEach(item => {
-        L.marker(getMapLatLng(item.coords), {
+        L.marker(getStaticMapLatLng(item.coords), {
           icon: createHeritageIcon(item.status, item.label),
           title: item.title
         })
         .addTo(heritageMap)
         .bindPopup(createLandmarkPopup(item))
         .bindTooltip(item.title, { direction: 'top', offset: [0, -10] })
-        .on('click', () => focusLandmark(item));
+        .on('click', () => {
+          focusLandmark(item);
+          selectMapPlannerPoint(item.id, { focusMap: false });
+        });
       });
 
       if (heritageMapConfig.bounds) {
@@ -3310,6 +3891,7 @@
 
       if (tabId === 'map') {
         initHeritageMap();
+        renderMapPlanner();
         if (heritageMap) {
           setTimeout(() => heritageMap.invalidateSize(), 120);
         }
@@ -3374,11 +3956,14 @@
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
 
       const label = encodeURIComponent(item.title || '目的地');
-      const [mapLatitude, mapLongitude] = getMapLatLng(item.coords);
+      const [mapLatitude, mapLongitude] = getStaticMapLatLng(item.coords);
+      const requestedMode = item.navigationMode || 'car';
+      const amapMode = requestedMode === 'transit' ? 'bus' : requestedMode;
+      const appleMode = requestedMode === 'transit' ? 'r' : requestedMode === 'walk' ? 'w' : 'd';
       return {
-        apple: `maps://maps.apple.com/?daddr=${latitude},${longitude}&q=${label}`,
+        apple: `maps://maps.apple.com/?daddr=${latitude},${longitude}&q=${label}&dirflg=${appleMode}`,
         android: `geo:0,0?q=${latitude},${longitude}(${label})`,
-        web: `https://uri.amap.com/navigation?to=${mapLongitude},${mapLatitude},${label}&mode=car&policy=1&src=ChuLink&coordinate=gaode&callnative=1`
+        web: `https://uri.amap.com/navigation?to=${mapLongitude},${mapLatitude},${label}&mode=${amapMode}&policy=1&src=ChuLink&coordinate=gaode&callnative=1`
       };
     }
 
@@ -3418,6 +4003,20 @@
       }
       activeLandmark = item;
       openLandmarkNavigation(item);
+    }
+
+    function openRouteStepNavigation(routeId, stepIndex) {
+      const route = communityRoutePlans.find(item => item.id === routeId);
+      const step = route && route.steps ? route.steps[Number(stepIndex)] : null;
+      if (!route || !step || step.action === 'collect') {
+        showToast('这一站是资料整理任务，无需导航', 'clipboard-check');
+        return;
+      }
+      const coords = getRouteStepCoords(step, route);
+      openLandmarkNavigation({
+        title: step.title,
+        coords
+      });
     }
 
     let communityQuizCompleted = false;
@@ -3460,6 +4059,7 @@
     }
 
     function getRouteStepCoords(step, route) {
+      if (step && Array.isArray(step.coords)) return step.coords;
       const landmark = step && step.landmarkId
         ? heritageLandmarks.find(item => item.id === step.landmarkId)
         : null;
@@ -3471,7 +4071,8 @@
       if (currentLocation && currentLocation.isReal) {
         return {
           title: '我的位置',
-          coords: [currentLocation.latitude, currentLocation.longitude],
+          // 路线数据与高德底图统一使用 GCJ-02，浏览器 GPS 在这里仅转换一次。
+          coords: getMapLatLng([currentLocation.latitude, currentLocation.longitude], 'wgs84'),
           note: Number.isFinite(currentLocation.accuracy) ? `真实定位 · 精度约 ${Math.round(currentLocation.accuracy)} 米` : '真实定位',
           isReal: true
         };
@@ -3559,23 +4160,7 @@
 
     function renderActivityRouteGraph(route) {
       const origin = getActivityRouteOrigin();
-      const targets = route.steps.map((step, index) => {
-        const coords = getRouteStepCoords(step, route);
-        const travel = estimateActivityTravel(origin.coords, coords);
-        return {
-          id: step.landmarkId || `${route.id}-step-${index}`,
-          title: step.title,
-          desc: step.desc,
-          coords,
-          landmarkId: step.landmarkId || '',
-          order: index + 1,
-          travel
-        };
-      });
-      const nodes = projectRouteGraphNodes([
-        { id: 'origin', title: origin.title, coords: origin.coords, type: 'origin', note: origin.note },
-        ...targets.map(target => ({ ...target, type: 'target' }))
-      ]);
+      const nodes = projectRouteGraphNodes(getRouteMapNodes(route, origin));
       const originNode = nodes[0];
       const targetNodes = nodes.slice(1);
       const routePath = [originNode, ...targetNodes].map(node => `${node.x.toFixed(1)},${node.y.toFixed(1)}`).join(' ');
@@ -3604,7 +4189,7 @@
             <text text-anchor="middle" y="3.5" fill="white" font-size="10" font-weight="800">我</text>
           </g>
           ${targetNodes.map(node => `
-            <g transform="translate(${node.x.toFixed(1)}, ${node.y.toFixed(1)})" ${node.landmarkId ? `onclick="openCommunityMapPoint('${escapeJsString(node.landmarkId)}')"` : ''} class="${node.landmarkId ? 'cursor-pointer' : ''}">
+            <g transform="translate(${node.x.toFixed(1)}, ${node.y.toFixed(1)})" onclick="openRouteStepNavigation('${escapeJsString(route.id)}', ${Number(node.stepIndex)})" class="cursor-pointer">
               <circle r="10" fill="#294343"/>
               <circle r="14" fill="#294343" opacity="0.12"/>
               <text text-anchor="middle" y="3.5" fill="#d6b66a" font-size="10" font-weight="800">${node.order}</text>
@@ -3612,28 +4197,44 @@
             </g>
           `).join('')}
         </svg>
+        <p class="border-t border-stone-200 bg-white px-3 py-2 text-[9px] leading-relaxed text-stone-500">图中线条表示游览先后顺序，不代表实际道路；点击站点可打开系统地图生成真实导航。</p>
       `;
     }
 
     function renderActivityRouteGraphList(route) {
       const origin = getActivityRouteOrigin();
+      let previousCoords = origin.coords;
       return route.steps.map((step, index) => {
         const coords = getRouteStepCoords(step, route);
-        const travel = estimateActivityTravel(origin.coords, coords);
+        const isCollection = step.action === 'collect';
+        const isOnsite = Boolean(step.onsite);
+        const travel = isCollection || isOnsite ? null : estimateActivityTravel(previousCoords, coords);
+        if (!isCollection && !isOnsite) previousCoords = coords;
+        const movementLabel = isCollection
+          ? '资料整理'
+          : isOnsite
+            ? '同一现场内完成'
+            : `${travel.timeLabel} · ${travel.mode} · ${travel.distanceLabel}`;
+        const actionButton = isCollection
+          ? `<button type="button" onclick="switchTab('collect'); closeActivityRouteGraphModal();" class="rounded-lg bg-deepTeal px-3 py-1.5 text-[10px] font-black text-sandGold">去上传</button>`
+          : `<button type="button" onclick="openRouteStepNavigation('${escapeJsString(route.id)}', ${index})" class="rounded-lg bg-deepTeal px-3 py-1.5 text-[10px] font-black text-sandGold">导航到此站</button>`;
         return `
-          <button type="button" onclick="${step.landmarkId ? `openCommunityMapPoint('${escapeJsString(step.landmarkId)}')` : "switchTab('collect')"}" class="w-full rounded-xl border border-stone-200 bg-white p-3 text-left shadow-sm">
+          <div class="w-full rounded-xl border border-stone-200 bg-white p-3 text-left shadow-sm">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
                 <p class="text-xs font-bold text-stone-800">${index + 1}. ${escapeHtml(step.title)}</p>
                 <p class="mt-0.5 text-[10px] leading-relaxed text-stone-500">${escapeHtml(step.desc)}</p>
               </div>
-              <span class="shrink-0 rounded-full bg-sandGold/20 px-2 py-0.5 text-[10px] font-bold text-deepTeal">${escapeHtml(travel.distanceLabel)}</span>
+              <span class="shrink-0 rounded-full bg-sandGold/20 px-2 py-0.5 text-[10px] font-bold text-deepTeal">${escapeHtml(step.stay || '按现场情况')}</span>
             </div>
-            <div class="mt-2 grid grid-cols-2 gap-2 text-[10px]">
-              <span class="rounded-lg bg-stone-50 px-2 py-1.5 font-bold text-deepTeal">${escapeHtml(travel.timeLabel)}</span>
-              <span class="rounded-lg bg-stone-50 px-2 py-1.5 font-bold text-stone-600">${escapeHtml(travel.mode)}</span>
+            <div class="mt-2 rounded-lg bg-stone-50 px-2.5 py-2 text-[10px] leading-relaxed text-stone-600">
+              <span class="font-bold text-deepTeal">怎么逛：</span>${escapeHtml(step.guide || '按现场导览完成观察和记录。')}
             </div>
-          </button>
+            <div class="mt-2 flex items-center justify-between gap-2">
+              <span class="text-[9px] font-bold text-stone-500">${escapeHtml(movementLabel)}</span>
+              ${actionButton}
+            </div>
+          </div>
         `;
       }).join('');
     }
@@ -3702,6 +4303,7 @@
       let totalDistanceKm = 0;
       let totalMinutes = 0;
       (route.steps || []).forEach(step => {
+        if (step.action === 'collect' || step.onsite) return;
         const coords = getRouteStepCoords(step, route);
         const travel = estimateActivityTravel(previousCoords, coords);
         totalDistanceKm += travel.distanceKm;
@@ -3754,25 +4356,8 @@
     }
 
     function createVisualRouteSegment(startCoords, endCoords, segmentIndex, routeIndex) {
-      const distanceKm = getDistanceBetweenLatLonPoints(startCoords, endCoords);
-      if (distanceKm < 1.2) return [startCoords, endCoords];
-
-      const dLat = endCoords[0] - startCoords[0];
-      const dLon = endCoords[1] - startCoords[1];
-      const length = Math.max(0.0001, Math.sqrt(dLat * dLat + dLon * dLon));
-      const direction = (segmentIndex + routeIndex) % 2 === 0 ? 1 : -1;
-      const offset = Math.min(0.075, Math.max(0.008, distanceKm / 1300)) * direction;
-      const normalLat = -dLon / length;
-      const normalLon = dLat / length;
-      const bendA = interpolateRouteCoord(startCoords, endCoords, 0.34);
-      const bendB = interpolateRouteCoord(startCoords, endCoords, 0.68);
-
-      return [
-        startCoords,
-        [bendA[0] + normalLat * offset, bendA[1] + normalLon * offset],
-        [bendB[0] + normalLat * offset * 0.72, bendB[1] + normalLon * offset * 0.72],
-        endCoords
-      ];
+      // 未接入路线规划 API 前不伪造道路弯折，只诚实呈现站点先后顺序。
+      return [startCoords, endCoords];
     }
 
     function getVisualRoutePathCoords(nodes, routeIndex) {
@@ -3797,7 +4382,7 @@
         const startCoords = pathCoords[index - 1];
         const endCoords = pathCoords[index];
         const middleCoords = interpolateRouteCoord(startCoords, endCoords, 0.5);
-        L.marker(getMapLatLng(middleCoords), {
+        L.marker(getStaticMapLatLng(middleCoords), {
           icon: createRouteArrowIcon(color, getRouteBearing(startCoords, endCoords)),
           interactive: false,
           zIndexOffset: 780
@@ -3822,6 +4407,27 @@
         return [coords[0] + offset[0], coords[1] + offset[1]];
       };
 
+      const destinationNodes = [];
+      (route.steps || []).forEach((step, index) => {
+        if (step.action === 'collect' || step.onsite) return;
+        const coords = getRouteStepCoords(step, route);
+        const coordinateKey = `${Number(coords[0]).toFixed(4)}-${Number(coords[1]).toFixed(4)}`;
+        if (destinationNodes.some(node => node.coordinateKey === coordinateKey)) return;
+        destinationNodes.push({
+          id: step.landmarkId || `${route.id}-step-${index}`,
+          title: step.title,
+          desc: step.desc,
+          coords,
+          displayCoords: getDisplayCoords(coords),
+          coordinateKey,
+          landmarkId: step.landmarkId || '',
+          action: step.action || '',
+          type: 'target',
+          order: destinationNodes.length + 1,
+          stepIndex: index
+        });
+      });
+
       return [
         {
           id: `${route.id}-origin`,
@@ -3831,26 +4437,14 @@
           displayCoords: origin.coords,
           type: 'origin'
         },
-        ...(route.steps || []).map((step, index) => ({
-          id: step.landmarkId || `${route.id}-step-${index}`,
-          title: step.title,
-          desc: step.desc,
-          coords: getRouteStepCoords(step, route),
-          displayCoords: getDisplayCoords(getRouteStepCoords(step, route)),
-          landmarkId: step.landmarkId || '',
-          action: step.action || '',
-          type: 'target',
-          order: index + 1
-        }))
+        ...destinationNodes
       ];
     }
 
     function createRouteStepPopup(route, node, index, originCoords, previousCoords) {
       const directTravel = estimateActivityTravel(originCoords, node.coords);
       const legTravel = estimateActivityTravel(previousCoords, node.coords);
-      const actionButton = node.landmarkId
-        ? `<button class="map-popup-nav" onclick="openLandmarkNavigationById('${escapeJsString(node.landmarkId)}')">打开系统地图导航</button>`
-        : '<button class="map-popup-nav" onclick="switchTab(\'collect\')">上传采集资料</button>';
+      const actionButton = `<button class="map-popup-nav" onclick="openRouteStepNavigation('${escapeJsString(route.id)}', ${Number(node.stepIndex)})">导航到这一站</button>`;
 
       return `
         <div>
@@ -3863,6 +4457,7 @@
             <span>第 ${index + 1} 站</span>
           </div>
           <div class="map-popup-desc">上一站到这里：${escapeHtml(legTravel.timeLabel)} · ${escapeHtml(legTravel.mode)} · ${escapeHtml(legTravel.distanceLabel)}</div>
+          <div class="map-popup-desc">${escapeHtml((route.steps[node.stepIndex] && route.steps[node.stepIndex].guide) || '到达后按任务说明完成观察与记录。')}</div>
           ${actionButton}
         </div>
       `;
@@ -3912,12 +4507,12 @@
       const color = getMapRouteColor(routeIndex, isSelected);
       const nodes = getRouteMapNodes(route, origin);
       const pathCoords = getVisualRoutePathCoords(nodes, routeIndex);
-      const latLngs = pathCoords.map(coords => getMapLatLng(coords));
+      const latLngs = pathCoords.map(coords => getStaticMapLatLng(coords));
       const line = L.polyline(latLngs, {
         color,
         weight: isSelected ? 5 : 3,
         opacity: isSelected ? 0.94 : 0.55,
-        dashArray: isSelected ? null : '7 8',
+        dashArray: isSelected ? '12 7' : '5 9',
         lineCap: 'round',
         lineJoin: 'round'
       }).addTo(mapRouteLayerGroup);
@@ -3927,7 +4522,7 @@
       nodes.forEach((node, nodeIndex) => {
         if (node.type === 'origin') {
           if (!isSelected) return;
-          L.marker(getMapLatLng(node.displayCoords || node.coords), {
+          L.marker(getStaticMapLatLng(node.displayCoords || node.coords), {
             icon: createRoutePointIcon('我', 'origin'),
             zIndexOffset: 900
           })
@@ -3936,7 +4531,7 @@
           return;
         }
 
-        const marker = L.marker(getMapLatLng(node.displayCoords || node.coords), {
+        const marker = L.marker(getStaticMapLatLng(node.displayCoords || node.coords), {
           icon: createRoutePointIcon(String(node.order), 'target', !isSelected),
           zIndexOffset: isSelected ? 850 : 650
         }).addTo(mapRouteLayerGroup);
@@ -3962,6 +4557,7 @@
 
     function renderActivityRoutesOnMap(options = {}) {
       if (!heritageMap || typeof L === 'undefined') return;
+      clearMapPlannerPreview();
       if (!mapRouteLayerGroup) {
         mapRouteLayerGroup = L.layerGroup().addTo(heritageMap);
       }
@@ -4002,7 +4598,7 @@
         const targetNode = nodes[nodeIndex];
         if (targetNode) {
           setTimeout(() => {
-            heritageMap.setView(getMapLatLng(targetNode.displayCoords || targetNode.coords), Math.max(heritageMap.getZoom(), 12), { animate: true });
+            heritageMap.setView(getStaticMapLatLng(targetNode.displayCoords || targetNode.coords), Math.max(heritageMap.getZoom(), 12), { animate: true });
           }, 160);
         }
       }
@@ -4122,6 +4718,10 @@
       }
       if (step.landmarkId) {
         openCommunityMapPoint(step.landmarkId);
+        return;
+      }
+      if (Array.isArray(step.coords)) {
+        openRouteStepNavigation(route.id, stepIndex);
       }
     }
 
@@ -4157,9 +4757,14 @@
           `).join('')}
         </div>
 
-        <button type="button" onclick="openActivityRoutesOnMap('${escapeJsString(route.id)}')" class="mt-3 flex w-full items-center justify-center rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold">
-          <i data-lucide="route" class="mr-1.5 h-3.5 w-3.5"></i> 查看地图路线
-        </button>
+        <div class="mt-3 grid grid-cols-2 gap-2">
+          <button type="button" onclick="openActivityRouteGraphModal()" class="flex w-full items-center justify-center rounded-xl border border-deepTeal bg-white px-3 py-2 text-xs font-black text-deepTeal">
+            <i data-lucide="list-ordered" class="mr-1.5 h-3.5 w-3.5"></i> 游览引导
+          </button>
+          <button type="button" onclick="openActivityRoutesOnMap('${escapeJsString(route.id)}')" class="flex w-full items-center justify-center rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold">
+            <i data-lucide="route" class="mr-1.5 h-3.5 w-3.5"></i> 站点地图
+          </button>
+        </div>
 
         <div class="mt-3 rounded-xl border border-sandGold/25 bg-sandGold/5 p-3">
           <div class="flex items-center justify-between">
@@ -4257,7 +4862,7 @@
       setTimeout(() => {
         initHeritageMap();
         if (heritageMap) {
-          heritageMap.setView(getMapLatLng(item.coords), Math.max(heritageMap.getZoom(), 12), { animate: true });
+          heritageMap.setView(getStaticMapLatLng(item.coords), Math.max(heritageMap.getZoom(), 12), { animate: true });
         }
         focusLandmark(item);
       }, 120);
@@ -5305,6 +5910,7 @@
           markTaskCompleted('location');
           updateMapUserLocation(longitude, latitude, accuracy);
           renderCommunityRouteCard();
+          renderMapPlanner();
           if (mapRoutePanelActive && heritageMap) {
             renderActivityRoutesOnMap({ selectedRouteId: activeMapRouteId, focusFirstPoint: true });
           }

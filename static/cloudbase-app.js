@@ -531,15 +531,29 @@
   }
 
   function cloudAuthErrorMessage(error, fallback) {
-    const code = String(error && (error.code || error.error_code) || '').toLowerCase();
-    const message = String(error && error.message || '');
+    const rawCode = String(error && (
+      error.code ||
+      error.error_code ||
+      error.errorCode ||
+      (error.error && error.error.code) ||
+      (error.data && (error.data.code || error.data.error_code))
+    ) || '');
+    const code = rawCode.toLowerCase();
+    const message = String(error && (
+      error.message ||
+      error.msg ||
+      error.error_message ||
+      (error.error && (error.error.message || error.error.msg)) ||
+      (error.data && (error.data.message || error.data.msg))
+    ) || '');
     if (/verification.*(invalid|wrong)|invalid.*verification/.test(code + message)) return '验证码不正确，请重新输入';
     if (/verification.*expired|expired.*verification/.test(code + message)) return '验证码已过期，请重新发送';
     if (/email.*(exist|bound|register)|already.*email/.test(code + message)) return '该邮箱已经注册，请直接登录或重设密码';
     if (/username.*(exist|bound|register)|already.*username/.test(code + message)) return '该登录用户名已被使用，请换一个';
     if (/too.*many|frequency|rate.*limit|429/.test(code + message)) return '操作过于频繁，请稍后再试';
     if (/password/.test(code) && /invalid|weak|format/.test(code + message)) return '密码不符合要求，请使用 8-64 位且包含字母和数字';
-    return message || fallback;
+    const detail = message || rawCode;
+    return detail ? `${fallback}（${detail}）` : fallback;
   }
 
   function startCloudCodeCountdown(button) {
@@ -626,7 +640,6 @@
       });
       const verificationToken = tokenResult.verification_token || tokenResult.verificationToken;
       if (!verificationToken) throw new Error('验证码验证未返回有效凭证');
-      if (await cloudAuth.getLoginState()) await cloudAuth.signOut();
       await cloudAuth.signUp({
         email,
         username,
@@ -640,6 +653,7 @@
       message.textContent = '注册成功，正在进入个人中心...';
       setTimeout(() => location.reload(), 700);
     } catch (error) {
+      console.error('[CloudBase register failed]', error);
       message.className = 'min-h-4 text-[10px] text-red-600';
       message.textContent = cloudAuthErrorMessage(error, '注册失败，请检查信息后重试');
       try {
