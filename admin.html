@@ -50,6 +50,7 @@
             <button id="report-refresh" data-admin-view="reports" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">内容举报</button>
             <button id="feedback-refresh" data-admin-view="feedback" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">用户反馈</button>
             <button id="redemption-refresh" data-admin-view="redemptions" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">兑换码核销</button>
+            <button id="resource-preview-refresh" data-admin-view="resource-preview" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">资源迁移预览</button>
           </div>
         </div>
       </div>
@@ -728,6 +729,68 @@
       }
     }
 
+    function renderResourceSeedPreview(result) {
+      const items = Array.isArray(result.items) ? result.items : [];
+      const rows = items.map((item) => `
+        <tr class="border-t border-stone-100">
+          <td class="px-3 py-2.5 font-mono text-[10px] text-stone-500">${escapeHtml(item.id)}</td>
+          <td class="px-3 py-2.5 text-xs font-bold text-stone-800">${escapeHtml(item.title)}</td>
+          <td class="px-3 py-2.5 text-xs text-stone-500">${escapeHtml(item.type)}</td>
+          <td class="px-3 py-2.5 text-xs">
+            ${!item.exists
+              ? '<span class="rounded-full bg-blue-50 px-2 py-1 font-bold text-blue-700">待新增</span>'
+              : item.differs
+                ? '<span class="rounded-full bg-amber-50 px-2 py-1 font-bold text-amber-700">已存在且有差异</span>'
+                : '<span class="rounded-full bg-emerald-50 px-2 py-1 font-bold text-emerald-700">已存在</span>'}
+          </td>
+        </tr>
+      `).join("");
+
+      list.innerHTML = `
+        <section class="rounded-2xl border border-blue-200 bg-blue-50/50 p-5 shadow-sm">
+          <p class="text-[10px] font-black uppercase tracking-[0.18em] text-blue-700">Read-only Preview</p>
+          <h3 class="mt-1 text-base font-bold text-stone-900">统一资源模型迁移预览</h3>
+          <p class="mt-2 text-xs leading-relaxed text-stone-600">本页面只比较资源种子与云数据库，不执行导入，不更新、不覆盖、不删除任何已有数据。</p>
+          <div class="mt-4 grid gap-3 sm:grid-cols-4">
+            <div class="rounded-xl bg-white p-3"><p class="text-[10px] text-stone-400">种子总数</p><p class="mt-1 text-xl font-black text-stone-900">${Number(result.total || 0)}</p></div>
+            <div class="rounded-xl bg-white p-3"><p class="text-[10px] text-stone-400">待新增</p><p class="mt-1 text-xl font-black text-blue-700">${Number(result.missing || 0)}</p></div>
+            <div class="rounded-xl bg-white p-3"><p class="text-[10px] text-stone-400">已存在</p><p class="mt-1 text-xl font-black text-emerald-700">${Number(result.existing || 0)}</p></div>
+            <div class="rounded-xl bg-white p-3"><p class="text-[10px] text-stone-400">内容差异</p><p class="mt-1 text-xl font-black text-amber-700">${Number(result.differing || 0)}</p></div>
+          </div>
+          <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-800">
+            当前写入策略：只创建缺失资源。已存在和有差异的资源都会跳过；用户投稿 submissions 不在本次迁移范围内。
+          </div>
+        </section>
+        <div class="overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
+          <table class="w-full min-w-[680px] text-left">
+            <thead class="bg-stone-50 text-[10px] uppercase tracking-wide text-stone-400">
+              <tr><th class="px-3 py-2.5">资源 ID</th><th class="px-3 py-2.5">名称</th><th class="px-3 py-2.5">类型</th><th class="px-3 py-2.5">云端状态</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    async function loadResourceSeedPreview() {
+      setActiveView("resource-preview", "资源迁移预览");
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在进行只读比较...";
+      viewCount.textContent = "只读";
+      list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在读取资源种子和云端状态…</div>';
+      try {
+        const result = await callAdmin({ action: "previewResourceSeed" });
+        renderResourceSeedPreview(result);
+        viewCount.textContent = `${Number(result.total || 0)} 项资源`;
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = `预览完成：待新增 ${Number(result.missing || 0)}，已存在 ${Number(result.existing || 0)}，差异 ${Number(result.differing || 0)}。没有写入业务数据。`;
+      } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+        list.innerHTML = '<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">资源迁移预览暂不可用，未执行任何导入。</div>';
+      }
+    }
+
     function renderItems(items, urls) {
       if (!items.length) {
         list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待审投稿。</div>';
@@ -796,6 +859,7 @@
     document.getElementById("report-refresh").addEventListener("click", loadReports);
     document.getElementById("feedback-refresh").addEventListener("click", loadFeedback);
     document.getElementById("redemption-refresh").addEventListener("click", loadRedemptions);
+    document.getElementById("resource-preview-refresh").addEventListener("click", loadResourceSeedPreview);
     document.getElementById("list").addEventListener("submit", (event) => {
       if (event.target && event.target.id === "redemption-lookup-form") lookupRedemption(event);
     });

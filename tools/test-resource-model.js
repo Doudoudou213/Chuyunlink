@@ -9,6 +9,7 @@ const root = path.resolve(__dirname, '..');
 const seed = require('../cloudfunctions/adminSubmissions/data/resources.v1.json');
 const appCoreSource = fs.readFileSync(path.join(root, 'cloudfunctions/appCore/index.js'), 'utf8');
 const adminSource = fs.readFileSync(path.join(root, 'cloudfunctions/adminSubmissions/index.js'), 'utf8');
+const adminHtml = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 
 const checks = [];
 function check(name, test) {
@@ -64,6 +65,13 @@ check('资源导入动作位于管理员鉴权之后', () => {
   assert(forbidden > 0 && applyAction > forbidden);
 });
 
+check('管理后台仅提供资源只读预览', () => {
+  assert(adminHtml.includes('id="resource-preview-refresh"'));
+  assert(adminHtml.includes('action: "previewResourceSeed"'));
+  assert(adminHtml.includes('不执行导入，不更新、不覆盖、不删除任何已有数据'));
+  assert.strictEqual(adminHtml.includes('action: "applyResourceSeed"'), false);
+});
+
 async function testResourceService() {
   const published = { ...seed[0], _id: seed[0].id };
   const db = {
@@ -92,4 +100,3 @@ testResourceService()
     console.error(error);
     process.exit(1);
   });
-
