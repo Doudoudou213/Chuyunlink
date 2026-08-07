@@ -20,11 +20,79 @@ const REPORT_COLLECTION = 'content_reports';
 const FEEDBACK_COLLECTION = 'system_feedback';
 const SUPPLEMENT_COLLECTION = 'submission_supplements';
 const ROUTE_USAGE_COLLECTION = 'route_usage';
+const REWARD_COLLECTION = 'rewards';
+const REDEMPTION_COLLECTION = 'reward_redemptions';
+const REDEMPTION_COUNTER_COLLECTION = 'reward_redemption_counters';
+const POINT_LEDGER_COLLECTION = 'point_ledger';
 const ALLOWED_ASSET_TYPES = new Set(['image', 'audio', 'video']);
 const ALLOWED_REPORT_REASONS = new Set(['spam', 'abuse', 'false_information', 'copyright', 'other']);
 const ALLOWED_FEEDBACK_TYPES = new Set(['suggestion', 'bug', 'content', 'other']);
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 let interactionCollectionsReady = null;
+let rewardCollectionsReady = null;
+
+const STARTER_REWARDS = [
+  {
+    id: 'enshi-daiwa-100',
+    title: '恩施黛瓦隐庐 100 元房费抵扣券',
+    sponsor: '恩施黛瓦隐庐',
+    description: '入住时出示兑换码，每间房限用一张，需提前与商家确认房态。',
+    pointsCost: 500,
+    inventoryTotal: 50,
+    perUserLimit: 1,
+    validDays: 30,
+    icon: '券',
+    status: 'active'
+  },
+  {
+    id: 'wudang-tea-gift',
+    title: '武当手工道茶体验伴手礼',
+    sponsor: '湖北本地茶厂联合赞助',
+    description: '到店出示兑换码领取，具体领取时间以商家公告为准。',
+    pointsCost: 300,
+    inventoryTotal: 100,
+    perUserLimit: 1,
+    validDays: 30,
+    icon: '礼',
+    status: 'active'
+  }
+];
+
+const COMMENT_TARGETS = {
+  hotspot: {
+    'suizhou-window-carving': '濒危守护热点 · 随州窗花'
+  },
+  landmark: {
+    'zenghou-archway': '曾侯谏的牌楼',
+    'wudang-stone-niche': '武当山道家石龛',
+    'pengjiazhai-stilt-house': '彭家寨吊脚楼',
+    'yellow-crane-tower': '黄鹤楼',
+    'hubei-museum': '湖北省博物馆东湖片区',
+    'mingxianling': '明显陵',
+    'chibi-ancient-battlefield': '赤壁古战场',
+    'three-gorges-dam': '三峡大坝',
+    'shennongjia-muyu': '神农架木鱼镇'
+  },
+  activity: {
+    'jingchu-pattern-week': '荆楚纹样寻访周',
+    'wuhan-eastlake': '武汉东湖文化路线',
+    'yichang-three-gorges': '宜昌三峡文化路线',
+    'shennongjia-muyu': '神农架木鱼社区活动',
+    'enshi-pengjiazhai': '恩施彭家寨社区活动',
+    'suizhou-zenghou': '随州曾侯遗韵线'
+  },
+  content: {
+    'share-yellow-crane-tower': '武汉黄鹤楼 · 楼阁营造与题刻文化',
+    'share-wudang-ancient-buildings': '武当山古建筑群 · 皇家道教建筑轴线',
+    'share-mingxianling': '钟祥明显陵 · 明代帝陵礼制空间',
+    'share-hubei-museum-bells': '湖北省博物馆 · 曾侯乙编钟展陈',
+    'share-jingzhou-city-wall': '荆州古城墙 · 城防遗存与城砖文化',
+    'live-new-jingzhou-inscription': '荆州古城墙 · 城砖纪年铭文复核',
+    'live-new-enshi-door': '恩施土司城 · 木雕门楣纹样采集',
+    'live-new-wudang-stone': '武当古道 · 石阶磨损与题刻线索',
+    'live-new-suizhou-pattern': '随州曾侯文化 · 编钟纹样技艺衍生样本'
+  }
+};
 
 const COMMENT_TARGETS = {
   hotspot: {
@@ -91,6 +159,38 @@ async function ensureInteractionCollections() {
   return interactionCollectionsReady;
 }
 
+async function ensureRewardCollections() {
+  if (!rewardCollectionsReady) {
+    rewardCollectionsReady = (async () => {
+      for (const name of [REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_COUNTER_COLLECTION, POINT_LEDGER_COLLECTION]) {
+        try {
+          await db.createCollection(name);
+        } catch (error) {
+          const message = String(error && error.message || '');
+          const code = String(error && error.code || '');
+          if (!/exist/i.test(message) && !/exist/i.test(code)) throw error;
+        }
+      }
+      for (const reward of STARTER_REWARDS) {
+        const ref = db.collection(REWARD_COLLECTION).doc(reward.id);
+        const existing = firstDocument(await ref.get());
+        if (!existing) {
+          await ref.set({
+            ...reward,
+            redeemedCount: 0,
+            createdAt: db.serverDate(),
+            updatedAt: db.serverDate()
+          });
+        }
+      }
+    })().catch((error) => {
+      rewardCollectionsReady = null;
+      throw error;
+    });
+  }
+  return rewardCollectionsReady;
+}
+
 function cleanText(value, maxLength) {
   return String(value == null ? '' : value).trim().slice(0, maxLength);
 }
@@ -99,6 +199,29 @@ function interactionError(code, message) {
   const error = new Error(message);
   error.code = code;
   return error;
+}
+
+function isTransactionBusyError(error) {
+  const details = `${error && error.code || ''} ${error && error.message || ''}`;
+  return /ResourceUnavailableTransactionBusy|Transaction is busy|DATABASE_TRANSACTION_FAIL|TRANSACTION_BUSY/i.test(details);
+}
+
+async function runInteractionTransaction(work, maxAttempts = 4) {
+  let lastError = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return await db.runTransaction(work);
+    } catch (error) {
+      lastError = error;
+      if (!isTransactionBusyError(error) || attempt >= maxAttempts - 1) break;
+      const delay = 80 * (2 ** attempt) + crypto.randomInt(20, 90);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  if (isTransactionBusyError(lastError)) {
+    throw interactionError('COMMENT_SERVICE_BUSY', '当前参与评论的人较多，请稍等几秒再试');
+  }
+  throw lastError;
 }
 
 function normalizeCommentContent(value) {
@@ -651,6 +774,184 @@ async function listSupplements(uid, event) {
   };
 }
 
+function rewardError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
+function rewardView(reward) {
+  const inventoryTotal = Math.max(0, Number(reward.inventoryTotal) || 0);
+  const redeemedCount = Math.max(0, Number(reward.redeemedCount) || 0);
+  return {
+    id: reward._id || reward.id || '',
+    title: reward.title || '',
+    sponsor: reward.sponsor || '',
+    description: reward.description || '',
+    pointsCost: Math.max(0, Number(reward.pointsCost) || 0),
+    inventoryRemaining: Math.max(0, inventoryTotal - redeemedCount),
+    perUserLimit: Math.max(1, Number(reward.perUserLimit) || 1),
+    validDays: Math.max(1, Number(reward.validDays) || 30),
+    icon: reward.icon || '礼',
+    status: reward.status || 'inactive'
+  };
+}
+
+function redemptionView(item) {
+  const expiryTime = new Date(item.expiresAt || 0).getTime();
+  const status = item.status === 'issued' && expiryTime > 0 && expiryTime <= Date.now()
+    ? 'expired'
+    : (item.status || 'issued');
+  return {
+    id: item._id || item.id || '',
+    rewardId: item.rewardId || '',
+    rewardTitle: item.rewardTitle || '',
+    sponsor: item.sponsor || '',
+    code: item.displayCode || '',
+    pointsCost: Math.max(0, Number(item.pointsCost) || 0),
+    status,
+    issuedAt: item.issuedAt || item.createdAt || null,
+    expiresAt: item.expiresAt || null,
+    redeemedAt: item.redeemedAt || null,
+    redemptionInstructions: item.redemptionInstructions || ''
+  };
+}
+
+function generateRedemptionCode() {
+  const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const bytes = crypto.randomBytes(12);
+  const body = Array.from(bytes, (value) => alphabet[value % alphabet.length]).join('');
+  return `CHU-${body.slice(0, 4)}-${body.slice(4, 8)}-${body.slice(8, 12)}`;
+}
+
+function redemptionDocumentId(uid, clientRequestId) {
+  return crypto.createHash('sha256').update(`${uid}:${clientRequestId}`).digest('hex').slice(0, 40);
+}
+
+async function listRewards() {
+  await ensureRewardCollections();
+  const result = await db.collection(REWARD_COLLECTION).limit(100).get();
+  return (result.data || [])
+    .filter((reward) => reward.status === 'active')
+    .map(rewardView)
+    .sort((left, right) => left.pointsCost - right.pointsCost);
+}
+
+async function listOwnRedemptions(uid, limit = 30) {
+  await ensureRewardCollections();
+  const result = await db.collection(REDEMPTION_COLLECTION)
+    .where({ userId: uid })
+    .limit(Math.max(1, Math.min(Number(limit) || 30, 100)))
+    .get();
+  return sortNewest(result.data || []).map(redemptionView);
+}
+
+async function redeemReward(uid, userInfo, event) {
+  requireStableAccount(userInfo);
+  await ensureRewardCollections();
+  const rewardId = cleanText(event.rewardId, 80);
+  const clientRequestId = cleanText(event.clientRequestId, 100);
+  if (!/^[a-z0-9][a-z0-9-]{2,79}$/i.test(rewardId)) {
+    throw rewardError('INVALID_REWARD', '福利编号无效');
+  }
+  if (!/^[a-zA-Z0-9_-]{12,100}$/.test(clientRequestId)) {
+    throw rewardError('INVALID_REQUEST_ID', '兑换请求无效，请刷新后重试');
+  }
+
+  const orderId = redemptionDocumentId(uid, clientRequestId);
+  return db.runTransaction(async (transaction) => {
+    const redemptionRef = transaction.collection(REDEMPTION_COLLECTION).doc(orderId);
+    const existing = firstDocument(await redemptionRef.get());
+    if (existing) {
+      return {
+        ok: true,
+        action: 'redeemReward',
+        replayed: true,
+        pointsAfter: Number(existing.pointsAfter) || 0,
+        redemption: redemptionView(existing)
+      };
+    }
+
+    const rewardRef = transaction.collection(REWARD_COLLECTION).doc(rewardId);
+    const profileRef = transaction.collection(PROFILE_COLLECTION).doc(uid);
+    const counterId = crypto.createHash('sha256').update(`${uid}:${rewardId}`).digest('hex').slice(0, 40);
+    const counterRef = transaction.collection(REDEMPTION_COUNTER_COLLECTION).doc(counterId);
+    const [reward, profile, counter] = await Promise.all([
+      rewardRef.get().then(firstDocument),
+      profileRef.get().then(firstDocument),
+      counterRef.get().then(firstDocument)
+    ]);
+    if (!reward || reward.status !== 'active') throw rewardError('REWARD_UNAVAILABLE', '该福利已下架或暂不可兑换');
+    if (!profile) throw rewardError('PROFILE_NOT_FOUND', '没有找到用户积分账户');
+
+    const now = new Date();
+    const startsAt = reward.startsAt ? new Date(reward.startsAt).getTime() : 0;
+    const endsAt = reward.endsAt ? new Date(reward.endsAt).getTime() : 0;
+    if (startsAt && startsAt > now.getTime()) throw rewardError('REWARD_NOT_STARTED', '该福利尚未开始兑换');
+    if (endsAt && endsAt <= now.getTime()) throw rewardError('REWARD_EXPIRED', '该福利已过兑换期');
+
+    const pointsCost = Math.max(1, Number(reward.pointsCost) || 0);
+    const pointsBefore = Math.max(0, Number(profile.points) || 0);
+    const inventoryTotal = Math.max(0, Number(reward.inventoryTotal) || 0);
+    const redeemedCount = Math.max(0, Number(reward.redeemedCount) || 0);
+    const userRedeemedCount = Math.max(0, Number(counter && counter.count) || 0);
+    const perUserLimit = Math.max(1, Number(reward.perUserLimit) || 1);
+    if (inventoryTotal <= redeemedCount) throw rewardError('OUT_OF_STOCK', '该福利已领完');
+    if (userRedeemedCount >= perUserLimit) throw rewardError('USER_LIMIT_REACHED', '你已达到该福利的兑换上限');
+    if (pointsBefore < pointsCost) throw rewardError('INSUFFICIENT_POINTS', `积分不足，还差 ${pointsCost - pointsBefore} 积分`);
+
+    const pointsAfter = pointsBefore - pointsCost;
+    const code = generateRedemptionCode();
+    const validDays = Math.max(1, Math.min(Number(reward.validDays) || 30, 365));
+    const expiresAt = new Date(now.getTime() + validDays * 24 * 60 * 60 * 1000);
+    const record = {
+      id: orderId,
+      userId: uid,
+      rewardId,
+      rewardTitle: reward.title || '反哺福利',
+      sponsor: reward.sponsor || '',
+      displayCode: code,
+      codeHash: crypto.createHash('sha256').update(code).digest('hex'),
+      pointsCost,
+      pointsBefore,
+      pointsAfter,
+      status: 'issued',
+      clientRequestId,
+      redemptionInstructions: reward.description || '',
+      issuedAt: now,
+      expiresAt,
+      redeemedAt: null,
+      createdAt: now,
+      updatedAt: now
+    };
+    await redemptionRef.set(record);
+    await profileRef.update({ points: pointsAfter, updatedAt: db.serverDate() });
+    await rewardRef.update({ redeemedCount: redeemedCount + 1, updatedAt: db.serverDate() });
+    if (counter) {
+      await counterRef.update({ count: userRedeemedCount + 1, updatedAt: db.serverDate() });
+    } else {
+      await counterRef.set({ userId: uid, rewardId, count: 1, createdAt: db.serverDate(), updatedAt: db.serverDate() });
+    }
+    await transaction.collection(POINT_LEDGER_COLLECTION).doc(`redeem_${orderId}`).set({
+      userId: uid,
+      type: 'reward_redemption',
+      amount: -pointsCost,
+      balanceBefore: pointsBefore,
+      balanceAfter: pointsAfter,
+      rewardId,
+      redemptionId: orderId,
+      createdAt: db.serverDate()
+    });
+    return {
+      ok: true,
+      action: 'redeemReward',
+      replayed: false,
+      pointsAfter,
+      redemption: redemptionView(record)
+    };
+  });
+}
+
 async function createSupplement(uid, userInfo, event) {
   requireStableAccount(userInfo);
   await ensureInteractionCollections();
@@ -745,10 +1046,12 @@ async function listOwnFeedback(uid, limit = 10) {
 
 async function bootstrap(uid, userInfo) {
   const profile = await ensureProfile(uid, userInfo);
-  const [mySubmissions, publicSubmissions, myFeedback] = await Promise.all([
+  const [mySubmissions, publicSubmissions, myFeedback, rewards, myRedemptions] = await Promise.all([
     listOwn(uid, 50),
     listPublic(30, uid),
-    listOwnFeedback(uid, 10)
+    listOwnFeedback(uid, 10),
+    listRewards(),
+    listOwnRedemptions(uid, 30)
   ]);
   const stats = mySubmissions.reduce((result, item) => {
     result.total += 1;
@@ -763,7 +1066,9 @@ async function bootstrap(uid, userInfo) {
     stats,
     mySubmissions,
     publicSubmissions,
-    myFeedback
+    myFeedback,
+    rewards,
+    myRedemptions
   };
 }
 
@@ -1101,10 +1406,21 @@ async function createComment(uid, userInfo, event) {
     }
   }
   const profile = await ensureProfile(uid, userInfo);
-  const commentId = `${Date.now().toString(36)}_${uid.slice(-10)}_${Math.random().toString(36).slice(2, 8)}`;
-  await db.runTransaction(async (transaction) => {
-    await consumeInteractionQuota(transaction, uid, 'comment', content);
-    const commentRef = transaction.collection(COMMENT_COLLECTION).doc(commentId);
+const suppliedRequestId = cleanText(event.clientRequestId, 100);
+const clientRequestId = /^[a-zA-Z0-9_-]{12,100}$/.test(suppliedRequestId)
+  ? suppliedRequestId
+  : crypto.randomBytes(16).toString('hex');
+const commentId = `comment_${crypto.createHash('sha256').update(`${uid}:${clientRequestId}`).digest('hex').slice(0, 40)}`;
+const transactionResult = await runInteractionTransaction(async (transaction) => {
+  const commentRef = transaction.collection(COMMENT_COLLECTION).doc(commentId);
+  const existingComment = firstDocument(await commentRef.get());
+  if (existingComment) {
+    if (existingComment.userId !== uid || !sameCommentTarget(existingComment, target) || existingComment.content !== content) {
+      throw interactionError('COMMENT_REQUEST_CONFLICT', '评论请求编号冲突，请刷新后重试');
+    }
+    return { replayed: true };
+  }
+  await consumeInteractionQuota(transaction, uid, 'comment', content);
     await commentRef.set({
       targetType: target.targetType,
       targetId: target.targetId,
@@ -1138,6 +1454,7 @@ async function createComment(uid, userInfo, event) {
       });
     }
     await updateCommentCount(transaction, target, 1);
+return { replayed: false };
   });
   return {
     ok: true,
@@ -1145,7 +1462,8 @@ async function createComment(uid, userInfo, event) {
     submissionId: target.targetType === 'submission' ? target.targetId : '',
     targetType: target.targetType,
     targetId: target.targetId,
-    commentId
+commentId,
+replayed: Boolean(transactionResult && transactionResult.replayed)
   };
 }
 
@@ -1434,6 +1752,14 @@ exports.main = async (event = {}) => {
     if (action === 'markNotificationRead') return await markNotificationRead(uid, userInfo, event);
     if (action === 'planRoute') return await planRoute(uid, event);
     if (action === 'updateProfile') return await updateProfile(uid, userInfo, event);
+    if (action === 'getRewards') {
+      return { ok: true, action, items: await listRewards() };
+    }
+    if (action === 'getMyRedemptions') {
+      requireStableAccount(userInfo);
+      return { ok: true, action, items: await listOwnRedemptions(uid, event.limit) };
+    }
+    if (action === 'redeemReward') return await redeemReward(uid, userInfo, event);
     if (action === 'createSubmission') return await createSubmission(uid, userInfo, event);
     if (action === 'getSupplements') return await listSupplements(uid, event);
     if (action === 'createSupplement') return await createSupplement(uid, userInfo, event);

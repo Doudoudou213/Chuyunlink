@@ -1207,40 +1207,21 @@
             <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
               <i data-lucide="store" class="w-4 h-4 mr-1 text-deepTeal"></i> 乡村文旅赞助反哺专区
             </h4>
-            <span class="text-[9px] text-stone-400">湖北商户联名赞助</span>
+            <span class="text-[9px] text-stone-400">云端积分兑换</span>
           </div>
-
-          <div class="space-y-2">
-            <!-- 赞助券卡 1 -->
-            <div class="bg-white border border-stone-200 rounded-xl p-3 flex justify-between items-center">
-              <div class="flex items-center space-x-2.5">
-                <div class="bg-red-50 text-cinnabarRed p-2 rounded-lg border border-red-200 shrink-0">
-                  <span class="text-sm font-black cultural-font">券</span>
-                </div>
-                <div>
-                  <h5 class="text-xs font-bold text-stone-800">【恩施黛瓦隐庐】100元房费抵扣券</h5>
-                  <p class="text-[10px] text-stone-500">赞助商家提供 · 恩施核心景区通用</p>
-                </div>
-              </div>
-              <button onclick="redeemCoupon('【恩施黛瓦隐庐】100元房费抵扣券', 500)" class="bg-deepTeal text-sandGold px-3 py-1.5 rounded-lg text-[10px] font-bold shrink-0 shadow">
-                500积分兑换
-              </button>
+          <p class="rounded-xl border border-sandGold/20 bg-sandGold/5 px-3 py-2 text-[10px] leading-relaxed text-stone-600">
+            兑换由 CloudBase 云函数扣除真实积分并生成唯一凭证；兑换前请确认商家使用说明。
+          </p>
+          <div id="cloud-reward-list" class="space-y-2">
+            <div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">正在读取云端福利…</div>
+          </div>
+          <div class="pt-2">
+            <div class="mb-2 flex items-center justify-between">
+              <h5 class="text-xs font-bold text-stone-700">我的兑换凭证</h5>
+              <span id="cloud-redemption-count" class="text-[9px] text-stone-400">0 张</span>
             </div>
-
-            <!-- 赞助券卡 2 -->
-            <div class="bg-white border border-stone-200 rounded-xl p-3 flex justify-between items-center">
-              <div class="flex items-center space-x-2.5">
-                <div class="bg-amber-50 text-sandGold p-2 rounded-lg border border-amber-200 shrink-0">
-                  <span class="text-sm font-black cultural-font">礼</span>
-                </div>
-                <div>
-                  <h5 class="text-xs font-bold text-stone-800">【武当手工道茶】体验伴手礼</h5>
-                  <p class="text-[10px] text-stone-500">湖北本地茶厂联合赞助</p>
-                </div>
-              </div>
-              <button onclick="redeemCoupon('【武当手工道茶】体验伴手礼', 300)" class="bg-deepTeal text-sandGold px-3 py-1.5 rounded-lg text-[10px] font-bold shrink-0 shadow">
-                300积分兑换
-              </button>
+            <div id="cloud-my-redemptions" class="space-y-2">
+              <div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">暂无兑换记录。</div>
             </div>
           </div>
         </div>
@@ -4867,8 +4848,10 @@
       const searchKeyword = String(keyword || '').trim().replace(/\s+/g, ' ');
       const encoded = encodeURIComponent(searchKeyword);
       if (platform === 'dianping') {
-        const cityId = Number(cityConfig.dianpingCityId) || 0;
-        return `https://m.dianping.com/search/keyword/${cityId}/0_${encoded}`;
+        const cityId = Number(cityConfig.dianpingCityId);
+        if (cityId > 0) return `https://m.dianping.com/search/keyword/${cityId}/0_${encoded}`;
+        // 点评的移动搜索地址必须使用真实 cityId。未配置的城市回退到官方城市页，避免 cityId=0 导致错误页。
+        return `https://www.dianping.com/${cityConfig.dianpingSlug}`;
       }
       return `https://i.meituan.com/s/${encoded}`;
     }
@@ -4884,6 +4867,91 @@
 
     function isMobileBrowser() {
       return /Android|iPhone|iPad|iPod|HarmonyOS|Mobile/i.test(navigator.userAgent || '');
+    }
+
+    function isEmbeddedMobileBrowser() {
+      return /MicroMessenger|WeChat|QQ\//i.test(navigator.userAgent || '');
+    }
+
+    function copyExternalServiceKeyword(keyword) {
+      const value = String(keyword || '');
+      if (!value) return Promise.resolve();
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(value);
+      }
+      const input = document.createElement('textarea');
+      input.value = value;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      input.remove();
+      return Promise.resolve();
+    }
+
+    function ensureExternalServiceGuide() {
+      let modal = document.getElementById('external-service-guide');
+      if (modal) return modal;
+      modal = document.createElement('div');
+      modal.id = 'external-service-guide';
+      modal.className = 'hidden fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4';
+      modal.innerHTML = `
+        <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[9px] font-black uppercase tracking-[0.18em] text-sandGold">Open in App</p>
+              <h3 id="external-service-title" class="mt-1 text-base font-bold text-stone-900">前往第三方平台</h3>
+            </div>
+            <button id="external-service-close" type="button" class="text-stone-400" aria-label="关闭">✕</button>
+          </div>
+          <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[10px] leading-relaxed text-amber-900">
+            微信会拦截网页直接唤起其他 App。如果下方“尝试打开 App”无反应，请点右上角 <strong>…</strong>，选择<strong>在浏览器打开</strong>，再点原按钮。
+          </div>
+          <div class="mt-3 rounded-xl bg-stone-50 p-3">
+            <p class="text-[9px] text-stone-400">建议搜索</p>
+            <p id="external-service-keyword" class="mt-1 select-all text-sm font-bold text-deepTeal"></p>
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <button id="external-service-copy" type="button" class="rounded-xl border border-deepTeal bg-white py-2.5 text-xs font-bold text-deepTeal">复制搜索词</button>
+            <button id="external-service-open-app" type="button" class="rounded-xl bg-deepTeal py-2.5 text-xs font-bold text-sandGold">尝试打开 App</button>
+          </div>
+          <button id="external-service-open-web" type="button" class="mt-2 w-full rounded-xl bg-stone-100 py-2.5 text-xs font-bold text-stone-600">备用：打开官方网页</button>
+          <p id="external-service-message" class="mt-2 min-h-4 text-center text-[9px] text-emerald-700"></p>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      document.getElementById('external-service-close').addEventListener('click', () => modal.classList.add('hidden'));
+      document.getElementById('external-service-copy').addEventListener('click', async () => {
+        const keyword = document.getElementById('external-service-keyword').textContent;
+        const message = document.getElementById('external-service-message');
+        try {
+          await copyExternalServiceKeyword(keyword);
+          message.textContent = '搜索词已复制，打开 App 后可直接粘贴';
+        } catch (_) {
+          message.textContent = '请长按上方搜索词复制';
+        }
+      });
+      document.getElementById('external-service-open-app').addEventListener('click', () => {
+        const appUrl = modal.dataset.appUrl || '';
+        if (appUrl) window.location.href = appUrl;
+      });
+      document.getElementById('external-service-open-web').addEventListener('click', () => {
+        const webUrl = modal.dataset.webUrl || '';
+        if (webUrl) window.location.href = webUrl;
+      });
+      return modal;
+    }
+
+    function openEmbeddedServiceGuide(platform, keyword, webUrl) {
+      const modal = ensureExternalServiceGuide();
+      const platformLabel = platform === 'dianping' ? '大众点评' : '美团';
+      modal.dataset.appUrl = buildRouteServiceAppUrl(platform, keyword);
+      modal.dataset.webUrl = webUrl;
+      document.getElementById('external-service-title').textContent = `前往${platformLabel}`;
+      document.getElementById('external-service-keyword').textContent = String(keyword || '').trim();
+      document.getElementById('external-service-message').textContent = '';
+      modal.classList.remove('hidden');
     }
 
     function openServiceAppWithFallback(appUrl, webUrl, platformLabel) {
@@ -4925,6 +4993,11 @@
       const webUrl = buildRouteServiceUrl(platform, service.keyword, serviceType, route);
       if (isMobileBrowser()) {
         const platformLabel = platform === 'dianping' ? '大众点评' : '美团';
+        if (isEmbeddedMobileBrowser()) {
+          // 微信、QQ 内置浏览器不允许普通网页强制切换到系统浏览器，使用中转引导避免落入拦截页。
+          openEmbeddedServiceGuide(platform, service.keyword, webUrl);
+          return;
+        }
         openServiceAppWithFallback(
           buildRouteServiceAppUrl(platform, service.keyword),
           webUrl,

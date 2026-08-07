@@ -6,7 +6,8 @@ const path = require('path');
 const vm = require('vm');
 
 const sourcePath = path.resolve(__dirname, '..', 'cloudfunctions', 'appCore', 'index.js');
-const source = `${fs.readFileSync(sourcePath, 'utf8')}\nmodule.exports.__commentSecurity = { normalizeCommentContent, interactionContentHash };`;
+const source = `${fs.readFileSync(sourcePath, 'utf8')}
+module.exports.__commentSecurity = { normalizeCommentContent, interactionContentHash, isTransactionBusyError };`;
 const moduleObject = { exports: {} };
 const sandbox = {
   module: moduleObject,
@@ -31,11 +32,18 @@ const sandbox = {
 };
 
 vm.runInNewContext(source, sandbox, { filename: sourcePath });
-const { normalizeCommentContent, interactionContentHash } = moduleObject.exports.__commentSecurity;
+const { normalizeCommentContent, interactionContentHash, isTransactionBusyError } = moduleObject.exports.__commentSecurity;
 
 assert.strictEqual(normalizeCommentContent('  一条正常的讨论内容  '), '一条正常的讨论内容');
 assert.strictEqual(normalizeCommentContent('第一行\r\n第二行'), '第一行\n第二行');
 assert.strictEqual(interactionContentHash('同 一条评论'), interactionContentHash('  同   一条评论  '));
+assert.strictEqual(isTransactionBusyError({ code: 'ResourceUnavailableTransactionBusy', message: 'Transaction is busy' }), true);
+assert.strictEqual(isTransactionBusyError({ code: 'DATABASE_TRANSACTION_FAIL', message: 'temporary failure' }), true);
+assert.strictEqual(isTransactionBusyError({ code: 'COMMENT_REQUIRED', message: '评论为空' }), false);
+
+const clientSource = fs.readFileSync(path.resolve(__dirname, '..', 'static', 'cloudbase-app.js'), 'utf8');
+assert.match(clientSource, /action:\s*'createComment'[\s\S]{0,260}clientRequestId:/);
+assert.match(clientSource, /pendingCommentRequestId/);
 
 const rejected = [
   ['', 'COMMENT_REQUIRED'],

@@ -51,16 +51,20 @@ for (const relativePath of productionTextFiles) {
   }
 }
 
-const html = read('index.html');
-const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
-  .map((match) => match[1])
-  .filter((script) => script.trim());
-inlineScripts.forEach((script, index) => {
-  try {
-    new Function(script);
-  } catch (error) {
-    throw new Error(`index.html 内联脚本 ${index + 1} 语法错误：${error.message}`);
-  }
-});
+let inlineScriptCount = 0;
+for (const htmlFile of ['index.html', 'admin.html']) {
+  const html = read(htmlFile);
+  const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
+    .map((match) => match[1])
+    .filter((script) => script.trim());
+  inlineScripts.forEach((script, index) => {
+    try {
+      new Function(script);
+    } catch (error) {
+      throw new Error(`${htmlFile} 内联脚本 ${index + 1} 语法错误：${error.message}`);
+    }
+  });
+  inlineScriptCount += inlineScripts.length;
+}
 
-console.log(`CloudBase build validation passed (${requiredFiles.length} files, ${inlineScripts.length} inline scripts).`);
+console.log(`CloudBase build validation passed (${requiredFiles.length} files, ${inlineScriptCount} inline scripts).`);
