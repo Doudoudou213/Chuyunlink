@@ -12,6 +12,7 @@
   let bootstrapPromise = null;
   let latestBootstrap = null;
   let activeInteractionSubmissionId = '';
+  let activeInteractionTarget = null;
   let activeReplyCommentId = '';
   let loadedInteractionComments = [];
   let interactionHasMoreComments = false;
@@ -21,6 +22,8 @@
   let activeCloudSupplement = null;
   let registerVerificationInfo = null;
   let resetVerificationInfo = null;
+  let cloudNotifications = [];
+  let cloudNotificationUnreadCount = 0;
   const cloudSupplementState = new Map();
   let publicFeedRefreshTimer = null;
   const PUBLIC_FEED_REFRESH_MS = 60 * 1000;
@@ -71,6 +74,126 @@
     if (!value) return '刚刚';
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? '刚刚' : date.toLocaleString('zh-CN');
+  }
+
+  function notificationTypeLabel(type) {
+    return {
+      comment_reply: '评论回复',
+      submission_comment: '投稿互动',
+      comment_hidden: '内容处理',
+      comment_restored: '内容恢复',
+      report_resolved: '举报处理',
+      report_dismissed: '举报复核',
+      feedback_resolved: '反馈回复',
+      feedback_closed: '反馈处理'
+    }[type] || '互动消息';
+  }
+
+  function updateNotificationEntry() {
+    const stable = isStableAccount(cloudUser);
+    const entry = document.getElementById('header-notification-entry');
+    const badge = document.getElementById('header-notification-badge');
+    if (entry) {
+      entry.classList.toggle('hidden', !stable);
+      entry.classList.toggle('flex', stable);
+    }
+    if (badge) {
+      badge.textContent = cloudNotificationUnreadCount > 99 ? '99+' : String(cloudNotificationUnreadCount);
+      badge.classList.toggle('hidden', !stable || cloudNotificationUnreadCount === 0);
+    }
+  }
+
+  function renderCloudNotifications() {
+    const list = document.getElementById('cloud-notification-list');
+    const summary = document.getElementById('cloud-notification-summary');
+    const readAll = document.getElementById('cloud-notification-read-all');
+    updateNotificationEntry();
+    if (!list || !summary) return;
+    summary.textContent = cloudNotificationUnreadCount
+      ? `${cloudNotificationUnreadCount} 条未读消息`
+      : '消息均已读';
+    if (readAll) readAll.classList.toggle('hidden', cloudNotificationUnreadCount === 0);
+    list.innerHTML = cloudNotifications.length ? cloudNotifications.map((item) => `
+      <button type="button" data-notification-id="${safeText(item.id)}" class="block w-full rounded-xl border ${item.isRead ? 'border-stone-200 bg-white' : 'border-sandGold/40 bg-sandGold/5'} p-3 text-left transition hover:border-deepTeal/30">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="rounded-full ${item.isRead ? 'bg-stone-100 text-stone-500' : 'bg-deepTeal text-sandGold'} px-2 py-0.5 text-[9px] font-bold">${safeText(notificationTypeLabel(item.type))}</span>
+              ${item.actorName ? `<span class="text-[9px] text-stone-400">${safeText(item.actorName)}</span>` : ''}
+            </div>
+            <p class="mt-2 text-xs font-bold text-stone-800">${safeText(item.title || '互动消息')}</p>
+            <p class="mt-1 line-clamp-2 text-[10px] leading-relaxed text-stone-600">${safeText(item.message || '')}</p>
+            <p class="mt-1.5 text-[9px] text-stone-400">${safeText(displayDate(item.createdAt))}${item.targetTitle ? ` · ${safeText(item.targetTitle)}` : ''}</p>
+          </div>
+          ${item.isRead ? '' : '<span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-cinnabarRed"></span>'}
+        </div>
+      </button>
+    `).join('') : '<div class="rounded-xl border border-stone-200 bg-stone-50 p-6 text-center text-xs text-stone-500">暂时没有互动消息。</div>';
+  }
+
+  async function loadCloudNotifications() {
+    if (!isStableAccount(cloudUser)) {
+      cloudNotifications = [];
+      cloudNotificationUnreadCount = 0;
+      updateNotificationEntry();
+      return;
+    }
+    try {
+      const result = await callCore({ action: 'getNotifications', limit: 40 });
+      cloudNotifications = result.items || [];
+      cloudNotificationUnreadCount = Number(result.unreadCount || 0);
+      renderCloudNotifications();
+    } catch (error) {
+      console.warn('[CloudBase notifications]', error);
+    }
+  }
+
+  async function openCloudNotifications() {
+    try {
+      await requireInteractiveAccount();
+      const modal = document.getElementById('cloud-notification-modal');
+      if (modal) modal.classList.remove('hidden');
+      await loadCloudNotifications();
+      if (window.lucide) lucide.createIcons();
+    } catch (error) {
+      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+    }
+  }
+
+  function closeCloudNotifications() {
+    const modal = document.getElementById('cloud-notification-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  async function openCloudNotification(notificationId) {
+    const item = cloudNotifications.find((notification) => notification.id === notificationId);
+    if (!item) return;
+    if (!item.isRead) {
+      try {
+        await callCore({ action: 'markNotificationRead', notificationId });
+        item.isRead = true;
+        cloudNotificationUnreadCount = Math.max(0, cloudNotificationUnreadCount - 1);
+        renderCloudNotifications();
+      } catch (error) {
+        if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+        return;
+      }
+    }
+    closeCloudNotifications();
+    if (item.targetType && item.targetId) {
+      openCloudDiscussion(item.targetType, item.targetId, item.targetTitle || '内容讨论');
+    }
+  }
+
+  async function markAllCloudNotificationsRead() {
+    try {
+      await callCore({ action: 'markNotificationRead', all: true });
+      cloudNotifications.forEach((item) => { item.isRead = true; });
+      cloudNotificationUnreadCount = 0;
+      renderCloudNotifications();
+    } catch (error) {
+      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+    }
   }
 
   function reviewStageLabel(status) {
@@ -287,6 +410,7 @@
           <button id="cloud-profile-upload" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">继续投稿</button>
           <button id="cloud-profile-edit" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">编辑资料</button>
           <button id="cloud-feedback-open" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">意见反馈</button>
+          <button id="cloud-notification-open" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">我的消息</button>
           <button id="cloud-account-action" type="button" class="rounded-lg bg-sandGold px-2 py-2 text-[10px] font-bold text-deepTeal">账号登录</button>
         </div>
         <div class="mt-3 grid grid-cols-2 gap-2 border-t border-white/10 pt-3">
@@ -332,6 +456,7 @@
     });
     document.getElementById('cloud-profile-edit').addEventListener('click', editCloudNickname);
     document.getElementById('cloud-feedback-open').addEventListener('click', openCloudFeedback);
+    document.getElementById('cloud-notification-open').addEventListener('click', openCloudNotifications);
     document.getElementById('cloud-feedback-add').addEventListener('click', openCloudFeedback);
     document.getElementById('cloud-record-refresh').addEventListener('click', refreshCloudProfile);
     document.getElementById('cloud-record-filters').addEventListener('click', (event) => {
@@ -930,6 +1055,7 @@
     try { userPoints = Number(profile.points || 0); } catch (_) {}
     renderCloudSubmissionRecords();
     renderCloudFeedback();
+    updateNotificationEntry();
   }
 
   async function refreshCloudProfile() {
@@ -937,6 +1063,7 @@
     bootstrapPromise = callCore({ action: 'bootstrap' });
     try {
       renderCloudProfile(await bootstrapPromise);
+      await loadCloudNotifications();
     } catch (error) {
       const list = document.getElementById('cloud-my-submissions');
       if (list) list.innerHTML = `<div class="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">${safeText(error.message)}</div>`;
@@ -983,6 +1110,49 @@
     ) || null;
   }
 
+  const DISCUSSABLE_DISCOVER_CONTENT_IDS = new Set([
+    'share-yellow-crane-tower',
+    'share-wudang-ancient-buildings',
+    'share-mingxianling',
+    'share-hubei-museum-bells',
+    'share-jingzhou-city-wall',
+    'live-new-jingzhou-inscription',
+    'live-new-enshi-door',
+    'live-new-wudang-stone',
+    'live-new-suizhou-pattern'
+  ]);
+
+  function setDiscoverDiscussionEntryAvailable(available) {
+    const entry = document.getElementById('cloud-discover-discussion-entry');
+    if (entry) entry.classList.toggle('hidden', !available);
+  }
+
+  function normalizeInteractionTarget(value) {
+    if (value && typeof value === 'object' && value.targetType && value.targetId) {
+      return {
+        targetType: String(value.targetType),
+        targetId: rawSubmissionId(value.targetId),
+        targetTitle: String(value.targetTitle || value.title || '内容讨论')
+      };
+    }
+    const item = typeof value === 'string' ? findApprovedItem(value) : value;
+    if (!item || !String(item.feedId || item.id || '').startsWith('approved-')) return null;
+    return {
+      targetType: 'submission',
+      targetId: rawSubmissionId(item.id || item.feedId),
+      targetTitle: String(item.title || '社区投稿')
+    };
+  }
+
+  function interactionPayload(target) {
+    const payload = {
+      targetType: target.targetType,
+      targetId: target.targetId
+    };
+    if (target.targetType === 'submission') payload.submissionId = target.targetId;
+    return payload;
+  }
+
   async function requireInteractiveAccount() {
     const user = await ensureCloudUser();
     if (!isStableAccount(user)) {
@@ -1013,13 +1183,17 @@
 
   function renderCloudComments(result) {
     const panel = document.getElementById('cloud-interaction-panel');
+    const title = document.getElementById('cloud-interaction-title');
     const summary = document.getElementById('cloud-interaction-summary');
     const list = document.getElementById('cloud-comment-list');
     const likeUsers = document.getElementById('cloud-like-users');
     const loadMore = document.getElementById('cloud-comment-load-more');
     if (!panel || !summary || !list) return;
     panel.classList.remove('hidden');
-    summary.textContent = `${Number(result.likeCount || 0)} 个赞 · ${Number(result.commentCount || 0)} 条评论`;
+    if (title) title.textContent = result.targetTitle || (activeInteractionTarget && activeInteractionTarget.targetTitle) || '内容讨论';
+    summary.textContent = result.targetType === 'submission'
+      ? `${Number(result.likeCount || 0)} 个赞 · ${Number(result.commentCount || 0)} 条评论`
+      : `${Number(result.commentCount || 0)} 条评论 · 登录后可参与交流`;
     const likers = result.likers || [];
     if (likeUsers) {
       likeUsers.classList.toggle('hidden', !likers.length);
@@ -1051,13 +1225,14 @@
 
   async function loadCloudInteractions(itemOrId, options = {}) {
     const append = options.append === true;
-    const item = typeof itemOrId === 'string' ? findApprovedItem(itemOrId) : itemOrId;
+    const target = normalizeInteractionTarget(itemOrId || activeInteractionTarget);
     const panel = document.getElementById('cloud-interaction-panel');
-    if (!item || !String(item.feedId || item.id || '').startsWith('approved-')) {
+    if (!target) {
       if (panel) panel.classList.add('hidden');
       return;
     }
-    activeInteractionSubmissionId = rawSubmissionId(item.id || item.feedId);
+    activeInteractionTarget = target;
+    activeInteractionSubmissionId = target.targetType === 'submission' ? target.targetId : '';
     if (!append) {
       activeReplyCommentId = '';
       loadedInteractionComments = [];
@@ -1070,7 +1245,7 @@
     try {
       const result = await callCore({
         action: 'getInteractions',
-        submissionId: activeInteractionSubmissionId,
+        ...interactionPayload(target),
         commentOffset: append ? loadedInteractionComments.length : 0,
         commentLimit: 10
       });
@@ -1084,12 +1259,42 @@
         loadedInteractionComments = incoming;
       }
       interactionHasMoreComments = Boolean(result.hasMoreComments);
-      updateApprovedInteractionState(activeInteractionSubmissionId, result);
+      if (target.targetType === 'submission') updateApprovedInteractionState(target.targetId, result);
       renderCloudComments(result);
-      if (typeof renderDiscoverFeed === 'function') renderDiscoverFeed();
+      if (target.targetType === 'submission' && typeof renderDiscoverFeed === 'function') renderDiscoverFeed();
     } catch (error) {
       if (list) list.innerHTML = `<div class="rounded-lg bg-red-50 p-3 text-[10px] text-red-700">${safeText(error.message)}</div>`;
     }
+  }
+
+  async function openCloudDiscussion(targetType, targetId, targetTitle) {
+    const target = normalizeInteractionTarget({ targetType, targetId, targetTitle });
+    if (!target) return;
+    const modal = document.getElementById('cloud-discussion-modal');
+    const reportButton = document.getElementById('cloud-report-submission');
+    if (reportButton) reportButton.classList.toggle('hidden', target.targetType !== 'submission');
+    if (modal) modal.classList.remove('hidden');
+    await loadCloudInteractions(target);
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function openActiveCloudDiscussion() {
+    if (!activeInteractionTarget) {
+      if (typeof showToast === 'function') showToast('暂时无法读取这条内容的讨论', 'alert-circle');
+      return;
+    }
+    openCloudDiscussion(
+      activeInteractionTarget.targetType,
+      activeInteractionTarget.targetId,
+      activeInteractionTarget.targetTitle
+    );
+  }
+
+  function closeCloudDiscussion() {
+    const modal = document.getElementById('cloud-discussion-modal');
+    if (modal) modal.classList.add('hidden');
+    activeReplyCommentId = '';
+    updateReplyIndicator();
   }
 
   async function toggleCloudLike(id) {
@@ -1132,7 +1337,7 @@
     event.preventDefault();
     const input = document.getElementById('cloud-comment-input');
     const content = input ? input.value.trim() : '';
-    if (!activeInteractionSubmissionId || !content) {
+    if (!activeInteractionTarget || !content) {
       if (typeof showToast === 'function') showToast('请输入评论内容', 'message-square');
       return;
     }
@@ -1142,14 +1347,16 @@
       await requireInteractiveAccount();
       await callCore({
         action: 'createComment',
-        submissionId: activeInteractionSubmissionId,
+        ...interactionPayload(activeInteractionTarget),
         parentId: activeReplyCommentId,
         content
       });
       input.value = '';
+      const counter = document.getElementById('cloud-comment-count');
+      if (counter) counter.textContent = '0/500';
       activeReplyCommentId = '';
       updateReplyIndicator();
-      await loadCloudInteractions(activeInteractionSubmissionId);
+      await loadCloudInteractions(activeInteractionTarget);
       if (typeof showToast === 'function') showToast('评论已发布', 'message-square');
     } catch (error) {
       if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
@@ -1163,7 +1370,7 @@
     try {
       await requireInteractiveAccount();
       await callCore({ action: 'deleteComment', commentId });
-      await loadCloudInteractions(activeInteractionSubmissionId);
+      await loadCloudInteractions(activeInteractionTarget);
       if (typeof showToast === 'function') showToast('评论已删除', 'trash-2');
     } catch (error) {
       if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
@@ -1183,7 +1390,7 @@
     try {
       await requireInteractiveAccount();
       activeReportTargetType = targetType === 'comment' ? 'comment' : 'submission';
-      activeReportTargetId = targetId || activeInteractionSubmissionId;
+      activeReportTargetId = targetId || (activeInteractionTarget && activeInteractionTarget.targetId) || activeInteractionSubmissionId;
       const modal = document.getElementById('cloud-report-modal');
       const label = document.getElementById('cloud-report-target-label');
       const detail = document.getElementById('cloud-report-detail');
@@ -1372,9 +1579,31 @@
 
   function openCloudDiscoverDetail(itemId) {
     if (legacyOpenDiscoverDetail) legacyOpenDiscoverDetail(itemId);
-    const item = findApprovedItem(itemId);
-    loadCloudInteractions(item || itemId);
-    loadCloudSupplements(item || itemId);
+    const approvedItem = findApprovedItem(itemId);
+    if (approvedItem) {
+      setDiscoverDiscussionEntryAvailable(true);
+      loadCloudInteractions(approvedItem);
+      loadCloudSupplements(approvedItem);
+      return;
+    }
+
+    const discoverItem = typeof getDiscoverFeedItemById === 'function'
+      ? getDiscoverFeedItemById(itemId)
+      : null;
+    if (discoverItem && DISCUSSABLE_DISCOVER_CONTENT_IDS.has(String(discoverItem.id || ''))) {
+      const target = {
+        targetType: 'content',
+        targetId: String(discoverItem.id),
+        targetTitle: String(discoverItem.title || '发现内容')
+      };
+      setDiscoverDiscussionEntryAvailable(true);
+      loadCloudInteractions(target);
+      return;
+    }
+
+    activeInteractionTarget = null;
+    activeInteractionSubmissionId = '';
+    setDiscoverDiscussionEntryAvailable(false);
   }
 
   async function loadCloudPublicFeed() {
@@ -1521,14 +1750,34 @@
   };
   window.deleteCloudComment = deleteCloudComment;
   window.reportCloudContent = reportCloudContent;
+  window.openCloudDiscussion = openCloudDiscussion;
+  window.openActiveCloudDiscussion = openActiveCloudDiscussion;
+  window.closeCloudDiscussion = closeCloudDiscussion;
+  window.openCloudNotifications = openCloudNotifications;
   window.submitCloudManualReview = async () => {
     throw new Error('请使用正式提交按钮将素材写入 CloudBase 审核池');
   };
 
   document.addEventListener('DOMContentLoaded', async () => {
     prepareFormalCloudUi();
+    const notificationEntry = document.getElementById('header-notification-entry');
+    if (notificationEntry) notificationEntry.addEventListener('click', openCloudNotifications);
+    const notificationClose = document.getElementById('cloud-notification-close');
+    if (notificationClose) notificationClose.addEventListener('click', closeCloudNotifications);
+    const notificationReadAll = document.getElementById('cloud-notification-read-all');
+    if (notificationReadAll) notificationReadAll.addEventListener('click', markAllCloudNotificationsRead);
+    const notificationList = document.getElementById('cloud-notification-list');
+    if (notificationList) notificationList.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-notification-id]');
+      if (button) openCloudNotification(button.dataset.notificationId);
+    });
     const commentForm = document.getElementById('cloud-comment-form');
     if (commentForm) commentForm.addEventListener('submit', submitCloudComment);
+    const commentInput = document.getElementById('cloud-comment-input');
+    if (commentInput) commentInput.addEventListener('input', () => {
+      const counter = document.getElementById('cloud-comment-count');
+      if (counter) counter.textContent = `${commentInput.value.length}/500`;
+    });
     const cancelReply = document.getElementById('cloud-reply-cancel');
     if (cancelReply) cancelReply.addEventListener('click', () => {
       activeReplyCommentId = '';
@@ -1538,11 +1787,13 @@
     if (reportSubmission) reportSubmission.addEventListener('click', () => {
       reportCloudContent('submission', activeInteractionSubmissionId);
     });
+    const discussionClose = document.getElementById('cloud-discussion-close');
+    if (discussionClose) discussionClose.addEventListener('click', closeCloudDiscussion);
     const loadMoreComments = document.getElementById('cloud-comment-load-more');
     if (loadMoreComments) loadMoreComments.addEventListener('click', async () => {
       loadMoreComments.disabled = true;
       try {
-        await loadCloudInteractions(activeInteractionSubmissionId, { append: true });
+        await loadCloudInteractions(activeInteractionTarget, { append: true });
       } finally {
         loadMoreComments.disabled = false;
       }
