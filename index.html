@@ -494,6 +494,10 @@
         <button id="header-account-entry" type="button" class="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/10 text-stone-200" aria-label="登录或打开个人中心" title="登录或打开个人中心">
           <i data-lucide="user-round" class="h-4 w-4"></i>
         </button>
+        <button id="header-notification-entry" type="button" class="relative hidden h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/10 text-stone-200" aria-label="查看消息" title="查看消息">
+          <i data-lucide="bell" class="h-4 w-4"></i>
+          <span id="header-notification-badge" class="hidden absolute -right-1 -top-1 min-w-4 rounded-full bg-cinnabarRed px-1 text-center text-[8px] font-black leading-4 text-white">0</span>
+        </button>
         <button type="button" onclick="startOnboardingLearning()" class="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/10 text-stone-300" aria-label="使用帮助" title="使用帮助">
           <i data-lucide="circle-help" class="h-4 w-4"></i>
         </button>
@@ -598,7 +602,7 @@
 
         <!-- 濒危重点推荐 -->
         <div class="px-4">
-          <div class="bg-gradient-to-r from-deepTeal to-emerald-900 rounded-2xl p-4 text-white relative overflow-hidden shadow-md">
+          <button type="button" onclick="openEndangeredHotspot('suizhou-window-carving')" class="block w-full bg-gradient-to-r from-deepTeal to-emerald-900 rounded-2xl p-4 text-left text-white relative overflow-hidden shadow-md transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-sandGold focus:ring-offset-2" aria-label="查看随州楚式花窗木雕守护热点详情">
             <div class="absolute right-[-10px] bottom-[-10px] opacity-10">
               <i data-lucide="compass" class="w-32 h-32"></i>
             </div>
@@ -611,11 +615,11 @@
               <span class="text-xs text-sandGold flex items-center">
                 <i data-lucide="award" class="w-3.5 h-3.5 mr-1"></i> 打卡奖励 +150 流光值
               </span>
-              <button onclick="switchTab('map')" class="bg-sandGold hover:bg-amber-100 text-deepTeal font-bold text-xs px-3 py-1.5 rounded-lg transition-colors shadow">
-                前往寻迹
-              </button>
+              <span class="bg-sandGold text-deepTeal font-bold text-xs px-3 py-1.5 rounded-lg shadow flex items-center">
+                查看守护任务 <i data-lucide="arrow-right" class="ml-1 h-3.5 w-3.5"></i>
+              </span>
             </div>
-          </div>
+          </button>
         </div>
         <!-- 社区大众采集流 -->
         <div class="px-4 space-y-4">
@@ -774,6 +778,9 @@
                 <i data-lucide="zap" class="w-4 h-4 mr-1 text-sandGold fill-sandGold"></i> 任务奖励：+<span id="drawer-points">50</span> 积分
               </span>
               <div class="flex items-center gap-2">
+                <button type="button" onclick="window.openCloudDiscussion('landmark', activeLandmark.id, activeLandmark.title)" class="border border-deepTeal/20 bg-white text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
+                  <i data-lucide="messages-square" class="w-3.5 h-3.5 mr-1"></i> 讨论
+                </button>
                 <button id="drawer-nav-btn" onclick="openCurrentLandmarkNavigation()" class="bg-sandGold text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
                   <i data-lucide="navigation" class="w-3.5 h-3.5 mr-1"></i> 打开导航
                 </button>
@@ -983,6 +990,9 @@
                 </button>
                 <button onclick="openCommunityMapPoint('yellow-crane-tower')" class="bg-white/95 text-stone-800 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
                   <i data-lucide="map" class="w-3.5 h-3.5 mr-1"></i> 看任务点
+                </button>
+                <button type="button" onclick="window.openCloudDiscussion('activity', 'jingchu-pattern-week', '荆楚纹样寻访周')" class="border border-white/70 bg-stone-950/35 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
+                  <i data-lucide="messages-square" class="w-3.5 h-3.5 mr-1"></i> 讨论
                 </button>
               </div>
             </div>
@@ -1197,40 +1207,21 @@
             <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
               <i data-lucide="store" class="w-4 h-4 mr-1 text-deepTeal"></i> 乡村文旅赞助反哺专区
             </h4>
-            <span class="text-[9px] text-stone-400">湖北商户联名赞助</span>
+            <span class="text-[9px] text-stone-400">云端积分兑换</span>
           </div>
-
-          <div class="space-y-2">
-            <!-- 赞助券卡 1 -->
-            <div class="bg-white border border-stone-200 rounded-xl p-3 flex justify-between items-center">
-              <div class="flex items-center space-x-2.5">
-                <div class="bg-red-50 text-cinnabarRed p-2 rounded-lg border border-red-200 shrink-0">
-                  <span class="text-sm font-black cultural-font">券</span>
-                </div>
-                <div>
-                  <h5 class="text-xs font-bold text-stone-800">【恩施黛瓦隐庐】100元房费抵扣券</h5>
-                  <p class="text-[10px] text-stone-500">赞助商家提供 · 恩施核心景区通用</p>
-                </div>
-              </div>
-              <button onclick="redeemCoupon('【恩施黛瓦隐庐】100元房费抵扣券', 500)" class="bg-deepTeal text-sandGold px-3 py-1.5 rounded-lg text-[10px] font-bold shrink-0 shadow">
-                500积分兑换
-              </button>
+          <p class="rounded-xl border border-sandGold/20 bg-sandGold/5 px-3 py-2 text-[10px] leading-relaxed text-stone-600">
+            兑换由 CloudBase 云函数扣除真实积分并生成唯一凭证；兑换前请确认商家使用说明。
+          </p>
+          <div id="cloud-reward-list" class="space-y-2">
+            <div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">正在读取云端福利…</div>
+          </div>
+          <div class="pt-2">
+            <div class="mb-2 flex items-center justify-between">
+              <h5 class="text-xs font-bold text-stone-700">我的兑换凭证</h5>
+              <span id="cloud-redemption-count" class="text-[9px] text-stone-400">0 张</span>
             </div>
-
-            <!-- 赞助券卡 2 -->
-            <div class="bg-white border border-stone-200 rounded-xl p-3 flex justify-between items-center">
-              <div class="flex items-center space-x-2.5">
-                <div class="bg-amber-50 text-sandGold p-2 rounded-lg border border-amber-200 shrink-0">
-                  <span class="text-sm font-black cultural-font">礼</span>
-                </div>
-                <div>
-                  <h5 class="text-xs font-bold text-stone-800">【武当手工道茶】体验伴手礼</h5>
-                  <p class="text-[10px] text-stone-500">湖北本地茶厂联合赞助</p>
-                </div>
-              </div>
-              <button onclick="redeemCoupon('【武当手工道茶】体验伴手礼', 300)" class="bg-deepTeal text-sandGold px-3 py-1.5 rounded-lg text-[10px] font-bold shrink-0 shadow">
-                300积分兑换
-              </button>
+            <div id="cloud-my-redemptions" class="space-y-2">
+              <div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">暂无兑换记录。</div>
             </div>
           </div>
         </div>
@@ -1568,6 +1559,62 @@
     </div>
   </div>
 
+  <!-- 濒危守护热点详情 -->
+  <div id="endangered-hotspot-modal" class="hidden fixed inset-0 z-[68] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="endangered-hotspot-title">
+    <div class="phone-scroll max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[28px] border border-stone-200 bg-white p-5 shadow-2xl">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="rounded-full bg-cinnabarRed px-2 py-0.5 text-[10px] font-black text-white">濒危守护热点</span>
+            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">急需数字化记录</span>
+          </div>
+          <h3 id="endangered-hotspot-title" class="cultural-font mt-2 text-lg font-bold text-deepTeal">随州曾国遗风 · 楚式花窗木雕</h3>
+          <p class="mt-1 text-[11px] leading-relaxed text-stone-500">关联探索点：随州曾侯遗韵牌楼及周边木构线索</p>
+        </div>
+        <button type="button" onclick="closeEndangeredHotspot()" class="shrink-0 rounded-lg border border-stone-200 bg-stone-50 p-1.5 text-stone-400 hover:text-stone-600" aria-label="关闭热点详情">
+          <i data-lucide="x" class="h-4 w-4"></i>
+        </button>
+      </div>
+
+      <section class="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3.5">
+        <p class="flex items-center text-xs font-black text-cinnabarRed"><i data-lucide="triangle-alert" class="mr-1.5 h-4 w-4"></i>为什么需要守护</p>
+        <p class="mt-2 text-[11px] leading-relaxed text-stone-600">当前任务记录显示，相关木构件存在维护不足和损伤风险，需要优先留下可复核的整体环境、构件细节与保存状态资料。热点信息用于组织数字化采集，不替代专业文物风险鉴定。</p>
+      </section>
+
+      <div class="mt-3 grid gap-3 md:grid-cols-2">
+        <section class="rounded-2xl border border-stone-200 bg-stone-50 p-3.5">
+          <p class="flex items-center text-xs font-black text-deepTeal"><i data-lucide="camera" class="mr-1.5 h-4 w-4 text-sandGold"></i>建议采集内容</p>
+          <ul class="mt-2 space-y-1.5 text-[10px] leading-relaxed text-stone-600">
+            <li>1. 建筑或构件整体及周边环境</li>
+            <li>2. 花窗纹样、榫卯与连接部位细节</li>
+            <li>3. 裂损、缺失、变形等保存状态</li>
+            <li>4. 拍摄时间、位置和现场说明</li>
+          </ul>
+        </section>
+        <section class="rounded-2xl border border-stone-200 bg-stone-50 p-3.5">
+          <p class="flex items-center text-xs font-black text-deepTeal"><i data-lucide="shield-check" class="mr-1.5 h-4 w-4 text-sandGold"></i>现场采集边界</p>
+          <ul class="mt-2 space-y-1.5 text-[10px] leading-relaxed text-stone-600">
+            <li>• 不进入封闭或结构不安全区域</li>
+            <li>• 不触摸、移动或清理木构件</li>
+            <li>• 涉及住户时先取得明确同意</li>
+            <li>• 无法确认的信息标注“待复核”</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sandGold/30 bg-sandGold/10 px-3 py-2.5">
+        <span class="flex items-center text-[11px] font-black text-deepTeal"><i data-lucide="award" class="mr-1.5 h-4 w-4 text-sandGold"></i>完成并通过审核：+150 流光值</span>
+        <span class="text-[10px] text-stone-500">预计停留 45–60 分钟</span>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <button type="button" onclick="openEndangeredHotspotMap()" class="rounded-xl border border-deepTeal bg-white px-3 py-2.5 text-xs font-black text-deepTeal">查看地图与交通</button>
+        <button type="button" onclick="addEndangeredHotspotToRoute()" class="rounded-xl bg-deepTeal px-3 py-2.5 text-xs font-black text-sandGold">加入我的路线</button>
+        <button type="button" onclick="window.openCloudDiscussion('hotspot', 'suizhou-window-carving', '濒危守护热点 · 随州窗花')" class="rounded-xl border border-sandGold/40 bg-sandGold/10 px-3 py-2.5 text-xs font-black text-deepTeal">参与讨论</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 发现页采集详情与补充资料弹层 -->
   <div id="discover-detail-modal" class="hidden fixed inset-0 z-[65] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs">
     <div class="phone-scroll max-h-[92vh] w-full max-w-sm overflow-y-auto rounded-[28px] border border-stone-200 bg-white p-4 shadow-2xl">
@@ -1601,35 +1648,68 @@
         <div id="discover-supplement-slots" class="mt-2 space-y-2"></div>
       </div>
 
-      <section id="cloud-interaction-panel" class="mt-4 hidden border-t border-stone-200 pt-4">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <h4 class="text-xs font-bold text-stone-800">讨论与补充</h4>
+      <button id="cloud-discover-discussion-entry" type="button" onclick="window.openActiveCloudDiscussion()" class="mt-4 flex w-full items-center justify-between rounded-xl border border-deepTeal/20 bg-deepTeal/5 px-3.5 py-3 text-left transition hover:border-deepTeal/40">
+        <span>
+          <span class="block text-xs font-bold text-deepTeal">查看讨论</span>
+          <span class="mt-0.5 block text-[10px] text-stone-500">补充线索、提出问题，或回复其他参与者</span>
+        </span>
+        <i data-lucide="messages-square" class="h-5 w-5 text-deepTeal"></i>
+      </button>
+
+      <input id="discover-supplement-file" type="file" class="hidden" onchange="handleDiscoverSupplementUpload(event)">
+    </div>
+  </div>
+
+  <!-- 通用内容讨论弹层：投稿、热点、地标和社区活动共用 -->
+  <div id="cloud-discussion-modal" class="hidden fixed inset-0 z-[74] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="cloud-interaction-title">
+    <div class="phone-scroll max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[24px] border border-stone-200 bg-white p-5 shadow-2xl">
+      <section id="cloud-interaction-panel">
+        <div class="flex items-start justify-between gap-3 border-b border-stone-100 pb-3">
+          <div class="min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-sandGold">社区讨论</p>
+            <h3 id="cloud-interaction-title" class="cultural-font mt-1 truncate text-lg font-bold text-deepTeal">内容讨论</h3>
             <p id="cloud-interaction-summary" class="mt-0.5 text-[10px] text-stone-400">正在读取讨论...</p>
           </div>
-          <button id="cloud-report-submission" type="button" class="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[10px] font-bold text-red-700">
-            举报
-          </button>
+          <div class="flex shrink-0 items-center gap-2">
+            <button id="cloud-report-submission" type="button" class="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[10px] font-bold text-red-700">举报内容</button>
+            <button id="cloud-discussion-close" type="button" class="rounded-lg border border-stone-200 bg-stone-50 p-1.5 text-stone-400 hover:text-stone-600" aria-label="关闭讨论">
+              <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+          </div>
         </div>
-        <div id="cloud-like-users" class="mt-2 hidden flex-wrap items-center gap-1.5"></div>
+        <div id="cloud-like-users" class="mt-3 hidden flex-wrap items-center gap-1.5"></div>
         <div id="cloud-comment-list" class="mt-3 space-y-2"></div>
-        <button id="cloud-comment-load-more" type="button" class="mt-2 hidden w-full rounded-lg border border-stone-200 bg-white py-2 text-[10px] font-bold text-deepTeal">
-          加载更多评论
-        </button>
+        <button id="cloud-comment-load-more" type="button" class="mt-2 hidden w-full rounded-lg border border-stone-200 bg-white py-2 text-[10px] font-bold text-deepTeal">加载更多评论</button>
         <form id="cloud-comment-form" class="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
           <div id="cloud-reply-indicator" class="mb-2 hidden items-center justify-between rounded-lg bg-sandGold/15 px-2 py-1.5 text-[10px] text-deepTeal">
             <span id="cloud-reply-label"></span>
             <button id="cloud-reply-cancel" type="button" class="font-bold">取消回复</button>
           </div>
           <textarea id="cloud-comment-input" rows="3" maxlength="500" placeholder="补充线索、提出问题，或分享你的看法…" class="w-full resize-none rounded-lg border border-stone-200 bg-white p-2.5 text-xs outline-none focus:border-deepTeal"></textarea>
-          <div class="mt-2 flex items-center justify-between">
-            <span class="text-[9px] text-stone-400">评论需登录；请勿发布隐私或攻击性内容</span>
-            <button type="submit" class="rounded-lg bg-deepTeal px-3 py-2 text-[10px] font-bold text-sandGold">发表评论</button>
+          <div class="mt-2 flex items-center justify-between gap-3">
+            <span class="text-[9px] leading-relaxed text-stone-400">评论需登录；请勿发布隐私或攻击性内容 · <span id="cloud-comment-count">0/500</span></span>
+            <button type="submit" class="shrink-0 rounded-lg bg-deepTeal px-3 py-2 text-[10px] font-bold text-sandGold">发表评论</button>
           </div>
         </form>
       </section>
+    </div>
+  </div>
 
-      <input id="discover-supplement-file" type="file" class="hidden" onchange="handleDiscoverSupplementUpload(event)">
+  <!-- 互动消息中心 -->
+  <div id="cloud-notification-modal" class="hidden fixed inset-0 z-[76] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="cloud-notification-title">
+    <div class="phone-scroll max-h-[88vh] w-full max-w-xl overflow-y-auto rounded-[24px] border border-stone-200 bg-white p-5 shadow-2xl">
+      <div class="flex items-start justify-between gap-3 border-b border-stone-100 pb-3">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-sandGold">互动动态</p>
+          <h3 id="cloud-notification-title" class="cultural-font mt-1 text-lg font-bold text-deepTeal">我的消息</h3>
+          <p id="cloud-notification-summary" class="mt-0.5 text-[10px] text-stone-400">正在读取消息...</p>
+        </div>
+        <button id="cloud-notification-close" type="button" class="rounded-lg border border-stone-200 bg-stone-50 p-1.5 text-stone-400 hover:text-stone-600" aria-label="关闭消息">
+          <i data-lucide="x" class="h-4 w-4"></i>
+        </button>
+      </div>
+      <div id="cloud-notification-list" class="mt-3 space-y-2"></div>
+      <button id="cloud-notification-read-all" type="button" class="mt-3 hidden w-full rounded-xl border border-deepTeal/20 bg-deepTeal/5 px-3 py-2.5 text-xs font-bold text-deepTeal">全部标为已读</button>
     </div>
   </div>
 
@@ -2170,8 +2250,8 @@
       {
         id: 'zenghou-archway',
         title: '曾侯遗韵牌楼',
-        desc: '榫卯开裂，面临倒塌危险',
-        points: 50,
+        desc: '关联木构花窗、榫卯细节与保存状态，急需安全、可复核的数字化记录',
+        points: 150,
         coords: [31.7142, 113.3721],
         status: 'pending',
         label: '待采'
@@ -3633,6 +3713,35 @@
       }
     }
 
+    function openEndangeredHotspot(id) {
+      if (id !== 'suizhou-window-carving') return;
+      const modal = document.getElementById('endangered-hotspot-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeEndangeredHotspot() {
+      const modal = document.getElementById('endangered-hotspot-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function openEndangeredHotspotMap() {
+      closeEndangeredHotspot();
+      switchTab('map');
+      setTimeout(() => {
+        initHeritageMap();
+        selectMapPlannerPoint('zenghou-archway');
+      }, 160);
+    }
+
+    function addEndangeredHotspotToRoute() {
+      if (!mapPlannerSelectedIds.includes('zenghou-archway')) {
+        addMapPlannerPoint('zenghou-archway');
+      }
+      openEndangeredHotspotMap();
+    }
+
     function addMapPlannerPoint(id) {
       if (mapPlannerSelectedIds.includes(id)) return;
       if (mapPlannerSelectedIds.length >= 8) {
@@ -4739,8 +4848,10 @@
       const searchKeyword = String(keyword || '').trim().replace(/\s+/g, ' ');
       const encoded = encodeURIComponent(searchKeyword);
       if (platform === 'dianping') {
-        const cityId = Number(cityConfig.dianpingCityId) || 0;
-        return `https://m.dianping.com/search/keyword/${cityId}/0_${encoded}`;
+        const cityId = Number(cityConfig.dianpingCityId);
+        if (cityId > 0) return `https://m.dianping.com/search/keyword/${cityId}/0_${encoded}`;
+        // 点评的移动搜索地址必须使用真实 cityId。未配置的城市回退到官方城市页，避免 cityId=0 导致错误页。
+        return `https://www.dianping.com/${cityConfig.dianpingSlug}`;
       }
       return `https://i.meituan.com/s/${encoded}`;
     }
@@ -4756,6 +4867,91 @@
 
     function isMobileBrowser() {
       return /Android|iPhone|iPad|iPod|HarmonyOS|Mobile/i.test(navigator.userAgent || '');
+    }
+
+    function isEmbeddedMobileBrowser() {
+      return /MicroMessenger|WeChat|QQ\//i.test(navigator.userAgent || '');
+    }
+
+    function copyExternalServiceKeyword(keyword) {
+      const value = String(keyword || '');
+      if (!value) return Promise.resolve();
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(value);
+      }
+      const input = document.createElement('textarea');
+      input.value = value;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      input.remove();
+      return Promise.resolve();
+    }
+
+    function ensureExternalServiceGuide() {
+      let modal = document.getElementById('external-service-guide');
+      if (modal) return modal;
+      modal = document.createElement('div');
+      modal.id = 'external-service-guide';
+      modal.className = 'hidden fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4';
+      modal.innerHTML = `
+        <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[9px] font-black uppercase tracking-[0.18em] text-sandGold">Open in App</p>
+              <h3 id="external-service-title" class="mt-1 text-base font-bold text-stone-900">前往第三方平台</h3>
+            </div>
+            <button id="external-service-close" type="button" class="text-stone-400" aria-label="关闭">✕</button>
+          </div>
+          <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[10px] leading-relaxed text-amber-900">
+            微信会拦截网页直接唤起其他 App。如果下方“尝试打开 App”无反应，请点右上角 <strong>…</strong>，选择<strong>在浏览器打开</strong>，再点原按钮。
+          </div>
+          <div class="mt-3 rounded-xl bg-stone-50 p-3">
+            <p class="text-[9px] text-stone-400">建议搜索</p>
+            <p id="external-service-keyword" class="mt-1 select-all text-sm font-bold text-deepTeal"></p>
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <button id="external-service-copy" type="button" class="rounded-xl border border-deepTeal bg-white py-2.5 text-xs font-bold text-deepTeal">复制搜索词</button>
+            <button id="external-service-open-app" type="button" class="rounded-xl bg-deepTeal py-2.5 text-xs font-bold text-sandGold">尝试打开 App</button>
+          </div>
+          <button id="external-service-open-web" type="button" class="mt-2 w-full rounded-xl bg-stone-100 py-2.5 text-xs font-bold text-stone-600">备用：打开官方网页</button>
+          <p id="external-service-message" class="mt-2 min-h-4 text-center text-[9px] text-emerald-700"></p>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      document.getElementById('external-service-close').addEventListener('click', () => modal.classList.add('hidden'));
+      document.getElementById('external-service-copy').addEventListener('click', async () => {
+        const keyword = document.getElementById('external-service-keyword').textContent;
+        const message = document.getElementById('external-service-message');
+        try {
+          await copyExternalServiceKeyword(keyword);
+          message.textContent = '搜索词已复制，打开 App 后可直接粘贴';
+        } catch (_) {
+          message.textContent = '请长按上方搜索词复制';
+        }
+      });
+      document.getElementById('external-service-open-app').addEventListener('click', () => {
+        const appUrl = modal.dataset.appUrl || '';
+        if (appUrl) window.location.href = appUrl;
+      });
+      document.getElementById('external-service-open-web').addEventListener('click', () => {
+        const webUrl = modal.dataset.webUrl || '';
+        if (webUrl) window.location.href = webUrl;
+      });
+      return modal;
+    }
+
+    function openEmbeddedServiceGuide(platform, keyword, webUrl) {
+      const modal = ensureExternalServiceGuide();
+      const platformLabel = platform === 'dianping' ? '大众点评' : '美团';
+      modal.dataset.appUrl = buildRouteServiceAppUrl(platform, keyword);
+      modal.dataset.webUrl = webUrl;
+      document.getElementById('external-service-title').textContent = `前往${platformLabel}`;
+      document.getElementById('external-service-keyword').textContent = String(keyword || '').trim();
+      document.getElementById('external-service-message').textContent = '';
+      modal.classList.remove('hidden');
     }
 
     function openServiceAppWithFallback(appUrl, webUrl, platformLabel) {
@@ -4797,6 +4993,11 @@
       const webUrl = buildRouteServiceUrl(platform, service.keyword, serviceType, route);
       if (isMobileBrowser()) {
         const platformLabel = platform === 'dianping' ? '大众点评' : '美团';
+        if (isEmbeddedMobileBrowser()) {
+          // 微信、QQ 内置浏览器不允许普通网页强制切换到系统浏览器，使用中转引导避免落入拦截页。
+          openEmbeddedServiceGuide(platform, service.keyword, webUrl);
+          return;
+        }
         openServiceAppWithFallback(
           buildRouteServiceAppUrl(platform, service.keyword),
           webUrl,
@@ -4859,12 +5060,15 @@
           `).join('')}
         </div>
 
-        <div class="mt-3 grid grid-cols-2 gap-2">
+        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
           <button type="button" onclick="openActivityRouteGraphModal()" class="flex w-full items-center justify-center rounded-xl border border-deepTeal bg-white px-3 py-2 text-xs font-black text-deepTeal">
             <i data-lucide="list-ordered" class="mr-1.5 h-3.5 w-3.5"></i> 游览引导
           </button>
           <button type="button" onclick="openActivityRoutesOnMap('${escapeJsString(route.id)}')" class="flex w-full items-center justify-center rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold">
             <i data-lucide="route" class="mr-1.5 h-3.5 w-3.5"></i> 站点地图
+          </button>
+          <button type="button" onclick="window.openCloudDiscussion('activity', '${escapeJsString(route.id)}', '${escapeJsString(route.title)}')" class="flex w-full items-center justify-center rounded-xl border border-sandGold/50 bg-sandGold/10 px-3 py-2 text-xs font-black text-deepTeal">
+            <i data-lucide="messages-square" class="mr-1.5 h-3.5 w-3.5"></i> 路线讨论
           </button>
         </div>
 

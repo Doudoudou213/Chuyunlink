@@ -12,6 +12,7 @@
   let bootstrapPromise = null;
   let latestBootstrap = null;
   let activeInteractionSubmissionId = '';
+  let activeInteractionTarget = null;
   let activeReplyCommentId = '';
   let loadedInteractionComments = [];
   let interactionHasMoreComments = false;
@@ -21,6 +22,12 @@
   let activeCloudSupplement = null;
   let registerVerificationInfo = null;
   let resetVerificationInfo = null;
+  let activeReward = null;
+  let rewardRedeemPending = false;
+  let pendingCommentRequestId = '';
+  let pendingCommentFingerprint = '';
+  let cloudNotifications = [];
+  let cloudNotificationUnreadCount = 0;
   const cloudSupplementState = new Map();
   let publicFeedRefreshTimer = null;
   const PUBLIC_FEED_REFRESH_MS = 60 * 1000;
@@ -71,6 +78,127 @@
     if (!value) return '刚刚';
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? '刚刚' : date.toLocaleString('zh-CN');
+  }
+
+  function notificationTypeLabel(type) {
+    return {
+      comment_reply: '评论回复',
+      submission_comment: '投稿互动',
+      comment_hidden: '内容处理',
+      comment_restored: '内容恢复',
+      report_resolved: '举报处理',
+      report_dismissed: '举报复核',
+      feedback_resolved: '反馈回复',
+      feedback_closed: '反馈处理',
+      reward_redeemed: '兑换核销'
+    }[type] || '互动消息';
+  }
+
+  function updateNotificationEntry() {
+    const stable = isStableAccount(cloudUser);
+    const entry = document.getElementById('header-notification-entry');
+    const badge = document.getElementById('header-notification-badge');
+    if (entry) {
+      entry.classList.toggle('hidden', !stable);
+      entry.classList.toggle('flex', stable);
+    }
+    if (badge) {
+      badge.textContent = cloudNotificationUnreadCount > 99 ? '99+' : String(cloudNotificationUnreadCount);
+      badge.classList.toggle('hidden', !stable || cloudNotificationUnreadCount === 0);
+    }
+  }
+
+  function renderCloudNotifications() {
+    const list = document.getElementById('cloud-notification-list');
+    const summary = document.getElementById('cloud-notification-summary');
+    const readAll = document.getElementById('cloud-notification-read-all');
+    updateNotificationEntry();
+    if (!list || !summary) return;
+    summary.textContent = cloudNotificationUnreadCount
+      ? `${cloudNotificationUnreadCount} 条未读消息`
+      : '消息均已读';
+    if (readAll) readAll.classList.toggle('hidden', cloudNotificationUnreadCount === 0);
+    list.innerHTML = cloudNotifications.length ? cloudNotifications.map((item) => `
+      <button type="button" data-notification-id="${safeText(item.id)}" class="block w-full rounded-xl border ${item.isRead ? 'border-stone-200 bg-white' : 'border-sandGold/40 bg-sandGold/5'} p-3 text-left transition hover:border-deepTeal/30">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="rounded-full ${item.isRead ? 'bg-stone-100 text-stone-500' : 'bg-deepTeal text-sandGold'} px-2 py-0.5 text-[9px] font-bold">${safeText(notificationTypeLabel(item.type))}</span>
+              ${item.actorName ? `<span class="text-[9px] text-stone-400">${safeText(item.actorName)}</span>` : ''}
+            </div>
+            <p class="mt-2 text-xs font-bold text-stone-800">${safeText(item.title || '互动消息')}</p>
+            <p class="mt-1 line-clamp-2 text-[10px] leading-relaxed text-stone-600">${safeText(item.message || '')}</p>
+            <p class="mt-1.5 text-[9px] text-stone-400">${safeText(displayDate(item.createdAt))}${item.targetTitle ? ` · ${safeText(item.targetTitle)}` : ''}</p>
+          </div>
+          ${item.isRead ? '' : '<span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-cinnabarRed"></span>'}
+        </div>
+      </button>
+    `).join('') : '<div class="rounded-xl border border-stone-200 bg-stone-50 p-6 text-center text-xs text-stone-500">暂时没有互动消息。</div>';
+  }
+
+  async function loadCloudNotifications() {
+    if (!isStableAccount(cloudUser)) {
+      cloudNotifications = [];
+      cloudNotificationUnreadCount = 0;
+      updateNotificationEntry();
+      return;
+    }
+    try {
+      const result = await callCore({ action: 'getNotifications', limit: 40 });
+      cloudNotifications = result.items || [];
+      cloudNotificationUnreadCount = Number(result.unreadCount || 0);
+      renderCloudNotifications();
+    } catch (error) {
+      console.warn('[CloudBase notifications]', error);
+    }
+  }
+
+  async function openCloudNotifications() {
+    try {
+      await requireInteractiveAccount();
+      const modal = document.getElementById('cloud-notification-modal');
+      if (modal) modal.classList.remove('hidden');
+      await loadCloudNotifications();
+      if (window.lucide) lucide.createIcons();
+    } catch (error) {
+      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+    }
+  }
+
+  function closeCloudNotifications() {
+    const modal = document.getElementById('cloud-notification-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  async function openCloudNotification(notificationId) {
+    const item = cloudNotifications.find((notification) => notification.id === notificationId);
+    if (!item) return;
+    if (!item.isRead) {
+      try {
+        await callCore({ action: 'markNotificationRead', notificationId });
+        item.isRead = true;
+        cloudNotificationUnreadCount = Math.max(0, cloudNotificationUnreadCount - 1);
+        renderCloudNotifications();
+      } catch (error) {
+        if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+        return;
+      }
+    }
+    closeCloudNotifications();
+    if (item.targetType && item.targetId) {
+      openCloudDiscussion(item.targetType, item.targetId, item.targetTitle || '内容讨论');
+    }
+  }
+
+  async function markAllCloudNotificationsRead() {
+    try {
+      await callCore({ action: 'markNotificationRead', all: true });
+      cloudNotifications.forEach((item) => { item.isRead = true; });
+      cloudNotificationUnreadCount = 0;
+      renderCloudNotifications();
+    } catch (error) {
+      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+    }
   }
 
   function reviewStageLabel(status) {
@@ -287,6 +415,7 @@
           <button id="cloud-profile-upload" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">继续投稿</button>
           <button id="cloud-profile-edit" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">编辑资料</button>
           <button id="cloud-feedback-open" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">意见反馈</button>
+          <button id="cloud-notification-open" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">我的消息</button>
           <button id="cloud-account-action" type="button" class="rounded-lg bg-sandGold px-2 py-2 text-[10px] font-bold text-deepTeal">账号登录</button>
         </div>
         <div class="mt-3 grid grid-cols-2 gap-2 border-t border-white/10 pt-3">
@@ -332,6 +461,7 @@
     });
     document.getElementById('cloud-profile-edit').addEventListener('click', editCloudNickname);
     document.getElementById('cloud-feedback-open').addEventListener('click', openCloudFeedback);
+    document.getElementById('cloud-notification-open').addEventListener('click', openCloudNotifications);
     document.getElementById('cloud-feedback-add').addEventListener('click', openCloudFeedback);
     document.getElementById('cloud-record-refresh').addEventListener('click', refreshCloudProfile);
     document.getElementById('cloud-record-filters').addEventListener('click', (event) => {
@@ -484,6 +614,52 @@
           </form>
         </div>
       </div>
+      <div id="cloud-reward-modal" class="hidden fixed inset-0 z-[92] flex items-center justify-center bg-black/70 p-4">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[9px] font-black uppercase tracking-[0.18em] text-sandGold">Reward</p>
+              <h3 id="cloud-reward-modal-title" class="mt-1 text-base font-bold text-stone-900">确认兑换</h3>
+              <p id="cloud-reward-modal-sponsor" class="mt-1 text-[10px] text-stone-500"></p>
+            </div>
+            <button type="button" data-close-reward class="text-stone-400" aria-label="关闭">✕</button>
+          </div>
+          <p id="cloud-reward-modal-description" class="mt-3 rounded-xl bg-stone-50 p-3 text-[10px] leading-relaxed text-stone-600"></p>
+          <div class="mt-3 grid grid-cols-2 gap-2 text-center">
+            <div class="rounded-xl border border-stone-200 p-3">
+              <p class="text-[9px] text-stone-400">需要积分</p>
+              <p id="cloud-reward-modal-cost" class="mt-1 text-lg font-black text-deepTeal">0</p>
+            </div>
+            <div class="rounded-xl border border-stone-200 p-3">
+              <p class="text-[9px] text-stone-400">当前积分</p>
+              <p id="cloud-reward-modal-balance" class="mt-1 text-lg font-black text-deepTeal">0</p>
+            </div>
+          </div>
+          <p id="cloud-reward-message" class="mt-2 min-h-4 text-[10px] text-red-600"></p>
+          <div class="mt-2 flex gap-2">
+            <button type="button" data-close-reward class="flex-1 rounded-xl bg-stone-100 py-2.5 text-xs font-bold text-stone-600">再想想</button>
+            <button id="cloud-reward-confirm" type="button" class="flex-1 rounded-xl bg-deepTeal py-2.5 text-xs font-bold text-sandGold">确认兑换</button>
+          </div>
+          <p class="mt-3 text-center text-[9px] text-stone-400">兑换成功后积分立即扣除，凭证可在“我的兑换”中找回。</p>
+        </div>
+      </div>
+      <div id="cloud-redemption-result-modal" class="hidden fixed inset-0 z-[94] flex items-center justify-center bg-black/75 p-4">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-2xl">
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+            <span class="text-xl">✓</span>
+          </div>
+          <h3 class="mt-3 text-base font-bold text-stone-900">兑换成功</h3>
+          <p id="cloud-redemption-result-title" class="mt-1 text-[10px] text-stone-500"></p>
+          <div class="mt-4 rounded-2xl border-2 border-dashed border-sandGold bg-sandGold/5 p-4">
+            <p class="text-[9px] text-stone-400">使用时向商家出示此兑换码</p>
+            <p id="cloud-redemption-result-code" class="mt-2 break-all font-mono text-xl font-black tracking-wider text-deepTeal"></p>
+            <button id="cloud-redemption-copy" type="button" class="mt-3 rounded-lg border border-deepTeal/20 bg-white px-3 py-1.5 text-[10px] font-bold text-deepTeal">复制兑换码</button>
+          </div>
+          <p id="cloud-redemption-result-expiry" class="mt-3 text-[10px] font-bold text-cinnabarRed"></p>
+          <p id="cloud-redemption-result-instructions" class="mt-2 rounded-xl bg-stone-50 p-3 text-left text-[10px] leading-relaxed text-stone-600"></p>
+          <button id="cloud-redemption-result-close" type="button" class="mt-4 w-full rounded-xl bg-deepTeal py-2.5 text-xs font-bold text-sandGold">收好兑换码</button>
+        </div>
+      </div>
     `);
     document.querySelectorAll('[data-close-profile-edit]').forEach((button) => {
       button.addEventListener('click', () => document.getElementById('cloud-profile-edit-modal').classList.add('hidden'));
@@ -491,8 +667,16 @@
     document.querySelectorAll('[data-close-feedback]').forEach((button) => {
       button.addEventListener('click', () => document.getElementById('cloud-feedback-modal').classList.add('hidden'));
     });
+    document.querySelectorAll('[data-close-reward]').forEach((button) => {
+      button.addEventListener('click', () => document.getElementById('cloud-reward-modal').classList.add('hidden'));
+    });
     document.getElementById('cloud-profile-edit-form').addEventListener('submit', saveCloudNickname);
     document.getElementById('cloud-feedback-form').addEventListener('submit', submitCloudFeedback);
+    document.getElementById('cloud-reward-confirm').addEventListener('click', confirmCloudRewardRedemption);
+    document.getElementById('cloud-redemption-copy').addEventListener('click', copyActiveRedemptionCode);
+    document.getElementById('cloud-redemption-result-close').addEventListener('click', () => {
+      document.getElementById('cloud-redemption-result-modal').classList.add('hidden');
+    });
   }
 
   function openCloudLogin() {
@@ -859,6 +1043,178 @@
     }
   }
 
+  function redemptionStatusLabel(status) {
+    return {
+      issued: '待使用',
+      redeemed: '已核销',
+      expired: '已过期',
+      cancelled: '已取消'
+    }[status] || '待使用';
+  }
+
+  function redemptionStatusClass(status) {
+    return {
+      issued: 'bg-emerald-50 text-emerald-700',
+      redeemed: 'bg-stone-100 text-stone-500',
+      expired: 'bg-amber-50 text-amber-700',
+      cancelled: 'bg-red-50 text-red-600'
+    }[status] || 'bg-stone-100 text-stone-500';
+  }
+
+  function renderCloudRewards() {
+    const rewardList = document.getElementById('cloud-reward-list');
+    const redemptionList = document.getElementById('cloud-my-redemptions');
+    const redemptionCount = document.getElementById('cloud-redemption-count');
+    if (!rewardList || !latestBootstrap) return;
+    const rewards = latestBootstrap.rewards || [];
+    const points = Number(latestBootstrap.profile && latestBootstrap.profile.points || 0);
+    rewardList.innerHTML = rewards.length ? rewards.map((reward) => {
+      const soldOut = Number(reward.inventoryRemaining) <= 0;
+      const insufficient = points < Number(reward.pointsCost || 0);
+      return `
+        <article class="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex min-w-0 items-start gap-2.5">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sandGold/30 bg-sandGold/10 text-sm font-black text-deepTeal">${safeText(reward.icon || '礼')}</div>
+              <div class="min-w-0">
+                <h5 class="text-xs font-bold leading-relaxed text-stone-800">${safeText(reward.title)}</h5>
+                <p class="mt-0.5 text-[9px] text-stone-500">${safeText(reward.sponsor)}</p>
+                <p class="mt-1 line-clamp-2 text-[9px] leading-relaxed text-stone-400">${safeText(reward.description)}</p>
+              </div>
+            </div>
+            <button type="button" data-reward-id="${safeText(reward.id)}" ${soldOut ? 'disabled' : ''} class="shrink-0 rounded-lg px-3 py-2 text-[10px] font-bold ${soldOut ? 'cursor-not-allowed bg-stone-100 text-stone-400' : 'bg-deepTeal text-sandGold shadow'}">
+              ${soldOut ? '已领完' : `${Number(reward.pointsCost || 0)} 积分`}
+            </button>
+          </div>
+          <div class="mt-2 flex items-center justify-between border-t border-stone-100 pt-2 text-[9px]">
+            <span class="text-stone-400">剩余 ${Math.max(0, Number(reward.inventoryRemaining) || 0)} 份 · 兑换后 ${Number(reward.validDays) || 30} 天内有效</span>
+            ${!soldOut && insufficient ? '<span class="font-bold text-amber-600">积分暂不足</span>' : ''}
+          </div>
+        </article>
+      `;
+    }).join('') : '<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">暂无可兑换福利。</div>';
+    rewardList.querySelectorAll('[data-reward-id]').forEach((button) => {
+      button.addEventListener('click', () => openCloudReward(button.dataset.rewardId));
+    });
+
+    const redemptions = latestBootstrap.myRedemptions || [];
+    if (redemptionCount) redemptionCount.textContent = `${redemptions.length} 张`;
+    if (!redemptionList) return;
+    if (!isStableAccount(cloudUser)) {
+      redemptionList.innerHTML = '<button type="button" data-login-for-redemptions class="w-full rounded-xl border border-stone-200 bg-white p-3 text-left text-xs text-stone-500">登录正式账号后可查看和长期保存兑换凭证。</button>';
+      const login = redemptionList.querySelector('[data-login-for-redemptions]');
+      if (login) login.addEventListener('click', openCloudLogin);
+      return;
+    }
+    redemptionList.innerHTML = redemptions.length ? redemptions.map((item) => `
+      <article class="rounded-xl border border-stone-200 bg-white p-3">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-xs font-bold text-stone-800">${safeText(item.rewardTitle)}</p>
+            <p class="mt-0.5 text-[9px] text-stone-400">${safeText(item.sponsor)}</p>
+          </div>
+          <span class="shrink-0 rounded-full px-2 py-1 text-[9px] font-bold ${redemptionStatusClass(item.status)}">${safeText(redemptionStatusLabel(item.status))}</span>
+        </div>
+        <div class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-stone-50 px-2.5 py-2">
+          <code class="break-all text-[11px] font-black tracking-wide text-deepTeal">${safeText(item.code)}</code>
+          <button type="button" data-copy-redemption="${safeText(item.code)}" class="shrink-0 rounded-md bg-white px-2 py-1 text-[9px] font-bold text-deepTeal shadow-sm">复制</button>
+        </div>
+        <p class="mt-2 text-[9px] text-stone-400">有效期至 ${safeText(displayDate(item.expiresAt))} · 已扣 ${Number(item.pointsCost || 0)} 积分</p>
+      </article>
+    `).join('') : '<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">暂无兑换记录。</div>';
+    redemptionList.querySelectorAll('[data-copy-redemption]').forEach((button) => {
+      button.addEventListener('click', () => copyTextValue(button.dataset.copyRedemption));
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function openCloudReward(rewardId) {
+    if (!isStableAccount(cloudUser)) {
+      openCloudLogin();
+      if (typeof showToast === 'function') showToast('登录正式账号后才能兑换，以便长期保存凭证', 'log-in');
+      return;
+    }
+    const rewards = latestBootstrap && latestBootstrap.rewards || [];
+    activeReward = rewards.find((item) => item.id === rewardId) || null;
+    if (!activeReward) {
+      if (typeof showToast === 'function') showToast('该福利信息已更新，请刷新后重试', 'alert-circle');
+      return;
+    }
+    injectProductModals();
+    document.getElementById('cloud-reward-modal-title').textContent = activeReward.title || '确认兑换';
+    document.getElementById('cloud-reward-modal-sponsor').textContent = activeReward.sponsor || '';
+    document.getElementById('cloud-reward-modal-description').textContent = activeReward.description || '请兑换前确认使用说明。';
+    document.getElementById('cloud-reward-modal-cost').textContent = Number(activeReward.pointsCost || 0).toLocaleString();
+    document.getElementById('cloud-reward-modal-balance').textContent = Number(latestBootstrap.profile && latestBootstrap.profile.points || 0).toLocaleString();
+    document.getElementById('cloud-reward-message').textContent = '';
+    document.getElementById('cloud-reward-modal').classList.remove('hidden');
+  }
+
+  function createClientRequestId() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function confirmCloudRewardRedemption() {
+    if (!activeReward || rewardRedeemPending) return;
+    const message = document.getElementById('cloud-reward-message');
+    const button = document.getElementById('cloud-reward-confirm');
+    rewardRedeemPending = true;
+    button.disabled = true;
+    button.textContent = '正在生成凭证…';
+    message.textContent = '';
+    try {
+      const result = await callCore({
+        action: 'redeemReward',
+        rewardId: activeReward.id,
+        clientRequestId: createClientRequestId()
+      });
+      document.getElementById('cloud-reward-modal').classList.add('hidden');
+      showCloudRedemptionResult(result.redemption);
+      await refreshCloudProfile();
+    } catch (error) {
+      message.textContent = error.message || '兑换失败，请稍后重试';
+    } finally {
+      rewardRedeemPending = false;
+      button.disabled = false;
+      button.textContent = '确认兑换';
+    }
+  }
+
+  function showCloudRedemptionResult(redemption) {
+    injectProductModals();
+    document.getElementById('cloud-redemption-result-title').textContent = redemption.rewardTitle || '反哺福利';
+    document.getElementById('cloud-redemption-result-code').textContent = redemption.code || '';
+    document.getElementById('cloud-redemption-result-expiry').textContent = `有效期至 ${displayDate(redemption.expiresAt)}`;
+    document.getElementById('cloud-redemption-result-instructions').textContent = redemption.redemptionInstructions || '请向商家出示兑换码。';
+    document.getElementById('cloud-redemption-result-modal').classList.remove('hidden');
+  }
+
+  async function copyTextValue(value) {
+    const text = String(value || '');
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      const input = document.createElement('textarea');
+      input.value = text;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      input.remove();
+    }
+    if (typeof showToast === 'function') showToast('兑换码已复制', 'copy');
+  }
+
+  function copyActiveRedemptionCode() {
+    const code = document.getElementById('cloud-redemption-result-code');
+    return copyTextValue(code && code.textContent);
+  }
+
   function renderCloudSubmissionRecords() {
     const list = document.getElementById('cloud-my-submissions');
     if (!list || !latestBootstrap) return;
@@ -930,6 +1286,8 @@
     try { userPoints = Number(profile.points || 0); } catch (_) {}
     renderCloudSubmissionRecords();
     renderCloudFeedback();
+    renderCloudRewards();
+    updateNotificationEntry();
   }
 
   async function refreshCloudProfile() {
@@ -937,6 +1295,7 @@
     bootstrapPromise = callCore({ action: 'bootstrap' });
     try {
       renderCloudProfile(await bootstrapPromise);
+      await loadCloudNotifications();
     } catch (error) {
       const list = document.getElementById('cloud-my-submissions');
       if (list) list.innerHTML = `<div class="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">${safeText(error.message)}</div>`;
@@ -983,6 +1342,49 @@
     ) || null;
   }
 
+  const DISCUSSABLE_DISCOVER_CONTENT_IDS = new Set([
+    'share-yellow-crane-tower',
+    'share-wudang-ancient-buildings',
+    'share-mingxianling',
+    'share-hubei-museum-bells',
+    'share-jingzhou-city-wall',
+    'live-new-jingzhou-inscription',
+    'live-new-enshi-door',
+    'live-new-wudang-stone',
+    'live-new-suizhou-pattern'
+  ]);
+
+  function setDiscoverDiscussionEntryAvailable(available) {
+    const entry = document.getElementById('cloud-discover-discussion-entry');
+    if (entry) entry.classList.toggle('hidden', !available);
+  }
+
+  function normalizeInteractionTarget(value) {
+    if (value && typeof value === 'object' && value.targetType && value.targetId) {
+      return {
+        targetType: String(value.targetType),
+        targetId: rawSubmissionId(value.targetId),
+        targetTitle: String(value.targetTitle || value.title || '内容讨论')
+      };
+    }
+    const item = typeof value === 'string' ? findApprovedItem(value) : value;
+    if (!item || !String(item.feedId || item.id || '').startsWith('approved-')) return null;
+    return {
+      targetType: 'submission',
+      targetId: rawSubmissionId(item.id || item.feedId),
+      targetTitle: String(item.title || '社区投稿')
+    };
+  }
+
+  function interactionPayload(target) {
+    const payload = {
+      targetType: target.targetType,
+      targetId: target.targetId
+    };
+    if (target.targetType === 'submission') payload.submissionId = target.targetId;
+    return payload;
+  }
+
   async function requireInteractiveAccount() {
     const user = await ensureCloudUser();
     if (!isStableAccount(user)) {
@@ -1013,13 +1415,17 @@
 
   function renderCloudComments(result) {
     const panel = document.getElementById('cloud-interaction-panel');
+    const title = document.getElementById('cloud-interaction-title');
     const summary = document.getElementById('cloud-interaction-summary');
     const list = document.getElementById('cloud-comment-list');
     const likeUsers = document.getElementById('cloud-like-users');
     const loadMore = document.getElementById('cloud-comment-load-more');
     if (!panel || !summary || !list) return;
     panel.classList.remove('hidden');
-    summary.textContent = `${Number(result.likeCount || 0)} 个赞 · ${Number(result.commentCount || 0)} 条评论`;
+    if (title) title.textContent = result.targetTitle || (activeInteractionTarget && activeInteractionTarget.targetTitle) || '内容讨论';
+    summary.textContent = result.targetType === 'submission'
+      ? `${Number(result.likeCount || 0)} 个赞 · ${Number(result.commentCount || 0)} 条评论`
+      : `${Number(result.commentCount || 0)} 条评论 · 登录后可参与交流`;
     const likers = result.likers || [];
     if (likeUsers) {
       likeUsers.classList.toggle('hidden', !likers.length);
@@ -1051,13 +1457,14 @@
 
   async function loadCloudInteractions(itemOrId, options = {}) {
     const append = options.append === true;
-    const item = typeof itemOrId === 'string' ? findApprovedItem(itemOrId) : itemOrId;
+    const target = normalizeInteractionTarget(itemOrId || activeInteractionTarget);
     const panel = document.getElementById('cloud-interaction-panel');
-    if (!item || !String(item.feedId || item.id || '').startsWith('approved-')) {
+    if (!target) {
       if (panel) panel.classList.add('hidden');
       return;
     }
-    activeInteractionSubmissionId = rawSubmissionId(item.id || item.feedId);
+    activeInteractionTarget = target;
+    activeInteractionSubmissionId = target.targetType === 'submission' ? target.targetId : '';
     if (!append) {
       activeReplyCommentId = '';
       loadedInteractionComments = [];
@@ -1070,7 +1477,7 @@
     try {
       const result = await callCore({
         action: 'getInteractions',
-        submissionId: activeInteractionSubmissionId,
+        ...interactionPayload(target),
         commentOffset: append ? loadedInteractionComments.length : 0,
         commentLimit: 10
       });
@@ -1084,12 +1491,42 @@
         loadedInteractionComments = incoming;
       }
       interactionHasMoreComments = Boolean(result.hasMoreComments);
-      updateApprovedInteractionState(activeInteractionSubmissionId, result);
+      if (target.targetType === 'submission') updateApprovedInteractionState(target.targetId, result);
       renderCloudComments(result);
-      if (typeof renderDiscoverFeed === 'function') renderDiscoverFeed();
+      if (target.targetType === 'submission' && typeof renderDiscoverFeed === 'function') renderDiscoverFeed();
     } catch (error) {
       if (list) list.innerHTML = `<div class="rounded-lg bg-red-50 p-3 text-[10px] text-red-700">${safeText(error.message)}</div>`;
     }
+  }
+
+  async function openCloudDiscussion(targetType, targetId, targetTitle) {
+    const target = normalizeInteractionTarget({ targetType, targetId, targetTitle });
+    if (!target) return;
+    const modal = document.getElementById('cloud-discussion-modal');
+    const reportButton = document.getElementById('cloud-report-submission');
+    if (reportButton) reportButton.classList.toggle('hidden', target.targetType !== 'submission');
+    if (modal) modal.classList.remove('hidden');
+    await loadCloudInteractions(target);
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function openActiveCloudDiscussion() {
+    if (!activeInteractionTarget) {
+      if (typeof showToast === 'function') showToast('暂时无法读取这条内容的讨论', 'alert-circle');
+      return;
+    }
+    openCloudDiscussion(
+      activeInteractionTarget.targetType,
+      activeInteractionTarget.targetId,
+      activeInteractionTarget.targetTitle
+    );
+  }
+
+  function closeCloudDiscussion() {
+    const modal = document.getElementById('cloud-discussion-modal');
+    if (modal) modal.classList.add('hidden');
+    activeReplyCommentId = '';
+    updateReplyIndicator();
   }
 
   async function toggleCloudLike(id) {
@@ -1132,7 +1569,7 @@
     event.preventDefault();
     const input = document.getElementById('cloud-comment-input');
     const content = input ? input.value.trim() : '';
-    if (!activeInteractionSubmissionId || !content) {
+    if (!activeInteractionTarget || !content) {
       if (typeof showToast === 'function') showToast('请输入评论内容', 'message-square');
       return;
     }
@@ -1140,19 +1577,36 @@
     button.disabled = true;
     try {
       await requireInteractiveAccount();
+      const fingerprint = [
+        activeInteractionTarget.targetType,
+        activeInteractionTarget.targetId,
+        activeReplyCommentId,
+        content
+      ].join('|');
+      if (!pendingCommentRequestId || pendingCommentFingerprint !== fingerprint) {
+        pendingCommentRequestId = createClientRequestId();
+        pendingCommentFingerprint = fingerprint;
+      }
       await callCore({
         action: 'createComment',
-        submissionId: activeInteractionSubmissionId,
+        ...interactionPayload(activeInteractionTarget),
         parentId: activeReplyCommentId,
-        content
+        content,
+        clientRequestId: pendingCommentRequestId
       });
+      pendingCommentRequestId = '';
+      pendingCommentFingerprint = '';
       input.value = '';
+      const counter = document.getElementById('cloud-comment-count');
+      if (counter) counter.textContent = '0/500';
       activeReplyCommentId = '';
       updateReplyIndicator();
-      await loadCloudInteractions(activeInteractionSubmissionId);
+      await loadCloudInteractions(activeInteractionTarget);
       if (typeof showToast === 'function') showToast('评论已发布', 'message-square');
     } catch (error) {
-      if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
+      const isBusy = /TransactionBusy|Transaction is busy|DATABASE_TRANSACTION_FAIL|COMMENT_SERVICE_BUSY/i.test(`${error.code || ''} ${error.message || ''}`);
+      const message = isBusy ? '当前参与评论的人较多，请稍等几秒再试' : error.message;
+      if (typeof showToast === 'function') showToast(message, 'alert-circle');
     } finally {
       button.disabled = false;
     }
@@ -1163,7 +1617,7 @@
     try {
       await requireInteractiveAccount();
       await callCore({ action: 'deleteComment', commentId });
-      await loadCloudInteractions(activeInteractionSubmissionId);
+      await loadCloudInteractions(activeInteractionTarget);
       if (typeof showToast === 'function') showToast('评论已删除', 'trash-2');
     } catch (error) {
       if (typeof showToast === 'function') showToast(error.message, 'alert-circle');
@@ -1183,7 +1637,7 @@
     try {
       await requireInteractiveAccount();
       activeReportTargetType = targetType === 'comment' ? 'comment' : 'submission';
-      activeReportTargetId = targetId || activeInteractionSubmissionId;
+      activeReportTargetId = targetId || (activeInteractionTarget && activeInteractionTarget.targetId) || activeInteractionSubmissionId;
       const modal = document.getElementById('cloud-report-modal');
       const label = document.getElementById('cloud-report-target-label');
       const detail = document.getElementById('cloud-report-detail');
@@ -1372,9 +1826,31 @@
 
   function openCloudDiscoverDetail(itemId) {
     if (legacyOpenDiscoverDetail) legacyOpenDiscoverDetail(itemId);
-    const item = findApprovedItem(itemId);
-    loadCloudInteractions(item || itemId);
-    loadCloudSupplements(item || itemId);
+    const approvedItem = findApprovedItem(itemId);
+    if (approvedItem) {
+      setDiscoverDiscussionEntryAvailable(true);
+      loadCloudInteractions(approvedItem);
+      loadCloudSupplements(approvedItem);
+      return;
+    }
+
+    const discoverItem = typeof getDiscoverFeedItemById === 'function'
+      ? getDiscoverFeedItemById(itemId)
+      : null;
+    if (discoverItem && DISCUSSABLE_DISCOVER_CONTENT_IDS.has(String(discoverItem.id || ''))) {
+      const target = {
+        targetType: 'content',
+        targetId: String(discoverItem.id),
+        targetTitle: String(discoverItem.title || '发现内容')
+      };
+      setDiscoverDiscussionEntryAvailable(true);
+      loadCloudInteractions(target);
+      return;
+    }
+
+    activeInteractionTarget = null;
+    activeInteractionSubmissionId = '';
+    setDiscoverDiscussionEntryAvailable(false);
   }
 
   async function loadCloudPublicFeed() {
@@ -1521,14 +1997,34 @@
   };
   window.deleteCloudComment = deleteCloudComment;
   window.reportCloudContent = reportCloudContent;
+  window.openCloudDiscussion = openCloudDiscussion;
+  window.openActiveCloudDiscussion = openActiveCloudDiscussion;
+  window.closeCloudDiscussion = closeCloudDiscussion;
+  window.openCloudNotifications = openCloudNotifications;
   window.submitCloudManualReview = async () => {
     throw new Error('请使用正式提交按钮将素材写入 CloudBase 审核池');
   };
 
   document.addEventListener('DOMContentLoaded', async () => {
     prepareFormalCloudUi();
+    const notificationEntry = document.getElementById('header-notification-entry');
+    if (notificationEntry) notificationEntry.addEventListener('click', openCloudNotifications);
+    const notificationClose = document.getElementById('cloud-notification-close');
+    if (notificationClose) notificationClose.addEventListener('click', closeCloudNotifications);
+    const notificationReadAll = document.getElementById('cloud-notification-read-all');
+    if (notificationReadAll) notificationReadAll.addEventListener('click', markAllCloudNotificationsRead);
+    const notificationList = document.getElementById('cloud-notification-list');
+    if (notificationList) notificationList.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-notification-id]');
+      if (button) openCloudNotification(button.dataset.notificationId);
+    });
     const commentForm = document.getElementById('cloud-comment-form');
     if (commentForm) commentForm.addEventListener('submit', submitCloudComment);
+    const commentInput = document.getElementById('cloud-comment-input');
+    if (commentInput) commentInput.addEventListener('input', () => {
+      const counter = document.getElementById('cloud-comment-count');
+      if (counter) counter.textContent = `${commentInput.value.length}/500`;
+    });
     const cancelReply = document.getElementById('cloud-reply-cancel');
     if (cancelReply) cancelReply.addEventListener('click', () => {
       activeReplyCommentId = '';
@@ -1538,11 +2034,13 @@
     if (reportSubmission) reportSubmission.addEventListener('click', () => {
       reportCloudContent('submission', activeInteractionSubmissionId);
     });
+    const discussionClose = document.getElementById('cloud-discussion-close');
+    if (discussionClose) discussionClose.addEventListener('click', closeCloudDiscussion);
     const loadMoreComments = document.getElementById('cloud-comment-load-more');
     if (loadMoreComments) loadMoreComments.addEventListener('click', async () => {
       loadMoreComments.disabled = true;
       try {
-        await loadCloudInteractions(activeInteractionSubmissionId, { append: true });
+        await loadCloudInteractions(activeInteractionTarget, { append: true });
       } finally {
         loadMoreComments.disabled = false;
       }

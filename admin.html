@@ -15,7 +15,7 @@
     <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
       <div>
         <h1 class="text-xl font-bold text-[#d9ad52]">楚韵链迹 · 内容管理</h1>
-        <p class="mt-1 text-xs text-stone-300">投稿审核、内容举报与用户反馈</p>
+        <p class="mt-1 text-xs text-stone-300">投稿审核、互动管理、用户反馈与兑换码核销</p>
       </div>
       <div class="flex gap-2">
         <a href="./index.html" class="rounded-lg border border-white/20 px-3 py-2 text-xs font-bold">返回前台</a>
@@ -46,14 +46,35 @@
           <div id="admin-navigation" class="flex flex-wrap gap-2">
             <button id="refresh" data-admin-view="submissions" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">待审投稿</button>
             <button id="supplement-refresh" data-admin-view="supplements" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">待审补充</button>
+            <button id="comment-refresh" data-admin-view="comments" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">评论管理</button>
             <button id="report-refresh" data-admin-view="reports" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">内容举报</button>
             <button id="feedback-refresh" data-admin-view="feedback" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">用户反馈</button>
+            <button id="redemption-refresh" data-admin-view="redemptions" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">兑换码核销</button>
           </div>
         </div>
       </div>
       <div class="flex items-center justify-between px-1">
         <h2 id="view-title" class="text-sm font-bold text-stone-800">待审投稿</h2>
         <span id="view-count" class="text-xs text-stone-400"></span>
+      </div>
+      <div id="comment-filters" class="hidden flex flex-wrap items-center gap-2 rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
+        <label class="text-xs font-bold text-stone-600" for="comment-status-filter">状态</label>
+        <select id="comment-status-filter" class="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs outline-none focus:border-[#123c3a]">
+          <option value="visible">公开中</option>
+          <option value="hidden">已隐藏</option>
+          <option value="deleted">用户已删除</option>
+          <option value="all">全部状态</option>
+        </select>
+        <label class="ml-2 text-xs font-bold text-stone-600" for="comment-target-filter">内容类型</label>
+        <select id="comment-target-filter" class="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs outline-none focus:border-[#123c3a]">
+          <option value="all">全部内容</option>
+          <option value="submission">社区投稿</option>
+          <option value="hotspot">濒危热点</option>
+          <option value="landmark">地图地标</option>
+          <option value="activity">社区活动</option>
+          <option value="content">发现内容</option>
+        </select>
+        <button id="comment-filter-apply" type="button" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">应用筛选</button>
       </div>
       <div id="list" class="grid gap-4"></div>
     </section>
@@ -291,12 +312,116 @@
 
     function setActiveView(view, title) {
       viewTitle.textContent = title;
+      const commentFilters = document.getElementById("comment-filters");
+      if (commentFilters) commentFilters.classList.toggle("hidden", view !== "comments");
       document.querySelectorAll("[data-admin-view]").forEach((button) => {
         const selected = button.dataset.adminView === view;
         button.className = selected
           ? "rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]"
           : "rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600";
       });
+    }
+
+    const commentStatusLabels = {
+      visible: "公开中",
+      hidden: "已隐藏",
+      deleted: "用户已删除"
+    };
+
+    const commentTargetLabels = {
+      submission: "社区投稿",
+      hotspot: "濒危热点",
+      landmark: "地图地标",
+      activity: "社区活动",
+      content: "发现内容"
+    };
+
+    function displayAdminDate(value) {
+      if (!value) return "时间未知";
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? "时间未知" : date.toLocaleString("zh-CN");
+    }
+
+    async function loadComments() {
+      setActiveView("comments", "评论管理");
+      const status = document.getElementById("comment-status-filter").value;
+      const targetType = document.getElementById("comment-target-filter").value;
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在读取评论...";
+      try {
+        const result = await callAdmin({ action: "listComments", status, targetType, limit: 100 });
+        const items = result.items || [];
+        renderComments(items);
+        viewCount.textContent = `${items.length} 条`;
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = `已读取 ${items.length} 条评论。`;
+      } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    function renderComments(items) {
+      if (!items.length) {
+        list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前筛选条件下没有评论。</div>';
+        return;
+      }
+      list.innerHTML = items.map((item) => {
+        const canHide = item.status === "visible";
+        const canRestore = item.status === "hidden";
+        const statusClass = item.status === "visible"
+          ? "bg-emerald-50 text-emerald-700"
+          : item.status === "hidden"
+            ? "bg-red-50 text-red-700"
+            : "bg-stone-100 text-stone-500";
+        return `
+          <article data-comment-id="${escapeHtml(item.id)}" class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="rounded-full px-2 py-1 text-[10px] font-bold ${statusClass}">${escapeHtml(commentStatusLabels[item.status] || item.status)}</span>
+                  <span class="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-bold text-stone-600">${escapeHtml(commentTargetLabels[item.targetType] || item.targetType)}</span>
+                  ${item.parentId ? '<span class="rounded-full bg-[#d9ad52]/15 px-2 py-1 text-[10px] font-bold text-[#123c3a]">回复</span>' : ''}
+                </div>
+                <h3 class="mt-2 text-sm font-bold text-stone-800">${escapeHtml(item.targetTitle || "内容讨论")}</h3>
+                <p class="mt-2 whitespace-pre-wrap break-words rounded-xl bg-stone-50 p-3 text-sm leading-relaxed text-stone-700">${escapeHtml(item.content || (item.status === "deleted" ? "该评论已由用户删除" : "无可显示内容"))}</p>
+                <p class="mt-2 break-all text-[10px] leading-relaxed text-stone-400">作者：${escapeHtml(item.authorName || "社区用户")} · ${escapeHtml(displayAdminDate(item.createdAt))}<br>评论 ID：${escapeHtml(item.id)}<br>内容对象：${escapeHtml(item.targetType)} / ${escapeHtml(item.targetId)}${item.parentId ? `<br>回复评论：${escapeHtml(item.parentId)}` : ""}</p>
+                ${(canHide || canRestore) ? '<textarea data-comment-note rows="2" placeholder="隐藏时必须填写原因；恢复时可填写说明" class="mt-3 w-full rounded-xl border border-stone-200 p-3 text-xs outline-none focus:border-[#123c3a]"></textarea>' : ''}
+              </div>
+              <div class="flex shrink-0 flex-wrap gap-2">
+                ${canHide ? '<button data-comment-status="hidden" class="rounded-lg bg-red-700 px-3 py-2 text-xs font-bold text-white">隐藏评论</button>' : ''}
+                ${canRestore ? '<button data-comment-status="visible" class="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white">恢复公开</button>' : ''}
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    async function moderateComment(card, status) {
+      const commentId = card.dataset.commentId;
+      const note = card.querySelector("[data-comment-note]");
+      const moderationNote = note ? note.value.trim() : "";
+      if (status === "hidden" && !moderationNote) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = "隐藏评论时必须填写处理原因。";
+        return;
+      }
+      const buttons = card.querySelectorAll("button");
+      buttons.forEach((button) => { button.disabled = true; });
+      try {
+        await callAdmin({ action: "moderateComment", commentId, status, moderationNote });
+        card.remove();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = status === "hidden" ? "评论已隐藏并记录操作日志。" : "评论已恢复公开。";
+        if (!list.querySelector("article")) {
+          list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前筛选条件下没有评论。</div>';
+        }
+      } catch (error) {
+        buttons.forEach((button) => { button.disabled = false; });
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
     }
 
     const reportReasonLabels = {
@@ -337,10 +462,10 @@
                 <span class="rounded-full bg-red-50 px-2 py-1 text-[10px] font-bold text-red-700">${escapeHtml(item.targetType === "comment" ? "评论举报" : "作品举报")}</span>
                 <span class="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-bold text-stone-600">${escapeHtml(reportReasonLabels[item.reason] || item.reason)}</span>
               </div>
-              <h3 class="mt-2 text-sm font-bold text-stone-800">${escapeHtml(item.submissionTitle || "未命名作品")}</h3>
+              <h3 class="mt-2 text-sm font-bold text-stone-800">${escapeHtml(item.submissionTitle || "内容讨论")}</h3>
               ${item.targetContent ? `<p class="mt-2 rounded-lg bg-stone-50 p-3 text-xs text-stone-700">被举报评论：${escapeHtml(item.targetContent)}</p>` : ""}
               <p class="mt-2 text-xs leading-relaxed text-stone-600">${escapeHtml(item.detail || "举报人未补充说明")}</p>
-              <p class="mt-2 break-all text-[10px] text-stone-400">举报人：${escapeHtml(item.reporterName || item.reporterId)}<br>作品 ID：${escapeHtml(item.submissionId)}<br>目标 ID：${escapeHtml(item.targetId)}</p>
+              <p class="mt-2 break-all text-[10px] text-stone-400">举报人：${escapeHtml(item.reporterName || item.reporterId)}<br>内容对象：${escapeHtml(item.contentTargetType || "submission")} / ${escapeHtml(item.contentTargetId || item.submissionId)}<br>举报目标 ID：${escapeHtml(item.targetId)}</p>
               <textarea data-resolution-note rows="2" placeholder="填写处理说明（可选）" class="mt-3 w-full rounded-xl border border-stone-200 p-3 text-xs outline-none focus:border-[#123c3a]"></textarea>
             </div>
             <div class="flex shrink-0 flex-wrap gap-2">
@@ -454,6 +579,155 @@
       }
     }
 
+    const redemptionStatusLabels = {
+      issued: "待使用",
+      redeemed: "已核销",
+      expired: "已过期",
+      cancelled: "已取消"
+    };
+
+    function redemptionStatusClass(status) {
+      return {
+        issued: "bg-emerald-50 text-emerald-700",
+        redeemed: "bg-stone-100 text-stone-600",
+        expired: "bg-amber-50 text-amber-700",
+        cancelled: "bg-red-50 text-red-700"
+      }[status] || "bg-stone-100 text-stone-600";
+    }
+
+    async function loadRedemptions() {
+      setActiveView("redemptions", "兑换码核销");
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在读取兑换记录...";
+      list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在加载核销工作台…</div>';
+      try {
+        const result = await callAdmin({ action: "listRedemptions", status: "all", limit: 50 });
+        const items = result.items || [];
+        renderRedemptionWorkbench(items);
+        viewCount.textContent = `${items.length} 条`;
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "核销工作台已就绪。";
+      } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+        list.innerHTML = '<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">核销工作台暂不可用。</div>';
+      }
+    }
+
+    function renderRedemptionWorkbench(items) {
+      const history = items.length ? items.map((item) => `
+        <article class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h3 class="text-sm font-bold text-stone-800">${escapeHtml(item.rewardTitle)}</h3>
+              <p class="mt-1 text-xs text-stone-500">${escapeHtml(item.sponsor || "楚链反哺专区")}</p>
+            </div>
+            <span class="rounded-full px-2.5 py-1 text-[10px] font-bold ${redemptionStatusClass(item.status)}">${escapeHtml(redemptionStatusLabels[item.status] || item.status)}</span>
+          </div>
+          <div class="mt-3 grid gap-2 rounded-xl bg-stone-50 p-3 text-[10px] text-stone-500 sm:grid-cols-2">
+            <p>兑换码：<code class="font-bold text-[#123c3a]">${escapeHtml(item.code)}</code></p>
+            <p>用户：${escapeHtml(item.userId || "未知")}</p>
+            <p>发放：${escapeHtml(displayAdminDate(item.issuedAt))}</p>
+            <p>${item.status === "redeemed" ? `核销：${escapeHtml(displayAdminDate(item.redeemedAt))}` : `到期：${escapeHtml(displayAdminDate(item.expiresAt))}`}</p>
+          </div>
+        </article>
+      `).join("") : '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">还没有兑换记录。</div>';
+      list.innerHTML = `
+        <section class="rounded-2xl border border-[#d9ad52]/40 bg-white p-5 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-[0.18em] text-[#d9ad52]">Redemption Desk</p>
+              <h3 class="mt-1 text-base font-bold text-stone-900">查验兑换码</h3>
+              <p class="mt-1 text-xs text-stone-500">先查询凭证状态，确认商家已交付福利后再核销。</p>
+            </div>
+            <span class="rounded-full bg-amber-50 px-3 py-1 text-[10px] font-bold text-amber-700">核销后不可重复使用</span>
+          </div>
+          <form id="redemption-lookup-form" class="mt-4 flex flex-col gap-2 sm:flex-row">
+            <input id="redemption-code-input" autocomplete="off" spellcheck="false" maxlength="40" placeholder="CHU-XXXX-XXXX-XXXX" class="min-w-0 flex-1 rounded-xl border border-stone-200 px-4 py-3 font-mono text-sm uppercase tracking-wide outline-none focus:border-[#d9ad52]" required>
+            <button type="submit" class="rounded-xl bg-[#123c3a] px-5 py-3 text-xs font-bold text-[#d9ad52]">查询凭证</button>
+          </form>
+          <p id="redemption-lookup-message" class="mt-2 min-h-4 text-xs text-stone-500"></p>
+          <div id="redemption-lookup-result"></div>
+        </section>
+        <div class="flex items-center justify-between px-1 pt-2">
+          <h3 class="text-sm font-bold text-stone-800">最近兑换记录</h3>
+          <span class="text-xs text-stone-400">仅显示脱敏兑换码</span>
+        </div>
+        ${history}
+      `;
+    }
+
+    function renderRedemptionLookup(item) {
+      const container = document.getElementById("redemption-lookup-result");
+      if (!container) return;
+      const usable = item.status === "issued";
+      container.innerHTML = `
+        <article class="mt-3 rounded-2xl border ${usable ? "border-emerald-200 bg-emerald-50/50" : "border-stone-200 bg-stone-50"} p-4">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-[10px] text-stone-400">兑换内容</p>
+              <h4 class="mt-1 text-sm font-bold text-stone-900">${escapeHtml(item.rewardTitle)}</h4>
+              <p class="mt-1 text-xs text-stone-500">${escapeHtml(item.sponsor || "楚链反哺专区")}</p>
+            </div>
+            <span class="rounded-full px-3 py-1 text-[10px] font-bold ${redemptionStatusClass(item.status)}">${escapeHtml(redemptionStatusLabels[item.status] || item.status)}</span>
+          </div>
+          <div class="mt-3 rounded-xl bg-white p-3">
+            <p class="text-[10px] text-stone-400">已验证兑换码</p>
+            <code class="mt-1 block text-base font-black tracking-wider text-[#123c3a]">${escapeHtml(item.code)}</code>
+          </div>
+          <dl class="mt-3 grid gap-2 text-xs text-stone-600 sm:grid-cols-2">
+            <div><dt class="text-[10px] text-stone-400">用户</dt><dd>${escapeHtml(item.userId || "未知")}</dd></div>
+            <div><dt class="text-[10px] text-stone-400">兑换积分</dt><dd>${Number(item.pointsCost || 0)} 积分</dd></div>
+            <div><dt class="text-[10px] text-stone-400">发放时间</dt><dd>${escapeHtml(displayAdminDate(item.issuedAt))}</dd></div>
+            <div><dt class="text-[10px] text-stone-400">${item.status === "redeemed" ? "核销时间" : "有效期至"}</dt><dd>${escapeHtml(displayAdminDate(item.status === "redeemed" ? item.redeemedAt : item.expiresAt))}</dd></div>
+          </dl>
+          <p class="mt-3 rounded-xl bg-white p-3 text-xs leading-relaxed text-stone-600">使用说明：${escapeHtml(item.redemptionInstructions || "请确认福利已交付。")}</p>
+          ${usable ? `<button type="button" data-redeem-code="${escapeHtml(item.code)}" class="mt-3 w-full rounded-xl bg-emerald-700 py-3 text-sm font-bold text-white">确认已交付并核销</button>` : `<p class="mt-3 text-center text-xs font-bold text-stone-500">${item.status === "redeemed" ? "该凭证已使用，请勿重复交付。" : "该凭证当前不可核销。"}</p>`}
+        </article>
+      `;
+    }
+
+    async function lookupRedemption(event) {
+      event.preventDefault();
+      const input = document.getElementById("redemption-code-input");
+      const lookupMessage = document.getElementById("redemption-lookup-message");
+      const button = event.currentTarget.querySelector("button[type='submit']");
+      const code = input.value.trim().toUpperCase().replace(/\s+/g, "");
+      button.disabled = true;
+      lookupMessage.className = "mt-2 min-h-4 text-xs text-stone-500";
+      lookupMessage.textContent = "正在查验兑换码...";
+      try {
+        const result = await callAdmin({ action: "lookupRedemption", code });
+        renderRedemptionLookup(result.redemption);
+        lookupMessage.className = "mt-2 min-h-4 text-xs text-emerald-700";
+        lookupMessage.textContent = "兑换码已验证，请核对福利内容和状态。";
+      } catch (error) {
+        document.getElementById("redemption-lookup-result").innerHTML = "";
+        lookupMessage.className = "mt-2 min-h-4 text-xs text-red-600";
+        lookupMessage.textContent = `${error.code || "ERROR"}：${error.message}`;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function redeemCode(code, button) {
+      if (!confirm("请确认商家已向用户交付对应福利。\n\n核销后该兑换码将立即失效，确定继续吗？")) return;
+      button.disabled = true;
+      button.textContent = "正在核销...";
+      try {
+        const result = await callAdmin({ action: "redeemRewardCode", code });
+        renderRedemptionLookup(result.redemption);
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = `核销成功：${result.redemption.rewardTitle}`;
+        viewCount.textContent = "刚刚完成 1 笔核销";
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "确认已交付并核销";
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
     function renderItems(items, urls) {
       if (!items.length) {
         list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待审投稿。</div>';
@@ -517,8 +791,14 @@
     document.getElementById("login-form").addEventListener("submit", login);
     document.getElementById("refresh").addEventListener("click", loadPending);
     document.getElementById("supplement-refresh").addEventListener("click", loadSupplements);
+    document.getElementById("comment-refresh").addEventListener("click", loadComments);
+    document.getElementById("comment-filter-apply").addEventListener("click", loadComments);
     document.getElementById("report-refresh").addEventListener("click", loadReports);
     document.getElementById("feedback-refresh").addEventListener("click", loadFeedback);
+    document.getElementById("redemption-refresh").addEventListener("click", loadRedemptions);
+    document.getElementById("list").addEventListener("submit", (event) => {
+      if (event.target && event.target.id === "redemption-lookup-form") lookupRedemption(event);
+    });
     document.getElementById("list").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-status]");
       const card = event.target.closest("article[data-id]");
@@ -528,6 +808,11 @@
       if (supplementButton && supplementCard) {
         reviewSupplement(supplementCard, supplementButton.dataset.supplementStatus);
       }
+      const commentButton = event.target.closest("button[data-comment-status]");
+      const commentCard = event.target.closest("article[data-comment-id]");
+      if (commentButton && commentCard) {
+        moderateComment(commentCard, commentButton.dataset.commentStatus);
+      }
       const reportButton = event.target.closest("button[data-resolution]");
       const reportCard = event.target.closest("article[data-report-id]");
       if (reportButton && reportCard) resolveReport(reportCard, reportButton.dataset.resolution);
@@ -536,6 +821,8 @@
       if (feedbackButton && feedbackCard) {
         resolveFeedback(feedbackCard, feedbackButton.dataset.feedbackResolution);
       }
+      const redemptionButton = event.target.closest("button[data-redeem-code]");
+      if (redemptionButton) redeemCode(redemptionButton.dataset.redeemCode, redemptionButton);
     });
     logoutButton.addEventListener("click", async () => {
       await auth.signOut();

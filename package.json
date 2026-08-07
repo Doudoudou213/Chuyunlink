@@ -1,6 +1,7 @@
 {
   "scripts": {
     "check:cloudbase": "node tools/validate-cloudbase-build.js",
+    "test:rewards": "node tools/test-reward-security.js",
     "deploy:cloudbase": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/deploy-cloudbase.ps1"
   },
   "dependencies": {
