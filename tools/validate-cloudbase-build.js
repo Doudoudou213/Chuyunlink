@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const projectRoot = path.resolve(__dirname, '..');
 const requiredFiles = [
@@ -19,6 +20,13 @@ const requiredFiles = [
 const productionTextFiles = [
   'index.html',
   'admin.html',
+  'static/cloudbase-app.js',
+  'static/map-config.js',
+  'cloudfunctions/appCore/index.js',
+  'cloudfunctions/appCore/domains/resources.js',
+  'cloudfunctions/adminSubmissions/index.js'
+];
+const javascriptFiles = [
   'static/cloudbase-app.js',
   'static/map-config.js',
   'cloudfunctions/appCore/index.js',
@@ -54,6 +62,14 @@ for (const relativePath of productionTextFiles) {
   }
 }
 
+for (const relativePath of javascriptFiles) {
+  try {
+    new vm.Script(read(relativePath), { filename: relativePath });
+  } catch (error) {
+    throw new Error(`${relativePath} 语法错误：${error.message}`);
+  }
+}
+
 let inlineScriptCount = 0;
 for (const htmlFile of ['index.html', 'admin.html']) {
   const html = read(htmlFile);
@@ -70,4 +86,6 @@ for (const htmlFile of ['index.html', 'admin.html']) {
   inlineScriptCount += inlineScripts.length;
 }
 
-console.log(`CloudBase build validation passed (${requiredFiles.length} files, ${inlineScriptCount} inline scripts).`);
+console.log(
+  `CloudBase build validation passed (${requiredFiles.length} files, ${javascriptFiles.length} JavaScript files, ${inlineScriptCount} inline scripts).`
+);

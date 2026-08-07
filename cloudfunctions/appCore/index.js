@@ -96,42 +96,6 @@ const COMMENT_TARGETS = {
   }
 };
 
-const COMMENT_TARGETS = {
-  hotspot: {
-    'suizhou-window-carving': '濒危守护热点 · 随州窗花'
-  },
-  landmark: {
-    'zenghou-archway': '曾侯谏的牌楼',
-    'wudang-stone-niche': '武当山道家石龛',
-    'pengjiazhai-stilt-house': '彭家寨吊脚楼',
-    'yellow-crane-tower': '黄鹤楼',
-    'hubei-museum': '湖北省博物馆东湖片区',
-    'mingxianling': '明显陵',
-    'chibi-ancient-battlefield': '赤壁古战场',
-    'three-gorges-dam': '三峡大坝',
-    'shennongjia-muyu': '神农架木鱼镇'
-  },
-  activity: {
-    'jingchu-pattern-week': '荆楚纹样寻访周',
-    'wuhan-eastlake': '武汉东湖文化路线',
-    'yichang-three-gorges': '宜昌三峡文化路线',
-    'shennongjia-muyu': '神农架木鱼社区活动',
-    'enshi-pengjiazhai': '恩施彭家寨社区活动',
-    'suizhou-zenghou': '随州曾侯遗韵线'
-  },
-  content: {
-    'share-yellow-crane-tower': '武汉黄鹤楼 · 楼阁营造与题刻文化',
-    'share-wudang-ancient-buildings': '武当山古建筑群 · 皇家道教建筑轴线',
-    'share-mingxianling': '钟祥明显陵 · 明代帝陵礼制空间',
-    'share-hubei-museum-bells': '湖北省博物馆 · 曾侯乙编钟展陈',
-    'share-jingzhou-city-wall': '荆州古城墙 · 城防遗存与城砖文化',
-    'live-new-jingzhou-inscription': '荆州古城墙 · 城砖纪年铭文复核',
-    'live-new-enshi-door': '恩施土司城 · 木雕门楣纹样采集',
-    'live-new-wudang-stone': '武当古道 · 石阶磨损与题刻线索',
-    'live-new-suizhou-pattern': '随州曾侯文化 · 编钟纹样技艺衍生样本'
-  }
-};
-
 const AMAP_ROUTE_ENDPOINTS = {
   walk: 'https://restapi.amap.com/v3/direction/walking',
   car: 'https://restapi.amap.com/v3/direction/driving',
