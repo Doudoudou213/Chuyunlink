@@ -3,5 +3,7 @@ unpackage/
 .hbuilderx/
 uploads/
 data/
+!cloudfunctions/adminSubmissions/data/
+!cloudfunctions/adminSubmissions/data/resources.v1.json
 .DS_Store
 Thumbs.db

@@ -12,6 +12,8 @@ const requiredFiles = [
   'static/logo.png',
   'static/map-config.js',
   'cloudfunctions/appCore/index.js',
+  'cloudfunctions/appCore/domains/resources.js',
+  'cloudfunctions/adminSubmissions/data/resources.v1.json',
   'cloudfunctions/adminSubmissions/index.js'
 ];
 const productionTextFiles = [
@@ -20,6 +22,7 @@ const productionTextFiles = [
   'static/cloudbase-app.js',
   'static/map-config.js',
   'cloudfunctions/appCore/index.js',
+  'cloudfunctions/appCore/domains/resources.js',
   'cloudfunctions/adminSubmissions/index.js'
 ];
 const forbiddenPatterns = [

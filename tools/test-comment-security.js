@@ -27,6 +27,9 @@ const sandbox = {
         }
       };
     }
+    if (name.startsWith('./')) {
+      return require(path.resolve(path.dirname(sourcePath), name));
+    }
     return require(name);
   }
 };

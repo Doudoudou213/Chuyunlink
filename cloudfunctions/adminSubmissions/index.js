@@ -2,6 +2,7 @@
 
 const cloudbase = require('@cloudbase/node-sdk');
 const crypto = require('crypto');
+const RESOURCE_SEED = require('./data/resources.v1.json');
 
 const app = cloudbase.init({
   env: process.env.TCB_ENV || cloudbase.SYMBOL_CURRENT_ENV
@@ -17,12 +18,14 @@ const SUPPLEMENT_COLLECTION = 'submission_supplements';
 const REWARD_COLLECTION = 'rewards';
 const REDEMPTION_COLLECTION = 'reward_redemptions';
 const REDEMPTION_LOG_COLLECTION = 'reward_redemption_logs';
+const RESOURCE_COLLECTION = 'resources';
+const RESOURCE_SEED_CONFIRM_TOKEN = 'IMPORT_RESOURCES_V1';
 let interactionCollectionsReady = null;
 
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-[REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION].map(async (name) => {
+      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {
@@ -1042,6 +1045,97 @@ async function redeemRewardCode(event, reviewerId) {
   });
 }
 
+function resourceSeedFingerprint(resource) {
+  return crypto.createHash('sha256').update(JSON.stringify(resource)).digest('hex');
+}
+
+function resourceSeedView(resource, existing) {
+  return {
+    id: resource.id,
+    type: resource.type,
+    title: resource.title,
+    exists: Boolean(existing),
+    currentSeedVersion: existing ? Math.max(0, Number(existing.seedVersion) || 0) : 0,
+    incomingSeedVersion: Math.max(1, Number(resource.seedVersion) || 1),
+    differs: Boolean(existing && existing.seedFingerprint !== resourceSeedFingerprint(resource))
+  };
+}
+
+async function previewResourceSeed() {
+  const items = [];
+  for (const resource of RESOURCE_SEED) {
+    const existing = firstDocument(await db.collection(RESOURCE_COLLECTION).doc(resource.id).get());
+    items.push(resourceSeedView(resource, existing));
+  }
+  return {
+    ok: true,
+    action: 'previewResourceSeed',
+    modelVersion: 1,
+    total: items.length,
+    missing: items.filter((item) => !item.exists).length,
+    existing: items.filter((item) => item.exists).length,
+    differing: items.filter((item) => item.differs).length,
+    writePolicy: 'create_missing_only',
+    items
+  };
+}
+
+async function createSeedResourceIfMissing(resource) {
+  return db.runTransaction(async (transaction) => {
+    const ref = transaction.collection(RESOURCE_COLLECTION).doc(resource.id);
+    const existing = firstDocument(await ref.get());
+    if (existing) return { id: resource.id, created: false };
+    await ref.set({
+      ...resource,
+      seedFingerprint: resourceSeedFingerprint(resource),
+      sourceSubmissionId: '',
+      media: Array.isArray(resource.media) ? resource.media : [],
+      transport: resource.transport || {},
+      collectables: Array.isArray(resource.collectables) ? resource.collectables : [],
+      createdBy: 'system_resource_seed',
+      createdAt: db.serverDate(),
+      updatedAt: db.serverDate(),
+      publishedAt: resource.status === 'published' ? db.serverDate() : null
+    });
+    return { id: resource.id, created: true };
+  });
+}
+
+async function applyResourceSeed(event, reviewerId) {
+  if (cleanText(event.confirmToken, 64) !== RESOURCE_SEED_CONFIRM_TOKEN) {
+    const error = new Error('缺少资源导入确认口令，请先执行预览');
+    error.code = 'RESOURCE_SEED_CONFIRMATION_REQUIRED';
+    throw error;
+  }
+
+  const results = [];
+  for (const resource of RESOURCE_SEED) {
+    results.push(await createSeedResourceIfMissing(resource));
+  }
+  const createdIds = results.filter((item) => item.created).map((item) => item.id);
+  const skippedIds = results.filter((item) => !item.created).map((item) => item.id);
+  await db.collection('moderation_logs').add({
+    action: 'resource_seed_import',
+    reviewerId,
+    modelVersion: 1,
+    policy: 'create_missing_only',
+    createdIds,
+    skippedIds,
+    createdAt: db.serverDate()
+  });
+  return {
+    ok: true,
+    action: 'applyResourceSeed',
+    total: results.length,
+    created: createdIds.length,
+    skipped: skippedIds.length,
+    createdIds,
+    skippedIds,
+    deleted: 0,
+    updated: 0
+  };
+}
+
 exports.main = async (event = {}) => {
   try {
     const userInfo = app.auth().getUserInfo() || {};
@@ -1096,6 +1190,8 @@ exports.main = async (event = {}) => {
     if (action === 'lookupRedemption') return await lookupRedemption(event);
     if (action === 'listRedemptions') return await listRedemptions(event);
     if (action === 'redeemRewardCode') return await redeemRewardCode(event, callerUid);
+    if (action === 'previewResourceSeed') return await previewResourceSeed();
+    if (action === 'applyResourceSeed') return await applyResourceSeed(event, callerUid);
 
     return {
       ok: false,
