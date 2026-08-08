@@ -71,6 +71,7 @@ for (const relativePath of javascriptFiles) {
 }
 
 let inlineScriptCount = 0;
+let stickyCloseHeaderCount = 0;
 for (const htmlFile of ['index.html', 'admin.html']) {
   const html = read(htmlFile);
   const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
@@ -86,6 +87,25 @@ for (const htmlFile of ['index.html', 'admin.html']) {
   inlineScriptCount += inlineScripts.length;
 }
 
+const indexHtml = read('index.html');
+const stickyCloseControls = [
+  ['activity-route-graph-modal', 'closeActivityRouteGraphModal()'],
+  ['graph-modal', 'closeGraphModal()'],
+  ['endangered-hotspot-modal', 'closeEndangeredHotspot()'],
+  ['discover-detail-modal', 'closeDiscoverDetailModal()'],
+  ['cloud-discussion-modal', 'id="cloud-discussion-close"'],
+  ['cloud-notification-modal', 'id="cloud-notification-close"']
+];
+for (const [modalId, closeMarker] of stickyCloseControls) {
+  const modalStart = indexHtml.indexOf(`id="${modalId}"`);
+  const closeControl = indexHtml.indexOf(closeMarker, modalStart);
+  const stickyHeader = indexHtml.lastIndexOf('sticky top-0', closeControl);
+  if (modalStart < 0 || closeControl < modalStart || stickyHeader < modalStart) {
+    throw new Error(`${modalId} 的关闭按钮没有固定在滚动窗口顶部`);
+  }
+  stickyCloseHeaderCount += 1;
+}
+
 console.log(
-  `CloudBase build validation passed (${requiredFiles.length} files, ${javascriptFiles.length} JavaScript files, ${inlineScriptCount} inline scripts).`
+  `CloudBase build validation passed (${requiredFiles.length} files, ${javascriptFiles.length} JavaScript files, ${inlineScriptCount} inline scripts, ${stickyCloseHeaderCount} sticky modal headers).`
 );
