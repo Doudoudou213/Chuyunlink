@@ -731,6 +731,7 @@
 
     function renderResourceSeedPreview(result) {
       const items = Array.isArray(result.items) ? result.items : [];
+      const missing = Math.max(0, Number(result.missing || 0));
       const rows = items.map((item) => `
         <tr class="border-t border-stone-100">
           <td class="px-3 py-2.5 font-mono text-[10px] text-stone-500">${escapeHtml(item.id)}</td>
@@ -760,6 +761,17 @@
           <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-800">
             当前写入策略：只创建缺失资源。已存在和有差异的资源都会跳过；用户投稿 submissions 不在本次迁移范围内。
           </div>
+          ${missing > 0 ? `
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <div>
+                <p class="text-xs font-bold text-amber-900">确认预览无误后，可导入 ${missing} 条缺失资源</p>
+                <p class="mt-1 text-[10px] leading-relaxed text-amber-700">点击后还需输入确认文字；导入不会覆盖已有资源，也不会处理用户投稿。</p>
+              </div>
+              <button type="button" data-resource-seed-import data-missing="${missing}" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">导入缺失资源</button>
+            </div>
+          ` : `
+            <div class="mt-4 rounded-xl border border-emerald-200 bg-white p-3 text-xs font-bold text-emerald-700">统一资源已经全部存在，无需再次导入。</div>
+          `}
         </section>
         <div class="overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
           <table class="w-full min-w-[680px] text-left">
@@ -770,6 +782,38 @@
           </table>
         </div>
       `;
+    }
+
+    async function applyResourceSeed(button) {
+      const missing = Math.max(0, Number(button.dataset.missing || 0));
+      if (!missing) return;
+      const confirmationText = `导入${missing}条资源`;
+      const entered = prompt(
+        `本次只创建 ${missing} 条缺失资源，不覆盖、不更新、不删除已有资源，也不处理用户投稿。\n\n请输入“${confirmationText}”继续：`
+      );
+      if (entered !== confirmationText) {
+        message.className = "mt-2 text-xs text-stone-500";
+        message.textContent = "已取消资源导入，没有写入数据。";
+        return;
+      }
+      button.disabled = true;
+      button.textContent = "正在导入...";
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在创建缺失资源，请勿重复操作...";
+      try {
+        const result = await callAdmin({
+          action: "applyResourceSeed",
+          confirmToken: "IMPORT_RESOURCES_V1"
+        });
+        await loadResourceSeedPreview();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = `资源导入完成：新增 ${Number(result.created || 0)}，跳过 ${Number(result.skipped || 0)}，更新 0，删除 0。`;
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "导入缺失资源";
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
     }
 
     async function loadResourceSeedPreview() {
@@ -887,6 +931,8 @@
       }
       const redemptionButton = event.target.closest("button[data-redeem-code]");
       if (redemptionButton) redeemCode(redemptionButton.dataset.redeemCode, redemptionButton);
+      const resourceImportButton = event.target.closest("button[data-resource-seed-import]");
+      if (resourceImportButton) applyResourceSeed(resourceImportButton);
     });
     logoutButton.addEventListener("click", async () => {
       await auth.signOut();
