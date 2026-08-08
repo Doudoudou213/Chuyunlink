@@ -70,9 +70,11 @@ check('管理后台提供只读预览和人工确认导入', () => {
   assert(adminHtml.includes('action: "previewResourceSeed"'));
   assert(adminHtml.includes('不执行导入，不更新、不覆盖、不删除任何已有数据'));
   assert(adminHtml.includes('data-resource-seed-import'));
+  assert(adminHtml.includes('data-resource-confirm-input'));
   assert(adminHtml.includes('action: "applyResourceSeed"'));
   assert(adminHtml.includes('confirmToken: "IMPORT_RESOURCES_V1"'));
-  assert(adminHtml.indexOf('const entered = prompt(') < adminHtml.indexOf('action: "applyResourceSeed"'));
+  assert.strictEqual(adminHtml.includes('const entered = prompt('), false);
+  assert(adminHtml.indexOf('input.value.trim() !== confirmationText') < adminHtml.indexOf('action: "applyResourceSeed"'));
 });
 
 async function testResourceService() {
