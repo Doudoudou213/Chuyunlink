@@ -10,6 +10,15 @@ const seed = require('../cloudfunctions/adminSubmissions/data/resources.v1.json'
 const appCoreSource = fs.readFileSync(path.join(root, 'cloudfunctions/appCore/index.js'), 'utf8');
 const adminSource = fs.readFileSync(path.join(root, 'cloudfunctions/adminSubmissions/index.js'), 'utf8');
 const adminHtml = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
+const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const newWuhanLandmarkIds = [
+  'qingchuan-pavilion',
+  'jianghanguan-museum',
+  'gude-temple',
+  'panlongcheng-museum',
+  'xinhai-revolution-museum',
+  'wuhan-museum'
+];
 
 const checks = [];
 function check(name, test) {
@@ -75,6 +84,21 @@ check('管理后台提供只读预览和人工确认导入', () => {
   assert(adminHtml.includes('confirmToken: "IMPORT_RESOURCES_V1"'));
   assert.strictEqual(adminHtml.includes('const entered = prompt('), false);
   assert(adminHtml.indexOf('input.value.trim() !== confirmationText') < adminHtml.indexOf('action: "applyResourceSeed"'));
+});
+
+check('新增武汉点位同时接入统一资源、地图详情和评论白名单', () => {
+  newWuhanLandmarkIds.forEach((id) => {
+    const resource = seed.find((item) => item.id === id);
+    assert(resource, `missing resource: ${id}`);
+    assert.strictEqual(resource.type, 'landmark');
+    assert.strictEqual(resource.region.city, '武汉');
+    assert.strictEqual(resource.location.coordinateSystem, 'gcj02');
+    assert(Number.isFinite(resource.location.latitude));
+    assert(Number.isFinite(resource.location.longitude));
+    assert(indexHtml.includes(`id: '${id}'`), `missing map point: ${id}`);
+    assert(indexHtml.includes(`'${id}': {`), `missing map detail: ${id}`);
+    assert(appCoreSource.includes(`'${id}':`), `missing comment target: ${id}`);
+  });
 });
 
 async function testResourceService() {
