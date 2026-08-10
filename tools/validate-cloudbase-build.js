@@ -88,6 +88,17 @@ for (const htmlFile of ['index.html', 'admin.html']) {
 }
 
 const indexHtml = read('index.html');
+const activityRouteDrawingStart = indexHtml.indexOf('function drawCommunityRouteOnMap');
+const activityRouteDrawingEnd = indexHtml.indexOf('function getCommunityRouteRoadPoints', activityRouteDrawingStart);
+const activityRouteDrawing = indexHtml.slice(activityRouteDrawingStart, activityRouteDrawingEnd);
+if (activityRouteDrawingStart < 0 || activityRouteDrawingEnd < 0 || /dashArray/.test(activityRouteDrawing)) {
+  throw new Error('活动路线仍在使用虚线示意，未完成产品级道路展示升级');
+}
+if (!indexHtml.includes('await window.planCloudRoute({') ||
+    !indexHtml.includes('function drawProductRoadRoute') ||
+    !indexHtml.includes('id="map-route-provider-note"')) {
+  throw new Error('活动路线没有完整接入高德道路几何、双层道路样式或数据来源说明');
+}
 const stickyCloseControls = [
   ['activity-route-graph-modal', 'closeActivityRouteGraphModal()'],
   ['graph-modal', 'closeGraphModal()'],

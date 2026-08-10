@@ -11,6 +11,10 @@ const html = read('index.html');
 const adminFunction = read('cloudfunctions/adminSubmissions/index.js');
 const adminHtml = read('admin.html');
 const guide = read('docs/REWARD_REDEMPTION.md');
+const code39Match = client.match(/const CODE39_PATTERNS\s*=\s*(\{[\s\S]*?\n\s*\});/);
+const code39Patterns = code39Match ? Function(`return (${code39Match[1]})`)() : {};
+const validCode39Patterns = Object.keys(code39Patterns).length === 44 &&
+  Object.values(code39Patterns).every((pattern) => pattern.length === 9 && pattern.split('w').length - 1 === 3);
 
 const checks = [
   ['兑换必须使用正式账号', core.includes('requireStableAccount(userInfo);')],
@@ -23,6 +27,9 @@ const checks = [
   ['兑换会写入积分流水', core.includes('POINT_LEDGER_COLLECTION')],
   ['前端兑换请求不上传积分价格', /action:\s*'redeemReward',[\s\S]{0,180}rewardId:\s*activeReward\.id,[\s\S]{0,180}clientRequestId:/.test(client) && !/action:\s*'redeemReward',[\s\S]{0,220}pointsCost:/.test(client)],
   ['用户端展示云端兑换记录', html.includes('cloud-my-redemptions') && client.includes('renderCloudRewards')],
+  ['兑换凭证生成合法 Code 39 条形码', validCode39Patterns && client.includes('function renderCode39Barcode') && client.includes('`*${value}*`')],
+  ['历史兑换记录可以重新查看条形码', client.includes('data-view-redemption') && client.includes('showCloudRedemptionResult(item)')],
+  ['演示凭证明示非商家正式券码', client.includes('当前为平台演示凭证') && client.includes('接入合作商家后再替换为真实权益券')],
   ['敏感集合已记录禁止客户端读写规则', guide.includes('"read": false') && guide.includes('"write": false') && guide.includes('reward_redemption_logs')],
   ['核销查询使用兑换码哈希', /function findRedemptionByCode[\s\S]{0,500}codeHash/.test(adminFunction)],
   ['核销事务内重新读取兑换记录', /function redeemRewardCode[\s\S]{0,1600}runAdminTransaction[\s\S]{0,500}ref\.get/.test(adminFunction)],

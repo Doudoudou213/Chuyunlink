@@ -644,20 +644,30 @@ feedback_closed: '反馈处理',
         </div>
       </div>
       <div id="cloud-redemption-result-modal" class="hidden fixed inset-0 z-[94] flex items-center justify-center bg-black/75 p-4">
-        <div class="w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-2xl">
+        <div class="w-full max-w-sm overflow-hidden rounded-3xl bg-white text-center shadow-2xl">
+          <div class="bg-deepTeal px-5 pb-5 pt-6 text-white">
           <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
             <span class="text-xl">✓</span>
           </div>
-          <h3 class="mt-3 text-base font-bold text-stone-900">兑换成功</h3>
-          <p id="cloud-redemption-result-title" class="mt-1 text-[10px] text-stone-500"></p>
-          <div class="mt-4 rounded-2xl border-2 border-dashed border-sandGold bg-sandGold/5 p-4">
-            <p class="text-[9px] text-stone-400">使用时向商家出示此兑换码</p>
-            <p id="cloud-redemption-result-code" class="mt-2 break-all font-mono text-xl font-black tracking-wider text-deepTeal"></p>
-            <button id="cloud-redemption-copy" type="button" class="mt-3 rounded-lg border border-deepTeal/20 bg-white px-3 py-1.5 text-[10px] font-bold text-deepTeal">复制兑换码</button>
+            <p class="mt-3 text-[9px] font-black uppercase tracking-[0.22em] text-sandGold">ChuLink Voucher</p>
+            <h3 class="mt-1 text-lg font-black">兑换成功</h3>
+            <p id="cloud-redemption-result-title" class="mt-1 text-[10px] text-stone-200"></p>
           </div>
-          <p id="cloud-redemption-result-expiry" class="mt-3 text-[10px] font-bold text-cinnabarRed"></p>
-          <p id="cloud-redemption-result-instructions" class="mt-2 rounded-xl bg-stone-50 p-3 text-left text-[10px] leading-relaxed text-stone-600"></p>
-          <button id="cloud-redemption-result-close" type="button" class="mt-4 w-full rounded-xl bg-deepTeal py-2.5 text-xs font-bold text-sandGold">收好兑换码</button>
+          <div class="px-5 pb-5 pt-4">
+            <div class="rounded-2xl border border-stone-200 bg-[#fffdf8] p-4 shadow-inner">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-[9px] font-black uppercase tracking-[0.16em] text-stone-400">演示核销条码</p>
+                <span class="rounded-full bg-amber-50 px-2 py-1 text-[8px] font-black text-amber-700">DEMO</span>
+              </div>
+              <div id="cloud-redemption-result-barcode" class="mt-3 min-h-[78px] w-full overflow-hidden rounded-lg bg-white px-2 py-1" aria-label="兑换码条形码"></div>
+              <p id="cloud-redemption-result-code" class="mt-2 break-all font-mono text-base font-black tracking-[0.15em] text-deepTeal"></p>
+              <button id="cloud-redemption-copy" type="button" class="mt-3 rounded-lg border border-deepTeal/20 bg-white px-3 py-1.5 text-[10px] font-bold text-deepTeal">复制兑换码</button>
+            </div>
+            <p id="cloud-redemption-result-expiry" class="mt-3 text-[10px] font-bold text-cinnabarRed"></p>
+            <p id="cloud-redemption-result-instructions" class="mt-2 rounded-xl bg-stone-50 p-3 text-left text-[10px] leading-relaxed text-stone-600"></p>
+            <p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-left text-[9px] leading-relaxed text-amber-800">当前为平台演示凭证，用于验证生成、展示和管理员核销流程；接入合作商家后再替换为真实权益券。</p>
+            <button id="cloud-redemption-result-close" type="button" class="mt-4 w-full rounded-xl bg-deepTeal py-2.5 text-xs font-bold text-sandGold">收好兑换码</button>
+          </div>
         </div>
       </div>
     `);
@@ -1106,7 +1116,7 @@ feedback_closed: '反馈处理',
       if (login) login.addEventListener('click', openCloudLogin);
       return;
     }
-    redemptionList.innerHTML = redemptions.length ? redemptions.map((item) => `
+    redemptionList.innerHTML = redemptions.length ? redemptions.map((item, index) => `
       <article class="rounded-xl border border-stone-200 bg-white p-3">
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0">
@@ -1117,13 +1127,22 @@ feedback_closed: '反馈处理',
         </div>
         <div class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-stone-50 px-2.5 py-2">
           <code class="break-all text-[11px] font-black tracking-wide text-deepTeal">${safeText(item.code)}</code>
-          <button type="button" data-copy-redemption="${safeText(item.code)}" class="shrink-0 rounded-md bg-white px-2 py-1 text-[9px] font-bold text-deepTeal shadow-sm">复制</button>
+          <div class="flex shrink-0 gap-1">
+            <button type="button" data-view-redemption="${index}" class="rounded-md bg-deepTeal px-2 py-1 text-[9px] font-bold text-sandGold shadow-sm">查看条码</button>
+            <button type="button" data-copy-redemption="${safeText(item.code)}" class="rounded-md bg-white px-2 py-1 text-[9px] font-bold text-deepTeal shadow-sm">复制</button>
+          </div>
         </div>
         <p class="mt-2 text-[9px] text-stone-400">有效期至 ${safeText(displayDate(item.expiresAt))} · 已扣 ${Number(item.pointsCost || 0)} 积分</p>
       </article>
     `).join('') : '<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">暂无兑换记录。</div>';
     redemptionList.querySelectorAll('[data-copy-redemption]').forEach((button) => {
       button.addEventListener('click', () => copyTextValue(button.dataset.copyRedemption));
+    });
+    redemptionList.querySelectorAll('[data-view-redemption]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const item = redemptions[Number(button.dataset.viewRedemption)];
+        if (item) showCloudRedemptionResult(item);
+      });
     });
     if (window.lucide) lucide.createIcons();
   }
@@ -1186,10 +1205,51 @@ feedback_closed: '反馈处理',
   function showCloudRedemptionResult(redemption) {
     injectProductModals();
     document.getElementById('cloud-redemption-result-title').textContent = redemption.rewardTitle || '反哺福利';
-    document.getElementById('cloud-redemption-result-code').textContent = redemption.code || '';
+    const code = String(redemption.code || '').toUpperCase();
+    document.getElementById('cloud-redemption-result-code').textContent = code;
+    renderCode39Barcode(document.getElementById('cloud-redemption-result-barcode'), code);
     document.getElementById('cloud-redemption-result-expiry').textContent = `有效期至 ${displayDate(redemption.expiresAt)}`;
     document.getElementById('cloud-redemption-result-instructions').textContent = redemption.redemptionInstructions || '请向商家出示兑换码。';
     document.getElementById('cloud-redemption-result-modal').classList.remove('hidden');
+  }
+
+  const CODE39_PATTERNS = {
+    '0': 'nnnwwnwnn', '1': 'wnnwnnnnw', '2': 'nnwwnnnnw', '3': 'wnwwnnnnn',
+    '4': 'nnnwwnnnw', '5': 'wnnwwnnnn', '6': 'nnwwwnnnn', '7': 'nnnwnnwnw',
+    '8': 'wnnwnnwnn', '9': 'nnwwnnwnn', 'A': 'wnnnnwnnw', 'B': 'nnwnnwnnw',
+    'C': 'wnwnnwnnn', 'D': 'nnnnwwnnw', 'E': 'wnnnwwnnn', 'F': 'nnwnwwnnn',
+    'G': 'nnnnnwwnw', 'H': 'wnnnnwwnn', 'I': 'nnwnnwwnn', 'J': 'nnnnwwwnn',
+    'K': 'wnnnnnnww', 'L': 'nnwnnnnww', 'M': 'wnwnnnnwn', 'N': 'nnnnwnnww',
+    'O': 'wnnnwnnwn', 'P': 'nnwnwnnwn', 'Q': 'nnnnnnwww', 'R': 'wnnnnnwwn',
+    'S': 'nnwnnnwwn', 'T': 'nnnnwnwwn', 'U': 'wwnnnnnnw', 'V': 'nwwnnnnnw',
+    'W': 'wwwnnnnnn', 'X': 'nwnnwnnnw', 'Y': 'wwnnwnnnn', 'Z': 'nwwnwnnnn',
+    '-': 'nwnnnnwnw', '.': 'wwnnnnwnn', ' ': 'nwwnnnwnn', '$': 'nwnwnwnnn',
+    '/': 'nwnwnnnwn', '+': 'nwnnnwnwn', '%': 'nnnwnwnwn', '*': 'nwnnwnwnn'
+  };
+
+  function renderCode39Barcode(container, rawValue) {
+    if (!container) return;
+    const value = String(rawValue || '').toUpperCase().split('').filter((character) => CODE39_PATTERNS[character]).join('');
+    if (!value) {
+      container.innerHTML = '<p class="py-6 text-[10px] text-stone-400">暂无可生成的兑换码</p>';
+      return;
+    }
+    const narrow = 2;
+    const wide = 5;
+    const gap = 2;
+    const quiet = 14;
+    let x = quiet;
+    const bars = [];
+    `*${value}*`.split('').forEach((character) => {
+      CODE39_PATTERNS[character].split('').forEach((kind, index) => {
+        const width = kind === 'w' ? wide : narrow;
+        if (index % 2 === 0) bars.push(`<rect x="${x}" y="7" width="${width}" height="56" rx="0.35"/>`);
+        x += width;
+      });
+      x += gap;
+    });
+    const width = x + quiet - gap;
+    container.innerHTML = `<svg viewBox="0 0 ${width} 70" width="100%" height="70" preserveAspectRatio="none" role="img" aria-label="Code 39 条形码"><rect width="${width}" height="70" fill="#fff"/><g fill="#172f30">${bars.join('')}</g></svg>`;
   }
 
   async function copyTextValue(value) {

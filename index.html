@@ -745,7 +745,7 @@
               </button>
             </div>
             <div id="map-route-options" class="mt-2 flex gap-2 overflow-x-auto pb-1"></div>
-            <p class="mt-2 text-[9px] leading-relaxed text-stone-400">地图线仅表示游览顺序；点击编号点位，再用“导航到这一站”获取真实道路引导。</p>
+            <p id="map-route-provider-note" class="mt-2 text-[9px] leading-relaxed text-stone-400">正在准备道路级路线；深色双层线为高德返回的真实道路，淡色线仅表示站点顺序。</p>
           </div>
           <!-- 伪造背景图 (以地图线条 and 地标模拟) -->
           <svg class="hidden absolute inset-0 w-full h-full text-stone-300 stroke-2 bg-stone-100" xmlns="http://www.w3.org/2000/svg">
@@ -2504,6 +2504,8 @@
     let mapPlannerMode = 'transit';
     let mapPlannerDraggingId = null;
     let mapPlannerRouteRequestId = 0;
+    let activityRouteRoadRequestId = 0;
+    const activityRouteRoadCache = new Map();
 
     const communityRoutePlans = [
       {
@@ -4816,15 +4818,13 @@
       const pathCoords = getVisualRoutePathCoords(nodes, routeIndex);
       const latLngs = pathCoords.map(coords => getStaticMapLatLng(coords));
       const line = L.polyline(latLngs, {
-        color,
-        weight: isSelected ? 5 : 3,
-        opacity: isSelected ? 0.94 : 0.55,
-        dashArray: isSelected ? '12 7' : '5 9',
+        color: isSelected ? '#8A7B66' : color,
+        weight: isSelected ? 4 : 3,
+        opacity: isSelected ? 0.48 : 0.32,
         lineCap: 'round',
         lineJoin: 'round'
       }).addTo(mapRouteLayerGroup);
       line.on('click', () => selectMapRoute(route.id));
-      addRouteDirectionMarkers(pathCoords, color, isSelected);
 
       nodes.forEach((node, nodeIndex) => {
         if (node.type === 'origin') {
@@ -4859,11 +4859,58 @@
         }
       });
 
-      return isSelected ? latLngs : null;
+      return isSelected ? { latLngs, line, nodes, color } : null;
     }
 
-    function renderActivityRoutesOnMap(options = {}) {
+    function getCommunityRouteRoadPoints(route, nodes) {
+      return nodes.map(node => ({
+        title: node.title,
+        latitude: Number(node.coords[0]),
+        longitude: Number(node.coords[1]),
+        city: route.city || ''
+      }));
+    }
+
+    function getCommunityRouteCacheKey(route, nodes, mode) {
+      const coordinates = nodes.map(node => node.coords.map(value => Number(value).toFixed(4)).join(',')).join('|');
+      return `${route.id}:${mode}:${coordinates}`;
+    }
+
+    function formatRoadRouteSummary(result) {
+      const distance = Math.max(0, Number(result && result.distance) || 0);
+      const duration = Math.max(0, Number(result && result.duration) || 0);
+      const distanceLabel = distance < 1000 ? `${Math.round(distance)} 米` : `${(distance / 1000).toFixed(1)} 公里`;
+      const timeLabel = duration >= 3600
+        ? `${Math.floor(duration / 3600)} 小时 ${Math.max(1, Math.ceil((duration % 3600) / 60))} 分钟`
+        : `${Math.max(1, Math.ceil(duration / 60))} 分钟`;
+      return { distanceLabel, timeLabel };
+    }
+
+    function drawProductRoadRoute(routeCoords, color) {
+      const latLngs = routeCoords.map(coords => getStaticMapLatLng(coords));
+      L.polyline(latLngs, {
+        color: '#fffdf8',
+        weight: 11,
+        opacity: 0.96,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false
+      }).addTo(mapRouteLayerGroup);
+      L.polyline(latLngs, {
+        color,
+        weight: 6,
+        opacity: 0.96,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false
+      }).addTo(mapRouteLayerGroup);
+      addRouteDirectionMarkers(routeCoords, color, true);
+      return latLngs;
+    }
+
+    async function renderActivityRoutesOnMap(options = {}) {
       if (!heritageMap || typeof L === 'undefined') return;
+      const requestId = ++activityRouteRoadRequestId;
       clearMapPlannerPreview();
       if (!mapRouteLayerGroup) {
         mapRouteLayerGroup = L.layerGroup().addTo(heritageMap);
@@ -4881,11 +4928,9 @@
       activeCommunityRoute = selectedRoute.route;
       activeMapRouteId = selectedRoute.route.id;
 
-      let selectedLatLngs = null;
-      routeOptions.forEach((item, index) => {
-        const latLngs = drawCommunityRouteOnMap(item.route, index, selectedRoute.route.id, origin);
-        if (latLngs) selectedLatLngs = latLngs;
-      });
+      const selectedRendering = drawCommunityRouteOnMap(selectedRoute.route, 0, selectedRoute.route.id, origin);
+      let selectedLatLngs = selectedRendering && selectedRendering.latLngs;
+      let realRoadRendered = false;
 
       renderMapRoutePanel(routeOptions, selectedRoute.route.id, origin);
       if (selectedLatLngs && selectedLatLngs.length > 1) {
@@ -4898,7 +4943,58 @@
         });
       }
 
-      if (options.focusFirstPoint) {
+      const providerNote = document.getElementById('map-route-provider-note');
+      if (!selectedRendering || selectedRendering.nodes.length < 2) {
+        if (providerNote) providerNote.textContent = '当前方案只有一个有效地图点，暂时无法计算道路路线。';
+      } else if (typeof window.planCloudRoute !== 'function') {
+        if (providerNote) providerNote.textContent = '道路服务尚未加载，当前淡色实线仅表示站点顺序，不代表实际道路。';
+      } else {
+        const mode = ['transit', 'car', 'walk'].includes(mapPlannerMode) ? mapPlannerMode : 'transit';
+        const cacheKey = getCommunityRouteCacheKey(selectedRoute.route, selectedRendering.nodes, mode);
+        if (providerNote) providerNote.textContent = '正在通过高德匹配真实道路，请稍候…';
+        try {
+          let result = activityRouteRoadCache.get(cacheKey);
+          if (!result) {
+            result = await window.planCloudRoute({
+              mode,
+              points: getCommunityRouteRoadPoints(selectedRoute.route, selectedRendering.nodes)
+            });
+            activityRouteRoadCache.set(cacheKey, result);
+          }
+          if (requestId !== activityRouteRoadRequestId || !mapRouteLayerGroup) return;
+          const routeCoords = Array.isArray(result.polyline) ? result.polyline : [];
+          if (routeCoords.length < 2) throw new Error('高德没有返回可绘制的道路');
+          if (selectedRendering.line) mapRouteLayerGroup.removeLayer(selectedRendering.line);
+          selectedLatLngs = drawProductRoadRoute(routeCoords, '#2C4C4E');
+          realRoadRendered = true;
+          const summary = formatRoadRouteSummary(result);
+          const subtitle = document.getElementById('map-route-subtitle');
+          if (subtitle) subtitle.textContent = `${selectedRoute.route.city} · 高德道路约 ${summary.timeLabel} · ${summary.distanceLabel}`;
+          const roadNames = (result.legs || [])
+            .flatMap(leg => (leg.steps || []).map(step => step.road))
+            .filter(Boolean)
+            .filter((road, index, items) => items.indexOf(road) === index)
+            .slice(0, 3);
+          if (providerNote) {
+            providerNote.textContent = roadNames.length
+              ? `真实道路已生成，途经 ${roadNames.join('、')}；点击编号点位可逐站导航。`
+              : '真实道路已生成；点击编号点位可查看本站任务并逐站导航。';
+          }
+          if (selectedLatLngs.length > 1) {
+            heritageMap.fitBounds(L.latLngBounds(selectedLatLngs), {
+              paddingTopLeft: [28, 60],
+              paddingBottomRight: [28, 170],
+              maxZoom: 13,
+              animate: true
+            });
+          }
+        } catch (error) {
+          if (requestId !== activityRouteRoadRequestId) return;
+          if (providerNote) providerNote.textContent = `${error.message || '道路服务暂时不可用'}；当前淡色实线仅表示站点顺序，不代表实际道路。`;
+        }
+      }
+
+      if (options.focusFirstPoint && !realRoadRendered) {
         const firstStep = selectedRoute.route.steps.find(step => step.landmarkId || step.action);
         const nodeIndex = firstStep ? selectedRoute.route.steps.indexOf(firstStep) + 1 : 1;
         const nodes = getRouteMapNodes(selectedRoute.route, origin);
