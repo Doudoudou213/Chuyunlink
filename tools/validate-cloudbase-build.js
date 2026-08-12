@@ -14,7 +14,9 @@ const requiredFiles = [
   'static/map-config.js',
   'cloudfunctions/appCore/index.js',
   'cloudfunctions/appCore/domains/resources.js',
+  'cloudfunctions/appCore/domains/story-evidence.js',
   'cloudfunctions/adminSubmissions/data/resources.v1.json',
+  'cloudfunctions/adminSubmissions/domains/story-evidence.js',
   'cloudfunctions/adminSubmissions/index.js'
 ];
 const productionTextFiles = [
@@ -24,6 +26,8 @@ const productionTextFiles = [
   'static/map-config.js',
   'cloudfunctions/appCore/index.js',
   'cloudfunctions/appCore/domains/resources.js',
+  'cloudfunctions/appCore/domains/story-evidence.js',
+  'cloudfunctions/adminSubmissions/domains/story-evidence.js',
   'cloudfunctions/adminSubmissions/index.js'
 ];
 const javascriptFiles = [
@@ -31,6 +35,8 @@ const javascriptFiles = [
   'static/map-config.js',
   'cloudfunctions/appCore/index.js',
   'cloudfunctions/appCore/domains/resources.js',
+  'cloudfunctions/appCore/domains/story-evidence.js',
+  'cloudfunctions/adminSubmissions/domains/story-evidence.js',
   'cloudfunctions/adminSubmissions/index.js'
 ];
 const forbiddenPatterns = [
@@ -88,18 +94,20 @@ for (const htmlFile of ['index.html', 'admin.html']) {
 }
 
 const indexHtml = read('index.html');
+const modalMarkup = `${indexHtml}\n${read('static/cloudbase-app.js')}`;
 const stickyCloseControls = [
   ['activity-route-graph-modal', 'closeActivityRouteGraphModal()'],
   ['graph-modal', 'closeGraphModal()'],
   ['endangered-hotspot-modal', 'closeEndangeredHotspot()'],
   ['discover-detail-modal', 'closeDiscoverDetailModal()'],
   ['cloud-discussion-modal', 'id="cloud-discussion-close"'],
-  ['cloud-notification-modal', 'id="cloud-notification-close"']
+  ['cloud-notification-modal', 'id="cloud-notification-close"'],
+  ['cloud-story-evidence-modal', 'id="cloud-story-evidence-close"']
 ];
 for (const [modalId, closeMarker] of stickyCloseControls) {
-  const modalStart = indexHtml.indexOf(`id="${modalId}"`);
-  const closeControl = indexHtml.indexOf(closeMarker, modalStart);
-  const stickyHeader = indexHtml.lastIndexOf('sticky top-0', closeControl);
+  const modalStart = modalMarkup.indexOf(`id="${modalId}"`);
+  const closeControl = modalMarkup.indexOf(closeMarker, modalStart);
+  const stickyHeader = modalMarkup.lastIndexOf('sticky top-0', closeControl);
   if (modalStart < 0 || closeControl < modalStart || stickyHeader < modalStart) {
     throw new Error(`${modalId} 的关闭按钮没有固定在滚动窗口顶部`);
   }

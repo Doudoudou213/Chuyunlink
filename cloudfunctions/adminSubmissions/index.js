@@ -3,6 +3,7 @@
 const cloudbase = require('@cloudbase/node-sdk');
 const crypto = require('crypto');
 const RESOURCE_SEED = require('./data/resources.v1.json');
+const { createAdminStoryEvidenceService } = require('./domains/story-evidence');
 
 const app = cloudbase.init({
   env: process.env.TCB_ENV || cloudbase.SYMBOL_CURRENT_ENV
@@ -19,13 +20,16 @@ const REWARD_COLLECTION = 'rewards';
 const REDEMPTION_COLLECTION = 'reward_redemptions';
 const REDEMPTION_LOG_COLLECTION = 'reward_redemption_logs';
 const RESOURCE_COLLECTION = 'resources';
+const STORY_LINK_COLLECTION = 'story_evidence_links';
+const STORY_LOG_COLLECTION = 'story_evidence_logs';
 const RESOURCE_SEED_CONFIRM_TOKEN = 'IMPORT_RESOURCES_V1';
+const storyEvidenceService = createAdminStoryEvidenceService({ db, app });
 let interactionCollectionsReady = null;
 
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION].map(async (name) => {
+      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION, STORY_LINK_COLLECTION, STORY_LOG_COLLECTION].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {
@@ -1192,6 +1196,9 @@ exports.main = async (event = {}) => {
     if (action === 'redeemRewardCode') return await redeemRewardCode(event, callerUid);
     if (action === 'previewResourceSeed') return await previewResourceSeed();
     if (action === 'applyResourceSeed') return await applyResourceSeed(event, callerUid);
+    if (action === 'getStoryLinkWorkspace') return await storyEvidenceService.workspace();
+    if (action === 'saveStoryEvidenceLink') return await storyEvidenceService.save(event, callerUid);
+    if (action === 'archiveStoryEvidenceLink') return await storyEvidenceService.archive(event, callerUid);
 
     return {
       ok: false,

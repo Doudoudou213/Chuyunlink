@@ -50,6 +50,7 @@
             <button id="report-refresh" data-admin-view="reports" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">内容举报</button>
             <button id="feedback-refresh" data-admin-view="feedback" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">用户反馈</button>
             <button id="redemption-refresh" data-admin-view="redemptions" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">兑换码核销</button>
+            <button id="story-links-refresh" data-admin-view="story-links" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">链迹关联</button>
             <button id="resource-preview-refresh" data-admin-view="resource-preview" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">资源迁移预览</button>
           </div>
         </div>
@@ -852,6 +853,143 @@
       }
     }
 
+    const storyRelationLabels = {
+      documents_feature: "记录建筑或工艺特征",
+      documents_inscription: "记录题刻或文字",
+      documents_place: "记录地点现状",
+      documents_oral_history: "记录口述与回忆",
+      shows_change_over_time: "呈现时间变化",
+      supports_story: "补充故事线索"
+    };
+
+    function renderStoryLinkWorkspace(result) {
+      const submissions = result.submissions || [];
+      const resources = result.resources || [];
+      const links = result.links || [];
+      const confirmedLinks = links.filter((item) => item.status === "confirmed");
+      const archivedLinks = links.filter((item) => item.status === "archived");
+      const submissionOptions = submissions.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.title)} · ${escapeHtml(item.contributorName)}</option>`).join("");
+      const resourceOptions = resources.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.title)} · ${escapeHtml(item.type)}</option>`).join("");
+      const linkCards = confirmedLinks.length ? confirmedLinks.map((item) => `
+        <article data-story-link-id="${escapeHtml(item.id)}" class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">已确认链迹</p>
+              <h3 class="mt-1 font-bold text-stone-800">${escapeHtml(item.submissionTitle)} <span class="text-stone-300">→</span> ${escapeHtml(item.resourceTitle)}</h3>
+              <p class="mt-1 text-xs text-stone-500">${escapeHtml(storyRelationLabels[item.relationType] || "补充故事线索")} · 第 ${Number(item.version || 1)} 版</p>
+            </div>
+            <span class="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">公开可见</span>
+          </div>
+          <p class="mt-3 rounded-xl bg-stone-50 p-3 text-sm leading-relaxed text-stone-700">${escapeHtml(item.evidenceSummary)}</p>
+          <div class="mt-3 flex flex-col gap-2 border-t border-stone-100 pt-3 sm:flex-row">
+            <input data-story-archive-reason class="min-w-0 flex-1 rounded-lg border border-stone-200 px-3 py-2 text-xs outline-none focus:border-[#123c3a]" placeholder="如果关系不准确，请填写归档原因">
+            <button type="button" data-story-link-archive class="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-700">归档关系</button>
+          </div>
+        </article>
+      `).join("") : '<div class="rounded-2xl border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-500">尚未建立链迹关系。先从上方选择一份已审核投稿和一个文化资源。</div>';
+
+      list.innerHTML = `
+        <section class="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">楚韵链迹 · 第一阶段</p>
+              <h3 class="mt-1 text-lg font-bold text-stone-900">把用户资料连到真实文化资源</h3>
+              <p class="mt-1 max-w-3xl text-xs leading-relaxed text-stone-600">只处理已审核投稿。确认后用户可以看到资料来源；原投稿和资源均不会被覆盖或删除。</p>
+            </div>
+            <div class="flex gap-2 text-center text-xs">
+              <div class="rounded-xl bg-white px-3 py-2"><strong class="block text-base text-[#123c3a]">${submissions.length}</strong>可关联投稿</div>
+              <div class="rounded-xl bg-white px-3 py-2"><strong class="block text-base text-[#123c3a]">${confirmedLinks.length}</strong>已确认关系</div>
+            </div>
+          </div>
+          <form id="story-link-form" class="mt-5 grid gap-3 lg:grid-cols-2">
+            <label class="text-xs font-bold text-stone-600">已审核投稿
+              <select name="submissionId" ${submissions.length ? "" : "disabled"} class="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm outline-none focus:border-[#123c3a]">
+                ${submissionOptions || '<option value="">当前没有已审核投稿</option>'}
+              </select>
+            </label>
+            <label class="text-xs font-bold text-stone-600">文化资源
+              <select name="resourceId" ${resources.length ? "" : "disabled"} class="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm outline-none focus:border-[#123c3a]">
+                ${resourceOptions || '<option value="">当前没有已发布资源</option>'}
+              </select>
+            </label>
+            <label class="text-xs font-bold text-stone-600">关系类型
+              <select name="relationType" class="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm outline-none focus:border-[#123c3a]">
+                ${Object.entries(storyRelationLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}
+              </select>
+            </label>
+            <label class="text-xs font-bold text-stone-600">关系说明
+              <textarea name="evidenceSummary" rows="3" class="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm outline-none focus:border-[#123c3a]" placeholder="例如：这张照片记录了黄鹤楼东侧题刻在 2026 年的保存状态。"></textarea>
+            </label>
+            <div class="lg:col-span-2 flex items-center justify-between gap-3">
+              <p class="text-[10px] text-stone-500">保存会留下管理员、时间和版本记录；错误关系请归档，不执行物理删除。</p>
+              <button type="submit" ${submissions.length && resources.length ? "" : "disabled"} class="rounded-xl bg-[#123c3a] px-5 py-3 text-xs font-bold text-[#d9ad52] disabled:cursor-not-allowed disabled:opacity-40">确认建立链迹</button>
+            </div>
+          </form>
+        </section>
+        <div class="flex items-center justify-between px-1"><h3 class="text-sm font-bold text-stone-800">已确认关系</h3><span class="text-xs text-stone-400">另有 ${archivedLinks.length} 条已归档</span></div>
+        ${linkCards}
+      `;
+    }
+
+    async function loadStoryLinks() {
+      setActiveView("story-links", "链迹关联");
+      viewCount.textContent = "正在读取";
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在读取已审核投稿、文化资源和链迹关系...";
+      list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在准备链迹工作台...</div>';
+      try {
+        const result = await callAdmin({ action: "getStoryLinkWorkspace" });
+        renderStoryLinkWorkspace(result);
+        viewCount.textContent = `${Number(result.counts && result.counts.confirmedLinks || 0)} 条关系`;
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "链迹工作台已同步。";
+      } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+        list.innerHTML = '<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">链迹工作台暂不可用，没有修改任何投稿或资源。</div>';
+      }
+    }
+
+    async function saveStoryLink(event) {
+      event.preventDefault();
+      const form = event.target;
+      const button = form.querySelector('button[type="submit"]');
+      const data = new FormData(form);
+      button.disabled = true;
+      try {
+        await callAdmin({
+          action: "saveStoryEvidenceLink",
+          submissionId: data.get("submissionId"),
+          resourceId: data.get("resourceId"),
+          relationType: data.get("relationType"),
+          evidenceSummary: data.get("evidenceSummary")
+        });
+        await loadStoryLinks();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "链迹关系已确认，用户端现在可以看到这份资料来源。";
+      } catch (error) {
+        button.disabled = false;
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function archiveStoryLink(card) {
+      const archiveReason = card.querySelector("[data-story-archive-reason]").value.trim();
+      const button = card.querySelector("[data-story-link-archive]");
+      button.disabled = true;
+      try {
+        await callAdmin({ action: "archiveStoryEvidenceLink", linkId: card.dataset.storyLinkId, archiveReason });
+        await loadStoryLinks();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "关系已归档并停止公开，原投稿仍然保留。";
+      } catch (error) {
+        button.disabled = false;
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
     async function loadResourceSeedPreview() {
       setActiveView("resource-preview", "资源迁移预览");
       message.className = "mt-2 text-xs text-stone-500";
@@ -939,9 +1077,11 @@
     document.getElementById("report-refresh").addEventListener("click", loadReports);
     document.getElementById("feedback-refresh").addEventListener("click", loadFeedback);
     document.getElementById("redemption-refresh").addEventListener("click", loadRedemptions);
+    document.getElementById("story-links-refresh").addEventListener("click", loadStoryLinks);
     document.getElementById("resource-preview-refresh").addEventListener("click", loadResourceSeedPreview);
     document.getElementById("list").addEventListener("submit", (event) => {
       if (event.target && event.target.id === "redemption-lookup-form") lookupRedemption(event);
+      if (event.target && event.target.id === "story-link-form") saveStoryLink(event);
     });
     document.getElementById("list").addEventListener("input", (event) => {
       const input = event.target.closest("[data-resource-confirm-input]");
@@ -980,6 +1120,9 @@
       if (resourcePrepareButton) showResourceSeedConfirmation(resourcePrepareButton);
       const resourceCancelButton = event.target.closest("button[data-resource-seed-cancel]");
       if (resourceCancelButton) cancelResourceSeedConfirmation(resourceCancelButton);
+      const storyArchiveButton = event.target.closest("button[data-story-link-archive]");
+      const storyLinkCard = event.target.closest("article[data-story-link-id]");
+      if (storyArchiveButton && storyLinkCard) archiveStoryLink(storyLinkCard);
     });
     logoutButton.addEventListener("click", async () => {
       await auth.signOut();

@@ -119,3 +119,26 @@ flowchart LR
 5. **个性化讲述**：根据用户位置、时间和兴趣生成游览顺序、语音稿与路线提示。
 
 第一阶段不需要迁移或删除现有投稿，只需给新关系表增加引用。现有 `submissions` 和 `resources` 可以原样继续使用。
+
+## 第一阶段实现记录（2026-08-12）
+
+已完成“人工关系 MVP”：
+
+- 新增 `story_evidence_links`，保存已确认或已归档的投稿—资源关系；
+- 新增 `story_evidence_logs`，记录确认、重新确认和归档，不执行物理删除；
+- `adminSubmissions` 新增链迹工作台接口，只有 `ADMIN_UIDS` 管理员可调用；
+- 管理后台新增“链迹关联”，仅允许选择 `approved` 投稿和 `published` 资源；
+- `appCore/getStoryEvidence` 仅返回 `confirmed` 关系，并再次验证来源投稿仍为 `approved`；
+- 用户在地图点位浮窗点击“链迹”，可查看资料时间线、关系说明、媒体和记录者公开昵称；
+- 公共响应不返回投稿者 UID、文件 ID、管理员 UID 或内部审核字段。
+
+两个新增集合应在 CloudBase 数据库权限中设置为：
+
+```json
+{
+  "read": false,
+  "write": false
+}
+```
+
+前端统一通过云函数读取脱敏结果，不需要客户端直读数据库。第一阶段没有接入 AI；下一阶段只生成候选关系，不自动公开。

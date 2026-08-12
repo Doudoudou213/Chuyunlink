@@ -695,6 +695,124 @@ feedback_closed: '反馈处理',
     document.getElementById('cloud-login-modal').classList.remove('hidden');
   }
 
+  function injectStoryEvidenceModal() {
+    if (document.getElementById('cloud-story-evidence-modal')) return;
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="cloud-story-evidence-modal" class="hidden fixed inset-0 z-[96] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
+        <section class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl bg-[#faf8f2] shadow-2xl sm:rounded-3xl">
+          <header class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-stone-200 bg-[#faf8f2]/95 px-5 py-4 backdrop-blur">
+            <div>
+              <p class="text-[9px] font-black uppercase tracking-[0.24em] text-sandGold">ChuLink Story Evidence</p>
+              <h2 id="cloud-story-evidence-title" class="mt-1 text-lg font-black text-stone-900">链迹故事</h2>
+              <p id="cloud-story-evidence-subtitle" class="mt-1 text-[10px] text-stone-500">由社区共同留下的真实文化资料</p>
+            </div>
+            <button id="cloud-story-evidence-close" type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm" aria-label="关闭链迹故事">✕</button>
+          </header>
+          <div id="cloud-story-evidence-content" class="p-5">
+            <div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在整理资料来源...</div>
+          </div>
+        </section>
+      </div>
+    `);
+    document.getElementById('cloud-story-evidence-close').addEventListener('click', closeStoryEvidence);
+    document.getElementById('cloud-story-evidence-modal').addEventListener('click', (event) => {
+      if (event.target.id === 'cloud-story-evidence-modal') closeStoryEvidence();
+    });
+  }
+
+  function closeStoryEvidence() {
+    const modal = document.getElementById('cloud-story-evidence-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  function storyRelationLabel(value) {
+    return {
+      documents_feature: '建筑与工艺记录',
+      documents_inscription: '题刻与文字记录',
+      documents_place: '地点现状记录',
+      documents_oral_history: '口述与回忆',
+      shows_change_over_time: '时间变化见证',
+      supports_story: '故事线索补充'
+    }[value] || '故事线索补充';
+  }
+
+  function storyEvidenceMedia(submission) {
+    const fileUrl = safeText(submission && submission.fileUrl);
+    if (!fileUrl) return '';
+    if (submission.assetType === 'audio') {
+      return `<audio controls preload="none" class="mt-3 w-full" src="${fileUrl}"></audio>`;
+    }
+    if (submission.assetType === 'video') {
+      return `<video controls preload="metadata" class="mt-3 max-h-72 w-full rounded-xl bg-black" src="${fileUrl}"></video>`;
+    }
+    return `<img loading="lazy" src="${fileUrl}" alt="${safeText(submission.title || '社区资料')}" class="mt-3 max-h-80 w-full rounded-xl object-cover">`;
+  }
+
+  function renderStoryEvidence(result) {
+    const content = document.getElementById('cloud-story-evidence-content');
+    const items = result.items || [];
+    const resource = result.resource || {};
+    document.getElementById('cloud-story-evidence-title').textContent = resource.title || '链迹故事';
+    document.getElementById('cloud-story-evidence-subtitle').textContent = items.length
+      ? `${items.length} 份资料 · ${Number(result.contributorCount || 0)} 位记录者共同讲述`
+      : '等待社区共同补充的文化线索';
+    if (!items.length) {
+      content.innerHTML = `
+        <div class="rounded-2xl border border-dashed border-sandGold/60 bg-white p-7 text-center">
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-xl">链</div>
+          <h3 class="mt-3 font-bold text-stone-800">这条链迹还缺少第一份资料</h3>
+          <p class="mx-auto mt-2 max-w-md text-xs leading-relaxed text-stone-500">用户投稿审核通过后，管理员会把可靠资料关联到这里。你也可以拍摄现状、记录题刻或补充口述。</p>
+          <button type="button" onclick="closeStoryEvidence(); if (typeof switchTab === 'function') switchTab('collect')" class="mt-4 rounded-xl bg-deepTeal px-5 py-2.5 text-xs font-bold text-sandGold">补充一条线索</button>
+        </div>`;
+      return;
+    }
+    content.innerHTML = `
+      <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+        <p class="text-[10px] font-bold text-emerald-800">资料来源说明</p>
+        <p class="mt-1 text-xs leading-relaxed text-emerald-900/70">以下内容均来自已审核的社区投稿，并由管理员确认与“${safeText(resource.title)}”相关。原始记录保持不变，可继续补充和修订关系。</p>
+      </div>
+      <div class="relative mt-5 space-y-4 before:absolute before:bottom-5 before:left-[17px] before:top-5 before:w-px before:bg-sandGold/50">
+        ${items.map((item, index) => {
+          const submission = item.submission || {};
+          const date = submission.createdAt ? new Date(submission.createdAt).toLocaleDateString('zh-CN') : '记录时间待补充';
+          return `
+            <article class="relative pl-11">
+              <span class="absolute left-0 top-4 z-[1] flex h-9 w-9 items-center justify-center rounded-full border-4 border-[#faf8f2] bg-deepTeal text-xs font-black text-sandGold">${index + 1}</span>
+              <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p class="text-[9px] font-black uppercase tracking-[0.14em] text-sandGold">${safeText(storyRelationLabel(item.relationType))}</p>
+                    <h3 class="mt-1 font-bold text-stone-900">${safeText(submission.title || '社区文化记录')}</h3>
+                  </div>
+                  <span class="rounded-full bg-stone-100 px-2 py-1 text-[9px] text-stone-500">${safeText(date)}</span>
+                </div>
+                <p class="mt-3 rounded-xl bg-stone-50 p-3 text-xs font-medium leading-relaxed text-stone-700">${safeText(item.evidenceSummary)}</p>
+                ${storyEvidenceMedia(submission)}
+                ${submission.description ? `<p class="mt-3 text-xs leading-relaxed text-stone-600">${safeText(submission.description)}</p>` : ''}
+                <p class="mt-3 border-t border-stone-100 pt-3 text-[10px] text-stone-400">记录者：${safeText(submission.contributorName || '社区守护者')}${submission.regionName ? ` · ${safeText(submission.regionName)}` : ''}</p>
+              </div>
+            </article>`;
+        }).join('')}
+      </div>`;
+  }
+
+  async function openStoryEvidence(resourceId, resourceTitle) {
+    injectStoryEvidenceModal();
+    const modal = document.getElementById('cloud-story-evidence-modal');
+    const content = document.getElementById('cloud-story-evidence-content');
+    document.getElementById('cloud-story-evidence-title').textContent = resourceTitle || '链迹故事';
+    document.getElementById('cloud-story-evidence-subtitle').textContent = '正在读取已审核资料来源';
+    content.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在整理资料来源...</div>';
+    modal.classList.remove('hidden');
+    try {
+      await ensureCloudUser();
+      const result = await callCore({ action: 'getStoryEvidence', resourceId });
+      renderStoryEvidence(result);
+    } catch (error) {
+      content.innerHTML = `<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">${safeText(error.message || '链迹资料暂时无法读取')}</div>`;
+    }
+  }
+
   function closeCloudLogin() {
     const modal = document.getElementById('cloud-login-modal');
     if (modal) modal.classList.add('hidden');
@@ -2013,6 +2131,7 @@ renderCloudRewards();
     injectAccountUi();
     injectLoginModal();
     injectProductModals();
+    injectStoryEvidenceModal();
     const headerAccount = document.getElementById('header-account-entry');
     if (headerAccount && !headerAccount.dataset.cloudBound) {
       headerAccount.dataset.cloudBound = 'true';
@@ -2060,6 +2179,8 @@ renderCloudRewards();
   window.openCloudDiscussion = openCloudDiscussion;
   window.openActiveCloudDiscussion = openActiveCloudDiscussion;
   window.closeCloudDiscussion = closeCloudDiscussion;
+  window.openStoryEvidence = openStoryEvidence;
+  window.closeStoryEvidence = closeStoryEvidence;
   window.openCloudNotifications = openCloudNotifications;
   window.submitCloudManualReview = async () => {
     throw new Error('请使用正式提交按钮将素材写入 CloudBase 审核池');

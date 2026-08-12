@@ -4,12 +4,14 @@ const cloudbase = require('@cloudbase/node-sdk');
 const crypto = require('crypto');
 const https = require('https');
 const { createResourceService } = require('./domains/resources');
+const { createStoryEvidenceService } = require('./domains/story-evidence');
 
 const app = cloudbase.init({
   env: process.env.TCB_ENV || cloudbase.SYMBOL_CURRENT_ENV
 });
 const db = app.database();
 const resourceService = createResourceService({ db });
+const storyEvidenceService = createStoryEvidenceService({ db, app });
 
 const PROFILE_COLLECTION = 'user_profiles';
 const SUBMISSION_COLLECTION = 'submissions';
@@ -1713,6 +1715,7 @@ exports.main = async (event = {}) => {
     if (action === 'bootstrap') return await bootstrap(uid, userInfo);
     if (action === 'getResources') return await resourceService.list(event);
     if (action === 'getResourceDetail') return await resourceService.detail(event);
+    if (action === 'getStoryEvidence') return await storyEvidenceService.list(event);
     if (action === 'getPublic') {
       return { ok: true, action, items: await listPublic(event.limit, uid) };
     }

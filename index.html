@@ -777,7 +777,10 @@
               <span class="text-xs text-deepTeal font-semibold flex items-center">
                 <i data-lucide="zap" class="w-4 h-4 mr-1 text-sandGold fill-sandGold"></i> 任务奖励：+<span id="drawer-points">50</span> 积分
               </span>
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <button type="button" onclick="window.openStoryEvidence(activeLandmark.id, activeLandmark.title)" class="border border-sandGold/50 bg-amber-50 text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
+                  <i data-lucide="link-2" class="w-3.5 h-3.5 mr-1"></i> 链迹
+                </button>
                 <button type="button" onclick="window.openCloudDiscussion('landmark', activeLandmark.id, activeLandmark.title)" class="border border-deepTeal/20 bg-white text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
                   <i data-lucide="messages-square" class="w-3.5 h-3.5 mr-1"></i> 讨论
                 </button>
