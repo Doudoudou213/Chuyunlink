@@ -124,6 +124,10 @@ async function main() {
   assert.match(appIndex, /getStoryEvidence/);
   assert.match(adminHtml, /id="story-link-form"/);
   assert.match(clientSource, /function openStoryEvidence/);
+  assert.match(clientSource, /function renderStoryEvidenceGraph/);
+  assert.match(clientSource, /data-story-view="graph"/);
+  assert.match(clientSource, /data-story-view="timeline"/);
+  assert.match(clientSource, /中心资源 → 关系类型 → 已审核投稿/);
   console.log('Story evidence security and integration tests passed.');
 }
 

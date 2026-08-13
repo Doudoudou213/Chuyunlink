@@ -26,6 +26,9 @@ let activeReward = null;
 let rewardRedeemPending = false;
 let pendingCommentRequestId = '';
 let pendingCommentFingerprint = '';
+let activeStoryEvidenceResult = null;
+let activeStoryEvidenceView = 'graph';
+let activeStoryEvidenceNodeId = '';
   let cloudNotifications = [];
   let cloudNotificationUnreadCount = 0;
   const cloudSupplementState = new Map();
@@ -748,6 +751,160 @@ feedback_closed: '反馈处理',
     return `<img loading="lazy" src="${fileUrl}" alt="${safeText(submission.title || '社区资料')}" class="mt-3 max-h-80 w-full rounded-xl object-cover">`;
   }
 
+  function storyGraphLines(value, maxLength) {
+    const text = String(value || '').trim();
+    if (!text) return ['未命名'];
+    const compact = text.length > maxLength * 2 ? `${text.slice(0, maxLength * 2 - 1)}…` : text;
+    return compact.length > maxLength
+      ? [compact.slice(0, maxLength), compact.slice(maxLength)]
+      : [compact];
+  }
+
+  function storyGraphText(lines, x, color, size, weight) {
+    const startY = lines.length > 1 ? -5 : 3;
+    return `<text x="${x}" y="${startY}" text-anchor="middle" fill="${color}" font-size="${size}" font-weight="${weight}" font-family="'Noto Serif SC', serif">${lines.map((line, index) => `<tspan x="${x}" dy="${index ? 14 : 0}">${safeText(line)}</tspan>`).join('')}</text>`;
+  }
+
+  function renderStoryEvidenceGraph(result) {
+    const items = (result.items || []).slice(0, 16);
+    const resource = result.resource || {};
+    const groups = [];
+    const groupMap = new Map();
+    items.forEach((item) => {
+      const key = item.relationType || 'supports_story';
+      if (!groupMap.has(key)) {
+        const group = { key, label: storyRelationLabel(key), items: [] };
+        groupMap.set(key, group);
+        groups.push(group);
+      }
+      groupMap.get(key).items.push(item);
+    });
+    const rowGap = 70;
+    const graphHeight = Math.max(360, items.length * rowGap + 70);
+    let nextY = 55;
+    groups.forEach((group) => {
+      group.items.forEach((item) => {
+        item.__storyGraphY = nextY;
+        nextY += rowGap;
+      });
+      group.__storyGraphY = group.items.reduce((sum, item) => sum + item.__storyGraphY, 0) / group.items.length;
+    });
+    const rootY = groups.reduce((sum, group) => sum + group.__storyGraphY, 0) / Math.max(1, groups.length);
+    const relations = groups.map((group) => `
+      <path d="M 190 ${rootY} C 235 ${rootY}, 225 ${group.__storyGraphY}, 270 ${group.__storyGraphY}" fill="none" stroke="#c5a766" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+      ${group.items.map((item) => `
+        <path d="M 440 ${group.__storyGraphY} C 500 ${group.__storyGraphY}, 500 ${item.__storyGraphY}, 565 ${item.__storyGraphY}" fill="none" stroke="#6e9995" stroke-width="1.6" stroke-linecap="round" opacity="0.72"/>
+      `).join('')}
+    `).join('');
+    const groupNodes = groups.map((group) => `
+      <g transform="translate(355 ${group.__storyGraphY})">
+        <rect x="-85" y="-24" width="170" height="48" rx="12" fill="#f4e7c9" stroke="#c5a766" stroke-width="1.4"/>
+        ${storyGraphText(storyGraphLines(group.label, 9), 0, '#5f4926', 12, 700)}
+      </g>
+    `).join('');
+    const evidenceNodes = items.map((item, index) => {
+      const submission = item.submission || {};
+      const selected = activeStoryEvidenceNodeId === item.id;
+      return `
+        <g data-story-evidence-node="${safeText(item.id)}" transform="translate(695 ${item.__storyGraphY})" role="button" tabindex="0" style="cursor:pointer">
+          <rect x="-130" y="-27" width="260" height="54" rx="13" fill="${selected ? '#173f40' : '#ffffff'}" stroke="${selected ? '#d9ad52' : '#b9cbc8'}" stroke-width="${selected ? 2.4 : 1.2}"/>
+          <circle cx="-106" cy="0" r="14" fill="${selected ? '#d9ad52' : '#eaf2f0'}"/>
+          <text x="-106" y="4" text-anchor="middle" fill="${selected ? '#173f40' : '#315c5c'}" font-size="10" font-weight="800">${index + 1}</text>
+          ${storyGraphText(storyGraphLines(submission.title || '社区文化记录', 13), 15, selected ? '#ffffff' : '#263c3a', 12, 700)}
+        </g>`;
+    }).join('');
+    const selectedItem = items.find((item) => item.id === activeStoryEvidenceNodeId) || items[0];
+    const selectedSubmission = selectedItem && selectedItem.submission || {};
+    return `
+      <div class="rounded-2xl border border-[#d8c6a7] bg-[#f6eedf] p-3 shadow-inner">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+          <div>
+            <p class="text-[9px] font-black uppercase tracking-[0.18em] text-[#9b733b]">真实资料关系图</p>
+            <p class="mt-1 text-[10px] text-stone-500">中心资源 → 关系类型 → 已审核投稿；点击右侧节点查看依据</p>
+          </div>
+          <div class="flex gap-3 text-[9px] text-stone-500"><span>● 文化资源</span><span>■ 关系</span><span>□ 投稿</span></div>
+        </div>
+        <div class="overflow-x-auto rounded-xl border border-[#c5a766]/40 bg-[#173f40]">
+          <svg class="min-w-[840px] w-full" viewBox="0 0 850 ${graphHeight}" role="img" aria-label="${safeText(resource.title || '文化资源')}链迹思维导图">
+            <defs>
+              <pattern id="story-graph-pattern" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#d9ad52" stroke-width="0.45" opacity="0.08"/></pattern>
+            </defs>
+            <rect width="850" height="${graphHeight}" fill="#173f40"/>
+            <rect width="850" height="${graphHeight}" fill="url(#story-graph-pattern)"/>
+            ${relations}
+            <g transform="translate(115 ${rootY})">
+              <rect x="-75" y="-35" width="150" height="70" rx="18" fill="#8f302b" stroke="#e6c880" stroke-width="2"/>
+              ${storyGraphText(storyGraphLines(resource.title || '文化资源', 8), 0, '#fff4d6', 14, 800)}
+            </g>
+            ${groupNodes}
+            ${evidenceNodes}
+          </svg>
+        </div>
+        ${selectedItem ? `
+          <section class="mt-3 rounded-xl border border-[#d8c6a7] bg-white p-4">
+            <div class="flex flex-wrap items-start justify-between gap-2">
+              <div><p class="text-[9px] font-black tracking-[0.14em] text-[#9b733b]">${safeText(storyRelationLabel(selectedItem.relationType))}</p><h3 class="mt-1 font-bold text-stone-900">${safeText(selectedSubmission.title || '社区文化记录')}</h3></div>
+              <span class="rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-700">已审核来源</span>
+            </div>
+            <p class="mt-3 text-xs leading-relaxed text-stone-600">${safeText(selectedItem.evidenceSummary)}</p>
+            <div class="mt-3 flex items-center justify-between border-t border-stone-100 pt-3 text-[10px] text-stone-400">
+              <span>记录者：${safeText(selectedSubmission.contributorName || '社区守护者')}</span>
+              <button type="button" data-story-open-timeline="${safeText(selectedItem.id)}" class="font-bold text-deepTeal">在时间线查看 →</button>
+            </div>
+          </section>` : ''}
+        ${(result.items || []).length > items.length ? `<p class="mt-2 text-center text-[9px] text-stone-500">图谱先展示前 ${items.length} 份资料，时间线保留全部内容。</p>` : ''}
+      </div>`;
+  }
+
+  function renderStoryEvidenceTimeline(items) {
+    return `<div class="relative space-y-4 before:absolute before:bottom-5 before:left-[17px] before:top-5 before:w-px before:bg-sandGold/50">
+      ${items.map((item, index) => {
+        const submission = item.submission || {};
+        const date = submission.createdAt ? new Date(submission.createdAt).toLocaleDateString('zh-CN') : '记录时间待补充';
+        return `
+          <article id="story-timeline-${safeText(item.id)}" class="relative pl-11">
+            <span class="absolute left-0 top-4 z-[1] flex h-9 w-9 items-center justify-center rounded-full border-4 border-[#faf8f2] bg-deepTeal text-xs font-black text-sandGold">${index + 1}</span>
+            <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+              <div class="flex flex-wrap items-start justify-between gap-2"><div><p class="text-[9px] font-black uppercase tracking-[0.14em] text-sandGold">${safeText(storyRelationLabel(item.relationType))}</p><h3 class="mt-1 font-bold text-stone-900">${safeText(submission.title || '社区文化记录')}</h3></div><span class="rounded-full bg-stone-100 px-2 py-1 text-[9px] text-stone-500">${safeText(date)}</span></div>
+              <p class="mt-3 rounded-xl bg-stone-50 p-3 text-xs font-medium leading-relaxed text-stone-700">${safeText(item.evidenceSummary)}</p>
+              ${storyEvidenceMedia(submission)}
+              ${submission.description ? `<p class="mt-3 text-xs leading-relaxed text-stone-600">${safeText(submission.description)}</p>` : ''}
+              <p class="mt-3 border-t border-stone-100 pt-3 text-[10px] text-stone-400">记录者：${safeText(submission.contributorName || '社区守护者')}${submission.regionName ? ` · ${safeText(submission.regionName)}` : ''}</p>
+            </div>
+          </article>`;
+      }).join('')}
+    </div>`;
+  }
+
+  function bindStoryEvidenceControls() {
+    const content = document.getElementById('cloud-story-evidence-content');
+    if (!content) return;
+    content.querySelectorAll('[data-story-view]').forEach((button) => {
+      button.addEventListener('click', () => switchStoryEvidenceView(button.dataset.storyView));
+    });
+    content.querySelectorAll('[data-story-evidence-node]').forEach((node) => {
+      const select = () => {
+        activeStoryEvidenceNodeId = node.dataset.storyEvidenceNode;
+        renderStoryEvidence(activeStoryEvidenceResult);
+      };
+      node.addEventListener('click', select);
+      node.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') select();
+      });
+    });
+    const timelineButton = content.querySelector('[data-story-open-timeline]');
+    if (timelineButton) timelineButton.addEventListener('click', () => switchStoryEvidenceView('timeline', timelineButton.dataset.storyOpenTimeline));
+  }
+
+  function switchStoryEvidenceView(view, focusId) {
+    activeStoryEvidenceView = view === 'timeline' ? 'timeline' : 'graph';
+    if (focusId) activeStoryEvidenceNodeId = focusId;
+    renderStoryEvidence(activeStoryEvidenceResult);
+    if (focusId && activeStoryEvidenceView === 'timeline') {
+      requestAnimationFrame(() => document.getElementById(`story-timeline-${focusId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    }
+  }
+
   function renderStoryEvidence(result) {
     const content = document.getElementById('cloud-story-evidence-content');
     const items = result.items || [];
@@ -756,6 +913,8 @@ feedback_closed: '反馈处理',
     document.getElementById('cloud-story-evidence-subtitle').textContent = items.length
       ? `${items.length} 份资料 · ${Number(result.contributorCount || 0)} 位记录者共同讲述`
       : '等待社区共同补充的文化线索';
+    activeStoryEvidenceResult = result;
+    if (!activeStoryEvidenceNodeId && items[0]) activeStoryEvidenceNodeId = items[0].id;
     if (!items.length) {
       content.innerHTML = `
         <div class="rounded-2xl border border-dashed border-sandGold/60 bg-white p-7 text-center">
@@ -767,33 +926,16 @@ feedback_closed: '反馈处理',
       return;
     }
     content.innerHTML = `
+      <div class="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-stone-200/70 p-1">
+        <button type="button" data-story-view="graph" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'graph' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">关系图谱</button>
+        <button type="button" data-story-view="timeline" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'timeline' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">资料时间线</button>
+      </div>
       <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
         <p class="text-[10px] font-bold text-emerald-800">资料来源说明</p>
         <p class="mt-1 text-xs leading-relaxed text-emerald-900/70">以下内容均来自已审核的社区投稿，并由管理员确认与“${safeText(resource.title)}”相关。原始记录保持不变，可继续补充和修订关系。</p>
       </div>
-      <div class="relative mt-5 space-y-4 before:absolute before:bottom-5 before:left-[17px] before:top-5 before:w-px before:bg-sandGold/50">
-        ${items.map((item, index) => {
-          const submission = item.submission || {};
-          const date = submission.createdAt ? new Date(submission.createdAt).toLocaleDateString('zh-CN') : '记录时间待补充';
-          return `
-            <article class="relative pl-11">
-              <span class="absolute left-0 top-4 z-[1] flex h-9 w-9 items-center justify-center rounded-full border-4 border-[#faf8f2] bg-deepTeal text-xs font-black text-sandGold">${index + 1}</span>
-              <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-                <div class="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p class="text-[9px] font-black uppercase tracking-[0.14em] text-sandGold">${safeText(storyRelationLabel(item.relationType))}</p>
-                    <h3 class="mt-1 font-bold text-stone-900">${safeText(submission.title || '社区文化记录')}</h3>
-                  </div>
-                  <span class="rounded-full bg-stone-100 px-2 py-1 text-[9px] text-stone-500">${safeText(date)}</span>
-                </div>
-                <p class="mt-3 rounded-xl bg-stone-50 p-3 text-xs font-medium leading-relaxed text-stone-700">${safeText(item.evidenceSummary)}</p>
-                ${storyEvidenceMedia(submission)}
-                ${submission.description ? `<p class="mt-3 text-xs leading-relaxed text-stone-600">${safeText(submission.description)}</p>` : ''}
-                <p class="mt-3 border-t border-stone-100 pt-3 text-[10px] text-stone-400">记录者：${safeText(submission.contributorName || '社区守护者')}${submission.regionName ? ` · ${safeText(submission.regionName)}` : ''}</p>
-              </div>
-            </article>`;
-        }).join('')}
-      </div>`;
+      <div class="mt-5">${activeStoryEvidenceView === 'graph' ? renderStoryEvidenceGraph(result) : renderStoryEvidenceTimeline(items)}</div>`;
+    bindStoryEvidenceControls();
   }
 
   async function openStoryEvidence(resourceId, resourceTitle) {
@@ -804,6 +946,9 @@ feedback_closed: '反馈处理',
     document.getElementById('cloud-story-evidence-subtitle').textContent = '正在读取已审核资料来源';
     content.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在整理资料来源...</div>';
     modal.classList.remove('hidden');
+    activeStoryEvidenceView = 'graph';
+    activeStoryEvidenceNodeId = '';
+    activeStoryEvidenceResult = null;
     try {
       await ensureCloudUser();
       const result = await callCore({ action: 'getStoryEvidence', resourceId });
