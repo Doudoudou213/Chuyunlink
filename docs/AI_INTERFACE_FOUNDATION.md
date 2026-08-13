@@ -20,12 +20,12 @@
 
 一旦初始化成功，后续普通部署会自动用“只更新代码”的方式同步 `storyWorker`，不会覆盖它的 API Key 和其他云端环境变量。
 
-在 GitHub Actions 中手动运行一次 `Initialize AI Foundation`：
+首次把该工作流加入 `shan` 时，会自动运行一次 `Initialize AI Foundation`。也可以在工作流已进入仓库默认分支后手动运行：
 
-1. 打开 Actions，选择 `Initialize AI Foundation`。
-2. 选择包含本次代码的 `shan` 分支，点击 Run workflow。
-3. 脚本会先检查云端是否已有 `storyWorker`。如果已经存在，它会主动停止，避免覆盖云端密钥。
-4. 首次创建的函数保持 `AI_ENABLED=false`，且不含 TokenHub API Key。
+1. 脚本会先检查云端是否已有 `storyWorker`。
+2. 如果已经存在，它会主动停止，避免覆盖云端密钥。
+3. 首次创建的函数保持 `AI_ENABLED=false`，且不含 TokenHub API Key。
+4. 以后只有修改这份初始化工作流本身时才会再次触发；已有函数仍受步骤 2 保护。
 
 ## CloudBase 控制台配置
 

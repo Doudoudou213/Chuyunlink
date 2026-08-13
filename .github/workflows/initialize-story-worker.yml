@@ -2,6 +2,11 @@ name: Initialize AI Foundation
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - shan
+    paths:
+      - ".github/workflows/initialize-story-worker.yml"
 
 permissions:
   contents: read
