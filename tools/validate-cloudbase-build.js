@@ -17,7 +17,16 @@ const requiredFiles = [
   'cloudfunctions/appCore/domains/story-evidence.js',
   'cloudfunctions/adminSubmissions/data/resources.v1.json',
   'cloudfunctions/adminSubmissions/domains/story-evidence.js',
-  'cloudfunctions/adminSubmissions/index.js'
+  'cloudfunctions/adminSubmissions/index.js',
+  'cloudfunctions/storyWorker/index.js',
+  'cloudfunctions/storyWorker/lib/config.js',
+  'cloudfunctions/storyWorker/lib/contract.js',
+  'cloudfunctions/storyWorker/lib/tokenhub-client.js',
+  'cloudfunctions/storyWorker/package.json',
+  'tools/test-ai-foundation.js',
+  'tools/initialize-story-worker.ps1',
+  '.github/workflows/initialize-story-worker.yml',
+  'docs/AI_INTERFACE_FOUNDATION.md'
 ];
 const productionTextFiles = [
   'index.html',
@@ -28,7 +37,11 @@ const productionTextFiles = [
   'cloudfunctions/appCore/domains/resources.js',
   'cloudfunctions/appCore/domains/story-evidence.js',
   'cloudfunctions/adminSubmissions/domains/story-evidence.js',
-  'cloudfunctions/adminSubmissions/index.js'
+  'cloudfunctions/adminSubmissions/index.js',
+  'cloudfunctions/storyWorker/index.js',
+  'cloudfunctions/storyWorker/lib/config.js',
+  'cloudfunctions/storyWorker/lib/contract.js',
+  'cloudfunctions/storyWorker/lib/tokenhub-client.js'
 ];
 const javascriptFiles = [
   'static/cloudbase-app.js',
@@ -37,7 +50,11 @@ const javascriptFiles = [
   'cloudfunctions/appCore/domains/resources.js',
   'cloudfunctions/appCore/domains/story-evidence.js',
   'cloudfunctions/adminSubmissions/domains/story-evidence.js',
-  'cloudfunctions/adminSubmissions/index.js'
+  'cloudfunctions/adminSubmissions/index.js',
+  'cloudfunctions/storyWorker/index.js',
+  'cloudfunctions/storyWorker/lib/config.js',
+  'cloudfunctions/storyWorker/lib/contract.js',
+  'cloudfunctions/storyWorker/lib/tokenhub-client.js'
 ];
 const forbiddenPatterns = [
   { label: 'localhost', pattern: /\blocalhost\b/i },

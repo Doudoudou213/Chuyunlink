@@ -20,6 +20,23 @@
       "envVariables": {
         "ADMIN_UIDS": "lqdTAYa24yVmQUMTrbhs_g,2081931527223812098,2082329461149179906,2082329998590648322,2083323851088859136"
       }
+    },
+    {
+      "name": "storyWorker",
+      "runtime": "Nodejs18.15",
+      "handler": "index.main",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "ADMIN_UIDS": "lqdTAYa24yVmQUMTrbhs_g,2081931527223812098,2082329461149179906,2082329998590648322,2083323851088859136",
+        "AI_ENABLED": "false",
+        "AI_PROVIDER": "tokenhub",
+        "AI_BASE_URL": "https://tokenhub.tencentmaas.com/v1",
+        "AI_TEXT_MODEL": "hy3",
+        "AI_DAILY_CALL_LIMIT": "20",
+        "AI_DAILY_TOKEN_LIMIT": "200000"
+      }
     }
   ]
 }

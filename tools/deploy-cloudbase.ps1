@@ -65,6 +65,30 @@ function Invoke-CloudBaseCli {
   }
 }
 
+function Invoke-CloudBaseCliCapture {
+  param([Parameter(Mandatory = $true)][string[]]$CliArguments)
+
+  if ($localTcb) {
+    $output = & $localTcb @CliArguments 2>&1
+  } elseif ($npxCommand) {
+    $output = & $npxCommand.Source --yes --package "@cloudbase/cli@$cloudbaseCliVersion" tcb @CliArguments 2>&1
+  } else {
+    throw 'CloudBase CLI was not found. Install Node.js/npm or add @cloudbase/cli as a dev dependency.'
+  }
+
+  if ($LASTEXITCODE -ne 0) {
+    throw "CloudBase CLI failed with exit code $LASTEXITCODE."
+  }
+  return $output
+}
+
+function Test-CloudBaseFunctionExists {
+  param([Parameter(Mandatory = $true)][string]$FunctionName)
+
+  $output = Invoke-CloudBaseCliCapture -CliArguments @('fn', 'list', '-e', $environmentId, '--json', '--yes')
+  return (($output | Out-String) -match [regex]::Escape($FunctionName))
+}
+
 function Test-JavaScriptSyntax {
   param([Parameter(Mandatory = $true)][string]$ScriptPath)
 
@@ -87,10 +111,12 @@ try {
   $cloudbaseAppScript = Join-Path $staticDirectory 'cloudbase-app.js'
   $appCoreScript = Join-Path (Join-Path $cloudFunctionsDirectory 'appCore') 'index.js'
   $adminSubmissionsScript = Join-Path (Join-Path $cloudFunctionsDirectory 'adminSubmissions') 'index.js'
+  $storyWorkerScript = Join-Path (Join-Path $cloudFunctionsDirectory 'storyWorker') 'index.js'
 
   Test-JavaScriptSyntax -ScriptPath $cloudbaseAppScript
   Test-JavaScriptSyntax -ScriptPath $appCoreScript
   Test-JavaScriptSyntax -ScriptPath $adminSubmissionsScript
+  Test-JavaScriptSyntax -ScriptPath $storyWorkerScript
 
   if (-not $StaticOnly) {
     if ($FullFunctionDeploy) {
@@ -106,6 +132,13 @@ try {
 
       Write-Host 'Updating adminSubmissions code while preserving cloud configuration...'
       Invoke-CloudBaseCli -CliArguments @('fn', 'code', 'update', 'adminSubmissions', '-e', $environmentId, '--deployMode', 'zip', '--yes')
+    }
+
+    if (Test-CloudBaseFunctionExists -FunctionName 'storyWorker') {
+      Write-Host 'Updating storyWorker code while preserving its API key and cloud configuration...'
+      Invoke-CloudBaseCli -CliArguments @('fn', 'code', 'update', 'storyWorker', '-e', $environmentId, '--deployMode', 'zip', '--yes')
+    } else {
+      Write-Warning 'storyWorker is not initialized yet. Existing deployment continues without it.'
     }
   }
 

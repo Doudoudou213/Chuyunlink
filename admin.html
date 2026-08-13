@@ -51,6 +51,7 @@
             <button id="feedback-refresh" data-admin-view="feedback" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">用户反馈</button>
             <button id="redemption-refresh" data-admin-view="redemptions" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">兑换码核销</button>
             <button id="story-links-refresh" data-admin-view="story-links" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">链迹关联</button>
+            <button id="ai-status-refresh" data-admin-view="ai-status" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">AI 接口</button>
             <button id="resource-preview-refresh" data-admin-view="resource-preview" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">资源迁移预览</button>
           </div>
         </div>
@@ -87,6 +88,7 @@
     const ENV_ID = "chulink-legacy-d8god1687a5d60743";
     const REGION = "ap-shanghai";
     const FUNCTION_NAME = "adminSubmissions";
+    const AI_FUNCTION_NAME = "storyWorker";
     const app = cloudbase.init({ env: ENV_ID, region: REGION });
     const auth = app.auth({ persistence: "local" });
 
@@ -119,6 +121,21 @@
         const error = result && result.error;
         const failure = new Error(error && error.message ? error.message : "云函数返回失败");
         failure.code = error && error.code ? error.code : "FUNCTION_FAILED";
+        throw failure;
+      }
+      return result;
+    }
+
+    async function callAiWorker(data) {
+      const response = await app.callFunction({ name: AI_FUNCTION_NAME, data });
+      let result = response && response.result !== undefined ? response.result : response;
+      if (typeof result === "string") {
+        try { result = JSON.parse(result); } catch (_) {}
+      }
+      if (!result || result.ok !== true) {
+        const error = result && result.error;
+        const failure = new Error(error && error.message ? error.message : "AI 云函数返回失败");
+        failure.code = error && error.code ? error.code : "AI_FUNCTION_FAILED";
         throw failure;
       }
       return result;
@@ -990,6 +1007,100 @@
       }
     }
 
+    function renderAiStatus(result) {
+      const config = result.config || {};
+      const usage = result.todayUsage || {};
+      const test = result.syntheticTest || null;
+      const analysis = test && test.analysis;
+      const testJob = test && test.job;
+      const ready = config.enabled && config.apiKeyConfigured;
+      const candidates = analysis && analysis.output && Array.isArray(analysis.output.candidateLinks)
+        ? analysis.output.candidateLinks
+        : [];
+      list.innerHTML = `
+        <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9b733b]">AI Foundation</p>
+              <h3 class="mt-1 text-lg font-bold text-stone-900">模型接口与安全开关</h3>
+              <p class="mt-1 max-w-2xl text-xs leading-relaxed text-stone-500">这里不会读取真实投稿。首个测试只发送一条写在云函数里的虚构黄鹤楼题刻文本，并验证模型能否返回合规 JSON。</p>
+            </div>
+            <span class="rounded-full px-3 py-1.5 text-[10px] font-bold ${ready ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}">${ready ? "可以进行虚构数据测试" : "尚未启用模型调用"}</span>
+          </div>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-xl bg-stone-50 p-3"><p class="text-[9px] text-stone-400">总开关</p><p class="mt-1 text-sm font-bold ${config.enabled ? "text-emerald-700" : "text-stone-600"}">${config.enabled ? "AI_ENABLED=true" : "AI_ENABLED=false"}</p></div>
+            <div class="rounded-xl bg-stone-50 p-3"><p class="text-[9px] text-stone-400">API Key</p><p class="mt-1 text-sm font-bold ${config.apiKeyConfigured ? "text-emerald-700" : "text-stone-600"}">${config.apiKeyConfigured ? "已安全配置" : "尚未配置"}</p></div>
+            <div class="rounded-xl bg-stone-50 p-3"><p class="text-[9px] text-stone-400">模型</p><p class="mt-1 break-all text-sm font-bold text-stone-700">${escapeHtml(config.provider || "-")} / ${escapeHtml(config.textModel || "-")}</p></div>
+            <div class="rounded-xl bg-stone-50 p-3"><p class="text-[9px] text-stone-400">接口域名</p><p class="mt-1 break-all text-sm font-bold text-stone-700">${escapeHtml(config.endpointHost || "-")}</p></div>
+          </div>
+          <div class="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs leading-relaxed text-blue-800">
+            今日用量：尝试 ${Number(usage.callsAttempted || 0)} 次，完成 ${Number(usage.callsCompleted || 0)} 次，共 ${Number(usage.totalTokens || 0)} Tokens。限制：${Number(config.dailyCallLimit || 0)} 次 / ${Number(config.dailyTokenLimit || 0)} Tokens。
+          </div>
+          <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-4">
+            <p class="text-[10px] leading-relaxed text-stone-500">相同模型和提示词只会完成一次测试；重复点击读取缓存，不会再次调用模型。</p>
+            <button type="button" data-ai-synthetic-test ${ready ? "" : "disabled"} class="rounded-xl bg-[#123c3a] px-5 py-3 text-xs font-bold text-[#d9ad52] disabled:cursor-not-allowed disabled:opacity-40">${analysis ? "读取已完成测试" : "运行一次虚构数据测试"}</button>
+          </div>
+        </section>
+        ${!ready ? `
+          <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+            <h3 class="font-bold">下一步需要在 storyWorker 云函数保存环境变量</h3>
+            <pre class="mt-3 overflow-x-auto rounded-xl bg-white p-3 text-[10px] leading-relaxed text-stone-700">AI_ENABLED=true
+AI_PROVIDER=tokenhub
+AI_BASE_URL=https://tokenhub.tencentmaas.com/v1
+AI_TEXT_MODEL=hy3
+TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
+            <p class="mt-2 text-[10px]">密钥不要填写到本页面、GitHub 或聊天中；这里只显示“是否已配置”。</p>
+          </section>` : ''}
+        ${testJob ? `
+          <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2"><h3 class="font-bold text-stone-900">虚构数据测试结果</h3><span class="rounded-full px-2 py-1 text-[10px] font-bold ${testJob.status === "completed" ? "bg-emerald-50 text-emerald-700" : testJob.status === "failed" ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-700"}">${escapeHtml(testJob.status)}</span></div>
+            <p class="mt-2 text-[10px] text-stone-500">${escapeHtml(testJob.provider)} / ${escapeHtml(testJob.model)} · 提示词 ${escapeHtml(testJob.promptVersion)} · 尝试 ${Number(testJob.attempts || 0)}/${Number(testJob.maxAttempts || 0)}</p>
+            ${testJob.lastError ? `<p class="mt-3 rounded-xl bg-red-50 p-3 text-xs text-red-700">${escapeHtml(testJob.lastError.code)}：${escapeHtml(testJob.lastError.message)}</p>` : ''}
+            ${analysis ? `
+              <p class="mt-4 rounded-xl bg-stone-50 p-3 text-sm leading-relaxed text-stone-700">${escapeHtml(analysis.output && analysis.output.summary || "")}</p>
+              <div class="mt-3 grid gap-2">${candidates.map((item) => `<div class="rounded-xl border border-emerald-100 bg-emerald-50 p-3"><div class="flex items-center justify-between gap-2"><strong class="text-xs text-emerald-900">${escapeHtml(item.resourceId)} · ${escapeHtml(item.relationType)}</strong><span class="text-[10px] font-bold text-emerald-700">${Math.round(Number(item.confidence || 0) * 100)}%</span></div><p class="mt-1 text-[10px] leading-relaxed text-emerald-800">${escapeHtml(item.reason)}</p></div>`).join("") || '<p class="text-xs text-stone-500">模型没有提出候选关系，这也是合法结果。</p>'}</div>
+              <p class="mt-3 text-[10px] text-stone-400">本次用量：${Number(analysis.usage && analysis.usage.totalTokens || 0)} Tokens。结果只保存在 ai_analyses，不会进入正式链迹。</p>` : ''}
+          </section>` : ''}
+      `;
+    }
+
+    async function loadAiStatus() {
+      setActiveView("ai-status", "AI 接口");
+      viewCount.textContent = "安全状态";
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在读取 AI 云函数状态，不会调用模型...";
+      list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在检查 storyWorker...</div>';
+      try {
+        const result = await callAiWorker({ action: "status" });
+        renderAiStatus(result);
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "状态读取完成，本次没有产生模型费用。";
+      } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+        list.innerHTML = '<div class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm leading-relaxed text-amber-800"><strong>storyWorker 尚未初始化。</strong><br>现有业务不受影响。完成首次云函数部署后，这里会显示模型开关、密钥配置状态和每日用量。</div>';
+      }
+    }
+
+    async function runSyntheticAiTest(button) {
+      button.disabled = true;
+      const original = button.textContent;
+      button.textContent = "正在验证结构化输出...";
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在发送一条虚构测试文本；不会读取用户投稿。";
+      try {
+        const result = await callAiWorker({ action: "runSyntheticTest" });
+        await loadAiStatus();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = result.cached ? "测试结果已从缓存读取，没有重复调用模型。" : "AI 接口测试通过，结构化结果已安全保存。";
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = original;
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
     async function loadResourceSeedPreview() {
       setActiveView("resource-preview", "资源迁移预览");
       message.className = "mt-2 text-xs text-stone-500";
@@ -1078,6 +1189,7 @@
     document.getElementById("feedback-refresh").addEventListener("click", loadFeedback);
     document.getElementById("redemption-refresh").addEventListener("click", loadRedemptions);
     document.getElementById("story-links-refresh").addEventListener("click", loadStoryLinks);
+    document.getElementById("ai-status-refresh").addEventListener("click", loadAiStatus);
     document.getElementById("resource-preview-refresh").addEventListener("click", loadResourceSeedPreview);
     document.getElementById("list").addEventListener("submit", (event) => {
       if (event.target && event.target.id === "redemption-lookup-form") lookupRedemption(event);
@@ -1123,6 +1235,8 @@
       const storyArchiveButton = event.target.closest("button[data-story-link-archive]");
       const storyLinkCard = event.target.closest("article[data-story-link-id]");
       if (storyArchiveButton && storyLinkCard) archiveStoryLink(storyLinkCard);
+      const aiTestButton = event.target.closest("button[data-ai-synthetic-test]");
+      if (aiTestButton) runSyntheticAiTest(aiTestButton);
     });
     logoutButton.addEventListener("click", async () => {
       await auth.signOut();
