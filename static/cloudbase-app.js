@@ -876,6 +876,36 @@ feedback_closed: '反馈处理',
     </div>`;
   }
 
+  function renderPublishedStory(result) {
+    const story = result.story;
+    if (!story) return '<div class="rounded-2xl border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-500">这处资源还没有已发布的故事版本。</div>';
+    const evidenceMap = new Map((result.items || []).map((item) => [item.id, item]));
+    return `
+      <article class="overflow-hidden rounded-2xl border border-[#d8c6a7] bg-white shadow-sm">
+        <header class="bg-gradient-to-br from-[#173f40] to-[#285b58] px-5 py-6 text-white">
+          <p class="text-[9px] font-black uppercase tracking-[0.22em] text-sandGold">共同讲述 · 第 ${Number(story.version || 1)} 版</p>
+          <h3 class="mt-2 text-xl font-black leading-tight">${safeText(story.title)}</h3>
+          <p class="mt-3 text-xs leading-relaxed text-white/75">${safeText(story.introduction)}</p>
+        </header>
+        <div class="space-y-5 p-5">
+          ${(story.chapters || []).map((chapter, index) => {
+            const sources = (chapter.sourceLinkIds || []).map((id) => evidenceMap.get(id)).filter(Boolean);
+            return `
+              <section class="relative pl-10">
+                <span class="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-[#8f302b] text-xs font-black text-white">${index + 1}</span>
+                <h4 class="font-bold text-stone-900">${safeText(chapter.title)}</h4>
+                <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">${safeText(chapter.body)}</p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  ${sources.map((source) => `<button type="button" data-story-open-source="${safeText(source.id)}" class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-800">来源 · ${safeText(source.submission && source.submission.title || '社区资料')}</button>`).join('')}
+                </div>
+              </section>`;
+          }).join('')}
+          ${story.closing ? `<footer class="rounded-xl bg-amber-50 p-4 text-xs leading-relaxed text-stone-700"><strong class="text-[#8f302b]">结语</strong><p class="mt-1">${safeText(story.closing)}</p></footer>` : ''}
+          <p class="border-t border-stone-100 pt-3 text-[9px] leading-relaxed text-stone-400">本故事由已确认链迹资料编排，并经管理员审核发布。点击每章来源可回到对应的原始社区记录。</p>
+        </div>
+      </article>`;
+  }
+
   function bindStoryEvidenceControls() {
     const content = document.getElementById('cloud-story-evidence-content');
     if (!content) return;
@@ -892,12 +922,16 @@ feedback_closed: '反馈处理',
         if (event.key === 'Enter' || event.key === ' ') select();
       });
     });
-    const timelineButton = content.querySelector('[data-story-open-timeline]');
-    if (timelineButton) timelineButton.addEventListener('click', () => switchStoryEvidenceView('timeline', timelineButton.dataset.storyOpenTimeline));
+    content.querySelectorAll('[data-story-open-timeline]').forEach((timelineButton) => {
+      timelineButton.addEventListener('click', () => switchStoryEvidenceView('timeline', timelineButton.dataset.storyOpenTimeline));
+    });
+    content.querySelectorAll('[data-story-open-source]').forEach((sourceButton) => {
+      sourceButton.addEventListener('click', () => switchStoryEvidenceView('timeline', sourceButton.dataset.storyOpenSource));
+    });
   }
 
   function switchStoryEvidenceView(view, focusId) {
-    activeStoryEvidenceView = view === 'timeline' ? 'timeline' : 'graph';
+    activeStoryEvidenceView = view === 'timeline' ? 'timeline' : view === 'story' ? 'story' : 'graph';
     if (focusId) activeStoryEvidenceNodeId = focusId;
     renderStoryEvidence(activeStoryEvidenceResult);
     if (focusId && activeStoryEvidenceView === 'timeline') {
@@ -914,6 +948,7 @@ feedback_closed: '反馈处理',
       ? `${items.length} 份资料 · ${Number(result.contributorCount || 0)} 位记录者共同讲述`
       : '等待社区共同补充的文化线索';
     activeStoryEvidenceResult = result;
+    if (activeStoryEvidenceView === 'story' && !result.story) activeStoryEvidenceView = 'graph';
     if (!activeStoryEvidenceNodeId && items[0]) activeStoryEvidenceNodeId = items[0].id;
     if (!items.length) {
       content.innerHTML = `
@@ -926,15 +961,16 @@ feedback_closed: '反馈处理',
       return;
     }
     content.innerHTML = `
-      <div class="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-stone-200/70 p-1">
+      <div class="mb-4 grid ${result.story ? 'grid-cols-3' : 'grid-cols-2'} gap-1 rounded-xl bg-stone-200/70 p-1">
         <button type="button" data-story-view="graph" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'graph' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">关系图谱</button>
         <button type="button" data-story-view="timeline" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'timeline' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">资料时间线</button>
+        ${result.story ? `<button type="button" data-story-view="story" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'story' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">故事讲述</button>` : ''}
       </div>
       <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
         <p class="text-[10px] font-bold text-emerald-800">资料来源说明</p>
         <p class="mt-1 text-xs leading-relaxed text-emerald-900/70">以下内容均来自已审核的社区投稿，并由管理员确认与“${safeText(resource.title)}”相关。原始记录保持不变，可继续补充和修订关系。</p>
       </div>
-      <div class="mt-5">${activeStoryEvidenceView === 'graph' ? renderStoryEvidenceGraph(result) : renderStoryEvidenceTimeline(items)}</div>`;
+      <div class="mt-5">${activeStoryEvidenceView === 'graph' ? renderStoryEvidenceGraph(result) : activeStoryEvidenceView === 'timeline' ? renderStoryEvidenceTimeline(items) : renderPublishedStory(result)}</div>`;
     bindStoryEvidenceControls();
   }
 

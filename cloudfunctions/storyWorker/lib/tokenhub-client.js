@@ -2,6 +2,7 @@
 
 const https = require('https');
 const { ANALYSIS_SCHEMA, RELATION_TYPE_VALUES, validateAnalysis } = require('./contract');
+const { STORY_DRAFT_SCHEMA, validateStoryDraft } = require('./story-contract');
 
 function retryAfterMs(value) {
   const raw = String(value || '').trim();
@@ -147,7 +148,79 @@ function createTokenHubClient({ config, transport = requestJson }) {
     }
     throw Object.assign(new Error('模型接口未返回可用结果'), { code: 'AI_NO_VALID_RESULT' });
   }
-  return { analyze };
+
+  async function draftStory(input, hooks = {}) {
+    const sources = Array.isArray(input.sources) ? input.sources : [];
+    const allowedSourceIds = sources.map((item) => item.linkId);
+    const body = {
+      model: config.textModel,
+      stream: false,
+      temperature: 0.2,
+      max_tokens: config.maxOutputTokens,
+      thinking: { type: 'disabled' },
+      reasoning_effort: 'low',
+      messages: [
+        {
+          role: 'system',
+          content: '你是楚韵链迹的文化故事编辑。只能依据给定且已审核的资料来源写作；写成 2 至 5 个简洁章节，每个章节必须引用至少一个 sourceLinkIds，且只能使用输入中存在的 linkId。不得补写输入中没有的年代、人物、事件或历史结论。证据不足时应使用“记录显示”“投稿者观察到”等克制表述。严格按照 JSON Schema 输出。'
+        },
+        {
+          role: 'user',
+          content: JSON.stringify({
+            task: '把已确认的文化资料编排成可追溯来源的故事草稿',
+            resource: input.resource,
+            sources
+          })
+        }
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'chulink_sourced_story_draft',
+          strict: true,
+          schema: STORY_DRAFT_SCHEMA
+        }
+      }
+    };
+    const maxAttempts = Math.max(1, Number(config.providerMaxAttempts) || 1);
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      if (typeof hooks.beforeAttempt === 'function') await hooks.beforeAttempt(attempt);
+      try {
+        const response = await transport(`${config.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${config.apiKey}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'ChuLink-StoryWorker/1.2'
+          }
+        }, JSON.stringify(body), config.requestTimeoutMs);
+        const output = validateStoryDraft(parseModelContent(response), allowedSourceIds);
+        const usage = response.usage || {};
+        return {
+          output,
+          providerAttempts: attempt,
+          providerRequestId: String(response.id || '').slice(0, 160),
+          usage: {
+            inputTokens: Math.max(0, Number(usage.prompt_tokens || usage.input_tokens) || 0),
+            outputTokens: Math.max(0, Number(usage.completion_tokens || usage.output_tokens) || 0),
+            totalTokens: Math.max(0, Number(usage.total_tokens) || 0)
+          }
+        };
+      } catch (error) {
+        if (/^AI_(?:INVALID|EMPTY|UNKNOWN)_?/.test(String(error && error.code || ''))) error.retryable = true;
+        error.providerAttempts = attempt;
+        if (!error.retryable || attempt >= maxAttempts) throw error;
+        const delayMs = Math.max(
+          Number(error.retryAfterMs) || 0,
+          Math.min(5000, (Number(config.retryBaseDelayMs) || 1200) * (2 ** (attempt - 1)))
+        );
+        if (typeof hooks.onRetry === 'function') await hooks.onRetry({ attempt, delayMs, error });
+        await wait(delayMs);
+      }
+    }
+    throw Object.assign(new Error('模型接口未返回可用故事草稿'), { code: 'AI_NO_VALID_STORY' });
+  }
+  return { analyze, draftStory };
 }
 
 module.exports = { createTokenHubClient, parseModelContent, requestJson, retryAfterMs };

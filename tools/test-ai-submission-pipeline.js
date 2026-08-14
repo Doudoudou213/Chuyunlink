@@ -34,7 +34,8 @@ function main() {
   // The worker can only create review candidates; formal links remain an admin transaction.
   assert.match(worker, /CANDIDATE_COLLECTION = 'ai_link_candidates'/);
   assert.match(worker, /status:\s*'pending_admin'/);
-  assert.doesNotMatch(worker, /story_evidence_links/);
+  const candidatePipeline = worker.match(/async function runSubmissionAnalysis[\s\S]*?\n}\n\nasync function buildConfirmedStoryInput/)[0];
+  assert.doesNotMatch(candidatePipeline, /story_evidence_links|LINK_COLLECTION/);
   assert.match(adminService, /candidate\.status !== 'pending_admin'/);
   assert.match(adminService, /candidate\.submissionId !== submissionId \|\| candidate\.resourceId !== resourceId \|\| candidate\.relationType !== relationType/);
   assert.match(adminService, /status:\s*'confirmed'/);

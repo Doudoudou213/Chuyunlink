@@ -58,6 +58,8 @@ TOKENHUB_API_KEY=在 TokenHub 单独创建的 API Key
 - `ai_analyses`
 - `ai_usage_daily`
 - `ai_link_candidates`
+- `story_chains`
+- `story_chain_logs`
 
 ## 验收方法
 
@@ -73,4 +75,4 @@ TOKENHUB_API_KEY=在 TokenHub 单独创建的 API Key
 
 出现费用、输出质量或接口异常时，只需在云函数环境变量中把 `AI_ENABLED=false`，状态读取仍可使用，模型调用会立即被拒绝。
 
-真实投稿候选阶段已经完成。下一阶段是“带来源故事草稿”：只读取管理员已经确认的 `story_evidence_links`，生成可逐段追溯来源的故事结构，仍需人工发布。
+真实投稿候选和“带来源故事草稿”阶段已经完成。故事草稿只读取管理员已经确认的 `story_evidence_links`，每章都绑定来源，仍需管理员编辑发布。

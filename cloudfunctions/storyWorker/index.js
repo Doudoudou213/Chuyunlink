@@ -13,6 +13,8 @@ const USAGE_COLLECTION = 'ai_usage_daily';
 const SUBMISSION_COLLECTION = 'submissions';
 const RESOURCE_COLLECTION = 'resources';
 const CANDIDATE_COLLECTION = 'ai_link_candidates';
+const LINK_COLLECTION = 'story_evidence_links';
+const STORY_COLLECTION = 'story_chains';
 let collectionsReady = null;
 
 function cleanText(value, maxLength) {
@@ -57,7 +59,7 @@ function requireAdmin() {
 
 async function ensureCollections() {
   if (!collectionsReady) {
-    collectionsReady = Promise.all([JOB_COLLECTION, ANALYSIS_COLLECTION, USAGE_COLLECTION, CANDIDATE_COLLECTION].map(async (name) => {
+    collectionsReady = Promise.all([JOB_COLLECTION, ANALYSIS_COLLECTION, USAGE_COLLECTION, CANDIDATE_COLLECTION, STORY_COLLECTION].map(async (name) => {
       try {
         await db.createCollection(name);
       } catch (error) {
@@ -143,6 +145,24 @@ function submissionJobId(config, submissionId, input) {
     .digest('hex')
     .slice(0, 32);
   return `ai_story_${fingerprint}`;
+}
+
+function storyDraftJobId(config, resourceId, input) {
+  const fingerprint = crypto.createHash('sha256')
+    .update(JSON.stringify({
+      provider: config.provider,
+      model: config.textModel,
+      storyPromptVersion: config.storyPromptVersion,
+      resourceId,
+      input
+    }))
+    .digest('hex')
+    .slice(0, 32);
+  return `ai_draft_${fingerprint}`;
+}
+
+function storyDraftIdFor(jobId) {
+  return `story_${jobId.slice('ai_draft_'.length)}`;
 }
 
 function shanghaiDayId() {
@@ -509,6 +529,195 @@ async function runSubmissionAnalysis(config, adminUid, event) {
   }
 }
 
+async function buildConfirmedStoryInput(resourceId) {
+  const resource = firstDocument(await db.collection(RESOURCE_COLLECTION).doc(resourceId).get());
+  if (!resource || resource.status !== 'published') {
+    throw Object.assign(new Error('文化资源不存在或尚未发布'), { code: 'PUBLISHED_RESOURCE_REQUIRED' });
+  }
+  const linkResult = await db.collection(LINK_COLLECTION).where({ resourceId }).limit(100).get();
+  const links = (linkResult.data || []).filter((item) => item.status === 'confirmed').slice(0, 30);
+  const sources = [];
+  for (const link of links) {
+    const linkId = cleanText(link._id || link.id, 128);
+    if (!linkId) continue;
+    const submission = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get());
+    if (!submission || submission.status !== 'approved') continue;
+    sources.push({
+      linkId,
+      relationType: cleanText(link.relationType || 'supports_story', 40),
+      evidenceSummary: cleanText(link.evidenceSummary, 500),
+      submission: {
+        title: cleanText(submission.title || submission.description || '社区投稿', 120),
+        description: cleanText(submission.description, 900),
+        assetType: cleanText(submission.assetType || 'image', 20),
+        regionName: cleanText(submission.regionName || '湖北', 80),
+        recordedAt: dateMs(submission.createdAt) ? new Date(dateMs(submission.createdAt)).toISOString() : ''
+      }
+    });
+  }
+  if (!sources.length) {
+    throw Object.assign(new Error('该资源还没有可用于写作的已确认链迹'), { code: 'CONFIRMED_STORY_SOURCES_REQUIRED' });
+  }
+  return {
+    resource: {
+      id: resourceId,
+      title: cleanText(resource.title, 120),
+      type: cleanText(resource.type || 'article', 40),
+      summary: cleanText(resource.summary || resource.description, 800)
+    },
+    sources
+  };
+}
+
+async function ensureStoryDraftJob(config, adminUid, resourceId, input) {
+  const jobId = storyDraftJobId(config, resourceId, input);
+  const ref = db.collection(JOB_COLLECTION).doc(jobId);
+  let current = firstDocument(await ref.get());
+  if (!current) {
+    const now = db.serverDate();
+    await ref.set({
+      type: 'sourced_story_draft',
+      schemaVersion: 1,
+      idempotencyKey: jobId,
+      resourceId,
+      status: 'pending',
+      attempts: 0,
+      maxAttempts: config.maxAttempts,
+      provider: config.provider,
+      model: config.textModel,
+      promptVersion: config.storyPromptVersion,
+      input,
+      synthetic: false,
+      createdBy: adminUid,
+      createdAt: now,
+      updatedAt: now
+    });
+    current = firstDocument(await ref.get());
+  }
+  return { jobId, job: current };
+}
+
+async function runStoryDraft(config, adminUid, event) {
+  if (!config.enabled) throw Object.assign(new Error('AI_ENABLED 仍为 false'), { code: 'AI_DISABLED' });
+  if (!config.apiKey) throw Object.assign(new Error('尚未配置 TOKENHUB_API_KEY'), { code: 'AI_KEY_NOT_CONFIGURED' });
+  const resourceId = cleanId(event.resourceId, '资源');
+  const input = await buildConfirmedStoryInput(resourceId);
+  const { jobId } = await ensureStoryDraftJob(config, adminUid, resourceId, input);
+  const acquired = await acquireJob(jobId, config);
+  const draftId = storyDraftIdFor(jobId);
+  if (acquired.cached) {
+    return { ok: true, action: 'generateStoryDraft', cached: true, resourceId, draftId };
+  }
+  let dayId = '';
+  try {
+    const client = createTokenHubClient({ config });
+    const result = await client.draftStory(acquired.job.input || input, {
+      beforeAttempt: async () => {
+        dayId = await reserveDailyCall(config, jobId);
+      }
+    });
+    const sourceLinkIds = [...new Set(result.output.chapters.flatMap((chapter) => chapter.sourceLinkIds))];
+    await db.runTransaction(async (transaction) => {
+      const currentLinks = await Promise.all(sourceLinkIds.map(async (linkId) => ({
+        linkId,
+        record: firstDocument(await transaction.collection(LINK_COLLECTION).doc(linkId).get())
+      })));
+      if (currentLinks.some(({ record }) => !record || record.status !== 'confirmed' || record.resourceId !== resourceId)) {
+        throw Object.assign(new Error('链迹来源状态已变化，已停止保存故事草稿'), { code: 'STORY_SOURCE_CHANGED' });
+      }
+      const now = db.serverDate();
+      await transaction.collection(STORY_COLLECTION).doc(draftId).set({
+        resourceId,
+        resourceTitle: input.resource.title,
+        title: result.output.title,
+        introduction: result.output.introduction,
+        chapters: result.output.chapters,
+        closing: result.output.closing,
+        sourceLinkIds,
+        status: 'draft',
+        version: 1,
+        provider: config.provider,
+        model: config.textModel,
+        promptVersion: config.storyPromptVersion,
+        jobId,
+        usage: result.usage,
+        createdBy: adminUid,
+        createdAt: now,
+        updatedAt: now
+      });
+      await transaction.collection(JOB_COLLECTION).doc(jobId).update({
+        status: 'completed',
+        storyDraftId: draftId,
+        finishedAt: now,
+        lockedAt: null,
+        lockedBy: '',
+        updatedAt: now
+      });
+    });
+    await recordCompletedUsage(dayId, jobId, result.usage);
+    return { ok: true, action: 'generateStoryDraft', cached: false, resourceId, draftId };
+  } catch (error) {
+    const safeError = {
+      code: cleanText(error && error.code || 'AI_STORY_FAILED', 80),
+      message: cleanText(error && error.message || 'AI 故事草稿生成失败', 500),
+      retryable: error && error.retryable === true
+    };
+    try {
+      await db.collection(JOB_COLLECTION).doc(jobId).update({
+        status: 'failed',
+        lastError: safeError,
+        lockedAt: null,
+        lockedBy: '',
+        finishedAt: db.serverDate(),
+        updatedAt: db.serverDate()
+      });
+    } catch (_) {}
+    throw Object.assign(new Error(safeError.message), { code: safeError.code });
+  }
+}
+
+async function storyDraftWorkspace() {
+  const [linkResult, resourceResult, storyResult] = await Promise.all([
+    db.collection(LINK_COLLECTION).limit(100).get(),
+    db.collection(RESOURCE_COLLECTION).where({ status: 'published' }).limit(100).get(),
+    db.collection(STORY_COLLECTION).limit(100).get()
+  ]);
+  const links = (linkResult.data || []).filter((item) => item.status === 'confirmed');
+  const counts = new Map();
+  links.forEach((item) => counts.set(item.resourceId, (counts.get(item.resourceId) || 0) + 1));
+  const resources = (resourceResult.data || [])
+    .filter((item) => counts.has(item._id || item.id))
+    .map((item) => ({
+      id: item._id || item.id || '',
+      title: cleanText(item.title, 120),
+      type: cleanText(item.type || 'article', 40),
+      confirmedSourceCount: counts.get(item._id || item.id) || 0
+    }));
+  const drafts = (storyResult.data || []).map((item) => ({
+    id: item._id || item.id || '',
+    resourceId: item.resourceId || '',
+    resourceTitle: item.resourceTitle || '',
+    title: item.title || '',
+    introduction: item.introduction || '',
+    chapters: Array.isArray(item.chapters) ? item.chapters : [],
+    closing: item.closing || '',
+    sourceLinkIds: Array.isArray(item.sourceLinkIds) ? item.sourceLinkIds : [],
+    status: item.status || 'draft',
+    version: Math.max(1, Number(item.version) || 1)
+  }));
+  return {
+    ok: true,
+    action: 'getStoryDraftWorkspace',
+    resources,
+    drafts,
+    counts: {
+      sourceReadyResources: resources.length,
+      drafts: drafts.filter((item) => item.status === 'draft').length,
+      published: drafts.filter((item) => item.status === 'published').length
+    }
+  };
+}
+
 async function runSyntheticTest(config, adminUid) {
   if (!config.enabled) throw Object.assign(new Error('AI_ENABLED 仍为 false，尚未允许真实模型调用'), { code: 'AI_DISABLED' });
   if (!config.apiKey) throw Object.assign(new Error('尚未配置 TOKENHUB_API_KEY'), { code: 'AI_KEY_NOT_CONFIGURED' });
@@ -604,6 +813,8 @@ exports.main = async (event = {}) => {
     if (action === 'status') return await status(config);
     if (action === 'getSubmissionWorkspace') return await realWorkspace();
     if (action === 'analyzeSubmission') return await runSubmissionAnalysis(config, adminUid, event);
+    if (action === 'getStoryDraftWorkspace') return await storyDraftWorkspace();
+    if (action === 'generateStoryDraft') return await runStoryDraft(config, adminUid, event);
     if (action === 'runSyntheticTest') return await runSyntheticTest(config, adminUid);
     return { ok: false, error: { code: 'INVALID_ACTION', message: '不支持的 AI 操作' } };
   } catch (error) {

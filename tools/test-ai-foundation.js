@@ -146,7 +146,8 @@ async function main() {
   assert.match(workerSource, /beforeAttempt:[\s\S]*reserveDailyCall/);
   assert.match(workerSource, /submission\.status !== 'approved'/);
   assert.match(workerSource, /submission\.aiAnalysisConsent !== true/);
-  assert.doesNotMatch(workerSource, /story_evidence_links/);
+  const candidatePipeline = workerSource.match(/async function runSubmissionAnalysis[\s\S]*?\n}\n\nasync function buildConfirmedStoryInput/)[0];
+  assert.doesNotMatch(candidatePipeline, /story_evidence_links|LINK_COLLECTION/);
 
   const userClient = read('static/cloudbase-app.js');
   assert.doesNotMatch(userClient, /TOKENHUB_API_KEY/);

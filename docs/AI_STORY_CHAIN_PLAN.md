@@ -164,3 +164,22 @@ flowchart LR
   "write": false
 }
 ```
+
+## 第三阶段实现记录（2026-08-15）
+
+已完成“带来源故事草稿”：
+
+- `storyWorker` 只读取 `status=confirmed` 的正式链迹，并再次确认来源投稿仍为 `approved`；
+- 故事 JSON 合约要求每个章节至少引用一个真实 `story_evidence_links` ID，模型不能引用清单外来源；
+- AI 结果以 `draft` 状态写入 `story_chains`，不能由模型直接发布；
+- 管理后台新增“故事草稿”，支持逐章编辑、核对来源、人工发布和归档；
+- 发布事务会再次验证文化资源、链迹关系和来源投稿，并写入 `story_chain_logs`；
+- 新版本发布后，旧公开版本改为 `superseded`，保留追溯记录；
+- 用户端链迹窗口新增“故事讲述”，每章显示可点击的来源标签，可返回资料时间线查看原始记录。
+
+以下集合的客户端权限应设置为禁止直接读写：
+
+- `story_chains`
+- `story_chain_logs`
+
+公开故事统一经 `appCore/getStoryEvidence` 脱敏读取；草稿、管理员、模型和内部版本字段不会返回前端。

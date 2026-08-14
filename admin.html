@@ -51,6 +51,7 @@
             <button id="feedback-refresh" data-admin-view="feedback" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">用户反馈</button>
             <button id="redemption-refresh" data-admin-view="redemptions" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">兑换码核销</button>
             <button id="story-links-refresh" data-admin-view="story-links" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">链迹关联</button>
+            <button id="story-drafts-refresh" data-admin-view="story-drafts" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">故事草稿</button>
             <button id="ai-status-refresh" data-admin-view="ai-status" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">AI 接口</button>
             <button id="resource-preview-refresh" data-admin-view="resource-preview" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">资源迁移预览</button>
           </div>
@@ -1007,6 +1008,123 @@
       }
     }
 
+    function renderStoryDraftWorkspace(result) {
+      const resources = result.resources || [];
+      const drafts = result.drafts || [];
+      const resourceOptions = resources.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.title)} · ${Number(item.confirmedSourceCount || 0)} 份已确认资料</option>`).join("");
+      const cards = drafts.length ? drafts.map((draft) => {
+        const isDraft = draft.status === "draft";
+        const isPublished = draft.status === "published";
+        const chapterEditors = (draft.chapters || []).map((chapter, index) => `
+          <section data-story-chapter class="rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <input data-story-chapter-title value="${escapeHtml(chapter.title)}" class="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-bold outline-none focus:border-[#123c3a]" aria-label="第 ${index + 1} 章标题">
+            <textarea data-story-chapter-body rows="5" class="mt-2 w-full rounded-lg border border-stone-200 bg-white p-3 text-xs leading-relaxed outline-none focus:border-[#123c3a]" aria-label="第 ${index + 1} 章正文">${escapeHtml(chapter.body)}</textarea>
+            <input data-story-chapter-sources type="hidden" value="${escapeHtml((chapter.sourceLinkIds || []).join(','))}">
+            <p class="mt-2 break-all text-[9px] text-stone-400">资料来源：${escapeHtml((chapter.sourceLinkIds || []).join('、'))}</p>
+          </section>`).join("");
+        return `
+          <article data-story-draft-id="${escapeHtml(draft.id)}" class="rounded-2xl border ${isDraft ? "border-amber-200" : isPublished ? "border-emerald-200" : "border-stone-200"} bg-white p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div><p class="text-[10px] font-bold uppercase tracking-[0.18em] ${isDraft ? "text-amber-700" : "text-emerald-700"}">${escapeHtml(draft.status)}</p><h3 class="mt-1 font-bold text-stone-900">${escapeHtml(draft.resourceTitle || draft.resourceId)}</h3></div>
+              <span class="rounded-full bg-stone-50 px-3 py-1 text-[10px] text-stone-500">${Number((draft.sourceLinkIds || []).length)} 份来源</span>
+            </div>
+            ${isDraft ? `
+              <label class="mt-4 block text-[10px] font-bold text-stone-600">故事标题<input data-story-title value="${escapeHtml(draft.title)}" class="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm font-bold outline-none focus:border-[#123c3a]"></label>
+              <label class="mt-3 block text-[10px] font-bold text-stone-600">导语<textarea data-story-introduction rows="3" class="mt-1 w-full rounded-lg border border-stone-200 p-3 text-xs leading-relaxed outline-none focus:border-[#123c3a]">${escapeHtml(draft.introduction)}</textarea></label>
+              <div class="mt-3 grid gap-3">${chapterEditors}</div>
+              <label class="mt-3 block text-[10px] font-bold text-stone-600">结语<textarea data-story-closing rows="3" class="mt-1 w-full rounded-lg border border-stone-200 p-3 text-xs leading-relaxed outline-none focus:border-[#123c3a]">${escapeHtml(draft.closing)}</textarea></label>
+              <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-4"><p class="text-[10px] text-stone-500">发布前请逐章核对文字和来源；AI 草稿不会自动公开。</p><button type="button" data-story-draft-publish class="rounded-xl bg-emerald-700 px-5 py-3 text-xs font-bold text-white">审核无误并发布</button></div>
+            ` : `
+              <h4 class="mt-4 text-lg font-bold text-stone-900">${escapeHtml(draft.title)}</h4><p class="mt-2 text-xs leading-relaxed text-stone-600">${escapeHtml(draft.introduction)}</p>
+              ${isPublished ? `<div class="mt-4 flex gap-2"><input data-story-archive-reason class="min-w-0 flex-1 rounded-lg border border-stone-200 px-3 py-2 text-xs" placeholder="归档原因"><button type="button" data-story-draft-archive class="rounded-lg border border-red-200 px-4 py-2 text-xs font-bold text-red-700">归档故事</button></div>` : '<p class="mt-3 text-[10px] text-stone-400">这是历史版本，仅保留用于追溯。</p>'}
+            `}
+          </article>`;
+      }).join("") : '<div class="rounded-2xl border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-500">还没有故事草稿。先选择一个已经拥有确认链迹的资源生成草稿。</div>';
+      list.innerHTML = `
+        <section class="rounded-2xl border border-[#d9ad52]/40 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm">
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9b733b]">Sourced Story</p><h3 class="mt-1 text-lg font-bold text-stone-900">从已确认链迹生成故事草稿</h3>
+          <p class="mt-1 max-w-3xl text-xs leading-relaxed text-stone-500">AI 只能使用正式链迹中的已审核资料，每个章节必须保留来源编号。生成后仍需管理员编辑和发布。</p>
+          <form id="story-draft-generate-form" class="mt-4 flex flex-col gap-3 sm:flex-row">
+            <select name="resourceId" ${resources.length ? "" : "disabled"} class="min-w-0 flex-1 rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm outline-none focus:border-[#123c3a]">${resourceOptions || '<option>当前没有可生成故事的资源</option>'}</select>
+            <button type="submit" ${resources.length ? "" : "disabled"} class="rounded-xl bg-[#123c3a] px-5 py-3 text-xs font-bold text-[#d9ad52] disabled:opacity-40">生成带来源草稿</button>
+          </form>
+        </section>${cards}`;
+    }
+
+    async function loadStoryDrafts() {
+      setActiveView("story-drafts", "故事草稿");
+      viewCount.textContent = "正在读取";
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在读取已确认链迹和故事版本，不会调用模型...";
+      list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在准备故事工作台...</div>';
+      try {
+        const result = await callAiWorker({ action: "getStoryDraftWorkspace" });
+        renderStoryDraftWorkspace(result);
+        viewCount.textContent = `${Number(result.counts && result.counts.drafts || 0)} 份草稿`;
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "故事工作台已同步，本次没有调用模型。";
+      } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function generateStoryDraft(event) {
+      event.preventDefault();
+      const button = event.target.querySelector('button[type="submit"]');
+      const resourceId = new FormData(event.target).get("resourceId");
+      button.disabled = true;
+      button.textContent = "AI 正在编排...";
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在使用已确认链迹生成草稿，不会自动发布。";
+      try {
+        const result = await callAiWorker({ action: "generateStoryDraft", resourceId });
+        await loadStoryDrafts();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = result.cached ? "已读取相同来源版本的缓存草稿。" : "带来源故事草稿已生成，请逐章核对后再发布。";
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "生成带来源草稿";
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function publishStoryDraft(card) {
+      const chapters = [...card.querySelectorAll("[data-story-chapter]")].map((chapter) => ({
+        title: chapter.querySelector("[data-story-chapter-title]").value.trim(),
+        body: chapter.querySelector("[data-story-chapter-body]").value.trim(),
+        sourceLinkIds: chapter.querySelector("[data-story-chapter-sources]").value.split(',').map((id) => id.trim()).filter(Boolean)
+      }));
+      const button = card.querySelector("[data-story-draft-publish]");
+      button.disabled = true;
+      try {
+        await callAdmin({ action: "publishStoryDraft", draftId: card.dataset.storyDraftId, title: card.querySelector("[data-story-title]").value.trim(), introduction: card.querySelector("[data-story-introduction]").value.trim(), chapters, closing: card.querySelector("[data-story-closing]").value.trim() });
+        await loadStoryDrafts();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "故事已发布，用户现在可以在该点位的“链迹 → 故事讲述”中查看。";
+      } catch (error) {
+        button.disabled = false;
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function archiveStoryDraft(card) {
+      const button = card.querySelector("[data-story-draft-archive]");
+      button.disabled = true;
+      try {
+        await callAdmin({ action: "archiveStoryChain", storyId: card.dataset.storyDraftId, archiveReason: card.querySelector("[data-story-archive-reason]").value.trim() });
+        await loadStoryDrafts();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "故事已归档并停止公开，原始投稿和链迹关系均保留。";
+      } catch (error) {
+        button.disabled = false;
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
     function renderAiStatus(result, workspace = {}) {
       const config = result.config || {};
       const usage = result.todayUsage || {};
@@ -1311,11 +1429,13 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
     document.getElementById("feedback-refresh").addEventListener("click", loadFeedback);
     document.getElementById("redemption-refresh").addEventListener("click", loadRedemptions);
     document.getElementById("story-links-refresh").addEventListener("click", loadStoryLinks);
+    document.getElementById("story-drafts-refresh").addEventListener("click", loadStoryDrafts);
     document.getElementById("ai-status-refresh").addEventListener("click", loadAiStatus);
     document.getElementById("resource-preview-refresh").addEventListener("click", loadResourceSeedPreview);
     document.getElementById("list").addEventListener("submit", (event) => {
       if (event.target && event.target.id === "redemption-lookup-form") lookupRedemption(event);
       if (event.target && event.target.id === "story-link-form") saveStoryLink(event);
+      if (event.target && event.target.id === "story-draft-generate-form") generateStoryDraft(event);
     });
     document.getElementById("list").addEventListener("input", (event) => {
       const input = event.target.closest("[data-resource-confirm-input]");
@@ -1366,6 +1486,11 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       if (aiCandidateCard && aiConfirmButton) confirmAiCandidate(aiCandidateCard);
       const aiRejectButton = event.target.closest("button[data-ai-candidate-reject]");
       if (aiCandidateCard && aiRejectButton) rejectAiCandidate(aiCandidateCard);
+      const storyDraftCard = event.target.closest("article[data-story-draft-id]");
+      const storyPublishButton = event.target.closest("button[data-story-draft-publish]");
+      if (storyDraftCard && storyPublishButton) publishStoryDraft(storyDraftCard);
+      const storyChainArchiveButton = event.target.closest("button[data-story-draft-archive]");
+      if (storyDraftCard && storyChainArchiveButton) archiveStoryDraft(storyDraftCard);
     });
     logoutButton.addEventListener("click", async () => {
       await auth.signOut();

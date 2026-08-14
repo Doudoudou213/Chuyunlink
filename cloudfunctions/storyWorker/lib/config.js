@@ -39,7 +39,8 @@ function loadConfig(env = process.env) {
     dailyTokenLimit: positiveInteger(env.AI_DAILY_TOKEN_LIMIT, 200000, 1000, 100000000),
     maxAttempts: positiveInteger(env.AI_JOB_MAX_ATTEMPTS, 2, 1, 5),
     lockTimeoutMs: positiveInteger(env.AI_JOB_LOCK_TIMEOUT_MS, 120000, 30000, 900000),
-    promptVersion: 'story-link-contract-v3'
+    promptVersion: 'story-link-contract-v3',
+    storyPromptVersion: 'sourced-story-contract-v1'
   };
 }
 
@@ -58,7 +59,8 @@ function publicConfig(config) {
     dailyCallLimit: config.dailyCallLimit,
     dailyTokenLimit: config.dailyTokenLimit,
     maxAttempts: config.maxAttempts,
-    promptVersion: config.promptVersion
+    promptVersion: config.promptVersion,
+    storyPromptVersion: config.storyPromptVersion
   };
 }
 
