@@ -214,6 +214,7 @@ async function publicResult(jobId) {
       id: job.analysisId,
       output: analysis.output || null,
       usage: analysis.usage || {},
+      providerAttempts: Math.max(1, Number(analysis.providerAttempts) || 1),
       provider: analysis.provider || '',
       model: analysis.model || '',
       promptVersion: analysis.promptVersion || '',
@@ -231,9 +232,12 @@ async function runSyntheticTest(config, adminUid) {
 
   let dayId = '';
   try {
-    dayId = await reserveDailyCall(config, jobId);
     const client = createTokenHubClient({ config });
-    const result = await client.analyze(acquired.job.input || syntheticInput());
+    const result = await client.analyze(acquired.job.input || syntheticInput(), {
+      beforeAttempt: async () => {
+        dayId = await reserveDailyCall(config, jobId);
+      }
+    });
     const analysisId = analysisIdFor(jobId);
     await db.runTransaction(async (transaction) => {
       await transaction.collection(ANALYSIS_COLLECTION).doc(analysisId).set({
@@ -244,6 +248,7 @@ async function runSyntheticTest(config, adminUid) {
         model: config.textModel,
         promptVersion: config.promptVersion,
         providerRequestId: result.providerRequestId,
+        providerAttempts: result.providerAttempts,
         output: result.output,
         usage: result.usage,
         synthetic: true,
@@ -267,6 +272,8 @@ async function runSyntheticTest(config, adminUid) {
       message: cleanText(error && error.message || 'AI 接口调用失败', 500),
       retryable: error && error.retryable === true
     };
+    if (error && error.providerRequestId) safeError.providerRequestId = cleanText(error.providerRequestId, 160);
+    if (error && error.providerAttempts) safeError.providerAttempts = Math.max(1, Number(error.providerAttempts) || 1);
     try {
       await db.collection(JOB_COLLECTION).doc(jobId).update({
         status: 'failed',

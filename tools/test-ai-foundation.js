@@ -20,6 +20,7 @@ async function main() {
     AI_PROVIDER: 'tokenhub',
     AI_BASE_URL: 'https://tokenhub.tencentmaas.com/v1/',
     AI_TEXT_MODEL: 'hy3',
+    AI_RETRY_BASE_DELAY_MS: '100',
     TOKENHUB_API_KEY: secret
   });
   assert.equal(config.baseUrl, 'https://tokenhub.tencentmaas.com/v1');
@@ -77,8 +78,39 @@ async function main() {
   assert.equal(observedRequest.url, 'https://tokenhub.tencentmaas.com/v1/chat/completions');
   assert.equal(observedRequest.options.headers.Authorization, `Bearer ${secret}`);
   assert.equal(observedRequest.body.response_format.type, 'json_schema');
+  assert.deepEqual(observedRequest.body.thinking, { type: 'disabled' });
+  assert.equal(observedRequest.body.reasoning_effort, 'low');
   assert.equal(response.usage.totalTokens, 200);
+  assert.equal(response.providerAttempts, 1);
   assert.equal(response.output.candidateLinks[0].relationType, 'documents_place');
+
+  let retryCalls = 0;
+  let reservedCalls = 0;
+  const retryingClient = createTokenHubClient({
+    config,
+    transport: async () => {
+      retryCalls += 1;
+      if (retryCalls === 1) {
+        throw Object.assign(new Error('temporary upstream timeout'), {
+          code: 'AI_PROVIDER_HTTP_504',
+          retryable: true
+        });
+      }
+      return {
+        choices: [{ message: { content: JSON.stringify(validAnalysis) } }],
+        usage: { total_tokens: 50 }
+      };
+    }
+  });
+  const retried = await retryingClient.analyze({
+    submission: { title: '虚构重试测试' },
+    allowedResources: allowedResourceIds.map((id) => ({ id, title: id }))
+  }, {
+    beforeAttempt: async () => { reservedCalls += 1; }
+  });
+  assert.equal(retried.providerAttempts, 2);
+  assert.equal(retryCalls, 2);
+  assert.equal(reservedCalls, 2);
 
   const cloudbaseConfig = JSON.parse(read('cloudbaserc.json'));
   const worker = cloudbaseConfig.functions.find((item) => item.name === 'storyWorker');
@@ -89,6 +121,7 @@ async function main() {
   const workerSource = read('cloudfunctions/storyWorker/index.js');
   assert.match(workerSource, /requireAdmin/);
   assert.match(workerSource, /synthetic:\s*true/);
+  assert.match(workerSource, /beforeAttempt:[\s\S]*reserveDailyCall/);
   assert.doesNotMatch(workerSource, /SUBMISSION_COLLECTION/);
 
   const userClient = read('static/cloudbase-app.js');

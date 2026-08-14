@@ -31,13 +31,15 @@ function loadConfig(env = process.env) {
     baseUrl: normalizeBaseUrl(env.AI_BASE_URL),
     textModel: String(env.AI_TEXT_MODEL || 'hy3').trim().slice(0, 100),
     apiKey: String(env.TOKENHUB_API_KEY || '').trim(),
-    requestTimeoutMs: positiveInteger(env.AI_REQUEST_TIMEOUT_MS, 30000, 5000, 90000),
+    requestTimeoutMs: positiveInteger(env.AI_REQUEST_TIMEOUT_MS, 24000, 5000, 45000),
     maxOutputTokens: positiveInteger(env.AI_MAX_OUTPUT_TOKENS, 1800, 200, 8000),
+    providerMaxAttempts: positiveInteger(env.AI_PROVIDER_MAX_ATTEMPTS, 2, 1, 3),
+    retryBaseDelayMs: positiveInteger(env.AI_RETRY_BASE_DELAY_MS, 1200, 100, 5000),
     dailyCallLimit: positiveInteger(env.AI_DAILY_CALL_LIMIT, 20, 1, 10000),
     dailyTokenLimit: positiveInteger(env.AI_DAILY_TOKEN_LIMIT, 200000, 1000, 100000000),
     maxAttempts: positiveInteger(env.AI_JOB_MAX_ATTEMPTS, 2, 1, 5),
     lockTimeoutMs: positiveInteger(env.AI_JOB_LOCK_TIMEOUT_MS, 120000, 30000, 900000),
-    promptVersion: 'story-link-contract-v1'
+    promptVersion: 'story-link-contract-v2'
   };
 }
 
@@ -52,6 +54,7 @@ function publicConfig(config) {
     apiKeyConfigured: Boolean(config.apiKey),
     requestTimeoutMs: config.requestTimeoutMs,
     maxOutputTokens: config.maxOutputTokens,
+    providerMaxAttempts: config.providerMaxAttempts,
     dailyCallLimit: config.dailyCallLimit,
     dailyTokenLimit: config.dailyTokenLimit,
     maxAttempts: config.maxAttempts,

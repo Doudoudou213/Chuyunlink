@@ -3,6 +3,19 @@
 const https = require('https');
 const { ANALYSIS_SCHEMA, validateAnalysis } = require('./contract');
 
+function retryAfterMs(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return 0;
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds)) return Math.max(0, Math.min(10000, seconds * 1000));
+  const date = new Date(raw).getTime();
+  return Number.isFinite(date) ? Math.max(0, Math.min(10000, date - Date.now())) : 0;
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 function requestJson(urlValue, options, body, timeoutMs) {
   return new Promise((resolve, reject) => {
     const url = new URL(urlValue);
@@ -26,6 +39,10 @@ function requestJson(urlValue, options, body, timeoutMs) {
           const error = new Error(String(providerMessage || `模型接口返回 HTTP ${response.statusCode}`).slice(0, 500));
           error.code = `AI_PROVIDER_HTTP_${response.statusCode}`;
           error.retryable = response.statusCode === 429 || response.statusCode >= 500;
+          error.retryAfterMs = retryAfterMs(response.headers['retry-after']);
+          error.providerRequestId = String(
+            response.headers['x-request-id'] || response.headers['x-tcb-request-id'] || data && data.error && data.error.request_id || ''
+          ).slice(0, 160);
           reject(error);
           return;
         }
@@ -55,7 +72,7 @@ function parseModelContent(response) {
 }
 
 function createTokenHubClient({ config, transport = requestJson }) {
-  async function analyze(input) {
+  async function analyze(input, hooks = {}) {
     const allowedResources = Array.isArray(input.allowedResources) ? input.allowedResources : [];
     const allowedResourceIds = allowedResources.map((item) => item.id);
     const body = {
@@ -63,6 +80,8 @@ function createTokenHubClient({ config, transport = requestJson }) {
       stream: false,
       temperature: 0.1,
       max_tokens: config.maxOutputTokens,
+      thinking: { type: 'disabled' },
+      reasoning_effort: 'low',
       messages: [
         {
           role: 'system',
@@ -86,18 +105,38 @@ function createTokenHubClient({ config, transport = requestJson }) {
         }
       }
     };
-    const response = await transport(`${config.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'ChuLink-StoryWorker/1.0'
+    const maxAttempts = Math.max(1, Number(config.providerMaxAttempts) || 1);
+    let response;
+    let providerAttempts = 0;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      providerAttempts = attempt;
+      if (typeof hooks.beforeAttempt === 'function') await hooks.beforeAttempt(attempt);
+      try {
+        response = await transport(`${config.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${config.apiKey}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'ChuLink-StoryWorker/1.1'
+          }
+        }, JSON.stringify(body), config.requestTimeoutMs);
+        break;
+      } catch (error) {
+        error.providerAttempts = attempt;
+        if (!error.retryable || attempt >= maxAttempts) throw error;
+        const delayMs = Math.max(
+          Number(error.retryAfterMs) || 0,
+          Math.min(5000, (Number(config.retryBaseDelayMs) || 1200) * (2 ** (attempt - 1)))
+        );
+        if (typeof hooks.onRetry === 'function') await hooks.onRetry({ attempt, delayMs, error });
+        await wait(delayMs);
       }
-    }, JSON.stringify(body), config.requestTimeoutMs);
+    }
     const output = validateAnalysis(parseModelContent(response), allowedResourceIds);
     const usage = response.usage || {};
     return {
       output,
+      providerAttempts,
       providerRequestId: String(response.id || '').slice(0, 160),
       usage: {
         inputTokens: Math.max(0, Number(usage.prompt_tokens || usage.input_tokens) || 0),
@@ -109,4 +148,4 @@ function createTokenHubClient({ config, transport = requestJson }) {
   return { analyze };
 }
 
-module.exports = { createTokenHubClient, parseModelContent, requestJson };
+module.exports = { createTokenHubClient, parseModelContent, requestJson, retryAfterMs };
