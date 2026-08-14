@@ -1,7 +1,7 @@
 'use strict';
 
 const https = require('https');
-const { ANALYSIS_SCHEMA, validateAnalysis } = require('./contract');
+const { ANALYSIS_SCHEMA, RELATION_TYPE_VALUES, validateAnalysis } = require('./contract');
 
 function retryAfterMs(value) {
   const raw = String(value || '').trim();
@@ -85,7 +85,7 @@ function createTokenHubClient({ config, transport = requestJson }) {
       messages: [
         {
           role: 'system',
-          content: '你是楚韵链迹的文化资料分析助手。你只能从给定资源列表中提出候选关联；无法确定时返回空 candidateLinks。不得虚构历史事实，不得把推测写成确定结论。严格按照 JSON Schema 输出。'
+          content: `你是楚韵链迹的文化资料分析助手。你只能从给定资源列表中提出候选关联；无法确定时返回空 candidateLinks。不得虚构历史事实，不得把推测写成确定结论。relationType 只能使用：${RELATION_TYPE_VALUES.join(', ')}。不得翻译、缩写或创造其他关系名称。严格按照 JSON Schema 输出。`
         },
         {
           role: 'user',
@@ -106,13 +106,12 @@ function createTokenHubClient({ config, transport = requestJson }) {
       }
     };
     const maxAttempts = Math.max(1, Number(config.providerMaxAttempts) || 1);
-    let response;
     let providerAttempts = 0;
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       providerAttempts = attempt;
       if (typeof hooks.beforeAttempt === 'function') await hooks.beforeAttempt(attempt);
       try {
-        response = await transport(`${config.baseUrl}/chat/completions`, {
+        const response = await transport(`${config.baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${config.apiKey}`,
@@ -120,8 +119,22 @@ function createTokenHubClient({ config, transport = requestJson }) {
             'User-Agent': 'ChuLink-StoryWorker/1.1'
           }
         }, JSON.stringify(body), config.requestTimeoutMs);
-        break;
+        const output = validateAnalysis(parseModelContent(response), allowedResourceIds);
+        const usage = response.usage || {};
+        return {
+          output,
+          providerAttempts,
+          providerRequestId: String(response.id || '').slice(0, 160),
+          usage: {
+            inputTokens: Math.max(0, Number(usage.prompt_tokens || usage.input_tokens) || 0),
+            outputTokens: Math.max(0, Number(usage.completion_tokens || usage.output_tokens) || 0),
+            totalTokens: Math.max(0, Number(usage.total_tokens) || 0)
+          }
+        };
       } catch (error) {
+        if (/^AI_(?:INVALID|EMPTY|UNKNOWN)_?/.test(String(error && error.code || ''))) {
+          error.retryable = true;
+        }
         error.providerAttempts = attempt;
         if (!error.retryable || attempt >= maxAttempts) throw error;
         const delayMs = Math.max(
@@ -132,18 +145,7 @@ function createTokenHubClient({ config, transport = requestJson }) {
         await wait(delayMs);
       }
     }
-    const output = validateAnalysis(parseModelContent(response), allowedResourceIds);
-    const usage = response.usage || {};
-    return {
-      output,
-      providerAttempts,
-      providerRequestId: String(response.id || '').slice(0, 160),
-      usage: {
-        inputTokens: Math.max(0, Number(usage.prompt_tokens || usage.input_tokens) || 0),
-        outputTokens: Math.max(0, Number(usage.completion_tokens || usage.output_tokens) || 0),
-        totalTokens: Math.max(0, Number(usage.total_tokens) || 0)
-      }
-    };
+    throw Object.assign(new Error('模型接口未返回可用结果'), { code: 'AI_NO_VALID_RESULT' });
   }
   return { analyze };
 }

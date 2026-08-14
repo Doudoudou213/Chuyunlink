@@ -1,13 +1,14 @@
 'use strict';
 
-const RELATION_TYPES = new Set([
+const RELATION_TYPE_VALUES = [
   'documents_feature',
   'documents_inscription',
   'documents_place',
   'documents_oral_history',
   'shows_change_over_time',
   'supports_story'
-]);
+];
+const RELATION_TYPES = new Set(RELATION_TYPE_VALUES);
 
 const ANALYSIS_SCHEMA = {
   type: 'object',
@@ -33,7 +34,11 @@ const ANALYSIS_SCHEMA = {
         additionalProperties: false,
         properties: {
           resourceId: { type: 'string' },
-          relationType: { type: 'string' },
+          relationType: {
+            type: 'string',
+            enum: RELATION_TYPE_VALUES,
+            description: '必须从枚举中选择，不得创造新的关系名称。'
+          },
           confidence: { type: 'number' },
           reason: { type: 'string' },
           evidence: { type: 'string' }
@@ -100,4 +105,4 @@ function validateAnalysis(value, allowedResourceIds) {
   };
 }
 
-module.exports = { ANALYSIS_SCHEMA, RELATION_TYPES, validateAnalysis };
+module.exports = { ANALYSIS_SCHEMA, RELATION_TYPES, RELATION_TYPE_VALUES, validateAnalysis };

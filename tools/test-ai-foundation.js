@@ -78,6 +78,10 @@ async function main() {
   assert.equal(observedRequest.url, 'https://tokenhub.tencentmaas.com/v1/chat/completions');
   assert.equal(observedRequest.options.headers.Authorization, `Bearer ${secret}`);
   assert.equal(observedRequest.body.response_format.type, 'json_schema');
+  assert.deepEqual(
+    observedRequest.body.response_format.json_schema.schema.properties.candidateLinks.items.properties.relationType.enum,
+    ['documents_feature', 'documents_inscription', 'documents_place', 'documents_oral_history', 'shows_change_over_time', 'supports_story']
+  );
   assert.deepEqual(observedRequest.body.thinking, { type: 'disabled' });
   assert.equal(observedRequest.body.reasoning_effort, 'low');
   assert.equal(response.usage.totalTokens, 200);
@@ -111,6 +115,24 @@ async function main() {
   assert.equal(retried.providerAttempts, 2);
   assert.equal(retryCalls, 2);
   assert.equal(reservedCalls, 2);
+
+  let invalidOutputCalls = 0;
+  const outputRetryClient = createTokenHubClient({
+    config,
+    transport: async () => {
+      invalidOutputCalls += 1;
+      const content = invalidOutputCalls === 1
+        ? { ...validAnalysis, candidateLinks: [{ ...validAnalysis.candidateLinks[0], relationType: 'same_theme' }] }
+        : validAnalysis;
+      return { choices: [{ message: { content: JSON.stringify(content) } }], usage: { total_tokens: 30 } };
+    }
+  });
+  const outputRetried = await outputRetryClient.analyze({
+    submission: { title: '虚构关系枚举测试' },
+    allowedResources: allowedResourceIds.map((id) => ({ id, title: id }))
+  });
+  assert.equal(outputRetried.providerAttempts, 2);
+  assert.equal(invalidOutputCalls, 2);
 
   const cloudbaseConfig = JSON.parse(read('cloudbaserc.json'));
   const worker = cloudbaseConfig.functions.find((item) => item.name === 'storyWorker');
