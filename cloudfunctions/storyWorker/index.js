@@ -10,10 +10,21 @@ const db = app.database();
 const JOB_COLLECTION = 'ai_jobs';
 const ANALYSIS_COLLECTION = 'ai_analyses';
 const USAGE_COLLECTION = 'ai_usage_daily';
+const SUBMISSION_COLLECTION = 'submissions';
+const RESOURCE_COLLECTION = 'resources';
+const CANDIDATE_COLLECTION = 'ai_link_candidates';
 let collectionsReady = null;
 
 function cleanText(value, maxLength) {
   return String(value == null ? '' : value).trim().slice(0, maxLength);
+}
+
+function cleanId(value, label = '记录') {
+  const id = cleanText(value, 128);
+  if (!/^[A-Za-z0-9_-]+$/.test(id)) {
+    throw Object.assign(new Error(`${label} ID 格式不正确`), { code: 'INVALID_ID' });
+  }
+  return id;
 }
 
 function firstDocument(result) {
@@ -46,7 +57,7 @@ function requireAdmin() {
 
 async function ensureCollections() {
   if (!collectionsReady) {
-    collectionsReady = Promise.all([JOB_COLLECTION, ANALYSIS_COLLECTION, USAGE_COLLECTION].map(async (name) => {
+    collectionsReady = Promise.all([JOB_COLLECTION, ANALYSIS_COLLECTION, USAGE_COLLECTION, CANDIDATE_COLLECTION].map(async (name) => {
       try {
         await db.createCollection(name);
       } catch (error) {
@@ -87,6 +98,51 @@ function syntheticJobId(config) {
 
 function analysisIdFor(jobId) {
   return `analysis_${jobId}`;
+}
+
+function candidateIdFor(submissionId, resourceId) {
+  const digest = crypto.createHash('sha256')
+    .update(`${submissionId}:${resourceId}`, 'utf8')
+    .digest('hex')
+    .slice(0, 40);
+  return `ai_candidate_${digest}`;
+}
+
+function sanitizedSubmission(item) {
+  return {
+    title: cleanText(item.title || item.description || '社区投稿', 120),
+    description: cleanText(item.description, 1800),
+    assetType: cleanText(item.assetType || 'image', 20),
+    regionName: cleanText(item.regionName || '湖北', 80)
+  };
+}
+
+function sanitizedResource(item) {
+  const region = item && item.region;
+  const regionText = region && typeof region === 'object'
+    ? [region.province, region.city, region.district, region.name].filter(Boolean).join(' · ')
+    : region;
+  return {
+    id: cleanText(item._id || item.id, 128),
+    title: cleanText(item.title, 120),
+    type: cleanText(item.type || 'article', 40),
+    summary: cleanText(item.summary || item.description, 260),
+    region: cleanText(regionText, 120)
+  };
+}
+
+function submissionJobId(config, submissionId, input) {
+  const fingerprint = crypto.createHash('sha256')
+    .update(JSON.stringify({
+      provider: config.provider,
+      model: config.textModel,
+      promptVersion: config.promptVersion,
+      submissionId,
+      input
+    }))
+    .digest('hex')
+    .slice(0, 32);
+  return `ai_story_${fingerprint}`;
 }
 
 function shanghaiDayId() {
@@ -223,6 +279,236 @@ async function publicResult(jobId) {
   };
 }
 
+async function eligibleSubmission(submissionId) {
+  const submission = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(submissionId).get());
+  if (!submission) {
+    throw Object.assign(new Error('没有找到这条投稿'), { code: 'SUBMISSION_NOT_FOUND' });
+  }
+  if (submission.status !== 'approved') {
+    throw Object.assign(new Error('只有审核通过的投稿可以进行 AI 链迹分析'), { code: 'APPROVED_SUBMISSION_REQUIRED' });
+  }
+  if (submission.aiAnalysisConsent !== true) {
+    throw Object.assign(new Error('投稿人没有授权 AI 分析，不能创建任务'), { code: 'AI_CONSENT_REQUIRED' });
+  }
+  return submission;
+}
+
+async function realWorkspace() {
+  const [submissionResult, candidateResult] = await Promise.all([
+    db.collection(SUBMISSION_COLLECTION).where({ status: 'approved' }).limit(100).get(),
+    db.collection(CANDIDATE_COLLECTION).limit(100).get()
+  ]);
+  const submissions = (submissionResult.data || [])
+    .filter((item) => item.aiAnalysisConsent === true)
+    .map((item) => ({
+      id: item._id || item.id || '',
+      title: cleanText(item.title || item.description || '社区投稿', 120),
+      description: cleanText(item.description, 300),
+      assetType: cleanText(item.assetType || 'image', 20),
+      regionName: cleanText(item.regionName || '湖北', 80),
+      aiAnalysisStatus: cleanText(item.aiAnalysisStatus || 'eligible', 40),
+      analysisId: cleanText(item.aiAnalysisId, 128)
+    }));
+  const submissionMap = new Map(submissions.map((item) => [item.id, item]));
+  const candidates = (candidateResult.data || [])
+    .filter((item) => item.synthetic !== true)
+    .map((item) => ({
+      id: item._id || item.id || '',
+      submissionId: item.submissionId || '',
+      submissionTitle: item.submissionTitle || submissionMap.get(item.submissionId)?.title || '社区投稿',
+      resourceId: item.resourceId || '',
+      resourceTitle: item.resourceTitle || '文化资源',
+      relationType: item.relationType || 'supports_story',
+      confidence: Math.max(0, Math.min(1, Number(item.confidence) || 0)),
+      reason: cleanText(item.reason, 500),
+      evidence: cleanText(item.evidence, 500),
+      status: cleanText(item.status || 'pending_admin', 40),
+      analysisId: cleanText(item.analysisId, 128)
+    }));
+  return {
+    ok: true,
+    action: 'getSubmissionWorkspace',
+    submissions,
+    candidates,
+    counts: {
+      consentedApproved: submissions.length,
+      pendingCandidates: candidates.filter((item) => item.status === 'pending_admin').length,
+      confirmedCandidates: candidates.filter((item) => item.status === 'confirmed').length,
+      rejectedCandidates: candidates.filter((item) => item.status === 'rejected').length
+    }
+  };
+}
+
+async function ensureSubmissionJob(config, adminUid, submissionId, input) {
+  const jobId = submissionJobId(config, submissionId, input);
+  const ref = db.collection(JOB_COLLECTION).doc(jobId);
+  let current = firstDocument(await ref.get());
+  if (!current) {
+    const now = db.serverDate();
+    await ref.set({
+      type: 'submission_story_link_analysis',
+      schemaVersion: 1,
+      idempotencyKey: jobId,
+      submissionId,
+      status: 'pending',
+      attempts: 0,
+      maxAttempts: config.maxAttempts,
+      provider: config.provider,
+      model: config.textModel,
+      promptVersion: config.promptVersion,
+      input,
+      synthetic: false,
+      createdBy: adminUid,
+      createdAt: now,
+      updatedAt: now
+    });
+    current = firstDocument(await ref.get());
+  }
+  return { jobId, job: current };
+}
+
+async function persistRealAnalysis({ config, adminUid, submissionId, submission, jobId, result }) {
+  const analysisId = analysisIdFor(jobId);
+  const resourceIds = [...new Set((result.output.candidateLinks || []).map((item) => item.resourceId))];
+  const resourcePairs = await Promise.all(resourceIds.map(async (resourceId) => [
+    resourceId,
+    firstDocument(await db.collection(RESOURCE_COLLECTION).doc(resourceId).get())
+  ]));
+  const resourceMap = new Map(resourcePairs);
+  const validCandidates = (result.output.candidateLinks || [])
+    .filter((candidate) => {
+      const resource = resourceMap.get(candidate.resourceId);
+      return resource && resource.status === 'published';
+    });
+  await db.runTransaction(async (transaction) => {
+    const submissionRef = transaction.collection(SUBMISSION_COLLECTION).doc(submissionId);
+    const latestSubmission = firstDocument(await submissionRef.get());
+    if (!latestSubmission || latestSubmission.status !== 'approved' || latestSubmission.aiAnalysisConsent !== true) {
+      throw Object.assign(new Error('投稿状态或 AI 授权已变化，已停止保存结果'), { code: 'AI_ELIGIBILITY_CHANGED' });
+    }
+    const candidateStates = await Promise.all(validCandidates.map(async (candidate) => {
+      const candidateId = candidateIdFor(submissionId, candidate.resourceId);
+      const candidateRef = transaction.collection(CANDIDATE_COLLECTION).doc(candidateId);
+      return { candidate, candidateId, candidateRef, current: firstDocument(await candidateRef.get()) };
+    }));
+    await transaction.collection(ANALYSIS_COLLECTION).doc(analysisId).set({
+      jobId,
+      submissionId,
+      type: 'story_link_analysis',
+      schemaVersion: 1,
+      provider: config.provider,
+      model: config.textModel,
+      promptVersion: config.promptVersion,
+      providerRequestId: result.providerRequestId,
+      providerAttempts: result.providerAttempts,
+      output: result.output,
+      usage: result.usage,
+      synthetic: false,
+      createdBy: adminUid,
+      createdAt: db.serverDate()
+    });
+    for (const state of candidateStates) {
+      const { candidate, candidateRef, current } = state;
+      const resource = resourceMap.get(candidate.resourceId);
+      if (current && (current.status === 'confirmed' || current.status === 'rejected')) continue;
+      const record = {
+        submissionId,
+        submissionTitle: submission.title || submission.description || '社区投稿',
+        resourceId: candidate.resourceId,
+        resourceTitle: resource.title || '文化资源',
+        relationType: candidate.relationType,
+        confidence: candidate.confidence,
+        reason: candidate.reason,
+        evidence: candidate.evidence,
+        analysisId,
+        jobId,
+        status: 'pending_admin',
+        synthetic: false,
+        proposedBy: 'ai',
+        updatedAt: db.serverDate()
+      };
+      if (current) await candidateRef.update(record);
+      else await candidateRef.set({ ...record, createdAt: db.serverDate() });
+    }
+    await submissionRef.update({
+      aiAnalysisStatus: (result.output.candidateLinks || []).length ? 'candidate_ready' : 'analyzed_no_candidates',
+      aiAnalysisId: analysisId,
+      aiAnalysisUpdatedAt: db.serverDate(),
+      updatedAt: db.serverDate()
+    });
+    await transaction.collection(JOB_COLLECTION).doc(jobId).update({
+      status: 'completed',
+      analysisId,
+      finishedAt: db.serverDate(),
+      lockedAt: null,
+      lockedBy: '',
+      updatedAt: db.serverDate()
+    });
+  });
+  return analysisId;
+}
+
+async function runSubmissionAnalysis(config, adminUid, event) {
+  if (!config.enabled) throw Object.assign(new Error('AI_ENABLED 仍为 false'), { code: 'AI_DISABLED' });
+  if (!config.apiKey) throw Object.assign(new Error('尚未配置 TOKENHUB_API_KEY'), { code: 'AI_KEY_NOT_CONFIGURED' });
+  const submissionId = cleanId(event.submissionId, '投稿');
+  const submission = await eligibleSubmission(submissionId);
+  const resourceResult = await db.collection(RESOURCE_COLLECTION).where({ status: 'published' }).limit(50).get();
+  const allowedResources = (resourceResult.data || []).map(sanitizedResource).filter((item) => item.id && item.title);
+  if (!allowedResources.length) {
+    throw Object.assign(new Error('当前没有可供匹配的已发布文化资源'), { code: 'AI_RESOURCES_REQUIRED' });
+  }
+  const input = { submission: sanitizedSubmission(submission), allowedResources };
+  const { jobId } = await ensureSubmissionJob(config, adminUid, submissionId, input);
+  const acquired = await acquireJob(jobId, config);
+  if (acquired.cached) {
+    return { ok: true, action: 'analyzeSubmission', cached: true, submissionId, ...(await publicResult(jobId)) };
+  }
+
+  let dayId = '';
+  try {
+    await db.collection(SUBMISSION_COLLECTION).doc(submissionId).update({
+      aiAnalysisStatus: 'processing',
+      aiAnalysisUpdatedAt: db.serverDate(),
+      updatedAt: db.serverDate()
+    });
+    const client = createTokenHubClient({ config });
+    const result = await client.analyze(acquired.job.input || input, {
+      beforeAttempt: async () => {
+        dayId = await reserveDailyCall(config, jobId);
+      }
+    });
+    await persistRealAnalysis({ config, adminUid, submissionId, submission, jobId, result });
+    await recordCompletedUsage(dayId, jobId, result.usage);
+    return { ok: true, action: 'analyzeSubmission', cached: false, submissionId, ...(await publicResult(jobId)) };
+  } catch (error) {
+    const safeError = {
+      code: cleanText(error && error.code || 'AI_CALL_FAILED', 80),
+      message: cleanText(error && error.message || 'AI 接口调用失败', 500),
+      retryable: error && error.retryable === true
+    };
+    try {
+      await Promise.all([
+        db.collection(JOB_COLLECTION).doc(jobId).update({
+          status: 'failed',
+          lastError: safeError,
+          lockedAt: null,
+          lockedBy: '',
+          finishedAt: db.serverDate(),
+          updatedAt: db.serverDate()
+        }),
+        db.collection(SUBMISSION_COLLECTION).doc(submissionId).update({
+          aiAnalysisStatus: 'failed',
+          aiAnalysisLastError: safeError,
+          aiAnalysisUpdatedAt: db.serverDate(),
+          updatedAt: db.serverDate()
+        })
+      ]);
+    } catch (_) {}
+    throw Object.assign(new Error(safeError.message), { code: safeError.code });
+  }
+}
+
 async function runSyntheticTest(config, adminUid) {
   if (!config.enabled) throw Object.assign(new Error('AI_ENABLED 仍为 false，尚未允许真实模型调用'), { code: 'AI_DISABLED' });
   if (!config.apiKey) throw Object.assign(new Error('尚未配置 TOKENHUB_API_KEY'), { code: 'AI_KEY_NOT_CONFIGURED' });
@@ -316,6 +602,8 @@ exports.main = async (event = {}) => {
     await ensureCollections();
     const action = cleanText(event.action, 40);
     if (action === 'status') return await status(config);
+    if (action === 'getSubmissionWorkspace') return await realWorkspace();
+    if (action === 'analyzeSubmission') return await runSubmissionAnalysis(config, adminUid, event);
     if (action === 'runSyntheticTest') return await runSyntheticTest(config, adminUid);
     return { ok: false, error: { code: 'INVALID_ACTION', message: '不支持的 AI 操作' } };
   } catch (error) {

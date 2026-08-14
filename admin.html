@@ -1007,7 +1007,7 @@
       }
     }
 
-    function renderAiStatus(result) {
+    function renderAiStatus(result, workspace = {}) {
       const config = result.config || {};
       const usage = result.todayUsage || {};
       const test = result.syntheticTest || null;
@@ -1017,6 +1017,41 @@
       const candidates = analysis && analysis.output && Array.isArray(analysis.output.candidateLinks)
         ? analysis.output.candidateLinks
         : [];
+      const realSubmissions = workspace.submissions || [];
+      const realCandidates = workspace.candidates || [];
+      const pendingCandidates = realCandidates.filter((item) => item.status === "pending_admin");
+      const consentedSubmissionCards = realSubmissions.length ? realSubmissions.map((item) => `
+        <article class="rounded-xl border border-stone-200 bg-stone-50 p-3">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <h4 class="text-sm font-bold text-stone-800">${escapeHtml(item.title)}</h4>
+              <p class="mt-1 text-[10px] leading-relaxed text-stone-500">${escapeHtml(item.regionName)} · ${escapeHtml(item.assetType)} · 状态 ${escapeHtml(item.aiAnalysisStatus || "eligible")}</p>
+              <p class="mt-2 line-clamp-2 text-xs leading-relaxed text-stone-600">${escapeHtml(item.description || "未填写描述")}</p>
+            </div>
+            <button type="button" data-ai-analyze-submission="${escapeHtml(item.id)}" ${ready ? "" : "disabled"} class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52] disabled:cursor-not-allowed disabled:opacity-40">${item.analysisId ? "读取分析结果" : "生成候选链迹"}</button>
+          </div>
+        </article>
+      `).join("") : '<div class="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-5 text-xs leading-relaxed text-stone-500">当前没有“审核通过且用户已授权 AI 分析”的投稿。旧投稿缺少授权字段时会被安全地视为未授权。</div>';
+      const realCandidateCards = pendingCandidates.length ? pendingCandidates.map((item) => `
+        <article data-ai-candidate-id="${escapeHtml(item.id)}" data-submission-id="${escapeHtml(item.submissionId)}" data-resource-id="${escapeHtml(item.resourceId)}" data-relation-type="${escapeHtml(item.relationType)}" class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-700">等待管理员确认</p>
+              <h4 class="mt-1 text-sm font-bold text-stone-900">${escapeHtml(item.submissionTitle)} <span class="text-stone-300">→</span> ${escapeHtml(item.resourceTitle)}</h4>
+              <p class="mt-1 text-[10px] text-stone-500">${escapeHtml(storyRelationLabels[item.relationType] || item.relationType)} · AI 置信度 ${Math.round(Number(item.confidence || 0) * 100)}%</p>
+            </div>
+          </div>
+          <p class="mt-3 text-xs leading-relaxed text-stone-600">${escapeHtml(item.reason)}</p>
+          <label class="mt-3 block text-[10px] font-bold text-stone-600">公开关系说明（确认前可修改）
+            <textarea data-ai-candidate-evidence rows="3" class="mt-1 w-full rounded-lg border border-amber-200 bg-white p-3 text-xs font-normal outline-none focus:border-[#123c3a]">${escapeHtml(item.evidence)}</textarea>
+          </label>
+          <div class="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+            <input data-ai-candidate-note class="rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs outline-none" placeholder="驳回时填写至少 4 个字的原因">
+            <button type="button" data-ai-candidate-reject class="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-bold text-red-700">驳回候选</button>
+            <button type="button" data-ai-candidate-confirm class="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white">确认并发布链迹</button>
+          </div>
+        </article>
+      `).join("") : '<div class="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-5 text-xs text-stone-500">当前没有等待管理员处理的 AI 候选关系。</div>';
       list.innerHTML = `
         <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
           <div class="flex flex-wrap items-start justify-between gap-3">
@@ -1040,6 +1075,25 @@
             <p class="text-[10px] leading-relaxed text-stone-500">相同模型和提示词只会完成一次测试；重复点击读取缓存，不会再次调用模型。</p>
             <button type="button" data-ai-synthetic-test ${ready ? "" : "disabled"} class="rounded-xl bg-[#123c3a] px-5 py-3 text-xs font-bold text-[#d9ad52] disabled:cursor-not-allowed disabled:opacity-40">${analysis ? "读取已完成测试" : "运行一次虚构数据测试"}</button>
           </div>
+        </section>
+        <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9b733b]">真实投稿 · 人工把关</p>
+              <h3 class="mt-1 text-lg font-bold text-stone-900">从授权投稿生成候选链迹</h3>
+              <p class="mt-1 max-w-3xl text-xs leading-relaxed text-stone-500">管理员手动触发后，只把投稿的公开文字和可选资源清单发给模型。模型不会读取账号、联系方式、原始文件或精确坐标，也不会直接发布。</p>
+            </div>
+            <div class="rounded-xl bg-stone-50 px-3 py-2 text-center text-xs"><strong class="block text-base text-[#123c3a]">${realSubmissions.length}</strong>已授权投稿</div>
+          </div>
+          <div class="mt-4 grid gap-3">${consentedSubmissionCards}</div>
+        </section>
+        <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-700">AI Candidates</p><h3 class="mt-1 text-lg font-bold text-stone-900">候选关系审核</h3></div>
+            <span class="rounded-full bg-amber-50 px-3 py-1 text-[10px] font-bold text-amber-700">${pendingCandidates.length} 条待确认</span>
+          </div>
+          <p class="mt-2 text-xs leading-relaxed text-stone-500">只有点击“确认并发布链迹”才会进入正式 story_evidence_links；确认和驳回都留下管理员日志。</p>
+          <div class="mt-4 grid gap-3">${realCandidateCards}</div>
         </section>
         ${!ready ? `
           <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
@@ -1071,8 +1125,11 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       message.textContent = "正在读取 AI 云函数状态，不会调用模型...";
       list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在检查 storyWorker...</div>';
       try {
-        const result = await callAiWorker({ action: "status" });
-        renderAiStatus(result);
+        const [result, workspace] = await Promise.all([
+          callAiWorker({ action: "status" }),
+          callAiWorker({ action: "getSubmissionWorkspace" })
+        ]);
+        renderAiStatus(result, workspace);
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = "状态读取完成，本次没有产生模型费用。";
       } catch (error) {
@@ -1096,6 +1153,71 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       } catch (error) {
         button.disabled = false;
         button.textContent = original;
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function analyzeConsentedSubmission(button) {
+      const submissionId = button.dataset.aiAnalyzeSubmission;
+      button.disabled = true;
+      const original = button.textContent;
+      button.textContent = "AI 正在分析...";
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在分析一条已审核且已授权的投稿；结果只会进入候选区。";
+      try {
+        const result = await callAiWorker({ action: "analyzeSubmission", submissionId });
+        await loadAiStatus();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = result.cached
+          ? "已读取该版本投稿的缓存结果，没有重复调用模型。"
+          : "AI 分析完成。请在候选关系审核区逐条确认或驳回。";
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = original;
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function confirmAiCandidate(card) {
+      const evidenceSummary = card.querySelector("[data-ai-candidate-evidence]").value.trim();
+      const buttons = card.querySelectorAll("button");
+      buttons.forEach((button) => { button.disabled = true; });
+      try {
+        await callAdmin({
+          action: "saveStoryEvidenceLink",
+          candidateId: card.dataset.aiCandidateId,
+          submissionId: card.dataset.submissionId,
+          resourceId: card.dataset.resourceId,
+          relationType: card.dataset.relationType,
+          evidenceSummary
+        });
+        await loadAiStatus();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "AI 候选已由管理员确认，并作为正式链迹发布。";
+      } catch (error) {
+        buttons.forEach((button) => { button.disabled = false; });
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function rejectAiCandidate(card) {
+      const decisionNote = card.querySelector("[data-ai-candidate-note]").value.trim();
+      const buttons = card.querySelectorAll("button");
+      buttons.forEach((button) => { button.disabled = true; });
+      try {
+        await callAdmin({
+          action: "rejectAiStoryCandidate",
+          candidateId: card.dataset.aiCandidateId,
+          decisionNote
+        });
+        await loadAiStatus();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "AI 候选已驳回并留下审核记录，没有发布任何链迹。";
+      } catch (error) {
+        buttons.forEach((button) => { button.disabled = false; });
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
       }
@@ -1237,6 +1359,13 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       if (storyArchiveButton && storyLinkCard) archiveStoryLink(storyLinkCard);
       const aiTestButton = event.target.closest("button[data-ai-synthetic-test]");
       if (aiTestButton) runSyntheticAiTest(aiTestButton);
+      const aiAnalyzeButton = event.target.closest("button[data-ai-analyze-submission]");
+      if (aiAnalyzeButton) analyzeConsentedSubmission(aiAnalyzeButton);
+      const aiCandidateCard = event.target.closest("article[data-ai-candidate-id]");
+      const aiConfirmButton = event.target.closest("button[data-ai-candidate-confirm]");
+      if (aiCandidateCard && aiConfirmButton) confirmAiCandidate(aiCandidateCard);
+      const aiRejectButton = event.target.closest("button[data-ai-candidate-reject]");
+      if (aiCandidateCard && aiRejectButton) rejectAiCandidate(aiCandidateCard);
     });
     logoutButton.addEventListener("click", async () => {
       await auth.signOut();

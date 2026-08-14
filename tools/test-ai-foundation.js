@@ -144,7 +144,9 @@ async function main() {
   assert.match(workerSource, /requireAdmin/);
   assert.match(workerSource, /synthetic:\s*true/);
   assert.match(workerSource, /beforeAttempt:[\s\S]*reserveDailyCall/);
-  assert.doesNotMatch(workerSource, /SUBMISSION_COLLECTION/);
+  assert.match(workerSource, /submission\.status !== 'approved'/);
+  assert.match(workerSource, /submission\.aiAnalysisConsent !== true/);
+  assert.doesNotMatch(workerSource, /story_evidence_links/);
 
   const userClient = read('static/cloudbase-app.js');
   assert.doesNotMatch(userClient, /TOKENHUB_API_KEY/);
@@ -155,7 +157,7 @@ async function main() {
   assert.match(deployScript, /fn', 'code', 'update', 'storyWorker'/);
   assert.match(deployScript, /preserving its API key/);
 
-  console.log('AI foundation tests passed (config, contract, TokenHub adapter, synthetic-only boundary, secret boundary).');
+  console.log('AI foundation tests passed (config, contract, TokenHub adapter, consent boundary, secret boundary).');
 }
 
 main().catch((error) => {

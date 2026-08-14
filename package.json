@@ -3,6 +3,7 @@
     "check:cloudbase": "node tools/validate-cloudbase-build.js",
     "check:resources": "node tools/preview-resource-seed.js && node tools/test-resource-model.js",
     "test:ai": "node tools/test-ai-foundation.js",
+    "test:ai-pipeline": "node tools/test-ai-submission-pipeline.js",
     "test:stories": "node tools/test-story-evidence.js",
     "test:rewards": "node tools/test-reward-security.js",
     "deploy:cloudbase": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/deploy-cloudbase.ps1"

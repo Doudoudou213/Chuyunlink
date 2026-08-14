@@ -6,6 +6,7 @@ const SUBMISSION_COLLECTION = 'submissions';
 const RESOURCE_COLLECTION = 'resources';
 const LINK_COLLECTION = 'story_evidence_links';
 const LOG_COLLECTION = 'story_evidence_logs';
+const CANDIDATE_COLLECTION = 'ai_link_candidates';
 const ALLOWED_RELATION_TYPES = new Set([
   'documents_feature',
   'documents_inscription',
@@ -86,6 +87,8 @@ function createAdminStoryEvidenceService({ db, app }) {
       assetType: item.assetType || 'image',
       contributorName: item.contributorName || '社区守护者',
       regionName: item.regionName || '',
+      aiAnalysisConsent: item.aiAnalysisConsent === true,
+      aiAnalysisStatus: item.aiAnalysisStatus || 'not_requested',
       createdAt: timeValue(item.createdAt),
       fileUrl: fileUrls.get(item.imageFileID || item.fileID || '') || ''
     }));
@@ -134,6 +137,7 @@ function createAdminStoryEvidenceService({ db, app }) {
     const resourceId = cleanId(event.resourceId, '资源');
     const relationType = cleanText(event.relationType, 40);
     const evidenceSummary = cleanText(event.evidenceSummary, 500);
+    const candidateId = event.candidateId ? cleanId(event.candidateId, 'AI 候选') : '';
     if (!ALLOWED_RELATION_TYPES.has(relationType)) {
       const error = new Error('关系类型不受支持');
       error.code = 'INVALID_RELATION_TYPE';
@@ -160,6 +164,22 @@ function createAdminStoryEvidenceService({ db, app }) {
       }
       const linkRef = transaction.collection(LINK_COLLECTION).doc(linkId);
       const current = firstDocument(await linkRef.get());
+      const candidateRef = candidateId
+        ? transaction.collection(CANDIDATE_COLLECTION).doc(candidateId)
+        : null;
+      const candidate = candidateRef ? firstDocument(await candidateRef.get()) : null;
+      if (candidateId) {
+        if (!candidate || candidate.status !== 'pending_admin') {
+          const error = new Error('AI 候选不存在或已处理，请刷新后重试');
+          error.code = 'AI_CANDIDATE_NOT_PENDING';
+          throw error;
+        }
+        if (candidate.submissionId !== submissionId || candidate.resourceId !== resourceId || candidate.relationType !== relationType) {
+          const error = new Error('AI 候选内容与本次确认不一致');
+          error.code = 'AI_CANDIDATE_MISMATCH';
+          throw error;
+        }
+      }
       const now = db.serverDate();
       const record = {
         submissionId,
@@ -168,8 +188,9 @@ function createAdminStoryEvidenceService({ db, app }) {
         resourceTitle: resource.title || '文化资源',
         relationType,
         evidenceSummary,
-        confidence: 1,
-        proposedBy: 'admin',
+        confidence: candidate ? Math.max(0, Math.min(1, Number(candidate.confidence) || 0)) : 1,
+        proposedBy: candidate ? 'ai_admin_confirmed' : 'admin',
+        candidateId,
         status: 'confirmed',
         reviewedBy: reviewerId,
         reviewedAt: now,
@@ -184,6 +205,15 @@ function createAdminStoryEvidenceService({ db, app }) {
       } else {
         await linkRef.set({ ...record, createdAt: now });
       }
+      if (candidateRef) {
+        await candidateRef.update({
+          status: 'confirmed',
+          officialLinkId: linkId,
+          decisionBy: reviewerId,
+          decisionAt: now,
+          updatedAt: now
+        });
+      }
       await transaction.collection(LOG_COLLECTION).add({
         linkId,
         action: current ? 'reconfirm' : 'confirm',
@@ -191,6 +221,7 @@ function createAdminStoryEvidenceService({ db, app }) {
         resourceId,
         relationType,
         evidenceSummary,
+        candidateId,
         reviewerId,
         createdAt: now
       });
@@ -204,6 +235,44 @@ function createAdminStoryEvidenceService({ db, app }) {
           resourceTitle: record.resourceTitle
         }
       };
+    });
+  }
+
+  async function rejectCandidate(event, reviewerId) {
+    const candidateId = cleanId(event.candidateId, 'AI 候选');
+    const decisionNote = cleanText(event.decisionNote, 300);
+    if (decisionNote.length < 4) {
+      const error = new Error('请填写至少 4 个字的驳回原因');
+      error.code = 'AI_CANDIDATE_NOTE_REQUIRED';
+      throw error;
+    }
+    return db.runTransaction(async (transaction) => {
+      const candidateRef = transaction.collection(CANDIDATE_COLLECTION).doc(candidateId);
+      const candidate = firstDocument(await candidateRef.get());
+      if (!candidate || candidate.status !== 'pending_admin') {
+        const error = new Error('AI 候选不存在或已处理，请刷新后重试');
+        error.code = 'AI_CANDIDATE_NOT_PENDING';
+        throw error;
+      }
+      const now = db.serverDate();
+      await candidateRef.update({
+        status: 'rejected',
+        decisionNote,
+        decisionBy: reviewerId,
+        decisionAt: now,
+        updatedAt: now
+      });
+      await transaction.collection(LOG_COLLECTION).add({
+        candidateId,
+        action: 'reject_ai_candidate',
+        submissionId: candidate.submissionId || '',
+        resourceId: candidate.resourceId || '',
+        relationType: candidate.relationType || '',
+        decisionNote,
+        reviewerId,
+        createdAt: now
+      });
+      return { ok: true, action: 'rejectAiStoryCandidate', candidateId, status: 'rejected' };
     });
   }
 
@@ -245,7 +314,7 @@ function createAdminStoryEvidenceService({ db, app }) {
     });
   }
 
-  return { workspace, save, archive };
+  return { workspace, save, archive, rejectCandidate };
 }
 
 module.exports = {

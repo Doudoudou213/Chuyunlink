@@ -591,6 +591,8 @@ function submissionView(item, includeOwnerDetails = false) {
     aiReviewProvider: item.aiReviewProvider || '',
     aiReviewSummary: item.aiReviewSummary || '',
     aiReviewUpdatedAt: item.aiReviewUpdatedAt || null,
+    aiAnalysisConsent: item.aiAnalysisConsent === true,
+    aiAnalysisStatus: item.aiAnalysisStatus || 'not_requested',
     likeCount: Math.max(0, Number(item.likeCount) || 0),
     commentCount: Math.max(0, Number(item.commentCount) || 0),
     completeness,
@@ -1613,6 +1615,7 @@ async function createSubmission(uid, userInfo, event) {
   const description = cleanText(event.description, 2000);
   const mimeType = cleanText(event.mimeType, 120);
   const size = Number(event.size) || 0;
+  const aiAnalysisConsent = event.aiAnalysisConsent === true;
 
   if (!ALLOWED_ASSET_TYPES.has(assetType)) {
     const error = new Error('不支持的素材类型');
@@ -1673,6 +1676,11 @@ async function createSubmission(uid, userInfo, event) {
     aiReviewProvider: '',
     aiReviewSummary: '',
     aiReviewUpdatedAt: null,
+    aiAnalysisConsent,
+    aiConsentVersion: aiAnalysisConsent ? 'ai-analysis-consent-v1' : '',
+    aiConsentScope: aiAnalysisConsent ? 'approved_public_submission_text' : '',
+    aiConsentAt: aiAnalysisConsent ? db.serverDate() : null,
+    aiAnalysisStatus: aiAnalysisConsent ? 'waiting_for_approval' : 'not_requested',
     likeCount: 0,
     commentCount: 0,
     completeness: 60,

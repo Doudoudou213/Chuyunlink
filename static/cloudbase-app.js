@@ -2244,7 +2244,8 @@ renderCloudRewards();
         longitude: currentLocation.longitude,
         latitude: currentLocation.latitude,
         locationAccuracy: currentLocation.accuracy,
-        regionName: '湖北'
+        regionName: '湖北',
+        aiAnalysisConsent: document.getElementById('collect-ai-consent')?.checked === true
       });
       const aiTask = await enqueueCloudAiReview(result.submission.id);
 
@@ -2257,6 +2258,8 @@ renderCloudRewards();
       }
       const description = document.getElementById('collect-description');
       if (description) description.value = '';
+      const aiConsent = document.getElementById('collect-ai-consent');
+      if (aiConsent) aiConsent.checked = false;
       await refreshCloudProfile();
       if (typeof switchTab === 'function') switchTab('profile');
     } catch (error) {

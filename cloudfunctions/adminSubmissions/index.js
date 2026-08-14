@@ -205,6 +205,9 @@ async function reviewSubmission(event, reviewerId) {
       reviewNote,
       reviewerId,
       reviewedAt,
+      aiAnalysisStatus: current.aiAnalysisConsent === true && nextStatus === 'approved'
+        ? 'eligible'
+        : (current.aiAnalysisConsent === true ? 'not_eligible' : 'not_requested'),
       updatedAt: reviewedAt
     });
 
@@ -1198,6 +1201,7 @@ exports.main = async (event = {}) => {
     if (action === 'applyResourceSeed') return await applyResourceSeed(event, callerUid);
     if (action === 'getStoryLinkWorkspace') return await storyEvidenceService.workspace();
     if (action === 'saveStoryEvidenceLink') return await storyEvidenceService.save(event, callerUid);
+    if (action === 'rejectAiStoryCandidate') return await storyEvidenceService.rejectCandidate(event, callerUid);
     if (action === 'archiveStoryEvidenceLink') return await storyEvidenceService.archive(event, callerUid);
 
     return {
