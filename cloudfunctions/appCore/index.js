@@ -698,8 +698,9 @@ async function attachSubmissionStoryCards(items) {
         break;
       }
       const completeness = Math.max(0, Math.min(100, Number(item.completeness) || 60));
+      const approvedSupplementCount = Array.isArray(item.approvedSupplements) ? item.approvedSupplements.length : 0;
       const missing = [];
-      if (links.length < 2) missing.push('另一份不同角度的资料');
+      if (links.length < 2 && approvedSupplementCount < 1) missing.push('另一份不同角度的资料');
       if (cleanText(item.description, 2000).length < 60) missing.push('更具体的现场描述');
       if (!links.some((link) => cleanText(link.evidenceSummary, 500).length >= 20)) missing.push('与文化资源的明确关系');
       return {
@@ -708,7 +709,8 @@ async function attachSubmissionStoryCards(items) {
         storyReadiness: storyCard ? { status: 'published', missing: [] } : {
           status: links.length && completeness >= 60 && missing.length <= 1 ? 'ready_for_draft' : 'needs_more',
           missing: missing.slice(0, 2),
-          confirmedLinkCount: links.length
+          confirmedLinkCount: links.length,
+          approvedSupplementCount
         }
       };
     });
@@ -774,7 +776,7 @@ function supplementSlotFor(submission, requestedSlotId) {
   return slots.find((slot) => slot.id === requestedSlotId) || null;
 }
 
-function supplementView(item, includePrivate = false) {
+function supplementView(item, includePrivate = false, viewerUid = '') {
   const view = {
     id: item._id || item.id || '',
     submissionId: item.submissionId || '',
@@ -786,7 +788,8 @@ function supplementView(item, includePrivate = false) {
     contributorName: item.contributorName || '社区用户',
     createdAt: item.createdAt || null,
     reviewedAt: item.reviewedAt || null,
-    reviewNote: item.reviewNote || ''
+    reviewNote: item.reviewNote || '',
+    isMine: Boolean(viewerUid && item.userId === viewerUid)
   };
   if (includePrivate || item.status === 'approved') {
     view.fileID = item.fileID || '';
@@ -807,7 +810,7 @@ async function listSupplements(uid, event) {
     .get();
   const items = sortNewest(result.data || [])
     .filter((item) => item.status === 'approved' || item.userId === uid)
-    .map((item) => supplementView(item, item.userId === uid));
+    .map((item) => supplementView(item, item.userId === uid, uid));
   const fileIDs = [...new Set(items.map((item) => item.fileID).filter(Boolean))].slice(0, 50);
   let urls = new Map();
   if (fileIDs.length) {

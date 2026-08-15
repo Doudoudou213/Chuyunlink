@@ -33,13 +33,18 @@ function main() {
   const adminHtml = read('admin.html');
   const client = read('static/cloudbase-app.js');
   const appCore = read('cloudfunctions/appCore/index.js');
+  const adminCore = read('cloudfunctions/adminSubmissions/index.js');
   const publicHtml = read('index.html');
+  const backlog = read('docs/DEVELOPMENT_BACKLOG.md');
 
   assert.match(worker, /item\.status === 'confirmed'/);
   assert.match(worker, /submission\.status !== 'approved'/);
   assert.match(worker, /status:\s*'draft'/);
   assert.match(worker, /function storyReadiness/);
   assert.match(worker, /STORY_EVIDENCE_INSUFFICIENT/);
+  assert.match(worker, /materialRevision/);
+  assert.match(worker, /supplements/);
+  assert.match(worker, /hasNewMaterial/);
   assert.doesNotMatch(worker.match(/async function runStoryDraft[\s\S]*?\n}\n\nasync function storyDraftWorkspace/)[0], /status:\s*'published'/);
   assert.match(adminDomain, /link\.status !== 'confirmed'/);
   assert.match(adminDomain, /submission\.status !== 'approved'/);
@@ -56,8 +61,15 @@ function main() {
   assert.match(appCore, /async function attachSubmissionStoryCards/);
   assert.match(appCore, /storyCard/);
   assert.match(appCore, /storyReadiness/);
+  assert.match(appCore, /isMine/);
+  assert.match(adminCore, /storyMaterialRevision/);
+  assert.match(adminCore, /storyMaterialUpdatedAt/);
   assert.match(publicHtml, /function renderInlineStoryCard/);
   assert.match(publicHtml, /discover-detail-story/);
+  assert.match(publicHtml, /补充这段链迹/);
+  assert.match(client, /function startQuickStorySupplement/);
+  assert.match(client, /record\.isMine/);
+  assert.match(backlog, /尚未完成的高优先级计划/);
 
   console.log('Sourced story draft security and integration tests passed.');
 }

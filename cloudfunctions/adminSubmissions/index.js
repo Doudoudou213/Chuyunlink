@@ -446,6 +446,8 @@ async function reviewSupplement(event, reviewerId) {
         board,
         supplementCount: Math.max(0, Number(submission.supplementCount) || 0) + 1,
         approvedSupplements,
+        storyMaterialRevision: Math.max(0, Number(submission.storyMaterialRevision) || 0) + 1,
+        storyMaterialUpdatedAt: reviewedAt,
         updatedAt: reviewedAt
       });
       if (supplement.userId && rewardPoints > 0) {

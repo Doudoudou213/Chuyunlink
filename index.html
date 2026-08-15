@@ -1653,13 +1653,16 @@
         <p id="discover-detail-value" class="mt-1 text-[11px] leading-relaxed text-stone-600"></p>
       </div>
 
-      <div class="mt-4">
-        <div class="flex items-center justify-between">
-          <h4 class="text-xs font-bold text-stone-700">可补充资料位置</h4>
-          <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">审核通过后发积分</span>
-        </div>
-        <div id="discover-supplement-slots" class="mt-2 space-y-2"></div>
-      </div>
+      <details class="group mt-4 rounded-xl border border-stone-200 bg-stone-50/70 p-3">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
+          <span>
+            <span class="block text-xs font-bold text-stone-700">更多补充方式</span>
+            <span class="mt-0.5 block text-[10px] text-stone-400">需要指定资料类型时再展开</span>
+          </span>
+          <span class="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">审核通过后发积分 <i data-lucide="chevron-down" class="h-3 w-3 transition group-open:rotate-180"></i></span>
+        </summary>
+        <div id="discover-supplement-slots" class="mt-3 space-y-2"></div>
+      </details>
 
       <button id="cloud-discover-discussion-entry" type="button" onclick="window.openActiveCloudDiscussion()" class="mt-4 flex w-full items-center justify-between rounded-xl border border-deepTeal/20 bg-deepTeal/5 px-3.5 py-3 text-left transition hover:border-deepTeal/40">
         <span>
@@ -3494,6 +3497,10 @@
     function renderInlineStoryCard(item, expanded = false) {
       const story = item && item.storyCard;
       const readiness = item && item.storyReadiness;
+      const isCloudSubmission = String(item && (item.feedId || item.id) || '').startsWith('approved-');
+      const quickSupplementAction = expanded && isCloudSubmission
+        ? `<button type="button" onclick="event.stopPropagation(); if (window.startQuickStorySupplement) window.startQuickStorySupplement('${escapeJsString(item.feedId || item.id)}')" class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-deepTeal px-4 py-2.5 text-[10px] font-bold text-sandGold shadow-sm transition hover:brightness-110"><i data-lucide="plus" class="h-3.5 w-3.5"></i>补充这段链迹</button>`
+        : '';
       if (!story) {
         if (!expanded || !readiness || readiness.status !== 'needs_more') return '';
         const missing = Array.isArray(readiness.missing) ? readiness.missing.filter(Boolean).slice(0, 2) : [];
@@ -3504,6 +3511,7 @@
               <div>
                 <p class="text-xs font-bold text-stone-800">这条链迹还在等待补充</p>
                 <p class="mt-1 text-[11px] leading-relaxed text-stone-500">${missing.length ? `还需要${missing.map(escapeHtml).join('、')}，资料充分后再由编辑整理成短故事。` : '资料充分并核实关系后，再由编辑整理成短故事。'}</p>
+                ${quickSupplementAction ? `<div class="mt-3">${quickSupplementAction}</div>` : ''}
               </div>
             </div>
           </section>`;
@@ -3528,7 +3536,7 @@
             <p class="mt-2 ${expanded ? 'whitespace-pre-line text-sm leading-7' : 'line-clamp-3 text-xs leading-6'} text-stone-600">${escapeHtml(lead)}</p>
             <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#ddcba6]/60 pt-3">
               <span class="text-[10px] text-stone-400">由 ${Math.max(1, Number(story.sourceCount) || 1)} 份已审核记录共同支撑</span>
-              ${relationAction}
+              <div class="flex flex-wrap gap-2">${quickSupplementAction}${relationAction}</div>
             </div>
           </div>
         </section>`;

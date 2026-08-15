@@ -1011,7 +1011,7 @@
     function renderStoryDraftWorkspace(result) {
       const resources = result.resources || [];
       const drafts = result.drafts || [];
-      const resourceOptions = resources.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.title)} · ${Number(item.confirmedSourceCount || 0)} 份已确认资料${item.readiness && !item.readiness.ready ? ' · 建议先补充' : ' · 可进行质量检查'}</option>`).join("");
+      const resourceOptions = resources.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.title)} · ${Number(item.confirmedSourceCount || 0)} 份来源${Number(item.approvedSupplementCount || 0) ? ` + ${Number(item.approvedSupplementCount || 0)} 份补充` : ''}${item.hasNewMaterial ? ' · 有新补充待更新' : item.readiness && !item.readiness.ready ? ' · 建议先补充' : ' · 可进行质量检查'}</option>`).join("");
       const cards = drafts.length ? drafts.map((draft) => {
         const isDraft = draft.status === "draft";
         const isPublished = draft.status === "published";

@@ -169,17 +169,21 @@ function storyReadiness(input) {
   const sources = Array.isArray(input && input.sources) ? input.sources : [];
   const descriptions = sources.map((item) => cleanText(item && item.submission && item.submission.description, 900));
   const evidence = sources.map((item) => cleanText(item && item.evidenceSummary, 500));
+  const supplementCount = sources.reduce((total, item) => (
+    total + (Array.isArray(item && item.submission && item.submission.supplements) ? item.submission.supplements.length : 0)
+  ), 0);
   const relationTypes = new Set(sources.map((item) => item.relationType).filter(Boolean));
   const hasDetailedDescription = descriptions.some((text) => text.length >= 60);
   const hasUsefulEvidence = evidence.some((text) => text.length >= 20);
   const score = Math.min(100,
     Math.min(50, sources.length * 25)
+    + Math.min(15, supplementCount * 8)
     + (hasDetailedDescription ? 20 : 0)
     + (hasUsefulEvidence ? 15 : 0)
     + (relationTypes.size >= 2 ? 15 : 0)
   );
   const missing = [];
-  if (sources.length < 2) missing.push('再补充一份不同角度的已审核资料');
+  if (sources.length < 2 && supplementCount < 1) missing.push('再补充一份不同角度的已审核资料');
   if (!hasDetailedDescription) missing.push('补充至少 60 字的现场细节或背景说明');
   if (!hasUsefulEvidence) missing.push('把投稿与文化资源的关系说明得更具体');
   if (relationTypes.size < 2) missing.push('补充题刻、口述、地点现状或时间变化等不同类型证据');
@@ -187,6 +191,7 @@ function storyReadiness(input) {
     ready: sources.length >= 1 && score >= 55,
     score,
     sourceCount: sources.length,
+    supplementCount,
     missing: missing.slice(0, 3)
   };
 }
@@ -577,7 +582,13 @@ async function buildConfirmedStoryInput(resourceId) {
         description: cleanText(submission.description, 900),
         assetType: cleanText(submission.assetType || 'image', 20),
         regionName: cleanText(submission.regionName || '湖北', 80),
-        recordedAt: dateMs(submission.createdAt) ? new Date(dateMs(submission.createdAt)).toISOString() : ''
+        recordedAt: dateMs(submission.createdAt) ? new Date(dateMs(submission.createdAt)).toISOString() : '',
+        materialRevision: Math.max(0, Number(submission.storyMaterialRevision) || 0),
+        supplements: (Array.isArray(submission.approvedSupplements) ? submission.approvedSupplements : []).slice(-6).map((item) => ({
+          slotTitle: cleanText(item && item.slotTitle, 120),
+          assetType: cleanText(item && item.assetType || 'image', 20),
+          approvedAt: dateMs(item && item.approvedAt) ? new Date(dateMs(item.approvedAt)).toISOString() : ''
+        }))
       }
     });
   }
@@ -715,23 +726,60 @@ async function storyDraftWorkspace() {
     db.collection(STORY_COLLECTION).limit(100).get()
   ]);
   const links = (linkResult.data || []).filter((item) => item.status === 'confirmed');
+  const submissionIds = [...new Set(links.map((item) => item.submissionId).filter(Boolean))];
+  const submissionPairs = await Promise.all(submissionIds.map(async (submissionId) => ({
+    submissionId,
+    record: firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(submissionId).get())
+  })));
+  const submissions = new Map(submissionPairs.map((item) => [item.submissionId, item.record]));
   const counts = new Map();
   links.forEach((item) => counts.set(item.resourceId, (counts.get(item.resourceId) || 0) + 1));
+  const supplementIdsByResource = new Map();
+  const latestMaterialByResource = new Map();
+  links.forEach((link) => {
+    const submission = submissions.get(link.submissionId);
+    if (!submission || submission.status !== 'approved') return;
+    if (!supplementIdsByResource.has(link.resourceId)) supplementIdsByResource.set(link.resourceId, new Set());
+    (Array.isArray(submission.approvedSupplements) ? submission.approvedSupplements : []).forEach((supplement, index) => {
+      supplementIdsByResource.get(link.resourceId).add(supplement.id || `${link.submissionId}_${index}`);
+    });
+    const materialTime = Math.max(
+      dateMs(submission.storyMaterialUpdatedAt),
+      ...(Array.isArray(submission.approvedSupplements) ? submission.approvedSupplements : []).map((item) => dateMs(item && item.approvedAt))
+    );
+    latestMaterialByResource.set(link.resourceId, Math.max(latestMaterialByResource.get(link.resourceId) || 0, materialTime));
+  });
+  const latestPublishedByResource = new Map();
+  (storyResult.data || []).filter((item) => item.status === 'published').forEach((story) => {
+    latestPublishedByResource.set(story.resourceId, Math.max(
+      latestPublishedByResource.get(story.resourceId) || 0,
+      dateMs(story.publishedAt)
+    ));
+  });
   const resources = (resourceResult.data || [])
     .filter((item) => counts.has(item._id || item.id))
-    .map((item) => ({
-      id: item._id || item.id || '',
-      title: cleanText(item.title, 120),
-      type: cleanText(item.type || 'article', 40),
-      confirmedSourceCount: counts.get(item._id || item.id) || 0,
-      readiness: {
-        ready: (counts.get(item._id || item.id) || 0) >= 2,
-        score: Math.min(100, (counts.get(item._id || item.id) || 0) * 25),
-        missing: (counts.get(item._id || item.id) || 0) >= 2
-          ? []
-          : ['建议再补充一份不同角度的已审核资料；系统还会在生成前检查文字与关系说明。']
-      }
-    }));
+    .map((item) => {
+      const resourceId = item._id || item.id || '';
+      const confirmedSourceCount = counts.get(resourceId) || 0;
+      const approvedSupplementCount = (supplementIdsByResource.get(resourceId) || new Set()).size;
+      const latestMaterialAt = latestMaterialByResource.get(resourceId) || 0;
+      const latestPublishedAt = latestPublishedByResource.get(resourceId) || 0;
+      return {
+        id: resourceId,
+        title: cleanText(item.title, 120),
+        type: cleanText(item.type || 'article', 40),
+        confirmedSourceCount,
+        approvedSupplementCount,
+        hasNewMaterial: latestMaterialAt > latestPublishedAt,
+        readiness: {
+          ready: confirmedSourceCount >= 2 || approvedSupplementCount >= 1,
+          score: Math.min(100, confirmedSourceCount * 25 + approvedSupplementCount * 8),
+          missing: confirmedSourceCount >= 2 || approvedSupplementCount >= 1
+            ? []
+            : ['建议再补充一份不同角度的已审核资料；系统还会在生成前检查文字与关系说明。']
+        }
+      };
+    });
   const drafts = (storyResult.data || []).map((item) => ({
     id: item._id || item.id || '',
     resourceId: item.resourceId || '',

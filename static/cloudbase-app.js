@@ -2143,7 +2143,7 @@ renderCloudRewards();
     const slots = getDefaultSupplementSlots(item);
     container.innerHTML = slots.map((slot) => {
       const slotRecords = records.filter((record) => record.slotId === slot.id);
-      const mine = slotRecords.find((record) => ['pending', 'approved', 'rejected'].includes(record.status));
+      const mine = slotRecords.find((record) => record.isMine && ['pending', 'approved', 'rejected'].includes(record.status));
       const approved = slotRecords.filter((record) => record.status === 'approved');
       const isPending = mine && mine.status === 'pending';
       const isMineApproved = mine && mine.status === 'approved';
@@ -2200,9 +2200,34 @@ renderCloudRewards();
         renderCloudSupplementSlots(item);
       }
       if (typeof renderDiscoverFeed === 'function') renderDiscoverFeed();
+      return result;
     } catch (error) {
       console.warn('[CloudBase supplements]', error);
+      return null;
     }
+  }
+
+  async function startQuickStorySupplement(itemId) {
+    const item = findApprovedItem(itemId);
+    if (!item) return;
+    if (!isStableAccount(cloudUser)) {
+      openCloudLogin();
+      if (typeof showToast === 'function') showToast('登录后即可补充这段链迹', 'log-in');
+      return;
+    }
+    const submissionId = rawSubmissionId(item.id || item.feedId);
+    let state = cloudSupplementState.get(submissionId);
+    if (!state) state = await loadCloudSupplements(item);
+    const records = state && Array.isArray(state.items) ? state.items : [];
+    const slots = typeof getDefaultSupplementSlots === 'function' ? getDefaultSupplementSlots(item) : [];
+    const recommended = slots.find((slot) => !records.some((record) => (
+      record.slotId === slot.id && record.isMine && ['pending', 'approved'].includes(record.status)
+    )));
+    if (!recommended) {
+      if (typeof showToast === 'function') showToast(slots.length ? '你已完成这条链迹的可用补充' : '这条内容暂时没有可补充位置', 'info');
+      return;
+    }
+    triggerCloudSupplementUpload(item.id || item.feedId, recommended.id);
   }
 
   function triggerCloudSupplementUpload(itemId, slotId) {
@@ -2429,6 +2454,7 @@ renderCloudRewards();
   window.openDiscoverDetail = openCloudDiscoverDetail;
   window.renderSupplementSlots = renderCloudSupplementSlots;
   window.triggerDiscoverSupplementUpload = triggerCloudSupplementUpload;
+  window.startQuickStorySupplement = startQuickStorySupplement;
   window.handleDiscoverSupplementUpload = submitCloudSupplement;
   window.replyCloudComment = (commentId) => {
     activeReplyCommentId = commentId;
