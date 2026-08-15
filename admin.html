@@ -1011,7 +1011,7 @@
     function renderStoryDraftWorkspace(result) {
       const resources = result.resources || [];
       const drafts = result.drafts || [];
-      const resourceOptions = resources.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.title)} · ${Number(item.confirmedSourceCount || 0)} 份已确认资料</option>`).join("");
+      const resourceOptions = resources.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.title)} · ${Number(item.confirmedSourceCount || 0)} 份已确认资料${item.readiness && !item.readiness.ready ? ' · 建议先补充' : ' · 可进行质量检查'}</option>`).join("");
       const cards = drafts.length ? drafts.map((draft) => {
         const isDraft = draft.status === "draft";
         const isPublished = draft.status === "published";
@@ -1048,6 +1048,7 @@
             <select name="resourceId" ${resources.length ? "" : "disabled"} class="min-w-0 flex-1 rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm outline-none focus:border-[#123c3a]">${resourceOptions || '<option>当前没有可生成故事的资源</option>'}</select>
             <button type="submit" ${resources.length ? "" : "disabled"} class="rounded-xl bg-[#123c3a] px-5 py-3 text-xs font-bold text-[#d9ad52] disabled:opacity-40">生成带来源草稿</button>
           </form>
+          <div class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-[10px] leading-relaxed text-emerald-800">生成前会先检查资料数量、现场描述和关系依据。质量不足时系统只会告诉你还缺什么，不会调用模型，也不会生成空泛故事。</div>
         </section>${cards}`;
     }
 

@@ -33,15 +33,15 @@ function validateStoryDraft(value, allowedSourceIds) {
     throw Object.assign(new Error('模型返回的故事草稿不是对象'), { code: 'AI_INVALID_STORY_OUTPUT' });
   }
   const allowed = new Set(allowedSourceIds || []);
-  const title = cleanText(value.title, 100);
-  const introduction = cleanText(value.introduction, 800);
-  const closing = cleanText(value.closing, 600);
+  const title = cleanText(value.title, 24);
+  const introduction = cleanText(value.introduction, 100);
+  const closing = cleanText(value.closing, 100);
   if (title.length < 4 || introduction.length < 12) {
     throw Object.assign(new Error('故事标题或导语不完整'), { code: 'AI_INVALID_STORY_OUTPUT' });
   }
-  const chapters = (Array.isArray(value.chapters) ? value.chapters : []).slice(0, 8).map((item) => {
-    const chapterTitle = cleanText(item && item.title, 100);
-    const body = cleanText(item && item.body, 1800);
+  const chapters = (Array.isArray(value.chapters) ? value.chapters : []).slice(0, 2).map((item) => {
+    const chapterTitle = cleanText(item && item.title, 24);
+    const body = cleanText(item && item.body, 260);
     const sourceLinkIds = [...new Set((Array.isArray(item && item.sourceLinkIds) ? item.sourceLinkIds : [])
       .map((id) => cleanText(id, 128))
       .filter(Boolean))].slice(0, 12);

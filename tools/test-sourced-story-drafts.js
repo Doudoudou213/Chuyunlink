@@ -32,10 +32,14 @@ function main() {
   const publicDomain = read('cloudfunctions/appCore/domains/story-evidence.js');
   const adminHtml = read('admin.html');
   const client = read('static/cloudbase-app.js');
+  const appCore = read('cloudfunctions/appCore/index.js');
+  const publicHtml = read('index.html');
 
   assert.match(worker, /item\.status === 'confirmed'/);
   assert.match(worker, /submission\.status !== 'approved'/);
   assert.match(worker, /status:\s*'draft'/);
+  assert.match(worker, /function storyReadiness/);
+  assert.match(worker, /STORY_EVIDENCE_INSUFFICIENT/);
   assert.doesNotMatch(worker.match(/async function runStoryDraft[\s\S]*?\n}\n\nasync function storyDraftWorkspace/)[0], /status:\s*'published'/);
   assert.match(adminDomain, /link\.status !== 'confirmed'/);
   assert.match(adminDomain, /submission\.status !== 'approved'/);
@@ -47,6 +51,13 @@ function main() {
   assert.match(adminHtml, /审核无误并发布/);
   assert.match(client, /故事讲述/);
   assert.match(client, /data-story-open-source/);
+  assert.match(client, /function renderStoryEvidenceGraphV2/);
+  assert.match(client, /renderStoryEvidenceGraphV2\(result\)/);
+  assert.match(appCore, /async function attachSubmissionStoryCards/);
+  assert.match(appCore, /storyCard/);
+  assert.match(appCore, /storyReadiness/);
+  assert.match(publicHtml, /function renderInlineStoryCard/);
+  assert.match(publicHtml, /discover-detail-story/);
 
   console.log('Sourced story draft security and integration tests passed.');
 }

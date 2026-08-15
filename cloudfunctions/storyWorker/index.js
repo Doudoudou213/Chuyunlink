@@ -165,6 +165,32 @@ function storyDraftIdFor(jobId) {
   return `story_${jobId.slice('ai_draft_'.length)}`;
 }
 
+function storyReadiness(input) {
+  const sources = Array.isArray(input && input.sources) ? input.sources : [];
+  const descriptions = sources.map((item) => cleanText(item && item.submission && item.submission.description, 900));
+  const evidence = sources.map((item) => cleanText(item && item.evidenceSummary, 500));
+  const relationTypes = new Set(sources.map((item) => item.relationType).filter(Boolean));
+  const hasDetailedDescription = descriptions.some((text) => text.length >= 60);
+  const hasUsefulEvidence = evidence.some((text) => text.length >= 20);
+  const score = Math.min(100,
+    Math.min(50, sources.length * 25)
+    + (hasDetailedDescription ? 20 : 0)
+    + (hasUsefulEvidence ? 15 : 0)
+    + (relationTypes.size >= 2 ? 15 : 0)
+  );
+  const missing = [];
+  if (sources.length < 2) missing.push('再补充一份不同角度的已审核资料');
+  if (!hasDetailedDescription) missing.push('补充至少 60 字的现场细节或背景说明');
+  if (!hasUsefulEvidence) missing.push('把投稿与文化资源的关系说明得更具体');
+  if (relationTypes.size < 2) missing.push('补充题刻、口述、地点现状或时间变化等不同类型证据');
+  return {
+    ready: sources.length >= 1 && score >= 55,
+    score,
+    sourceCount: sources.length,
+    missing: missing.slice(0, 3)
+  };
+}
+
 function shanghaiDayId() {
   return new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
@@ -602,6 +628,12 @@ async function runStoryDraft(config, adminUid, event) {
   if (!config.apiKey) throw Object.assign(new Error('尚未配置 TOKENHUB_API_KEY'), { code: 'AI_KEY_NOT_CONFIGURED' });
   const resourceId = cleanId(event.resourceId, '资源');
   const input = await buildConfirmedStoryInput(resourceId);
+  const readiness = storyReadiness(input);
+  if (!readiness.ready) {
+    throw Object.assign(new Error(`资料暂不足以生成可靠短故事：${readiness.missing.join('；')}`), {
+      code: 'STORY_EVIDENCE_INSUFFICIENT'
+    });
+  }
   const { jobId } = await ensureStoryDraftJob(config, adminUid, resourceId, input);
   const acquired = await acquireJob(jobId, config);
   const draftId = storyDraftIdFor(jobId);
@@ -691,7 +723,14 @@ async function storyDraftWorkspace() {
       id: item._id || item.id || '',
       title: cleanText(item.title, 120),
       type: cleanText(item.type || 'article', 40),
-      confirmedSourceCount: counts.get(item._id || item.id) || 0
+      confirmedSourceCount: counts.get(item._id || item.id) || 0,
+      readiness: {
+        ready: (counts.get(item._id || item.id) || 0) >= 2,
+        score: Math.min(100, (counts.get(item._id || item.id) || 0) * 25),
+        missing: (counts.get(item._id || item.id) || 0) >= 2
+          ? []
+          : ['建议再补充一份不同角度的已审核资料；系统还会在生成前检查文字与关系说明。']
+      }
     }));
   const drafts = (storyResult.data || []).map((item) => ({
     id: item._id || item.id || '',

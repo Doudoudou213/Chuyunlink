@@ -25,9 +25,9 @@ function firstDocument(result) {
 }
 
 function normalizeChapters(value) {
-  const chapters = (Array.isArray(value) ? value : []).slice(0, 8).map((item) => ({
-    title: cleanText(item && item.title, 100),
-    body: cleanText(item && item.body, 1800),
+  const chapters = (Array.isArray(value) ? value : []).slice(0, 2).map((item) => ({
+    title: cleanText(item && item.title, 24),
+    body: cleanText(item && item.body, 360),
     sourceLinkIds: [...new Set((Array.isArray(item && item.sourceLinkIds) ? item.sourceLinkIds : [])
       .map((id) => cleanId(id, '资料来源')))].slice(0, 12)
   }));
@@ -40,9 +40,9 @@ function normalizeChapters(value) {
 function createAdminStoryChainService({ db }) {
   async function publish(event, reviewerId) {
     const draftId = cleanId(event.draftId, '故事草稿');
-    const title = cleanText(event.title, 100);
-    const introduction = cleanText(event.introduction, 800);
-    const closing = cleanText(event.closing, 600);
+    const title = cleanText(event.title, 24);
+    const introduction = cleanText(event.introduction, 150);
+    const closing = cleanText(event.closing, 120);
     const chapters = normalizeChapters(event.chapters);
     if (title.length < 4 || introduction.length < 12) {
       throw Object.assign(new Error('故事标题或导语不完整'), { code: 'INVALID_STORY_TEXT' });

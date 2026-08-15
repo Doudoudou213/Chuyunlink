@@ -705,7 +705,7 @@ feedback_closed: '反馈处理',
         <section class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl bg-[#faf8f2] shadow-2xl sm:rounded-3xl">
           <header class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-stone-200 bg-[#faf8f2]/95 px-5 py-4 backdrop-blur">
             <div>
-              <p class="text-[9px] font-black uppercase tracking-[0.24em] text-sandGold">ChuLink Story Evidence</p>
+              <p class="text-[9px] font-black tracking-[0.24em] text-sandGold">楚韵链迹 · 共同讲述</p>
               <h2 id="cloud-story-evidence-title" class="mt-1 text-lg font-black text-stone-900">链迹故事</h2>
               <p id="cloud-story-evidence-subtitle" class="mt-1 text-[10px] text-stone-500">由社区共同留下的真实文化资料</p>
             </div>
@@ -856,6 +856,85 @@ feedback_closed: '反馈处理',
       </div>`;
   }
 
+  function renderStoryEvidenceGraphV2(result) {
+    const items = (result.items || []).slice(0, 24);
+    const resource = result.resource || {};
+    const groups = [];
+    const groupMap = new Map();
+    items.forEach((item) => {
+      const key = item.relationType || 'supports_story';
+      if (!groupMap.has(key)) {
+        const group = { key, label: storyRelationLabel(key), items: [] };
+        groupMap.set(key, group);
+        groups.push(group);
+      }
+      groupMap.get(key).items.push(item);
+    });
+    const selectedItem = items.find((item) => item.id === activeStoryEvidenceNodeId) || items[0];
+    const selectedSubmission = selectedItem && selectedItem.submission || {};
+    let runningIndex = 0;
+    return `
+      <div class="space-y-4">
+        <section class="relative overflow-hidden rounded-2xl border border-[#d8c6a7] bg-gradient-to-br from-[#173f40] to-[#285b58] px-5 py-5 text-white shadow-sm">
+          <div class="absolute -right-8 -top-8 h-28 w-28 rounded-full border border-white/10"></div>
+          <div class="absolute -right-2 top-5 h-16 w-16 rounded-full border border-[#d9ad52]/20"></div>
+          <p class="text-[9px] font-black tracking-[0.2em] text-[#e3bd69]">链迹起点</p>
+          <h3 class="mt-2 text-lg font-black leading-snug">${safeText(resource.title || '湖北文化资源')}</h3>
+          <p class="mt-2 max-w-xl text-xs leading-relaxed text-white/70">${items.length} 份经过审核的社区记录，从不同角度补充这条文化线索。向下阅读即可看到它们为什么被串联在一起。</p>
+          <div class="mt-4 flex flex-wrap gap-2 text-[9px] font-bold">
+            ${groups.map((group) => `<span class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5">${safeText(group.label)} · ${group.items.length}</span>`).join('')}
+          </div>
+        </section>
+
+        <div class="space-y-5">
+          ${groups.map((group) => `
+            <section class="relative pl-6 sm:pl-8">
+              <span class="absolute bottom-0 left-[7px] top-7 w-px bg-gradient-to-b from-[#c5a766] to-[#c5a766]/10"></span>
+              <span class="absolute left-0 top-1.5 h-4 w-4 rounded-full border-4 border-[#faf8f2] bg-[#b99855] shadow-sm"></span>
+              <header class="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-[9px] font-black tracking-[0.16em] text-[#9b733b]">关系 ${String(groups.indexOf(group) + 1).padStart(2, '0')}</p>
+                  <h4 class="mt-1 text-sm font-black text-stone-900">${safeText(group.label)}</h4>
+                </div>
+                <span class="rounded-full bg-stone-100 px-2.5 py-1 text-[9px] font-bold text-stone-500">${group.items.length} 份资料</span>
+              </header>
+              <div class="grid gap-3 sm:grid-cols-2">
+                ${group.items.map((item) => {
+                  runningIndex += 1;
+                  const submission = item.submission || {};
+                  const selected = selectedItem && selectedItem.id === item.id;
+                  return `
+                    <article data-story-evidence-node="${safeText(item.id)}" role="button" tabindex="0" class="group cursor-pointer rounded-2xl border ${selected ? 'border-[#b99855] bg-[#fffaf0] ring-2 ring-[#b99855]/15' : 'border-stone-200 bg-white hover:border-[#b99855]/60'} p-4 shadow-sm transition">
+                      <div class="flex items-start gap-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${selected ? 'bg-[#173f40] text-[#e3bd69]' : 'bg-[#edf3f1] text-[#315c5c]'} text-[10px] font-black">${runningIndex}</span>
+                        <div class="min-w-0 flex-1">
+                          <div class="flex items-start justify-between gap-2">
+                            <h5 class="text-xs font-black leading-5 text-stone-800">${safeText(submission.title || '社区文化记录')}</h5>
+                            <span class="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[8px] font-bold text-emerald-700">已核实</span>
+                          </div>
+                          <p class="mt-2 line-clamp-3 text-[11px] leading-5 text-stone-500">${safeText(item.evidenceSummary || submission.description || '这份记录补充了该资源的一条可靠线索。')}</p>
+                          <p class="mt-3 border-t border-stone-100 pt-2 text-[9px] text-stone-400">${safeText(submission.contributorName || '社区记录者')}${submission.regionName ? ` · ${safeText(submission.regionName)}` : ''}</p>
+                        </div>
+                      </div>
+                    </article>`;
+                }).join('')}
+              </div>
+            </section>`).join('')}
+        </div>
+
+        ${selectedItem ? `
+          <section class="rounded-2xl border border-[#d8c6a7] bg-[#f7f1e5] p-4 sm:flex sm:items-center sm:justify-between sm:gap-5">
+            <div>
+              <p class="text-[9px] font-black tracking-[0.14em] text-[#9b733b]">当前选中的原始记录</p>
+              <h4 class="mt-1 text-sm font-bold text-stone-900">${safeText(selectedSubmission.title || '社区文化记录')}</h4>
+              <p class="mt-1 text-[11px] leading-5 text-stone-500">${safeText(selectedItem.evidenceSummary)}</p>
+            </div>
+            <button type="button" data-story-open-timeline="${safeText(selectedItem.id)}" class="mt-3 shrink-0 rounded-xl bg-[#173f40] px-4 py-2.5 text-[10px] font-bold text-[#e3bd69] sm:mt-0">查看完整记录</button>
+          </section>` : ''}
+        ${(result.items || []).length > items.length ? `<p class="text-center text-[9px] text-stone-400">当前展示前 ${items.length} 份资料，完整内容保留在资料时间线中。</p>` : ''}
+      </div>`;
+  }
+
   function renderStoryEvidenceTimeline(items) {
     return `<div class="relative space-y-4 before:absolute before:bottom-5 before:left-[17px] before:top-5 before:w-px before:bg-sandGold/50">
       ${items.map((item, index) => {
@@ -962,7 +1041,7 @@ feedback_closed: '反馈处理',
     }
     content.innerHTML = `
       <div class="mb-4 grid ${result.story ? 'grid-cols-3' : 'grid-cols-2'} gap-1 rounded-xl bg-stone-200/70 p-1">
-        <button type="button" data-story-view="graph" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'graph' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">关系图谱</button>
+        <button type="button" data-story-view="graph" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'graph' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">链迹关系</button>
         <button type="button" data-story-view="timeline" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'timeline' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">资料时间线</button>
         ${result.story ? `<button type="button" data-story-view="story" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'story' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">故事讲述</button>` : ''}
       </div>
@@ -970,7 +1049,7 @@ feedback_closed: '反馈处理',
         <p class="text-[10px] font-bold text-emerald-800">资料来源说明</p>
         <p class="mt-1 text-xs leading-relaxed text-emerald-900/70">以下内容均来自已审核的社区投稿，并由管理员确认与“${safeText(resource.title)}”相关。原始记录保持不变，可继续补充和修订关系。</p>
       </div>
-      <div class="mt-5">${activeStoryEvidenceView === 'graph' ? renderStoryEvidenceGraph(result) : activeStoryEvidenceView === 'timeline' ? renderStoryEvidenceTimeline(items) : renderPublishedStory(result)}</div>`;
+      <div class="mt-5">${activeStoryEvidenceView === 'graph' ? renderStoryEvidenceGraphV2(result) : activeStoryEvidenceView === 'timeline' ? renderStoryEvidenceTimeline(items) : renderPublishedStory(result)}</div>`;
     bindStoryEvidenceControls();
   }
 

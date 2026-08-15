@@ -28,6 +28,8 @@ const REWARD_COLLECTION = 'rewards';
 const REDEMPTION_COLLECTION = 'reward_redemptions';
 const REDEMPTION_COUNTER_COLLECTION = 'reward_redemption_counters';
 const POINT_LEDGER_COLLECTION = 'point_ledger';
+const STORY_LINK_COLLECTION = 'story_evidence_links';
+const STORY_CHAIN_COLLECTION = 'story_chains';
 const ALLOWED_ASSET_TYPES = new Set(['image', 'audio', 'video']);
 const ALLOWED_REPORT_REASONS = new Set(['spam', 'abuse', 'false_information', 'copyright', 'other']);
 const ALLOWED_FEEDBACK_TYPES = new Set(['suggestion', 'bug', 'content', 'other']);
@@ -643,6 +645,79 @@ async function listOwn(uid, limit = 50) {
   return sortNewest(result.data || []).map((item) => submissionView(item, true));
 }
 
+async function attachSubmissionStoryCards(items) {
+  if (!items.length) return items;
+  try {
+    const [linkResult, storyResult] = await Promise.all([
+      db.collection(STORY_LINK_COLLECTION).limit(100).get(),
+      db.collection(STORY_CHAIN_COLLECTION).limit(100).get()
+    ]);
+    const publicSubmissionIds = new Set(items.map((item) => item.id));
+    const allConfirmedLinks = (linkResult.data || []).filter((item) => item.status === 'confirmed');
+    const confirmedLinks = allConfirmedLinks.filter((item) => publicSubmissionIds.has(item.submissionId));
+    const confirmedLinkIds = new Set(allConfirmedLinks.map((item) => item._id || item.id));
+    const linksBySubmission = new Map();
+    confirmedLinks.forEach((link) => {
+      if (!linksBySubmission.has(link.submissionId)) linksBySubmission.set(link.submissionId, []);
+      linksBySubmission.get(link.submissionId).push(link);
+    });
+    const storyTime = (value) => {
+      if (value && typeof value.toDate === 'function') return value.toDate().getTime();
+      if (value && Number.isFinite(Number(value.$date))) return Number(value.$date);
+      const parsed = new Date(value || 0).getTime();
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+    const publishedStories = (storyResult.data || [])
+      .filter((item) => item.status === 'published')
+      .sort((left, right) => storyTime(right.publishedAt) - storyTime(left.publishedAt));
+    return items.map((item) => {
+      const links = linksBySubmission.get(item.id) || [];
+      const itemLinkIds = new Set(links.map((link) => link._id || link.id));
+      let storyCard = null;
+      for (const story of publishedStories) {
+        const chapters = (Array.isArray(story.chapters) ? story.chapters : []).map((chapter) => ({
+          title: cleanText(chapter && chapter.title, 24),
+          body: cleanText(chapter && chapter.body, 360),
+          sourceLinkIds: (Array.isArray(chapter && chapter.sourceLinkIds) ? chapter.sourceLinkIds : [])
+            .filter((id) => confirmedLinkIds.has(id))
+        })).filter((chapter) => chapter.sourceLinkIds.length);
+        const anchoredChapter = chapters.find((chapter) => chapter.sourceLinkIds.some((id) => itemLinkIds.has(id)));
+        if (!anchoredChapter) continue;
+        const linkedResource = links.find((link) => link.resourceId === story.resourceId) || links[0] || {};
+        storyCard = {
+          id: story._id || story.id || '',
+          title: cleanText(story.title, 24),
+          introduction: cleanText(story.introduction, 150),
+          excerpt: anchoredChapter.body,
+          chapterTitle: anchoredChapter.title,
+          resourceId: cleanText(story.resourceId || linkedResource.resourceId, 128),
+          resourceTitle: cleanText(story.resourceTitle || linkedResource.resourceTitle, 120),
+          sourceCount: new Set(chapters.flatMap((chapter) => chapter.sourceLinkIds)).size,
+          version: Math.max(1, Number(story.version) || 1)
+        };
+        break;
+      }
+      const completeness = Math.max(0, Math.min(100, Number(item.completeness) || 60));
+      const missing = [];
+      if (links.length < 2) missing.push('另一份不同角度的资料');
+      if (cleanText(item.description, 2000).length < 60) missing.push('更具体的现场描述');
+      if (!links.some((link) => cleanText(link.evidenceSummary, 500).length >= 20)) missing.push('与文化资源的明确关系');
+      return {
+        ...item,
+        storyCard,
+        storyReadiness: storyCard ? { status: 'published', missing: [] } : {
+          status: links.length && completeness >= 60 && missing.length <= 1 ? 'ready_for_draft' : 'needs_more',
+          missing: missing.slice(0, 2),
+          confirmedLinkCount: links.length
+        }
+      };
+    });
+  } catch (error) {
+    console.warn('[appCore] unable to attach story cards', error);
+    return items;
+  }
+}
+
 async function listPublic(limit = 30, viewerUid = '') {
   await ensureInteractionCollections();
   const result = await db.collection(SUBMISSION_COLLECTION)
@@ -654,7 +729,7 @@ async function listPublic(limit = 30, viewerUid = '') {
     item.fileID,
     ...(item.approvedSupplements || []).map((supplement) => supplement.fileID)
   ]).filter(Boolean))].slice(0, 50);
-  if (!fileList.length) return items;
+  if (!fileList.length) return attachSubmissionStoryCards(items);
   const fileResult = await app.getTempFileURL({
     fileList: fileList.map((fileID) => ({ fileID, maxAge: 7200 }))
   });
@@ -673,7 +748,7 @@ async function listPublic(limit = 30, viewerUid = '') {
       console.warn('[appCore] unable to load viewer likes', error);
     }
   }
-  return items.map((item) => ({
+  const publicItems = items.map((item) => ({
     ...item,
     fileUrl: urls.get(item.fileID) || '',
     approvedSupplements: (item.approvedSupplements || []).map((supplement) => ({
@@ -682,6 +757,7 @@ async function listPublic(limit = 30, viewerUid = '') {
     })),
     viewerLiked: likedSubmissionIds.has(item.id)
   }));
+  return attachSubmissionStoryCards(publicItems);
 }
 
 function supplementSlotFor(submission, requestedSlotId) {

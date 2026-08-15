@@ -1643,6 +1643,7 @@
 
       <div id="discover-detail-media" class="mt-3 overflow-hidden rounded-xl bg-stone-50"></div>
       <p id="discover-detail-desc" class="mt-3 text-xs leading-relaxed text-stone-600"></p>
+      <div id="discover-detail-story" class="mt-3"></div>
       <div id="discover-science-content" class="mt-3"></div>
 
       <div class="mt-3 rounded-xl border border-sandGold/25 bg-stone-50 p-3">
@@ -3304,6 +3305,7 @@
       document.getElementById('discover-detail-desc').innerText = item.description || item.category || '该线索已进入社区采集流，等待补充资料与复核。';
       document.getElementById('discover-detail-value').innerText = item.researchValue || '该线索与景点、文物或技艺衍生相关，可通过更多现场资料提升历史脉络复核价值。';
       document.getElementById('discover-detail-media').innerHTML = renderDiscoverDetailMedia(item);
+      document.getElementById('discover-detail-story').innerHTML = renderInlineStoryCard(item, true);
       renderDiscoverScienceContent(item);
       renderSupplementSlots(item);
       document.getElementById('discover-detail-modal').classList.remove('hidden');
@@ -3489,6 +3491,49 @@
       `;
     }
 
+    function renderInlineStoryCard(item, expanded = false) {
+      const story = item && item.storyCard;
+      const readiness = item && item.storyReadiness;
+      if (!story) {
+        if (!expanded || !readiness || readiness.status !== 'needs_more') return '';
+        const missing = Array.isArray(readiness.missing) ? readiness.missing.filter(Boolean).slice(0, 2) : [];
+        return `
+          <section class="rounded-2xl border border-dashed border-amber-200 bg-amber-50/70 p-4">
+            <div class="flex items-start gap-3">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sandGold shadow-sm"><i data-lucide="link-2" class="h-4 w-4"></i></span>
+              <div>
+                <p class="text-xs font-bold text-stone-800">这条链迹还在等待补充</p>
+                <p class="mt-1 text-[11px] leading-relaxed text-stone-500">${missing.length ? `还需要${missing.map(escapeHtml).join('、')}，资料充分后再由编辑整理成短故事。` : '资料充分并核实关系后，再由编辑整理成短故事。'}</p>
+              </div>
+            </div>
+          </section>`;
+      }
+      const resourceTitle = story.resourceTitle || '湖北文化线索';
+      const lead = expanded
+        ? [story.introduction, story.excerpt].filter(Boolean).join('\n\n')
+        : (story.introduction || story.excerpt || '几份来自社区的真实记录，在这里连成了一段可继续补充的文化短故事。');
+      const relationAction = story.resourceId
+        ? `<button type="button" onclick="event.stopPropagation(); if (window.openStoryEvidence) window.openStoryEvidence('${escapeJsString(story.resourceId)}', '${escapeJsString(resourceTitle)}')" class="inline-flex items-center gap-1 rounded-full border border-[#b99855]/40 bg-white px-3 py-1.5 text-[10px] font-bold text-deepTeal transition hover:border-[#b99855] hover:bg-amber-50"><i data-lucide="git-branch" class="h-3 w-3"></i>查看链迹依据</button>`
+        : '';
+      return `
+        <section class="mt-3 overflow-hidden rounded-2xl border border-[#ddcba6] bg-gradient-to-br from-[#fffdf7] via-white to-[#f7f1e5] shadow-[0_8px_24px_rgba(69,51,24,0.06)]">
+          <div class="h-1 bg-gradient-to-r from-[#174847] via-[#b99855] to-[#8f302b]"></div>
+          <div class="p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-[9px] font-black tracking-[0.18em] text-[#9a7136]">楚韵短故事 · ${escapeHtml(resourceTitle)}</p>
+              <span class="rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-700">已审核资料串联</span>
+            </div>
+            <h4 class="cultural-font mt-2 text-base font-black leading-snug text-stone-900">${escapeHtml(story.title || story.chapterTitle || '一段正在被看见的地方记忆')}</h4>
+            ${story.chapterTitle && expanded ? `<p class="mt-3 text-[10px] font-bold text-[#8f302b]">${escapeHtml(story.chapterTitle)}</p>` : ''}
+            <p class="mt-2 ${expanded ? 'whitespace-pre-line text-sm leading-7' : 'line-clamp-3 text-xs leading-6'} text-stone-600">${escapeHtml(lead)}</p>
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#ddcba6]/60 pt-3">
+              <span class="text-[10px] text-stone-400">由 ${Math.max(1, Number(story.sourceCount) || 1)} 份已审核记录共同支撑</span>
+              ${relationAction}
+            </div>
+          </div>
+        </section>`;
+    }
+
     function renderApprovedSubmissionCard(item) {
       const title = item.title || '未命名采集素材';
       const region = item.regionName || '湖北';
@@ -3531,6 +3576,7 @@
             <div class="mt-3 flex justify-between items-center text-xs">
               <span class="text-stone-400 text-[10px]">采集人：${escapeHtml(item.contributorName || '楚韵链迹守护者')}</span>
             </div>
+            ${renderInlineStoryCard(feedItem)}
             <div class="mt-3 rounded-lg border ${approvedStatusClass} p-2">
               <p class="text-[10px] font-bold">${approvedStatusText}</p>
             </div>
@@ -3560,6 +3606,7 @@
               <p class="text-[10px] text-deepTeal font-semibold">公开展示：${escapeHtml(region)} · ${escapeHtml(getPublicAssetLabel(item))}</p>
               <span class="shrink-0 text-[10px] text-stone-400">采集人：${escapeHtml(item.contributorName || '楚韵链迹守护者')}</span>
             </div>
+            ${renderInlineStoryCard(feedItem)}
             <div class="mt-3 rounded-lg border ${approvedStatusClass} p-2">
               <p class="text-[10px] font-bold">${approvedStatusText}</p>
             </div>
