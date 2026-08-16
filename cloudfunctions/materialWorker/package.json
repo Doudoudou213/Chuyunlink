@@ -4,6 +4,7 @@
   "private": true,
   "main": "index.js",
   "dependencies": {
-    "@cloudbase/node-sdk": "3.18.1"
+    "@cloudbase/node-sdk": "3.18.1",
+    "tencentcloud-sdk-nodejs-ocr": "4.1.292"
   }
 }

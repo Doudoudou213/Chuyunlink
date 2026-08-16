@@ -1479,23 +1479,25 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       if (!analysis) return '<p class="mt-3 text-xs text-stone-500">尚未创建识别任务。</p>';
       const statusLabel = {
         needs_review: "等待校对",
-        approved: "已确认（模拟）",
-        rejected: "已退回（模拟）"
+        approved: analysis.simulated ? "已确认（模拟）" : "已确认",
+        rejected: analysis.simulated ? "已退回（模拟）" : "已退回"
       }[analysis.status] || analysis.status || "未知状态";
       if (analysis.status === "needs_review") {
         return `
-          <div data-material-analysis-id="${escapeHtml(analysis.id)}" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div data-material-analysis-id="${escapeHtml(analysis.id)}" data-material-simulated="${analysis.simulated ? "true" : "false"}" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <strong class="text-xs text-amber-800">${escapeHtml(statusLabel)}</strong>
               <span class="text-[10px] text-amber-700">${escapeHtml(analysis.provider)} · ${escapeHtml(analysis.pipelineVersion)}</span>
             </div>
-            <p class="mt-2 text-[10px] leading-relaxed text-amber-800">当前是流程模拟结果，不是图片真实文字。即使确认，也不会进入正式链迹故事。</p>
+            <p class="mt-2 text-[10px] leading-relaxed text-amber-800">${analysis.simulated
+              ? "当前是流程模拟结果，不是图片真实文字。即使确认，也不会进入正式链迹故事。"
+              : `这是腾讯云 OCR 返回并自动脱敏后的文字。请对照原图校对；确认后只会成为可用材料，不会自动发布。${analysis.privacy && analysis.privacy.redacted ? " 已检测并隐藏敏感字段。" : ""}`}</p>
             <label class="mt-3 block text-xs font-bold text-stone-700">校对后的文字
               <textarea data-material-reviewed-text rows="5" class="mt-1 w-full rounded-xl border border-amber-200 bg-white p-3 text-xs leading-relaxed outline-none focus:border-[#123c3a]">${escapeHtml(analysis.reviewedText || analysis.extractedText || "")}</textarea>
             </label>
             <div class="mt-3 flex flex-wrap gap-2">
-              <button type="button" data-material-review="approved" class="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white">确认模拟结果</button>
-              <button type="button" data-material-review="rejected" class="rounded-lg bg-stone-600 px-4 py-2 text-xs font-bold text-white">退回模拟结果</button>
+              <button type="button" data-material-review="approved" class="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white">${analysis.simulated ? "确认模拟结果" : "确认校对结果"}</button>
+              <button type="button" data-material-review="rejected" class="rounded-lg bg-stone-600 px-4 py-2 text-xs font-bold text-white">${analysis.simulated ? "退回模拟结果" : "退回识别结果"}</button>
             </div>
           </div>`;
       }
@@ -1503,7 +1505,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
         <div class="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <strong class="text-xs ${analysis.status === "approved" ? "text-emerald-700" : "text-stone-600"}">${escapeHtml(statusLabel)}</strong>
-            <span class="text-[10px] text-stone-400">不可用于故事</span>
+            <span class="text-[10px] text-stone-400">${analysis.usableForStory ? "已具备故事材料资格" : "不可用于故事"}</span>
           </div>
           ${analysis.reviewedText ? `<p class="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-stone-700">${escapeHtml(analysis.reviewedText)}</p>` : ""}
         </div>`;
@@ -1512,6 +1514,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
     function renderMaterialWorkspace(result) {
       const items = result.items || [];
       const synthetic = result.synthetic || {};
+      const realReady = result.realOcrReady === true;
       const realCards = items.length ? items.map((item) => `
         <article class="grid gap-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm md:grid-cols-[220px_1fr]">
           <div class="overflow-hidden rounded-xl bg-stone-100">
@@ -1528,9 +1531,12 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
               </div>
               ${item.analysis
                 ? `<span class="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-bold text-stone-600">${escapeHtml(item.analysis.status)}</span>`
-                : `<button type="button" data-material-start="${escapeHtml(item.submissionId)}" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">生成模拟 OCR</button>`}
+                : realReady && item.realOcrEligible
+                  ? `<button type="button" data-material-real-start="${escapeHtml(item.submissionId)}" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">运行真实 OCR</button>`
+                  : `<button type="button" disabled class="cursor-not-allowed rounded-lg bg-stone-200 px-4 py-2 text-xs font-bold text-stone-500">${realReady ? "暂不可识别" : "等待 OCR 配置"}</button>`}
             </div>
             <p class="mt-3 break-all text-[10px] text-stone-400">投稿 ID：${escapeHtml(item.submissionId)} · 投稿人：${escapeHtml(item.contributorName)}</p>
+            ${!item.analysis && item.realOcrBlockedReason ? `<p class="mt-2 text-xs text-amber-700">${escapeHtml(item.realOcrBlockedReason)}</p>` : ""}
             ${materialAnalysisPanel(item.analysis)}
           </div>
         </article>`).join("") : `
@@ -1544,8 +1550,15 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">Multimodal Foundation</p>
-              <h3 class="mt-1 text-lg font-bold text-stone-900">图片材料识别 · 安全模拟阶段</h3>
-              <p class="mt-2 max-w-3xl text-xs leading-relaxed text-stone-600">目前只验证任务、幂等、管理员校对和审计记录。云函数不会下载原图，也不会调用收费 OCR；所有模拟结果都被强制标记为不可进入故事。</p>
+              <h3 class="mt-1 text-lg font-bold text-stone-900">图片材料识别 · ${realReady ? "真实 OCR 已就绪" : "真实适配器待配置"}</h3>
+              <p class="mt-2 max-w-3xl text-xs leading-relaxed text-stone-600">${realReady
+                ? `已启用腾讯云通用文字识别。每张图片使用 10 分钟短时地址，单图不超过 ${Math.floor(Number(result.maxImageBytes || 0) / 1024 / 1024)}MB，每日最多 ${Number(result.dailyCallLimit || 0)} 次；结果脱敏后仍需人工校对。`
+                : "真实 OCR 代码已经接好，但云端开关或专用密钥尚未配置，因此不会读取原图、不会调用收费接口。下方虚构测试仍可安全使用。"}</p>
+              <div class="mt-3 flex flex-wrap gap-2 text-[10px]">
+                <span class="rounded-full bg-white px-3 py-1.5 font-bold ${result.realOcrEnabled ? "text-emerald-700" : "text-stone-500"}">开关：${result.realOcrEnabled ? "已开" : "未开"}</span>
+                <span class="rounded-full bg-white px-3 py-1.5 font-bold ${result.credentialsConfigured ? "text-emerald-700" : "text-stone-500"}">专用密钥：${result.credentialsConfigured ? "已配置" : "未配置"}</span>
+                <span class="rounded-full bg-white px-3 py-1.5 font-bold text-stone-600">区域：${escapeHtml(result.region || "ap-shanghai")}</span>
+              </div>
             </div>
             <div class="grid grid-cols-3 gap-2 text-center text-xs">
               <div class="rounded-xl bg-white px-3 py-2"><strong class="block text-lg text-[#123c3a]">${Number(result.eligibleCount || 0)}</strong>已授权</div>
@@ -1584,7 +1597,9 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
         renderMaterialWorkspace(result);
         viewCount.textContent = `${Number(result.eligibleCount || 0)} 条真实材料`;
         message.className = "mt-2 text-xs text-emerald-700";
-        message.textContent = "材料识别工作台已就绪，当前不会产生模型费用。";
+        message.textContent = result.realOcrReady
+          ? "真实图片 OCR 已就绪；只有点击具体投稿的识别按钮才会产生调用。"
+          : "材料识别工作台已就绪；真实 OCR 尚未启用，不会产生接口费用。";
       } catch (error) {
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
@@ -1607,17 +1622,17 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       }
     }
 
-    async function startMockMaterialAnalysis(button) {
-      const submissionId = button.dataset.materialStart;
+    async function startRealMaterialAnalysis(button) {
+      const submissionId = button.dataset.materialRealStart;
       button.disabled = true;
       button.textContent = "正在创建...";
       try {
-        await callMaterialWorker({ action: "startMockImageAnalysis", submissionId });
+        await callMaterialWorker({ action: "runRealImageAnalysis", submissionId });
         await loadMaterialAnalysis();
-        message.textContent = "模拟 OCR 已完成，等待管理员校对。";
+        message.textContent = "真实 OCR 已完成，结果经过脱敏，正在等待管理员校对。";
       } catch (error) {
         button.disabled = false;
-        button.textContent = "生成模拟 OCR";
+        button.textContent = "运行真实 OCR";
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
       }
@@ -1625,6 +1640,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
 
     async function reviewMaterialAnalysis(card, decision) {
       const analysisId = card.dataset.materialAnalysisId;
+      const simulated = card.dataset.materialSimulated === "true";
       const textarea = card.querySelector("[data-material-reviewed-text]");
       const reviewedText = textarea ? textarea.value.trim() : "";
       if (decision === "approved" && !reviewedText) {
@@ -1637,8 +1653,10 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
         await callMaterialWorker({ action: "reviewAnalysis", analysisId, decision, reviewedText });
         await loadMaterialAnalysis();
         message.textContent = decision === "approved"
-          ? "模拟识别结果已确认并留下审核记录；它仍不会进入正式故事。"
-          : "模拟识别结果已退回。";
+          ? simulated
+            ? "模拟识别结果已确认并留下审核记录；它仍不会进入正式故事。"
+            : "真实识别结果已确认；可以在后续故事整合阶段使用，但不会自动发布。"
+          : simulated ? "模拟识别结果已退回。" : "真实识别结果已退回。";
       } catch (error) {
         card.querySelectorAll("button").forEach((button) => { button.disabled = false; });
         message.className = "mt-2 text-xs text-red-600";
@@ -1781,8 +1799,8 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       if (aiAnalyzeButton) analyzeConsentedSubmission(aiAnalyzeButton);
       const materialSyntheticButton = event.target.closest("button[data-material-synthetic-test]");
       if (materialSyntheticButton) runSyntheticMaterialTest(materialSyntheticButton);
-      const materialStartButton = event.target.closest("button[data-material-start]");
-      if (materialStartButton) startMockMaterialAnalysis(materialStartButton);
+      const materialStartButton = event.target.closest("button[data-material-real-start]");
+      if (materialStartButton) startRealMaterialAnalysis(materialStartButton);
       const materialReviewButton = event.target.closest("button[data-material-review]");
       const materialReviewCard = event.target.closest("[data-material-analysis-id]");
       if (materialReviewButton && materialReviewCard) {

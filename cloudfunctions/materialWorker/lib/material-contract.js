@@ -2,7 +2,9 @@
 
 const crypto = require('node:crypto');
 
-const PIPELINE_VERSION = 'material-image-mock-v1';
+const MOCK_PIPELINE_VERSION = 'material-image-mock-v1';
+const REAL_OCR_PIPELINE_VERSION = 'material-image-tencent-ocr-v1';
+const PIPELINE_VERSION = MOCK_PIPELINE_VERSION;
 const CONSENT_VERSION = 'multimodal-material-consent-v1';
 const CONSENT_SCOPE = 'approved_original_file_extraction';
 const MAX_REVIEW_TEXT_LENGTH = 5000;
@@ -87,6 +89,8 @@ function normalizeReviewText(value) {
 
 module.exports = {
   PIPELINE_VERSION,
+  MOCK_PIPELINE_VERSION,
+  REAL_OCR_PIPELINE_VERSION,
   CONSENT_VERSION,
   CONSENT_SCOPE,
   MAX_REVIEW_TEXT_LENGTH,

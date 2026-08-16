@@ -26,6 +26,9 @@ const requiredFiles = [
   'cloudfunctions/storyWorker/package.json',
   'cloudfunctions/materialWorker/index.js',
   'cloudfunctions/materialWorker/lib/material-contract.js',
+  'cloudfunctions/materialWorker/lib/config.js',
+  'cloudfunctions/materialWorker/lib/privacy.js',
+  'cloudfunctions/materialWorker/lib/tencent-ocr-client.js',
   'cloudfunctions/materialWorker/package.json',
   'tools/test-material-pipeline.js',
   'tools/test-ai-foundation.js',
@@ -49,7 +52,10 @@ const productionTextFiles = [
   'cloudfunctions/storyWorker/lib/contract.js',
   'cloudfunctions/storyWorker/lib/tokenhub-client.js',
   'cloudfunctions/materialWorker/index.js',
-  'cloudfunctions/materialWorker/lib/material-contract.js'
+  'cloudfunctions/materialWorker/lib/material-contract.js',
+  'cloudfunctions/materialWorker/lib/config.js',
+  'cloudfunctions/materialWorker/lib/privacy.js',
+  'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const javascriptFiles = [
   'static/cloudbase-app.js',
@@ -65,7 +71,10 @@ const javascriptFiles = [
   'cloudfunctions/storyWorker/lib/contract.js',
   'cloudfunctions/storyWorker/lib/tokenhub-client.js',
   'cloudfunctions/materialWorker/index.js',
-  'cloudfunctions/materialWorker/lib/material-contract.js'
+  'cloudfunctions/materialWorker/lib/material-contract.js',
+  'cloudfunctions/materialWorker/lib/config.js',
+  'cloudfunctions/materialWorker/lib/privacy.js',
+  'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const forbiddenPatterns = [
   { label: 'localhost', pattern: /\blocalhost\b/i },

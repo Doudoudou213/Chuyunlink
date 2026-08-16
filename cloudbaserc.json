@@ -47,8 +47,15 @@
       "installDependency": true,
       "envVariables": {
         "ADMIN_UIDS": "lqdTAYa24yVmQUMTrbhs_g,2081931527223812098,2082329461149179906,2082329998590648322,2083323851088859136",
-        "MATERIAL_PROVIDER": "mock",
-        "MATERIAL_MODE": "mock_only"
+        "MATERIAL_PROVIDER": "tencent_ocr",
+        "MATERIAL_MODE": "mock_only",
+        "MATERIAL_REAL_OCR_ENABLED": "false",
+        "TENCENT_OCR_REGION": "ap-shanghai",
+        "TENCENT_OCR_LANGUAGE": "zh",
+        "MATERIAL_DAILY_CALL_LIMIT": "20",
+        "MATERIAL_MAX_IMAGE_BYTES": "5242880",
+        "MATERIAL_OCR_TIMEOUT_SECONDS": "15",
+        "MATERIAL_OCR_MAX_ATTEMPTS": "2"
       }
     }
   ]
