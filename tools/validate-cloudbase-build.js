@@ -32,6 +32,7 @@ const requiredFiles = [
   'cloudfunctions/materialWorker/package.json',
   'tools/test-material-pipeline.js',
   'tools/test-ai-foundation.js',
+  'tools/test-map-personalization.js',
   'tools/initialize-story-worker.ps1',
   '.github/workflows/initialize-story-worker.yml',
   'docs/AI_INTERFACE_FOUNDATION.md'

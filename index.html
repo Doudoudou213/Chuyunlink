@@ -947,6 +947,38 @@
 
               <section id="map-planner-detail" class="mt-3 rounded-2xl border border-stone-200 bg-stone-50 p-3"></section>
 
+              <section class="mt-4 rounded-2xl border border-sandGold/35 bg-[#fbf5e9] p-3">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 class="text-xs font-black text-stone-800">按偏好推荐路线</h4>
+                    <p class="mt-0.5 text-[9px] leading-relaxed text-stone-400">只用时间、强度、兴趣和点位距离进行规则排序</p>
+                  </div>
+                  <span class="rounded-full bg-white px-2 py-1 text-[9px] font-bold text-[#8f302b]">非 AI</span>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                  <label class="text-[9px] font-bold text-stone-500">可用时间
+                    <select id="map-planner-duration" onchange="updateMapPlannerPreference('duration', this.value)" class="mt-1 min-h-11 w-full rounded-xl border border-stone-200 bg-white px-2 text-[10px] font-bold text-stone-700 outline-none focus:border-[#9e2f24]">
+                      <option value="120">约 2 小时</option>
+                      <option value="240" selected>约半天</option>
+                      <option value="420">约一天</option>
+                    </select>
+                  </label>
+                  <label class="text-[9px] font-bold text-stone-500">行走强度
+                    <select id="map-planner-intensity" onchange="updateMapPlannerPreference('intensity', this.value)" class="mt-1 min-h-11 w-full rounded-xl border border-stone-200 bg-white px-2 text-[10px] font-bold text-stone-700 outline-none focus:border-[#9e2f24]">
+                      <option value="relaxed">轻松少走</option>
+                      <option value="balanced" selected>适中均衡</option>
+                      <option value="active">充实多看</option>
+                    </select>
+                  </label>
+                </div>
+                <fieldset class="mt-3">
+                  <legend class="text-[9px] font-bold text-stone-500">想看什么（可多选）</legend>
+                  <div id="map-planner-interest-options" class="mt-2 flex flex-wrap gap-1.5"></div>
+                </fieldset>
+                <button type="button" onclick="generatePersonalizedMapPlannerRoute()" class="mt-3 min-h-11 w-full rounded-xl bg-[#9e2f24] px-4 text-[10px] font-black text-[#fff5df]">生成可解释路线</button>
+                <p id="map-planner-recommendation-status" class="mt-2 text-[9px] leading-relaxed text-stone-500">推荐只调整行程篮，你仍可继续增删或拖动顺序。</p>
+              </section>
+
               <section class="mt-4 border-t border-stone-200 pt-3">
                 <div class="flex items-center justify-between gap-3">
                   <div>
@@ -2787,6 +2819,16 @@
     let mapPlannerMode = 'transit';
     let mapPlannerDraggingId = null;
     let mapPlannerRouteRequestId = 0;
+    let mapPlannerPreferences = { duration: 240, intensity: 'balanced', interests: ['architecture', 'museum'] };
+    let mapPlannerRecommendationReasons = new Map();
+
+    const mapPlannerInterestDefinitions = [
+      { id: 'architecture', label: '建筑营造', keywords: ['建筑', '楼', '阁', '木构', '石龛', '牌楼', '陵', '城墙', '吊脚楼', '构件'] },
+      { id: 'museum', label: '博物馆藏', keywords: ['博物馆', '展陈', '文物', '编钟', '考古', '馆藏'] },
+      { id: 'inscription', label: '碑刻题记', keywords: ['题刻', '碑刻', '铭文', '题记', '摩崖'] },
+      { id: 'community', label: '村寨口述', keywords: ['村寨', '民俗', '口述', '生活', '土家', '社区'] },
+      { id: 'landscape', label: '山水空间', keywords: ['东湖', '山地', '峡江', '临江', '古战场', '景观', '自然'] }
+    ];
 
     const communityRoutePlans = [
       {
@@ -4083,6 +4125,17 @@
         }
         if (heritageLandmarks.some(item => item.id === saved.activeId)) mapPlannerActiveId = saved.activeId;
         if (['transit', 'car', 'walk'].includes(saved.mode)) mapPlannerMode = saved.mode;
+        if ([120, 240, 420].includes(Number(saved.preferences && saved.preferences.duration))) {
+          mapPlannerPreferences.duration = Number(saved.preferences.duration);
+        }
+        if (['relaxed', 'balanced', 'active'].includes(saved.preferences && saved.preferences.intensity)) {
+          mapPlannerPreferences.intensity = saved.preferences.intensity;
+        }
+        if (Array.isArray(saved.preferences && saved.preferences.interests)) {
+          const allowedInterests = new Set(mapPlannerInterestDefinitions.map(item => item.id));
+          const interests = saved.preferences.interests.filter(id => allowedInterests.has(id));
+          if (interests.length) mapPlannerPreferences.interests = interests;
+        }
       } catch (error) {
         mapPlannerSelectedIds = [];
       }
@@ -4096,7 +4149,8 @@
       localStorage.setItem(MAP_PLANNER_STORAGE_KEY, JSON.stringify({
         selectedIds: mapPlannerSelectedIds,
         activeId: mapPlannerActiveId,
-        mode: mapPlannerMode
+        mode: mapPlannerMode,
+        preferences: mapPlannerPreferences
       }));
     }
 
@@ -4217,12 +4271,14 @@
         ${mapPlannerSelectedIds.map((id, index) => {
           const item = heritageLandmarks.find(point => point.id === id);
           if (!item) return '';
+          const recommendationReasons = mapPlannerRecommendationReasons.get(id) || [];
           return `
             <div class="planner-route-item flex items-center gap-2 rounded-xl border border-stone-200 bg-white p-2 shadow-sm" draggable="true" data-planner-id="${escapeHtml(id)}" ondragstart="handleMapPlannerDragStart(event, '${escapeJsString(id)}')" ondragend="handleMapPlannerDragEnd(event)" ondragover="event.preventDefault()" ondrop="handleMapPlannerDrop(event, '${escapeJsString(id)}')">
               <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-deepTeal text-[10px] font-black text-sandGold">${index + 1}</span>
               <button type="button" onclick="selectMapPlannerPoint('${escapeJsString(id)}')" class="min-w-0 flex-1 text-left">
                 <p class="truncate text-[10px] font-black text-stone-800">${escapeHtml(item.title)}</p>
                 <p class="mt-0.5 truncate text-[9px] text-stone-400">${escapeHtml(getMapPlannerDetail(id).area)} · ${escapeHtml(getMapPlannerDetail(id).stay)}</p>
+                ${recommendationReasons.length ? `<p class="mt-1 truncate text-[9px] font-bold text-[#8f302b]">推荐理由：${escapeHtml(recommendationReasons.join(' · '))}</p>` : ''}
               </button>
               <div class="flex shrink-0 items-center gap-0.5">
                 <button type="button" onclick="moveMapPlannerPoint('${escapeJsString(id)}', -1)" class="rounded p-1 text-stone-400 hover:bg-stone-100" aria-label="前移"><i data-lucide="chevron-up" class="h-3 w-3"></i></button>
@@ -4251,11 +4307,173 @@
       `).join('');
     }
 
+    function updateMapPlannerPreference(key, value) {
+      if (key === 'duration' && [120, 240, 420].includes(Number(value))) {
+        mapPlannerPreferences.duration = Number(value);
+      }
+      if (key === 'intensity' && ['relaxed', 'balanced', 'active'].includes(value)) {
+        mapPlannerPreferences.intensity = value;
+      }
+      saveMapPlannerState();
+    }
+
+    function toggleMapPlannerInterest(id, checked) {
+      const allowed = mapPlannerInterestDefinitions.some(item => item.id === id);
+      if (!allowed) return;
+      const next = new Set(mapPlannerPreferences.interests);
+      if (checked) next.add(id);
+      else next.delete(id);
+      mapPlannerPreferences.interests = [...next];
+      saveMapPlannerState();
+      renderMapPlannerPreferenceControls();
+    }
+
+    function renderMapPlannerPreferenceControls() {
+      const duration = document.getElementById('map-planner-duration');
+      const intensity = document.getElementById('map-planner-intensity');
+      const interests = document.getElementById('map-planner-interest-options');
+      if (duration) duration.value = String(mapPlannerPreferences.duration);
+      if (intensity) intensity.value = mapPlannerPreferences.intensity;
+      if (!interests) return;
+      interests.innerHTML = mapPlannerInterestDefinitions.map(item => {
+        const selected = mapPlannerPreferences.interests.includes(item.id);
+        return `
+          <label class="flex min-h-11 cursor-pointer items-center rounded-full border px-3 text-[10px] font-bold transition ${selected ? 'border-[#9e2f24]/35 bg-[#9e2f24] text-[#fff5df]' : 'border-stone-200 bg-white text-stone-600'}">
+            <input type="checkbox" class="sr-only" ${selected ? 'checked' : ''} onchange="toggleMapPlannerInterest('${escapeJsString(item.id)}', this.checked)">
+            ${escapeHtml(item.label)}
+          </label>`;
+      }).join('');
+    }
+
+    function getMapPlannerStayMinutes(id) {
+      const stay = String(getMapPlannerDetail(id).stay || '60');
+      const numbers = (stay.match(/\d+/g) || []).map(Number).filter(Number.isFinite);
+      if (!numbers.length) return 60;
+      return numbers.length > 1 ? Math.round((numbers[0] + numbers[1]) / 2) : numbers[0];
+    }
+
+    function getMapPlannerInterestMatches(item) {
+      const detail = getMapPlannerDetail(item.id);
+      const searchText = [
+        item.title,
+        item.desc,
+        ...(Array.isArray(item.tags) ? item.tags : []),
+        ...(Array.isArray(item.categoryIds) ? item.categoryIds : []),
+        ...(Array.isArray(detail.collect) ? detail.collect : [])
+      ].join(' ').toLowerCase();
+      return mapPlannerInterestDefinitions.filter(definition =>
+        mapPlannerPreferences.interests.includes(definition.id) &&
+        definition.keywords.some(keyword => searchText.includes(keyword.toLowerCase()))
+      );
+    }
+
+    function scoreMapPlannerRecommendation(item) {
+      const matches = getMapPlannerInterestMatches(item);
+      const stayMinutes = getMapPlannerStayMinutes(item.id);
+      const completeness = Math.max(0, Math.min(100, Number(item.resourceCompleteness || item.qualityScore || 0)));
+      let score = matches.length * 36 + completeness / 5;
+      const reasons = matches.map(match => match.label);
+      if (item.status === 'verified') {
+        score += 10;
+        reasons.push('资料已认证');
+      } else if (item.status === 'pending') {
+        score += 5;
+        reasons.push('急需补充');
+      }
+      if (mapPlannerPreferences.intensity === 'relaxed' && stayMinutes <= 90) {
+        score += 8;
+        reasons.push('停留节奏较轻');
+      }
+      if (mapPlannerPreferences.intensity === 'active' && stayMinutes >= 75) {
+        score += 6;
+        reasons.push('适合深入参访');
+      }
+      if (currentLocation && currentLocation.isReal) {
+        const distance = getDistanceBetweenCoords(currentLocation, item.coords);
+        if (Number.isFinite(distance)) {
+          score += Math.max(-24, 18 - distance * 1.5);
+          if (distance <= 8) reasons.push('离你较近');
+        }
+      }
+      return { item, score, stayMinutes, reasons: [...new Set(reasons)].slice(0, 3) };
+    }
+
+    function orderMapPlannerRecommendations(entries) {
+      if (entries.length < 2) return entries;
+      const remaining = [...entries];
+      const ordered = [];
+      let anchorCoords = currentLocation && currentLocation.isReal
+        ? [currentLocation.latitude, currentLocation.longitude]
+        : remaining[0].item.coords;
+      while (remaining.length) {
+        remaining.sort((left, right) => {
+          const leftDistance = getDistanceBetweenLatLonPoints(anchorCoords, left.item.coords);
+          const rightDistance = getDistanceBetweenLatLonPoints(anchorCoords, right.item.coords);
+          return leftDistance - rightDistance || right.score - left.score;
+        });
+        const next = remaining.shift();
+        ordered.push(next);
+        anchorCoords = next.item.coords;
+      }
+      return ordered;
+    }
+
+    function generatePersonalizedMapPlannerRoute() {
+      const status = document.getElementById('map-planner-recommendation-status');
+      if (!mapPlannerPreferences.interests.length) {
+        if (status) status.innerText = '请至少选择一项兴趣，再生成路线。';
+        showToast('请至少选择一项兴趣', 'alert-circle');
+        return;
+      }
+      const ranked = heritageLandmarks.map(scoreMapPlannerRecommendation);
+      const cityGroups = new Map();
+      ranked.forEach(entry => {
+        const city = getMapPlannerCity(entry.item);
+        if (!cityGroups.has(city)) cityGroups.set(city, []);
+        cityGroups.get(city).push(entry);
+      });
+      const activeCity = getMapPlannerCity(heritageLandmarks.find(item => item.id === mapPlannerActiveId) || heritageLandmarks[0]);
+      const selectedGroup = [...cityGroups.entries()]
+        .map(([city, entries]) => ({
+          city,
+          entries: entries.sort((left, right) => right.score - left.score),
+          score: entries.slice(0, 4).reduce((sum, entry) => sum + entry.score, 0) + (city === activeCity && entries.length > 1 ? 24 : 0)
+        }))
+        .sort((left, right) => right.score - left.score)[0];
+      if (!selectedGroup || !selectedGroup.entries.length) {
+        if (status) status.innerText = '当前没有可用于推荐的已发布点位。';
+        return;
+      }
+      const maxByIntensity = { relaxed: 2, balanced: 4, active: 6 }[mapPlannerPreferences.intensity] || 4;
+      const maxByDuration = Math.max(1, Math.floor(mapPlannerPreferences.duration / 65));
+      const maxPoints = Math.min(maxByIntensity, maxByDuration, 8);
+      const chosen = [];
+      let usedMinutes = 0;
+      for (const entry of selectedGroup.entries) {
+        if (chosen.length >= maxPoints) break;
+        const nextMinutes = usedMinutes + entry.stayMinutes;
+        if (chosen.length && nextMinutes > mapPlannerPreferences.duration) continue;
+        chosen.push(entry);
+        usedMinutes = nextMinutes;
+      }
+      if (!chosen.length) chosen.push(selectedGroup.entries[0]);
+      const ordered = orderMapPlannerRecommendations(chosen);
+      mapPlannerSelectedIds = ordered.map(entry => entry.item.id);
+      mapPlannerActiveId = mapPlannerSelectedIds[0];
+      mapPlannerRecommendationReasons = new Map(ordered.map(entry => [entry.item.id, entry.reasons.length ? entry.reasons : ['符合当前偏好']]));
+      saveMapPlannerState();
+      clearMapPlannerPreview();
+      renderMapPlanner();
+      if (status) status.innerText = `已按“${selectedGroup.city} · ${mapPlannerPreferences.duration} 分钟 · ${mapPlannerPreferences.intensity === 'relaxed' ? '轻松' : mapPlannerPreferences.intensity === 'active' ? '充实' : '适中'}”生成 ${ordered.length} 站；预计现场停留约 ${usedMinutes} 分钟。道路与开放状态仍以当天信息为准。`;
+      showToast('可解释路线已加入行程篮', 'route');
+    }
+
     function renderMapPlanner() {
       renderMapPlannerPointStrip();
       renderMapPlannerDetail();
       renderMapPlannerRouteList();
       renderMapPlannerModeOptions();
+      renderMapPlannerPreferenceControls();
       if (window.lucide) lucide.createIcons();
     }
 
@@ -4308,6 +4526,7 @@
         return;
       }
       mapPlannerSelectedIds.push(id);
+      mapPlannerRecommendationReasons.set(id, ['手动加入']);
       saveMapPlannerState();
       renderMapPlanner();
       showToast('已加入我的探索路线', 'map-pin-plus');
@@ -4315,6 +4534,7 @@
 
     function removeMapPlannerPoint(id) {
       mapPlannerSelectedIds = mapPlannerSelectedIds.filter(itemId => itemId !== id);
+      mapPlannerRecommendationReasons.delete(id);
       saveMapPlannerState();
       renderMapPlanner();
       previewMapPlannerRoute({ fitBounds: false, silent: true });
@@ -4322,6 +4542,7 @@
 
     function clearMapPlannerRoute() {
       mapPlannerSelectedIds = [];
+      mapPlannerRecommendationReasons.clear();
       saveMapPlannerState();
       clearMapPlannerPreview();
       renderMapPlanner();

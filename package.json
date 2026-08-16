@@ -9,6 +9,7 @@
     "test:story-drafts": "node tools/test-sourced-story-drafts.js",
     "test:stories": "node tools/test-story-evidence.js",
     "test:story-feedback": "node tools/test-story-feedback.js",
+    "test:routes": "node tools/test-map-personalization.js",
     "test:rewards": "node tools/test-reward-security.js",
     "deploy:cloudbase": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/deploy-cloudbase.ps1"
   },
