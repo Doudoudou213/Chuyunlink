@@ -36,6 +36,7 @@ let activeStoryEvidenceNodeId = '';
   const PUBLIC_FEED_REFRESH_MS = 60 * 1000;
   let unifiedResources = [];
   let unifiedResourceSyncState = { status: 'idle', count: 0, updatedAt: null };
+  let unifiedRelatedRequestId = 0;
   const legacyToggleSubmissionLike = typeof toggleSubmissionLike === 'function'
     ? toggleSubmissionLike
     : null;
@@ -1901,6 +1902,25 @@ renderCloudRewards();
     }
   }
 
+  async function loadUnifiedRelatedResources(itemId) {
+    const item = typeof getDiscoverFeedItemById === 'function'
+      ? getDiscoverFeedItemById(itemId)
+      : null;
+    const resourceId = String(item && item.resourceId || '');
+    if (!resourceId || typeof renderDiscoverRelatedResources !== 'function') return;
+    const requestId = ++unifiedRelatedRequestId;
+    renderDiscoverRelatedResources(resourceId, [], { loading: true });
+    try {
+      const result = await callCore({ action: 'searchResources', resourceId, limit: 4 });
+      if (requestId !== unifiedRelatedRequestId) return;
+      renderDiscoverRelatedResources(resourceId, result && result.items || []);
+    } catch (error) {
+      if (requestId !== unifiedRelatedRequestId) return;
+      renderDiscoverRelatedResources(resourceId, [], { error: true });
+      console.warn('[CloudBase related resources]', error);
+    }
+  }
+
   async function mapPublicItems(items) {
     return (items || []).map((item) => {
       const fileID = item.fileID || item.imageFileID || '';
@@ -2450,6 +2470,7 @@ renderCloudRewards();
 
   function openCloudDiscoverDetail(itemId) {
     if (legacyOpenDiscoverDetail) legacyOpenDiscoverDetail(itemId);
+    loadUnifiedRelatedResources(itemId);
     const approvedItem = findApprovedItem(itemId);
     if (approvedItem) {
       setDiscoverDiscussionEntryAvailable(true);

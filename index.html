@@ -1653,6 +1653,19 @@
         <p id="discover-detail-value" class="mt-1 text-[11px] leading-relaxed text-stone-600"></p>
       </div>
 
+      <section id="discover-related-section" class="mt-3 hidden rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="flex items-center text-[11px] font-bold text-deepTeal">
+              <i data-lucide="git-branch" class="mr-1.5 h-3.5 w-3.5"></i> 顺着线索看
+            </p>
+            <p class="mt-0.5 text-[9px] text-stone-400">依据已确认链迹、地区与文化标签排序</p>
+          </div>
+          <span class="rounded-full bg-stone-100 px-2 py-0.5 text-[9px] font-bold text-stone-500">可解释推荐</span>
+        </div>
+        <div id="discover-related-list" class="mt-2 space-y-2"></div>
+      </section>
+
       <details class="group mt-4 rounded-xl border border-stone-200 bg-stone-50/70 p-3">
         <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
           <span>
@@ -3110,7 +3123,9 @@
         item.regionName,
         item.author,
         item.contributorName,
-        item.researchValue
+        item.researchValue,
+        ...(Array.isArray(item.tags) ? item.tags : []),
+        ...(Array.isArray(item.categoryIds) ? item.categoryIds : [])
       ].filter(Boolean).join(' ').toLowerCase();
       return haystack.includes(term);
     }
@@ -3296,6 +3311,100 @@
       lucide.createIcons();
     }
 
+    function prepareDiscoverRelatedResources(item) {
+      const section = document.getElementById('discover-related-section');
+      const list = document.getElementById('discover-related-list');
+      if (!section || !list) return;
+      const resourceId = String(item && item.resourceId || '');
+      section.dataset.resourceId = resourceId;
+      if (!resourceId) {
+        section.classList.add('hidden');
+        list.innerHTML = '';
+        return;
+      }
+      section.classList.remove('hidden');
+      list.innerHTML = '<div class="rounded-lg bg-stone-50 px-3 py-2 text-[10px] text-stone-400">正在整理相关线索…</div>';
+    }
+
+    function unifiedResourceTypeLabel(type) {
+      return {
+        landmark: '文化点位',
+        hotspot: '守护热点',
+        activity: '社区活动',
+        article: '图文内容',
+        experience: '文化体验',
+        route: '游览路线'
+      }[type] || '文化资源';
+    }
+
+    function renderDiscoverRelatedResources(resourceId, items, state = {}) {
+      const section = document.getElementById('discover-related-section');
+      const list = document.getElementById('discover-related-list');
+      if (!section || !list || section.dataset.resourceId !== String(resourceId || '')) return;
+      if (state.loading) {
+        section.classList.remove('hidden');
+        list.innerHTML = '<div class="rounded-lg bg-stone-50 px-3 py-2 text-[10px] text-stone-400">正在整理相关线索…</div>';
+        return;
+      }
+      if (state.error || !Array.isArray(items) || !items.length) {
+        section.classList.add('hidden');
+        list.innerHTML = '';
+        return;
+      }
+      section.classList.remove('hidden');
+      list.innerHTML = items.slice(0, 4).map(resource => {
+        const reasons = Array.isArray(resource.relationReasons) ? resource.relationReasons.slice(0, 2) : [];
+        return `
+          <button type="button" onclick="openUnifiedResource('${escapeJsString(resource.id)}')" class="flex w-full items-start justify-between gap-3 rounded-lg border border-stone-100 bg-stone-50 px-3 py-2.5 text-left transition hover:border-sandGold/50 hover:bg-sandGold/5">
+            <span class="min-w-0">
+              <span class="block truncate text-[11px] font-bold text-stone-800">${escapeHtml(resource.title || '未命名资源')}</span>
+              <span class="mt-1 block line-clamp-1 text-[9px] text-stone-500">${escapeHtml(reasons.join(' · ') || resource.summary || '相关文化线索')}</span>
+            </span>
+            <span class="flex shrink-0 items-center gap-1 rounded-full bg-white px-2 py-1 text-[9px] font-bold text-deepTeal">
+              ${escapeHtml(unifiedResourceTypeLabel(resource.type))}<i data-lucide="chevron-right" class="h-3 w-3"></i>
+            </span>
+          </button>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function openUnifiedResource(resourceId) {
+      const resources = Array.isArray(window.chulinkResources) ? window.chulinkResources : [];
+      const resource = resources.find(item => item.id === resourceId);
+      if (!resource) {
+        showToast('相关资源正在同步，请稍后再试', 'clock');
+        return;
+      }
+      const aliases = Array.isArray(resource.legacyAliases) ? resource.legacyAliases : [];
+      const contentAlias = aliases.find(alias => alias.type === 'content');
+      if (contentAlias) {
+        closeDiscoverDetailModal();
+        setTimeout(() => openDiscoverDetail(contentAlias.id), 0);
+        return;
+      }
+      const landmarkAlias = aliases.find(alias => alias.type === 'landmark');
+      if (landmarkAlias) {
+        const landmark = heritageLandmarks.find(item => item.id === landmarkAlias.id);
+        if (landmark) {
+          closeDiscoverDetailModal();
+          switchTab('map');
+          setTimeout(() => {
+            focusLandmark(landmark);
+            selectMapPlannerPoint(landmark.id, { focusMap: true });
+          }, 120);
+          return;
+        }
+      }
+      const routeAlias = aliases.find(alias => alias.type === 'activity');
+      if (routeAlias) {
+        closeDiscoverDetailModal();
+        openActivityRoutesOnMap(routeAlias.id);
+        return;
+      }
+      showToast('这条资源暂时没有可打开的页面', 'info');
+    }
+
     function openDiscoverDetail(itemId) {
       const item = getDiscoverFeedItemById(itemId);
       if (!item) {
@@ -3312,6 +3421,7 @@
       document.getElementById('discover-detail-story').innerHTML = renderInlineStoryCard(item, true);
       renderDiscoverScienceContent(item);
       renderSupplementSlots(item);
+      prepareDiscoverRelatedResources(item);
       document.getElementById('discover-detail-modal').classList.remove('hidden');
       lucide.createIcons();
     }
@@ -3320,6 +3430,11 @@
       document.getElementById('discover-detail-modal').classList.add('hidden');
       activeDiscoverDetailItem = null;
       activeSupplementSlot = null;
+      const relatedSection = document.getElementById('discover-related-section');
+      if (relatedSection) {
+        relatedSection.dataset.resourceId = '';
+        relatedSection.classList.add('hidden');
+      }
       const input = document.getElementById('discover-supplement-file');
       if (input) input.value = '';
     }

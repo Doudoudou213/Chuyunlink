@@ -3,7 +3,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const { createResourceService, publicResource } = require('../cloudfunctions/appCore/domains/resources');
+const { createResourceService, publicResource, scoreResource } = require('../cloudfunctions/appCore/domains/resources');
 
 const root = path.resolve(__dirname, '..');
 const seed = require('../cloudfunctions/adminSubmissions/data/resources.v1.json');
@@ -56,7 +56,7 @@ check('公开资源视图不会暴露导入指纹', () => {
 });
 
 check('appCore 新增只读资源接口且保留既有接口', () => {
-  ['getResources', 'getResourceDetail', 'bootstrap', 'getPublic', 'createSubmission', 'createComment', 'redeemReward', 'planRoute']
+  ['getResources', 'getResourceDetail', 'searchResources', 'bootstrap', 'getPublic', 'createSubmission', 'createComment', 'redeemReward', 'planRoute']
     .forEach((action) => assert(appCoreSource.includes(`action === '${action}'`), action));
 });
 
@@ -113,6 +113,23 @@ check('用户端读取统一资源并保留本地降级数据', () => {
   assert(indexHtml.includes('本地兼容数据'));
 });
 
+check('相关资源入口内嵌在原有详情并使用可解释推荐', () => {
+  assert(indexHtml.includes('id="discover-related-section"'));
+  assert(indexHtml.includes('顺着线索看'));
+  assert(indexHtml.includes('function renderDiscoverRelatedResources'));
+  assert(indexHtml.includes('function openUnifiedResource'));
+  assert(cloudClientSource.includes("action: 'searchResources'"));
+  assert(cloudClientSource.includes('loadUnifiedRelatedResources'));
+});
+
+check('搜索排序只使用确定性资源字段', () => {
+  const base = seed.find((item) => item.id === 'article-yellow-crane-tower');
+  const landmark = seed.find((item) => item.id === 'yellow-crane-tower');
+  const ranking = scoreResource(landmark, { base, query: '' });
+  assert(ranking.score >= 80);
+  assert(ranking.reasons.includes('已确认链迹'));
+});
+
 async function testResourceService() {
   const published = { ...seed[0], _id: seed[0].id };
   const db = {
@@ -133,10 +150,37 @@ async function testResourceService() {
   const detail = await service.detail({ resourceId: published.id });
   assert.strictEqual(detail.item.id, published.id);
   console.log('PASS 资源读取服务返回统一公开视图');
+
+  const searchDb = {
+    collection() {
+      return {
+        where() {
+          return {
+            limit() {
+              return {
+                async get() {
+                  return { data: seed.map((item) => ({ ...item, _id: item.id })) };
+                }
+              };
+            }
+          };
+        }
+      };
+    }
+  };
+  const searchService = createResourceService({ db: searchDb });
+  const related = await searchService.search({ resourceId: 'article-yellow-crane-tower', limit: 4 });
+  assert.strictEqual(related.deterministic, true);
+  assert(related.items.length > 0);
+  assert.strictEqual(related.items[0].id, 'yellow-crane-tower');
+  assert(related.items[0].relationReasons.includes('已确认链迹'));
+  const queried = await searchService.search({ query: '编钟', limit: 5 });
+  assert(queried.items.some((item) => item.id === 'article-hubei-museum-bells'));
+  console.log('PASS 资源检索按链迹、标签、地区和关键词确定性排序');
 }
 
 testResourceService()
-  .then(() => console.log(`Resource model validation passed (${checks.length + 1} checks).`))
+  .then(() => console.log(`Resource model validation passed (${checks.length + 2} checks).`))
   .catch((error) => {
     console.error(error);
     process.exit(1);

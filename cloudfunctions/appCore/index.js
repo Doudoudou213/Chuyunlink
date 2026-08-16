@@ -1802,6 +1802,7 @@ exports.main = async (event = {}) => {
     if (action === 'bootstrap') return await bootstrap(uid, userInfo);
     if (action === 'getResources') return await resourceService.list(event);
     if (action === 'getResourceDetail') return await resourceService.detail(event);
+    if (action === 'searchResources') return await resourceService.search(event);
     if (action === 'getStoryEvidence') return await storyEvidenceService.list(event);
     if (action === 'getPublic') {
       return { ok: true, action, items: await listPublic(event.limit, uid) };
