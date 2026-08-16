@@ -34,6 +34,8 @@ let activeStoryEvidenceNodeId = '';
   const cloudSupplementState = new Map();
   let publicFeedRefreshTimer = null;
   const PUBLIC_FEED_REFRESH_MS = 60 * 1000;
+  let unifiedResources = [];
+  let unifiedResourceSyncState = { status: 'idle', count: 0, updatedAt: null };
   const legacyToggleSubmissionLike = typeof toggleSubmissionLike === 'function'
     ? toggleSubmissionLike
     : null;
@@ -1740,6 +1742,165 @@ renderCloudRewards();
     }
   }
 
+  function resourceAliasId(resource, type) {
+    const aliases = Array.isArray(resource && resource.legacyAliases)
+      ? resource.legacyAliases
+      : [];
+    const alias = aliases.find((item) => item && item.type === type && item.id);
+    return alias ? String(alias.id) : '';
+  }
+
+  function resourceRegionText(region, separator = ' · ') {
+    if (!region || typeof region !== 'object') return '';
+    return [region.city, region.district]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)
+      .join(separator);
+  }
+
+  function resourceCollectableText(value) {
+    if (typeof value === 'string') return value.trim();
+    if (!value || typeof value !== 'object') return '';
+    return String(value.title || value.name || value.label || value.description || '').trim();
+  }
+
+  function setUnifiedResourceSyncState(status, count = 0, error = '') {
+    unifiedResourceSyncState = {
+      status,
+      count: Number(count || 0),
+      error: String(error || ''),
+      updatedAt: new Date().toISOString()
+    };
+    window.chulinkResources = unifiedResources;
+    window.chulinkResourceSync = { ...unifiedResourceSyncState };
+
+    const statusElement = document.getElementById('resource-sync-status');
+    if (!statusElement) return;
+    if (status === 'ready' && count > 0) {
+      statusElement.textContent = `${count} 项云端资源已同步`;
+      statusElement.className = 'text-[9px] font-bold text-emerald-700';
+      return;
+    }
+    statusElement.textContent = '本地数据可用';
+    statusElement.className = 'text-[9px] text-stone-400';
+  }
+
+  function attachResourceMetadata(target, resource) {
+    if (!target || !resource) return;
+    target.resourceId = String(resource.id || '');
+    target.resourceType = String(resource.type || '');
+    target.categoryIds = Array.isArray(resource.categoryIds) ? resource.categoryIds.slice() : [];
+    target.tags = Array.isArray(resource.tags) ? resource.tags.slice() : [];
+    target.capabilities = resource.capabilities && typeof resource.capabilities === 'object'
+      ? { ...resource.capabilities }
+      : {};
+    target.relatedResourceIds = Array.isArray(resource.relatedResourceIds)
+      ? resource.relatedResourceIds.slice()
+      : [];
+    target.resourceCompleteness = Number(resource.completeness || 0);
+  }
+
+  function mergeLandmarkResource(resource) {
+    if (typeof heritageLandmarks === 'undefined' || !Array.isArray(heritageLandmarks)) return;
+    const landmarkId = resourceAliasId(resource, 'landmark');
+    if (!landmarkId) return;
+    const landmark = heritageLandmarks.find((item) => item.id === landmarkId);
+    if (!landmark) return;
+
+    if (resource.title) landmark.title = resource.title;
+    if (resource.summary) landmark.desc = resource.summary;
+    if (resource.location) {
+      const latitude = Number(resource.location.latitude);
+      const longitude = Number(resource.location.longitude);
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        landmark.coords = [latitude, longitude];
+        landmark.coordinateSystem = resource.location.coordinateSystem || 'gcj02';
+      }
+    }
+    attachResourceMetadata(landmark, resource);
+
+    if (typeof mapPlannerDetails === 'undefined') return;
+    const currentDetail = mapPlannerDetails[landmarkId] || {};
+    const area = resourceRegionText(resource.region);
+    const transport = resource.transport && typeof resource.transport === 'object'
+      ? resource.transport
+      : {};
+    const transportModes = Array.isArray(transport.modes)
+      ? transport.modes.map(resourceCollectableText).filter(Boolean)
+      : [];
+    const access = transportModes.length
+      ? transportModes
+      : (Array.isArray(transport.access) ? transport.access.map(resourceCollectableText).filter(Boolean) : []);
+    const collect = Array.isArray(resource.collectables)
+      ? resource.collectables.map(resourceCollectableText).filter(Boolean)
+      : [];
+    mapPlannerDetails[landmarkId] = {
+      ...currentDetail,
+      ...(area ? { area } : {}),
+      ...(access.length ? { access } : {}),
+      ...(collect.length ? { collect } : {})
+    };
+  }
+
+  function mergeContentResource(resource) {
+    const contentId = resourceAliasId(resource, 'content');
+    if (!contentId) return;
+    const collections = [];
+    if (typeof discoverLiveFeedItems !== 'undefined' && Array.isArray(discoverLiveFeedItems)) {
+      collections.push(discoverLiveFeedItems);
+    }
+    if (typeof discoverLiveCandidates !== 'undefined' && Array.isArray(discoverLiveCandidates)) {
+      collections.push(discoverLiveCandidates);
+    }
+    const item = collections.flat().find((candidate) => candidate.id === contentId);
+    if (!item) return;
+    if (resource.title) item.title = resource.title;
+    if (resource.summary) item.description = resource.summary;
+    const region = resourceRegionText(resource.region, '');
+    if (region) item.region = region;
+    attachResourceMetadata(item, resource);
+  }
+
+  function mergeRouteResource(resource) {
+    if (typeof communityRoutePlans === 'undefined' || !Array.isArray(communityRoutePlans)) return;
+    const routeId = resourceAliasId(resource, 'activity');
+    if (!routeId) return;
+    const route = communityRoutePlans.find((item) => item.id === routeId);
+    if (!route) return;
+    if (resource.title) route.title = resource.title;
+    if (resource.summary) route.desc = resource.summary;
+    if (resource.region && resource.region.city) route.city = String(resource.region.city);
+    if (resource.location) {
+      const latitude = Number(resource.location.latitude);
+      const longitude = Number(resource.location.longitude);
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) route.center = [latitude, longitude];
+    }
+    attachResourceMetadata(route, resource);
+  }
+
+  function applyUnifiedResources(items) {
+    unifiedResources = Array.isArray(items) ? items.filter((item) => item && item.id) : [];
+    unifiedResources.forEach((resource) => {
+      mergeLandmarkResource(resource);
+      mergeContentResource(resource);
+      mergeRouteResource(resource);
+    });
+    setUnifiedResourceSyncState('ready', unifiedResources.length);
+    if (typeof refreshUnifiedResourceUi === 'function') refreshUnifiedResourceUi();
+  }
+
+  async function loadUnifiedResources() {
+    setUnifiedResourceSyncState('loading');
+    try {
+      const result = await callCore({ action: 'getResources', limit: 100 });
+      applyUnifiedResources(result && result.items);
+    } catch (error) {
+      unifiedResources = [];
+      setUnifiedResourceSyncState('fallback', 0, error && error.message);
+      console.warn('[CloudBase resources] 使用本地兼容数据', error);
+    }
+  }
+
   async function mapPublicItems(items) {
     return (items || []).map((item) => {
       const fileID = item.fileID || item.imageFileID || '';
@@ -2522,6 +2683,7 @@ renderCloudRewards();
     const reportCancel = document.getElementById('cloud-report-cancel');
     if (reportCancel) reportCancel.addEventListener('click', closeCloudReportModal);
     await refreshCloudProfile();
+    await loadUnifiedResources();
     await loadCloudPublicFeed();
     scheduleCloudPublicFeedRefresh();
   });

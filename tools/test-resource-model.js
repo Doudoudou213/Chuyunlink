@@ -11,6 +11,7 @@ const appCoreSource = fs.readFileSync(path.join(root, 'cloudfunctions/appCore/in
 const adminSource = fs.readFileSync(path.join(root, 'cloudfunctions/adminSubmissions/index.js'), 'utf8');
 const adminHtml = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const cloudClientSource = fs.readFileSync(path.join(root, 'static/cloudbase-app.js'), 'utf8');
 const newWuhanLandmarkIds = [
   'qingchuan-pavilion',
   'jianghanguan-museum',
@@ -99,6 +100,17 @@ check('新增武汉点位同时接入统一资源、地图详情和评论白名�
     assert(indexHtml.includes(`'${id}': {`), `missing map detail: ${id}`);
     assert(appCoreSource.includes(`'${id}':`), `missing comment target: ${id}`);
   });
+});
+
+check('用户端读取统一资源并保留本地降级数据', () => {
+  assert(cloudClientSource.includes("action: 'getResources'"));
+  assert(cloudClientSource.includes('function applyUnifiedResources'));
+  assert(cloudClientSource.includes('window.chulinkResources'));
+  assert(cloudClientSource.includes("setUnifiedResourceSyncState('fallback'"));
+  assert(cloudClientSource.includes('refreshUnifiedResourceUi'));
+  assert(indexHtml.includes('id="resource-sync-status"'));
+  assert(indexHtml.includes('function renderHeritageMapMarkers'));
+  assert(indexHtml.includes('本地兼容数据'));
 });
 
 async function testResourceService() {
