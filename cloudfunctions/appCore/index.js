@@ -32,7 +32,8 @@ const STORY_LINK_COLLECTION = 'story_evidence_links';
 const STORY_CHAIN_COLLECTION = 'story_chains';
 const ALLOWED_ASSET_TYPES = new Set(['image', 'audio', 'video']);
 const ALLOWED_REPORT_REASONS = new Set(['spam', 'abuse', 'false_information', 'copyright', 'other']);
-const ALLOWED_FEEDBACK_TYPES = new Set(['suggestion', 'bug', 'content', 'other']);
+const ALLOWED_FEEDBACK_TYPES = new Set(['suggestion', 'bug', 'content', 'story_correction', 'other']);
+const ALLOWED_STORY_CORRECTION_KINDS = new Set(['content_error', 'source_suggestion', 'wording']);
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 let interactionCollectionsReady = null;
 let rewardCollectionsReady = null;
@@ -1089,6 +1090,15 @@ function feedbackView(item) {
     content: item.content || '',
     status: item.status || 'open',
     response: item.response || '',
+    storyContext: item.type === 'story_correction' ? {
+      resourceId: item.resourceId || '',
+      resourceTitle: item.resourceTitle || '',
+      storyId: item.storyId || '',
+      storyVersion: Math.max(1, Number(item.storyVersion) || 1),
+      chapterIndex: Number.isInteger(item.chapterIndex) ? item.chapterIndex : -1,
+      chapterTitle: item.chapterTitle || '',
+      correctionKind: item.correctionKind || 'content_error'
+    } : null,
     createdAt: item.createdAt || null,
     resolvedAt: item.resolvedAt || null
   };
@@ -1641,12 +1651,54 @@ async function createFeedback(uid, userInfo, event) {
     error.code = 'FEEDBACK_TOO_SHORT';
     throw error;
   }
+  let storyContext = {};
+  if (type === 'story_correction') {
+    const storyId = cleanText(event.storyId, 128);
+    const resourceId = cleanText(event.resourceId, 128);
+    const requestedVersion = Math.max(1, Number(event.storyVersion) || 1);
+    const requestedChapterIndex = Number(event.chapterIndex);
+    const chapterIndex = Number.isInteger(requestedChapterIndex) ? requestedChapterIndex : -1;
+    const correctionKind = cleanText(event.correctionKind, 32);
+    if (!/^[A-Za-z0-9_-]+$/.test(storyId) || !/^[A-Za-z0-9_-]+$/.test(resourceId)) {
+      const error = new Error('故事标识不正确');
+      error.code = 'INVALID_STORY_REFERENCE';
+      throw error;
+    }
+    if (!ALLOWED_STORY_CORRECTION_KINDS.has(correctionKind)) {
+      const error = new Error('请选择要反馈的问题类型');
+      error.code = 'INVALID_STORY_CORRECTION_KIND';
+      throw error;
+    }
+    const story = firstDocument(await db.collection(STORY_CHAIN_COLLECTION).doc(storyId).get());
+    if (!story || !['published', 'superseded'].includes(story.status) || story.resourceId !== resourceId || Math.max(1, Number(story.version) || 1) !== requestedVersion) {
+      const error = new Error('故事版本已经变化，请重新打开后再提交');
+      error.code = 'STORY_VERSION_CHANGED';
+      throw error;
+    }
+    const chapters = Array.isArray(story.chapters) ? story.chapters : [];
+    if (chapterIndex < -1 || chapterIndex >= chapters.length) {
+      const error = new Error('故事章节位置不正确');
+      error.code = 'INVALID_STORY_CHAPTER';
+      throw error;
+    }
+    const resource = firstDocument(await db.collection('resources').doc(resourceId).get());
+    storyContext = {
+      resourceId,
+      resourceTitle: cleanText(resource && resource.title || story.title || '', 100),
+      storyId,
+      storyVersion: requestedVersion,
+      chapterIndex,
+      chapterTitle: chapterIndex >= 0 ? cleanText(chapters[chapterIndex] && chapters[chapterIndex].title, 100) : '',
+      correctionKind
+    };
+  }
   const result = await db.collection(FEEDBACK_COLLECTION).add({
     userId: uid,
     userName: profile.nickname || '社区用户',
     type,
     content,
     page,
+    ...storyContext,
     status: 'open',
     response: '',
     createdAt: db.serverDate(),
@@ -1664,6 +1716,7 @@ async function createFeedback(uid, userInfo, event) {
       content,
       status: 'open',
       response: '',
+      storyContext: type === 'story_correction' ? storyContext : null,
       createdAt: new Date().toISOString(),
       resolvedAt: null
     }

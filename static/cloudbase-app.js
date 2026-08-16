@@ -29,6 +29,7 @@ let pendingCommentFingerprint = '';
 let activeStoryEvidenceResult = null;
 let activeStoryEvidenceView = 'story';
 let activeStoryEvidenceNodeId = '';
+let storyFeedbackSubmitting = false;
   let cloudNotifications = [];
   let cloudNotificationUnreadCount = 0;
   const cloudSupplementState = new Map();
@@ -985,8 +986,92 @@ feedback_closed: '反馈处理',
           }).join('')}
           ${story.closing ? `<footer class="rounded-xl bg-amber-50 p-4 text-xs leading-relaxed text-stone-700"><strong class="text-[#8f302b]">结语</strong><p class="mt-1">${safeText(story.closing)}</p></footer>` : ''}
           <p class="border-t border-stone-100 pt-3 text-[9px] leading-relaxed text-stone-400">本故事由已确认链迹资料编排，并经管理员审核发布。点击每章来源可回到对应的原始社区记录。</p>
+          <section class="rounded-2xl border border-[#b68a4a]/25 bg-[#f8f0e2] p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-[10px] font-black tracking-[0.08em] text-[#8f302b]">一起校准这段讲述</p>
+                <p class="mt-1 text-xs leading-relaxed text-[#66574c]">发现史实、来源或表述问题，可以直接指出具体章节。</p>
+              </div>
+              <button type="button" data-story-feedback-toggle class="min-h-11 rounded-full border border-[#9e2f24]/25 bg-white px-4 text-xs font-bold text-[#8f302b]">纠正或补充</button>
+            </div>
+            <form id="cloud-story-feedback-form" class="mt-4 hidden space-y-3 border-t border-[#b68a4a]/20 pt-4">
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="text-[10px] font-bold text-stone-600">反馈类型
+                  <select id="cloud-story-feedback-kind" class="mt-1 min-h-11 w-full rounded-xl border border-[#b68a4a]/30 bg-white px-3 text-xs text-stone-700 outline-none focus:border-[#9e2f24] focus:ring-2 focus:ring-[#9e2f24]/10">
+                    <option value="content_error">内容可能有误</option>
+                    <option value="source_suggestion">可以补充来源</option>
+                    <option value="wording">表述可以更准确</option>
+                  </select>
+                </label>
+                <label class="text-[10px] font-bold text-stone-600">对应位置
+                  <select id="cloud-story-feedback-chapter" class="mt-1 min-h-11 w-full rounded-xl border border-[#b68a4a]/30 bg-white px-3 text-xs text-stone-700 outline-none focus:border-[#9e2f24] focus:ring-2 focus:ring-[#9e2f24]/10">
+                    <option value="-1">整篇故事</option>
+                    ${(story.chapters || []).map((chapter, index) => `<option value="${index}">第 ${index + 1} 章 · ${safeText(chapter.title)}</option>`).join('')}
+                  </select>
+                </label>
+              </div>
+              <label class="block text-[10px] font-bold text-stone-600">具体说明
+                <textarea id="cloud-story-feedback-content" rows="4" maxlength="1200" required placeholder="请写明哪里需要调整；如有书目、照片或口述来源，也可在这里说明。" class="mt-1 w-full resize-none rounded-xl border border-[#b68a4a]/30 bg-white p-3 text-sm leading-relaxed text-stone-700 outline-none focus:border-[#9e2f24] focus:ring-2 focus:ring-[#9e2f24]/10"></textarea>
+              </label>
+              <p class="text-[9px] leading-relaxed text-stone-400">需要上传照片、音频或视频时，请回到相关投稿，使用“补充这段链迹”。</p>
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <p id="cloud-story-feedback-message" class="min-h-4 text-[10px] text-[#9e2f24]"></p>
+                <button type="submit" class="min-h-11 rounded-xl bg-[#9e2f24] px-5 text-xs font-bold text-[#fff5df] disabled:opacity-50">提交给内容管理员</button>
+              </div>
+            </form>
+          </section>
         </div>
       </article>`;
+  }
+
+  function openStoryFeedbackForm() {
+    if (!isStableAccount(cloudUser)) {
+      openCloudLogin();
+      if (typeof showToast === 'function') showToast('登录后可以提交故事纠错', 'log-in');
+      return;
+    }
+    const form = document.getElementById('cloud-story-feedback-form');
+    if (!form) return;
+    form.classList.toggle('hidden');
+    if (!form.classList.contains('hidden')) document.getElementById('cloud-story-feedback-content')?.focus();
+  }
+
+  async function submitStoryFeedback(event) {
+    event.preventDefault();
+    if (storyFeedbackSubmitting || !activeStoryEvidenceResult || !activeStoryEvidenceResult.story) return;
+    const story = activeStoryEvidenceResult.story;
+    const resource = activeStoryEvidenceResult.resource || {};
+    const content = document.getElementById('cloud-story-feedback-content').value.trim();
+    const message = document.getElementById('cloud-story-feedback-message');
+    if (content.length < 5) {
+      message.textContent = '请至少填写 5 个字，方便管理员核对。';
+      return;
+    }
+    storyFeedbackSubmitting = true;
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    button.disabled = true;
+    message.textContent = '正在提交并绑定当前故事版本…';
+    try {
+      await callCore({
+        action: 'createFeedback',
+        type: 'story_correction',
+        content,
+        page: location.pathname || '/',
+        resourceId: resource.id,
+        storyId: story.id,
+        storyVersion: story.version,
+        chapterIndex: Number(document.getElementById('cloud-story-feedback-chapter').value),
+        correctionKind: document.getElementById('cloud-story-feedback-kind').value
+      });
+      event.currentTarget.innerHTML = '<div class="rounded-xl border border-[#6f7d5e]/25 bg-[#f2f4ec] p-4 text-xs leading-relaxed text-[#4f5f43]"><strong>已提交并记录当前故事版本。</strong><br>管理员处理后，回复会出现在个人中心；原始故事不会被自动改写。</div>';
+      refreshCloudProfile().catch(() => {});
+      if (typeof showToast === 'function') showToast('故事反馈已提交', 'check-circle');
+    } catch (error) {
+      message.textContent = error.message || '提交失败，请稍后重试。';
+      button.disabled = false;
+    } finally {
+      storyFeedbackSubmitting = false;
+    }
   }
 
   function bindStoryEvidenceControls() {
@@ -1011,6 +1096,8 @@ feedback_closed: '反馈处理',
     content.querySelectorAll('[data-story-open-source]').forEach((sourceButton) => {
       sourceButton.addEventListener('click', () => switchStoryEvidenceView('timeline', sourceButton.dataset.storyOpenSource));
     });
+    content.querySelector('[data-story-feedback-toggle]')?.addEventListener('click', openStoryFeedbackForm);
+    content.querySelector('#cloud-story-feedback-form')?.addEventListener('submit', submitStoryFeedback);
   }
 
   function switchStoryEvidenceView(view, focusId) {
@@ -1364,6 +1451,7 @@ feedback_closed: '反馈处理',
       suggestion: '产品建议',
       bug: '功能异常',
       content: '内容问题',
+      story_correction: '故事纠错',
       other: '其他'
     }[type] || '其他';
   }
@@ -1372,6 +1460,7 @@ feedback_closed: '反馈处理',
     return {
       open: '处理中',
       resolved: '已回复',
+      accepted_for_revision: '已纳入修订',
       dismissed: '已关闭'
     }[status] || '处理中';
   }
@@ -1385,6 +1474,7 @@ feedback_closed: '反馈处理',
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <p class="text-xs font-bold text-stone-800">${safeText(feedbackTypeLabel(item.type))}</p>
+            ${item.storyContext ? `<p class="mt-1 text-[9px] font-bold text-[#8f302b]">${safeText(item.storyContext.resourceTitle || '链迹故事')} · 第 ${Number(item.storyContext.storyVersion || 1)} 版${item.storyContext.chapterTitle ? ` · ${safeText(item.storyContext.chapterTitle)}` : ''}</p>` : ''}
             <p class="mt-1 line-clamp-2 text-[10px] leading-relaxed text-stone-500">${safeText(item.content)}</p>
           </div>
           <span class="shrink-0 rounded-full bg-stone-100 px-2 py-1 text-[9px] font-bold text-stone-600">${safeText(feedbackStatusLabel(item.status))}</span>

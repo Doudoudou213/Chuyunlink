@@ -928,6 +928,13 @@ async function listFeedback(event) {
       type: item.type || 'other',
       content: item.content || '',
       page: item.page || '',
+      resourceId: item.resourceId || '',
+      resourceTitle: item.resourceTitle || '',
+      storyId: item.storyId || '',
+      storyVersion: Math.max(1, Number(item.storyVersion) || 1),
+      chapterIndex: Number.isInteger(item.chapterIndex) ? item.chapterIndex : -1,
+      chapterTitle: item.chapterTitle || '',
+      correctionKind: item.correctionKind || '',
       createdAt: item.createdAt || null
     }));
   return { ok: true, action: 'listFeedback', items };
@@ -938,12 +945,12 @@ async function resolveFeedback(event, reviewerId) {
   const feedbackId = cleanId(event.feedbackId);
   const resolution = cleanText(event.resolution, 32);
   const response = cleanText(event.response, 800);
-  if (!['resolved', 'dismissed'].includes(resolution)) {
+  if (!['resolved', 'accepted_for_revision', 'dismissed'].includes(resolution)) {
     const error = new Error('反馈处理结果不正确');
     error.code = 'INVALID_FEEDBACK_RESOLUTION';
     throw error;
   }
-  if (resolution === 'resolved' && !response) {
+  if (['resolved', 'accepted_for_revision'].includes(resolution) && !response) {
     const error = new Error('请填写给用户的处理回复');
     error.code = 'FEEDBACK_RESPONSE_REQUIRED';
     throw error;
@@ -955,6 +962,11 @@ async function resolveFeedback(event, reviewerId) {
     error.code = 'FEEDBACK_NOT_OPEN';
     throw error;
   }
+  if (resolution === 'accepted_for_revision' && current.type !== 'story_correction') {
+    const error = new Error('只有故事纠错可以纳入故事修订');
+    error.code = 'INVALID_FEEDBACK_REVISION_TARGET';
+    throw error;
+  }
   await ref.update({
     status: resolution,
     response,
@@ -964,8 +976,10 @@ async function resolveFeedback(event, reviewerId) {
   });
   await createAdminNotification(db, {
     userId: current.userId,
-    type: resolution === 'resolved' ? 'feedback_resolved' : 'feedback_closed',
-    title: resolution === 'resolved' ? '你的反馈已收到回复' : '你的反馈已关闭',
+    type: resolution === 'dismissed' ? 'feedback_closed' : 'feedback_resolved',
+    title: resolution === 'accepted_for_revision'
+      ? '你的故事反馈已纳入修订'
+      : resolution === 'resolved' ? '你的反馈已收到回复' : '你的反馈已关闭',
     message: response || '管理员已完成本次反馈处理。'
   });
   await db.collection('moderation_logs').add({
@@ -975,6 +989,11 @@ async function resolveFeedback(event, reviewerId) {
     response,
     reviewerId,
     userId: current.userId || '',
+    storyId: current.storyId || '',
+    storyVersion: Math.max(1, Number(current.storyVersion) || 1),
+    resourceId: current.resourceId || '',
+    chapterIndex: Number.isInteger(current.chapterIndex) ? current.chapterIndex : -1,
+    correctionKind: current.correctionKind || '',
     createdAt: db.serverDate()
   });
   return { ok: true, action: 'resolveFeedback', feedbackId, resolution };
