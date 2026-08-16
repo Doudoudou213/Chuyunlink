@@ -54,6 +54,7 @@
             <button id="story-links-refresh" data-admin-view="story-links" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">链迹关联</button>
             <button id="story-drafts-refresh" data-admin-view="story-drafts" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">故事草稿</button>
             <button id="ai-status-refresh" data-admin-view="ai-status" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">AI 接口</button>
+            <button id="material-analysis-refresh" data-admin-view="material-analysis" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">材料识别</button>
             <button id="resource-preview-refresh" data-admin-view="resource-preview" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">资源迁移预览</button>
           </div>
         </div>
@@ -91,6 +92,7 @@
     const REGION = "ap-shanghai";
     const FUNCTION_NAME = "adminSubmissions";
     const AI_FUNCTION_NAME = "storyWorker";
+    const MATERIAL_FUNCTION_NAME = "materialWorker";
     const app = cloudbase.init({ env: ENV_ID, region: REGION });
     const auth = app.auth({ persistence: "local" });
 
@@ -138,6 +140,21 @@
         const error = result && result.error;
         const failure = new Error(error && error.message ? error.message : "AI 云函数返回失败");
         failure.code = error && error.code ? error.code : "AI_FUNCTION_FAILED";
+        throw failure;
+      }
+      return result;
+    }
+
+    async function callMaterialWorker(data) {
+      const response = await app.callFunction({ name: MATERIAL_FUNCTION_NAME, data });
+      let result = response && response.result !== undefined ? response.result : response;
+      if (typeof result === "string") {
+        try { result = JSON.parse(result); } catch (_) {}
+      }
+      if (!result || result.ok !== true) {
+        const error = result && result.error;
+        const failure = new Error(error && error.message ? error.message : "材料识别云函数返回失败");
+        failure.code = error && error.code ? error.code : "MATERIAL_FUNCTION_FAILED";
         throw failure;
       }
       return result;
@@ -1458,6 +1475,177 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       }
     }
 
+    function materialAnalysisPanel(analysis) {
+      if (!analysis) return '<p class="mt-3 text-xs text-stone-500">尚未创建识别任务。</p>';
+      const statusLabel = {
+        needs_review: "等待校对",
+        approved: "已确认（模拟）",
+        rejected: "已退回（模拟）"
+      }[analysis.status] || analysis.status || "未知状态";
+      if (analysis.status === "needs_review") {
+        return `
+          <div data-material-analysis-id="${escapeHtml(analysis.id)}" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <strong class="text-xs text-amber-800">${escapeHtml(statusLabel)}</strong>
+              <span class="text-[10px] text-amber-700">${escapeHtml(analysis.provider)} · ${escapeHtml(analysis.pipelineVersion)}</span>
+            </div>
+            <p class="mt-2 text-[10px] leading-relaxed text-amber-800">当前是流程模拟结果，不是图片真实文字。即使确认，也不会进入正式链迹故事。</p>
+            <label class="mt-3 block text-xs font-bold text-stone-700">校对后的文字
+              <textarea data-material-reviewed-text rows="5" class="mt-1 w-full rounded-xl border border-amber-200 bg-white p-3 text-xs leading-relaxed outline-none focus:border-[#123c3a]">${escapeHtml(analysis.reviewedText || analysis.extractedText || "")}</textarea>
+            </label>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button type="button" data-material-review="approved" class="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white">确认模拟结果</button>
+              <button type="button" data-material-review="rejected" class="rounded-lg bg-stone-600 px-4 py-2 text-xs font-bold text-white">退回模拟结果</button>
+            </div>
+          </div>`;
+      }
+      return `
+        <div class="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <strong class="text-xs ${analysis.status === "approved" ? "text-emerald-700" : "text-stone-600"}">${escapeHtml(statusLabel)}</strong>
+            <span class="text-[10px] text-stone-400">不可用于故事</span>
+          </div>
+          ${analysis.reviewedText ? `<p class="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-stone-700">${escapeHtml(analysis.reviewedText)}</p>` : ""}
+        </div>`;
+    }
+
+    function renderMaterialWorkspace(result) {
+      const items = result.items || [];
+      const synthetic = result.synthetic || {};
+      const realCards = items.length ? items.map((item) => `
+        <article class="grid gap-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm md:grid-cols-[220px_1fr]">
+          <div class="overflow-hidden rounded-xl bg-stone-100">
+            ${item.fileUrl
+              ? `<img src="${escapeHtml(item.fileUrl)}" alt="待识别图片" class="h-48 w-full object-cover">`
+              : '<div class="flex h-48 items-center justify-center px-4 text-center text-xs text-stone-400">图片预览暂不可用</div>'}
+          </div>
+          <div>
+            <div class="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-700">已审核并取得原始材料识别授权</p>
+                <h3 class="mt-1 text-sm font-bold text-stone-900">${escapeHtml(item.title)}</h3>
+                <p class="mt-1 text-xs leading-relaxed text-stone-500">${escapeHtml(item.description || "未填写材料说明")}</p>
+              </div>
+              ${item.analysis
+                ? `<span class="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-bold text-stone-600">${escapeHtml(item.analysis.status)}</span>`
+                : `<button type="button" data-material-start="${escapeHtml(item.submissionId)}" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">生成模拟 OCR</button>`}
+            </div>
+            <p class="mt-3 break-all text-[10px] text-stone-400">投稿 ID：${escapeHtml(item.submissionId)} · 投稿人：${escapeHtml(item.contributorName)}</p>
+            ${materialAnalysisPanel(item.analysis)}
+          </div>
+        </article>`).join("") : `
+        <div class="rounded-2xl border border-dashed border-stone-300 bg-white p-6 text-center">
+          <p class="text-sm font-bold text-stone-700">当前没有可识别的真实图片投稿</p>
+          <p class="mt-2 text-xs leading-relaxed text-stone-500">这是正常状态。旧投稿没有授权原始文件识别，不会被自动纳入；用户以后上传时主动勾选新授权，审核通过后才会出现在这里。</p>
+        </div>`;
+
+      list.innerHTML = `
+        <section class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">Multimodal Foundation</p>
+              <h3 class="mt-1 text-lg font-bold text-stone-900">图片材料识别 · 安全模拟阶段</h3>
+              <p class="mt-2 max-w-3xl text-xs leading-relaxed text-stone-600">目前只验证任务、幂等、管理员校对和审计记录。云函数不会下载原图，也不会调用收费 OCR；所有模拟结果都被强制标记为不可进入故事。</p>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+              <div class="rounded-xl bg-white px-3 py-2"><strong class="block text-lg text-[#123c3a]">${Number(result.eligibleCount || 0)}</strong>已授权</div>
+              <div class="rounded-xl bg-white px-3 py-2"><strong class="block text-lg text-amber-700">${Number(result.needsReviewCount || 0)}</strong>待校对</div>
+              <div class="rounded-xl bg-white px-3 py-2"><strong class="block text-lg text-emerald-700">${Number(result.confirmedCount || 0)}</strong>已确认</div>
+            </div>
+          </div>
+        </section>
+        <section class="rounded-2xl border border-blue-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-700">完全虚构的数据</p>
+              <h3 class="mt-1 text-sm font-bold text-stone-900">${escapeHtml(synthetic.title || "虚构图片 OCR 测试")}</h3>
+              <p class="mt-1 text-xs text-stone-500">不读取任何用户文件，可以安全地验证数据库写入与校对流程。</p>
+            </div>
+            <button type="button" data-material-synthetic-test class="rounded-lg bg-blue-700 px-4 py-2 text-xs font-bold text-white">${synthetic.analysis ? "重新生成虚构测试" : "运行虚构测试"}</button>
+          </div>
+          ${materialAnalysisPanel(synthetic.analysis)}
+        </section>
+        <section>
+          <div class="mb-3 flex items-center justify-between px-1">
+            <h3 class="text-sm font-bold text-stone-800">真实投稿授权队列</h3>
+            <span class="text-xs text-stone-400">仅显示已通过且单独授权的图片</span>
+          </div>
+          <div class="grid gap-4">${realCards}</div>
+        </section>`;
+    }
+
+    async function loadMaterialAnalysis() {
+      setActiveView("material-analysis", "材料识别");
+      viewCount.textContent = "正在读取";
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在读取材料识别任务...";
+      try {
+        const result = await callMaterialWorker({ action: "getWorkspace" });
+        renderMaterialWorkspace(result);
+        viewCount.textContent = `${Number(result.eligibleCount || 0)} 条真实材料`;
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "材料识别工作台已就绪，当前不会产生模型费用。";
+      } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+        list.innerHTML = '<div class="rounded-2xl border border-red-200 bg-white p-6 text-sm text-red-700">材料识别云函数尚未就绪。部署 materialWorker 后刷新本页即可。</div>';
+      }
+    }
+
+    async function runSyntheticMaterialTest(button) {
+      button.disabled = true;
+      button.textContent = "正在创建...";
+      try {
+        await callMaterialWorker({ action: "runSyntheticTest" });
+        await loadMaterialAnalysis();
+        message.textContent = "虚构图片识别任务已创建，请校对后确认或退回。";
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "运行虚构测试";
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function startMockMaterialAnalysis(button) {
+      const submissionId = button.dataset.materialStart;
+      button.disabled = true;
+      button.textContent = "正在创建...";
+      try {
+        await callMaterialWorker({ action: "startMockImageAnalysis", submissionId });
+        await loadMaterialAnalysis();
+        message.textContent = "模拟 OCR 已完成，等待管理员校对。";
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "生成模拟 OCR";
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function reviewMaterialAnalysis(card, decision) {
+      const analysisId = card.dataset.materialAnalysisId;
+      const textarea = card.querySelector("[data-material-reviewed-text]");
+      const reviewedText = textarea ? textarea.value.trim() : "";
+      if (decision === "approved" && !reviewedText) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = "确认前请填写校对后的文字。";
+        return;
+      }
+      card.querySelectorAll("button").forEach((button) => { button.disabled = true; });
+      try {
+        await callMaterialWorker({ action: "reviewAnalysis", analysisId, decision, reviewedText });
+        await loadMaterialAnalysis();
+        message.textContent = decision === "approved"
+          ? "模拟识别结果已确认并留下审核记录；它仍不会进入正式故事。"
+          : "模拟识别结果已退回。";
+      } catch (error) {
+        card.querySelectorAll("button").forEach((button) => { button.disabled = false; });
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
     function renderItems(items, urls, resourceOptions) {
       if (!items.length) {
         list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待审投稿。</div>';
@@ -1537,6 +1725,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
     document.getElementById("story-links-refresh").addEventListener("click", loadStoryLinks);
     document.getElementById("story-drafts-refresh").addEventListener("click", loadStoryDrafts);
     document.getElementById("ai-status-refresh").addEventListener("click", loadAiStatus);
+    document.getElementById("material-analysis-refresh").addEventListener("click", loadMaterialAnalysis);
     document.getElementById("resource-preview-refresh").addEventListener("click", loadResourceSeedPreview);
     document.getElementById("list").addEventListener("submit", (event) => {
       if (event.target && event.target.id === "redemption-lookup-form") lookupRedemption(event);
@@ -1590,6 +1779,15 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       if (aiTestButton) runSyntheticAiTest(aiTestButton);
       const aiAnalyzeButton = event.target.closest("button[data-ai-analyze-submission]");
       if (aiAnalyzeButton) analyzeConsentedSubmission(aiAnalyzeButton);
+      const materialSyntheticButton = event.target.closest("button[data-material-synthetic-test]");
+      if (materialSyntheticButton) runSyntheticMaterialTest(materialSyntheticButton);
+      const materialStartButton = event.target.closest("button[data-material-start]");
+      if (materialStartButton) startMockMaterialAnalysis(materialStartButton);
+      const materialReviewButton = event.target.closest("button[data-material-review]");
+      const materialReviewCard = event.target.closest("[data-material-analysis-id]");
+      if (materialReviewButton && materialReviewCard) {
+        reviewMaterialAnalysis(materialReviewCard, materialReviewButton.dataset.materialReview);
+      }
       const aiCandidateCard = event.target.closest("article[data-ai-candidate-id]");
       const aiConfirmButton = event.target.closest("button[data-ai-candidate-confirm]");
       if (aiCandidateCard && aiConfirmButton) confirmAiCandidate(aiCandidateCard);

@@ -2567,7 +2567,8 @@ renderCloudRewards();
         latitude: currentLocation.latitude,
         locationAccuracy: currentLocation.accuracy,
         regionName: '湖北',
-        aiAnalysisConsent: document.getElementById('collect-ai-consent')?.checked === true
+        aiAnalysisConsent: document.getElementById('collect-ai-consent')?.checked === true,
+        materialAnalysisConsent: document.getElementById('collect-material-consent')?.checked === true
       });
       const aiTask = await enqueueCloudAiReview(result.submission.id);
 

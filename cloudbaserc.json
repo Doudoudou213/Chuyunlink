@@ -37,6 +37,19 @@
         "AI_DAILY_CALL_LIMIT": "20",
         "AI_DAILY_TOKEN_LIMIT": "200000"
       }
+    },
+    {
+      "name": "materialWorker",
+      "runtime": "Nodejs18.15",
+      "handler": "index.main",
+      "timeout": 30,
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "ADMIN_UIDS": "lqdTAYa24yVmQUMTrbhs_g,2081931527223812098,2082329461149179906,2082329998590648322,2083323851088859136",
+        "MATERIAL_PROVIDER": "mock",
+        "MATERIAL_MODE": "mock_only"
+      }
     }
   ]
 }

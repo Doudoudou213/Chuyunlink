@@ -3,6 +3,7 @@
     "check:cloudbase": "node tools/validate-cloudbase-build.js",
     "check:resources": "node tools/preview-resource-seed.js && node tools/test-resource-model.js",
     "test:resource-binding": "node tools/test-submission-resource-binding.js",
+    "test:materials": "node tools/test-material-pipeline.js",
     "test:ai": "node tools/test-ai-foundation.js",
     "test:ai-pipeline": "node tools/test-ai-submission-pipeline.js",
     "test:story-drafts": "node tools/test-sourced-story-drafts.js",

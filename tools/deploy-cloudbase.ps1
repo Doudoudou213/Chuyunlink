@@ -68,16 +68,25 @@ function Invoke-CloudBaseCli {
 function Invoke-CloudBaseCliCapture {
   param([Parameter(Mandatory = $true)][string[]]$CliArguments)
 
-  if ($localTcb) {
-    $output = & $localTcb @CliArguments 2>&1
-  } elseif ($npxCommand) {
-    $output = & $npxCommand.Source --yes --package "@cloudbase/cli@$cloudbaseCliVersion" tcb @CliArguments 2>&1
-  } else {
-    throw 'CloudBase CLI was not found. Install Node.js/npm or add @cloudbase/cli as a dev dependency.'
+  $previousErrorActionPreference = $ErrorActionPreference
+  try {
+    # CloudBase CLI writes progress messages to stderr even when the command succeeds.
+    # Capture both streams without allowing PowerShell to promote those messages to terminating errors.
+    $ErrorActionPreference = 'Continue'
+    if ($localTcb) {
+      $output = & $localTcb @CliArguments 2>&1
+    } elseif ($npxCommand) {
+      $output = & $npxCommand.Source --yes --package "@cloudbase/cli@$cloudbaseCliVersion" tcb @CliArguments 2>&1
+    } else {
+      throw 'CloudBase CLI was not found. Install Node.js/npm or add @cloudbase/cli as a dev dependency.'
+    }
+    $cliExitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
   }
 
-  if ($LASTEXITCODE -ne 0) {
-    throw "CloudBase CLI failed with exit code $LASTEXITCODE."
+  if ($cliExitCode -ne 0) {
+    throw "CloudBase CLI failed with exit code $cliExitCode."
   }
   return $output
 }
@@ -112,11 +121,13 @@ try {
   $appCoreScript = Join-Path (Join-Path $cloudFunctionsDirectory 'appCore') 'index.js'
   $adminSubmissionsScript = Join-Path (Join-Path $cloudFunctionsDirectory 'adminSubmissions') 'index.js'
   $storyWorkerScript = Join-Path (Join-Path $cloudFunctionsDirectory 'storyWorker') 'index.js'
+  $materialWorkerScript = Join-Path (Join-Path $cloudFunctionsDirectory 'materialWorker') 'index.js'
 
   Test-JavaScriptSyntax -ScriptPath $cloudbaseAppScript
   Test-JavaScriptSyntax -ScriptPath $appCoreScript
   Test-JavaScriptSyntax -ScriptPath $adminSubmissionsScript
   Test-JavaScriptSyntax -ScriptPath $storyWorkerScript
+  Test-JavaScriptSyntax -ScriptPath $materialWorkerScript
 
   if (-not $StaticOnly) {
     if ($FullFunctionDeploy) {
@@ -139,6 +150,14 @@ try {
       Invoke-CloudBaseCli -CliArguments @('fn', 'code', 'update', 'storyWorker', '-e', $environmentId, '--deployMode', 'zip', '--yes')
     } else {
       Write-Warning 'storyWorker is not initialized yet. Existing deployment continues without it.'
+    }
+
+    if (Test-CloudBaseFunctionExists -FunctionName 'materialWorker') {
+      Write-Host 'Updating materialWorker code while preserving cloud configuration...'
+      Invoke-CloudBaseCli -CliArguments @('fn', 'code', 'update', 'materialWorker', '-e', $environmentId, '--deployMode', 'zip', '--yes')
+    } else {
+      Write-Host 'Creating materialWorker with its safe mock-only configuration...'
+      Invoke-CloudBaseCli -CliArguments @('fn', 'deploy', 'materialWorker', '-e', $environmentId, '--deployMode', 'zip', '--force')
     }
   }
 

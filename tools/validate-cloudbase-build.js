@@ -24,6 +24,10 @@ const requiredFiles = [
   'cloudfunctions/storyWorker/lib/contract.js',
   'cloudfunctions/storyWorker/lib/tokenhub-client.js',
   'cloudfunctions/storyWorker/package.json',
+  'cloudfunctions/materialWorker/index.js',
+  'cloudfunctions/materialWorker/lib/material-contract.js',
+  'cloudfunctions/materialWorker/package.json',
+  'tools/test-material-pipeline.js',
   'tools/test-ai-foundation.js',
   'tools/initialize-story-worker.ps1',
   '.github/workflows/initialize-story-worker.yml',
@@ -43,7 +47,9 @@ const productionTextFiles = [
   'cloudfunctions/storyWorker/index.js',
   'cloudfunctions/storyWorker/lib/config.js',
   'cloudfunctions/storyWorker/lib/contract.js',
-  'cloudfunctions/storyWorker/lib/tokenhub-client.js'
+  'cloudfunctions/storyWorker/lib/tokenhub-client.js',
+  'cloudfunctions/materialWorker/index.js',
+  'cloudfunctions/materialWorker/lib/material-contract.js'
 ];
 const javascriptFiles = [
   'static/cloudbase-app.js',
@@ -57,7 +63,9 @@ const javascriptFiles = [
   'cloudfunctions/storyWorker/index.js',
   'cloudfunctions/storyWorker/lib/config.js',
   'cloudfunctions/storyWorker/lib/contract.js',
-  'cloudfunctions/storyWorker/lib/tokenhub-client.js'
+  'cloudfunctions/storyWorker/lib/tokenhub-client.js',
+  'cloudfunctions/materialWorker/index.js',
+  'cloudfunctions/materialWorker/lib/material-contract.js'
 ];
 const forbiddenPatterns = [
   { label: 'localhost', pattern: /\blocalhost\b/i },

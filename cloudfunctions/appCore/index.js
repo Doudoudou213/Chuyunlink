@@ -595,6 +595,8 @@ function submissionView(item, includeOwnerDetails = false) {
     aiReviewUpdatedAt: item.aiReviewUpdatedAt || null,
     aiAnalysisConsent: item.aiAnalysisConsent === true,
     aiAnalysisStatus: item.aiAnalysisStatus || 'not_requested',
+    materialAnalysisConsent: item.materialAnalysisConsent === true,
+    materialAnalysisStatus: item.materialAnalysisStatus || 'not_requested',
     resourceId: item.resourceId || '',
     resourceBindingStatus: item.resourceBindingStatus || (item.resourceId ? 'confirmed' : 'unbound'),
     likeCount: Math.max(0, Number(item.likeCount) || 0),
@@ -1697,6 +1699,7 @@ async function createSubmission(uid, userInfo, event) {
   const mimeType = cleanText(event.mimeType, 120);
   const size = Number(event.size) || 0;
   const aiAnalysisConsent = event.aiAnalysisConsent === true;
+  const materialAnalysisConsent = event.materialAnalysisConsent === true;
 
   if (!ALLOWED_ASSET_TYPES.has(assetType)) {
     const error = new Error('不支持的素材类型');
@@ -1762,6 +1765,11 @@ async function createSubmission(uid, userInfo, event) {
     aiConsentScope: aiAnalysisConsent ? 'approved_public_submission_text' : '',
     aiConsentAt: aiAnalysisConsent ? db.serverDate() : null,
     aiAnalysisStatus: aiAnalysisConsent ? 'waiting_for_approval' : 'not_requested',
+    materialAnalysisConsent,
+    materialConsentVersion: materialAnalysisConsent ? 'multimodal-material-consent-v1' : '',
+    materialConsentScope: materialAnalysisConsent ? 'approved_original_file_extraction' : '',
+    materialConsentAt: materialAnalysisConsent ? db.serverDate() : null,
+    materialAnalysisStatus: materialAnalysisConsent ? 'waiting_for_approval' : 'not_requested',
     likeCount: 0,
     commentCount: 0,
     completeness: 60,
