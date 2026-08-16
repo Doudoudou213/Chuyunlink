@@ -457,6 +457,195 @@
         top: 68px;
       }
     }
+
+    /* 第一阶段：发现流的“夜漆朱凤”视觉系统 */
+    :root {
+      --chu-night-lacquer: #17110f;
+      --chu-vermilion: #9e2f24;
+      --chu-bone-silk: #f3ebdd;
+      --chu-patina: #496a61;
+      --chu-bronze: #b68a4a;
+      --chu-ink: #2b2421;
+    }
+    #view-discover {
+      position: relative;
+      isolation: isolate;
+      color: var(--chu-ink);
+    }
+    #view-discover::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(circle at 82% 2%, rgba(182, 138, 74, 0.13), transparent 28rem),
+        linear-gradient(180deg, #f8f2e8 0%, var(--chu-bone-silk) 42%, #eee3d2 100%);
+    }
+    .discover-masthead {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(182, 138, 74, 0.36);
+      border-radius: 22px;
+      background:
+        linear-gradient(112deg, rgba(23, 17, 15, 0.98), rgba(73, 27, 23, 0.96)),
+        var(--chu-night-lacquer);
+      box-shadow: 0 20px 50px rgba(54, 28, 22, 0.16);
+      color: #fff8e9;
+    }
+    .discover-masthead::after {
+      content: "楚";
+      position: absolute;
+      right: -0.02em;
+      bottom: -0.38em;
+      color: rgba(243, 235, 221, 0.045);
+      font-family: 'Noto Serif SC', serif;
+      font-size: clamp(9rem, 24vw, 17rem);
+      font-weight: 700;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .discover-kicker {
+      color: #d5b879;
+      font-size: 0.62rem;
+      font-weight: 900;
+      letter-spacing: 0.26em;
+    }
+    .discover-search-shell {
+      border: 1px solid rgba(182, 138, 74, 0.28);
+      background: rgba(255, 251, 243, 0.94);
+      box-shadow: 0 12px 32px rgba(54, 28, 22, 0.08);
+      backdrop-filter: blur(14px);
+    }
+    .discover-feed-heading {
+      color: var(--chu-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .discover-post-card {
+      border: 1px solid rgba(95, 67, 48, 0.18);
+      border-radius: 20px;
+      background: rgba(255, 253, 248, 0.98);
+      box-shadow: 0 14px 36px rgba(65, 39, 27, 0.08);
+      transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+    .discover-post-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(158, 47, 36, 0.34);
+      box-shadow: 0 20px 44px rgba(65, 39, 27, 0.12);
+    }
+    .story-reading-card {
+      position: relative;
+      margin-top: 0.9rem;
+      overflow: hidden;
+      border: 1px solid rgba(158, 47, 36, 0.26);
+      border-radius: 18px;
+      background:
+        linear-gradient(90deg, rgba(158, 47, 36, 0.05) 1px, transparent 1px) 0 0 / 26px 26px,
+        linear-gradient(180deg, #fffaf0, #f7eddd);
+      box-shadow: inset 4px 0 0 var(--chu-vermilion), 0 10px 26px rgba(78, 42, 27, 0.07);
+    }
+    .story-reading-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 5.5rem;
+      height: 5.5rem;
+      border: 1px solid rgba(182, 138, 74, 0.14);
+      border-radius: 0 0 0 100%;
+      pointer-events: none;
+    }
+    .story-seal {
+      display: inline-flex;
+      min-width: 2.15rem;
+      height: 2.15rem;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 248, 233, 0.45);
+      border-radius: 0.38rem;
+      background: var(--chu-vermilion);
+      color: #fff8e9;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.72rem;
+      font-weight: 800;
+      box-shadow: 0 5px 12px rgba(158, 47, 36, 0.2);
+    }
+    .story-trace-disclosure {
+      border-top: 1px solid rgba(95, 67, 48, 0.16);
+    }
+    .story-trace-disclosure summary {
+      min-height: 44px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+    .story-trace-disclosure summary::-webkit-details-marker { display: none; }
+    .story-trace-disclosure summary .story-trace-chevron { transition: transform 180ms ease; }
+    .story-trace-disclosure[open] summary .story-trace-chevron { transform: rotate(180deg); }
+    .story-trace-path {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.45rem;
+    }
+    .story-trace-path::before {
+      content: "";
+      position: absolute;
+      top: 0.85rem;
+      right: 15%;
+      left: 15%;
+      height: 1px;
+      background: linear-gradient(90deg, var(--chu-vermilion), var(--chu-bronze), var(--chu-patina));
+    }
+    .story-trace-node {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+      text-align: center;
+    }
+    .story-trace-node span {
+      display: flex;
+      width: 1.7rem;
+      height: 1.7rem;
+      margin: 0 auto 0.35rem;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #f8efdf;
+      border-radius: 999px;
+      background: var(--chu-vermilion);
+      color: white;
+      font-size: 0.58rem;
+      font-weight: 900;
+    }
+    .story-trace-node:nth-child(2) span { background: var(--chu-bronze); color: var(--chu-night-lacquer); }
+    .story-trace-node:nth-child(3) span { background: var(--chu-patina); }
+    .story-trace-node p {
+      overflow: hidden;
+      color: #66594f;
+      font-size: 0.58rem;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    @media (min-width: 768px) {
+      #discover-share-feed,
+      #discover-needs-feed {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        gap: 1.25rem;
+      }
+      #discover-share-feed > :not([hidden]) ~ :not([hidden]),
+      #discover-needs-feed > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 0;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .discover-post-card,
+      .story-trace-chevron { transition: none !important; }
+      .discover-post-card:hover { transform: none; }
+    }
   </style>
 </head>
 <body class="min-h-screen bg-parchment">
@@ -513,6 +702,15 @@
       
       <!-- 页面 1：发现 (DISCOVER) -->
       <section id="view-discover" class="page-view space-y-4 py-4">
+        <div class="px-4">
+          <div class="discover-masthead px-5 py-6 sm:px-7 sm:py-7">
+            <div class="relative z-[1] max-w-2xl">
+              <p class="discover-kicker">荆楚大众采集志 · CHU CULTURAL ARCHIVE</p>
+              <h2 class="cultural-font mt-3 text-2xl font-black leading-tight text-[#fff3d9] sm:text-3xl">一份投稿，续写一段楚地记忆</h2>
+              <p class="mt-3 max-w-xl text-xs leading-6 text-[#e9ddcb]/75 sm:text-sm">真实采集先被看见，再由已审核资料串成短故事。故事就在投稿下方，来源关系按需展开。</p>
+            </div>
+          </div>
+        </div>
         <div id="onboarding-card" class="hidden px-4">
           <div class="rounded-2xl border border-sandGold/20 bg-gradient-to-r from-deepTeal via-emerald-900 to-stone-900 p-4 text-white shadow-sm">
             <div class="flex items-start justify-between gap-3">
@@ -586,15 +784,15 @@
 
         <!-- 搜索与筛选 -->
         <div class="px-4">
-          <div class="flex items-center bg-stone-100 rounded-xl px-3 py-2 border border-stone-200">
+          <div class="discover-search-shell flex items-center rounded-2xl px-3 py-2.5">
             <i data-lucide="search" class="w-4 h-4 text-stone-400 mr-2"></i>
             <input id="discover-search-input" type="text" oninput="renderDiscoverFeed()" placeholder="搜索景点、文物、技艺衍生线索..." class="bg-transparent text-sm text-stone-800 outline-none w-full">
           </div>
           <div class="mt-3 grid grid-cols-2 gap-2">
-            <button id="discover-board-share" type="button" onclick="setDiscoverBoardFilter('share')" class="rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold shadow-sm">
+            <button id="discover-board-share" type="button" onclick="setDiscoverBoardFilter('share')" class="min-h-11 rounded-xl bg-[#17110f] px-3 py-2 text-xs font-black text-[#e3c98f] shadow-sm">
               <i data-lucide="sparkles" class="mr-1 inline-block h-3.5 w-3.5"></i> 完善科普
             </button>
-            <button id="discover-board-needs" type="button" onclick="setDiscoverBoardFilter('needs')" class="rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-600 shadow-sm">
+            <button id="discover-board-needs" type="button" onclick="setDiscoverBoardFilter('needs')" class="min-h-11 rounded-xl border border-[#b68a4a]/25 bg-[#fffaf1] px-3 py-2 text-xs font-bold text-[#68584c] shadow-sm">
               <i data-lucide="list-plus" class="mr-1 inline-block h-3.5 w-3.5"></i> 待补充
             </button>
           </div>
@@ -623,19 +821,22 @@
         </div>
         <!-- 社区大众采集流 -->
         <div class="px-4 space-y-4">
-          <div class="flex items-center justify-between">
-            <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-              <i data-lucide="radio" class="w-4 h-4 mr-1 text-deepTeal"></i> 社区实时大众采集点
-            </h4>
-            <span id="discover-live-status" class="flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-              <span class="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span> 实时更新中
+          <div class="flex items-end justify-between gap-3 border-b border-[#b68a4a]/25 pb-3">
+            <div>
+              <p class="text-[9px] font-black tracking-[0.2em] text-[#9e2f24]">COMMUNITY STORIES</p>
+              <h4 class="discover-feed-heading mt-1 flex items-center text-base">
+                社区采集与楚韵故事
+              </h4>
+            </div>
+            <span id="discover-live-status" class="flex shrink-0 items-center rounded-full border border-[#496a61]/15 bg-[#496a61]/10 px-2 py-1 text-[10px] font-bold text-[#496a61]">
+              <span class="mr-1 h-1.5 w-1.5 rounded-full bg-[#496a61] animate-pulse"></span> 实时更新
             </span>
           </div>
 
           <div id="discover-share-section" class="space-y-2">
             <div class="flex items-center justify-between">
-              <h5 class="flex items-center text-xs font-black text-deepTeal">
-                <i data-lucide="sparkles" class="mr-1.5 h-4 w-4 text-sandGold"></i> 完善度高 · 科普分享
+              <h5 class="flex items-center text-xs font-black text-[#496a61]">
+                <i data-lucide="sparkles" class="mr-1.5 h-4 w-4 text-[#b68a4a]"></i> 故事优先 · 科普分享
               </h5>
               <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">可申诉</span>
             </div>
@@ -3144,13 +3345,13 @@
       const needsBtn = document.getElementById('discover-board-needs');
       if (shareBtn) {
         shareBtn.className = activeDiscoverBoard === 'share'
-          ? 'rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold shadow-sm'
-          : 'rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-600 shadow-sm';
+          ? 'min-h-11 rounded-xl bg-[#17110f] px-3 py-2 text-xs font-black text-[#e3c98f] shadow-sm'
+          : 'min-h-11 rounded-xl border border-[#b68a4a]/25 bg-[#fffaf1] px-3 py-2 text-xs font-bold text-[#68584c] shadow-sm';
       }
       if (needsBtn) {
         needsBtn.className = activeDiscoverBoard === 'needs'
-          ? 'rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold shadow-sm'
-          : 'rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-600 shadow-sm';
+          ? 'min-h-11 rounded-xl bg-[#17110f] px-3 py-2 text-xs font-black text-[#e3c98f] shadow-sm'
+          : 'min-h-11 rounded-xl border border-[#b68a4a]/25 bg-[#fffaf1] px-3 py-2 text-xs font-bold text-[#68584c] shadow-sm';
       }
       renderDiscoverFeed();
       lucide.createIcons();
@@ -3523,7 +3724,7 @@
         : 'border-amber-200 bg-amber-50 text-amber-700';
       if (item.contentType === 'oral') {
         return `
-          <article onclick="openDiscoverDetail('${escapeJsString(item.id)}')" class="cursor-pointer bg-white rounded-xl border border-stone-200 shadow-sm p-3">
+          <article onclick="openDiscoverDetail('${escapeJsString(item.id)}')" class="discover-post-card cursor-pointer p-3">
             <div class="flex justify-between items-start">
               <span class="bg-sandGold/20 text-deepTeal text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center">
                 <i data-lucide="mic" class="w-3 h-3 mr-0.5"></i> 荆楚民间口述 · 策展内容
@@ -3560,6 +3761,7 @@
             </div>
 
             <p class="text-xs text-stone-500 mt-2 line-clamp-2">${escapeHtml(item.description)}</p>
+            ${renderInlineStoryCard(item)}
             <div class="mt-3 rounded-lg border ${statusClass} p-2">
               <p class="text-[10px] font-bold">${statusText}</p>
             </div>
@@ -3570,7 +3772,7 @@
 
       const imageUrl = item.imageUrl || getMatchedHeritageImage(item);
       return `
-        <article onclick="openDiscoverDetail('${escapeJsString(item.id)}')" class="cursor-pointer bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+        <article onclick="openDiscoverDetail('${escapeJsString(item.id)}')" class="discover-post-card cursor-pointer overflow-hidden">
           <div class="p-3">
             <div class="flex items-start justify-between gap-3">
               <div class="flex min-w-0 items-center gap-2.5">
@@ -3596,6 +3798,7 @@
               ` : renderPhotoReviewPlaceholder(item.region)}
             </div>
 
+            ${renderInlineStoryCard(item)}
             <div class="mt-3 rounded-lg border ${statusClass} p-2">
               <p class="text-[10px] font-bold">${statusText}</p>
             </div>
@@ -3644,25 +3847,46 @@
       const lead = expanded
         ? [story.introduction, story.excerpt].filter(Boolean).join('\n\n')
         : (story.introduction || story.excerpt || '几份来自社区的真实记录，在这里连成了一段可继续补充的文化短故事。');
-      const relationAction = story.resourceId
-        ? `<button type="button" onclick="event.stopPropagation(); if (window.openStoryEvidence) window.openStoryEvidence('${escapeJsString(story.resourceId)}', '${escapeJsString(resourceTitle)}')" class="inline-flex items-center gap-1 rounded-full border border-[#b99855]/40 bg-white px-3 py-1.5 text-[10px] font-bold text-deepTeal transition hover:border-[#b99855] hover:bg-amber-50"><i data-lucide="git-branch" class="h-3 w-3"></i>查看链迹依据</button>`
+      const relationDisclosure = story.resourceId
+        ? `<details class="story-trace-disclosure mt-3" onclick="event.stopPropagation()">
+            <summary class="flex items-center justify-between gap-3 px-4 py-1 text-left text-[10px] font-bold text-[#655448] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#9e2f24]/40">
+              <span class="inline-flex items-center gap-2"><i data-lucide="git-branch" class="h-3.5 w-3.5 text-[#9e2f24]"></i>链迹图（可选查看）</span>
+              <span class="inline-flex items-center gap-1 text-[#8e7968]">${Math.max(1, Number(story.sourceCount) || 1)} 份依据 <i data-lucide="chevron-down" class="story-trace-chevron h-3.5 w-3.5"></i></span>
+            </summary>
+            <div class="px-4 pb-4 pt-2">
+              <div class="story-trace-path" aria-label="投稿记录经审核关联至文化资源">
+                <div class="story-trace-node"><span>录</span><p>社区投稿</p></div>
+                <div class="story-trace-node"><span>证</span><p>审核关联</p></div>
+                <div class="story-trace-node"><span>楚</span><p>${escapeHtml(resourceTitle)}</p></div>
+              </div>
+              <p class="mt-3 text-[10px] leading-5 text-[#79695d]">这段故事由已审核投稿串联而成。展开完整图可核对每份资料、关系类型与记录者。</p>
+              <button type="button" onclick="event.stopPropagation(); if (window.openStoryEvidence) window.openStoryEvidence('${escapeJsString(story.resourceId)}', '${escapeJsString(resourceTitle)}')" class="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-[#496a61]/25 bg-[#496a61]/10 px-3 py-2 text-[10px] font-black text-[#36534c] transition hover:bg-[#496a61]/15"><i data-lucide="route" class="h-3.5 w-3.5"></i>查看完整链迹图与原始记录</button>
+            </div>
+          </details>`
         : '';
       return `
-        <section class="mt-3 overflow-hidden rounded-2xl border border-[#ddcba6] bg-gradient-to-br from-[#fffdf7] via-white to-[#f7f1e5] shadow-[0_8px_24px_rgba(69,51,24,0.06)]">
-          <div class="h-1 bg-gradient-to-r from-[#174847] via-[#b99855] to-[#8f302b]"></div>
+        <section class="story-reading-card">
           <div class="p-4">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <p class="text-[9px] font-black tracking-[0.18em] text-[#9a7136]">楚韵短故事 · ${escapeHtml(resourceTitle)}</p>
-              <span class="rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-700">已审核资料串联</span>
+            <div class="flex items-start gap-3">
+              <span class="story-seal shrink-0">楚述</span>
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="text-[9px] font-black tracking-[0.18em] text-[#9e2f24]">投稿下方的楚韵故事</p>
+                  <span class="rounded-full border border-[#496a61]/15 bg-[#496a61]/10 px-2 py-1 text-[9px] font-bold text-[#496a61]">已审核资料串联</span>
+                </div>
+                <p class="mt-1 truncate text-[10px] text-[#8b735f]">${escapeHtml(resourceTitle)}</p>
+              </div>
             </div>
-            <h4 class="cultural-font mt-2 text-base font-black leading-snug text-stone-900">${escapeHtml(story.title || story.chapterTitle || '一段正在被看见的地方记忆')}</h4>
+            <h4 class="cultural-font mt-3 text-base font-black leading-snug text-[#2b2421]">${escapeHtml(story.title || story.chapterTitle || '一段正在被看见的地方记忆')}</h4>
             ${story.chapterTitle && expanded ? `<p class="mt-3 text-[10px] font-bold text-[#8f302b]">${escapeHtml(story.chapterTitle)}</p>` : ''}
-            <p class="mt-2 ${expanded ? 'whitespace-pre-line text-sm leading-7' : 'line-clamp-3 text-xs leading-6'} text-stone-600">${escapeHtml(lead)}</p>
-            <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#ddcba6]/60 pt-3">
-              <span class="text-[10px] text-stone-400">由 ${Math.max(1, Number(story.sourceCount) || 1)} 份已审核记录共同支撑</span>
-              <div class="flex flex-wrap gap-2">${quickSupplementAction}${relationAction}</div>
+            <p class="mt-2 whitespace-pre-line ${expanded ? 'text-sm leading-7' : 'text-xs leading-6'} text-[#5f534b]">${escapeHtml(lead)}</p>
+            ${quickSupplementAction ? `<div class="mt-3">${quickSupplementAction}</div>` : ''}
+            <div class="mt-3 flex items-center gap-2 text-[10px] text-[#8b796b]">
+              <span class="h-px flex-1 bg-[#b68a4a]/25"></span>
+              <span>由 ${Math.max(1, Number(story.sourceCount) || 1)} 份已审核记录共同支撑</span>
             </div>
           </div>
+          ${relationDisclosure}
         </section>`;
     }
 
@@ -3690,7 +3914,7 @@
 
       if ((item.assetType || '') === 'audio') {
         return `
-          <article onclick="openDiscoverDetail('${escapeJsString(feedItem.id)}')" class="cursor-pointer bg-white rounded-xl border border-stone-200 shadow-sm p-3">
+          <article onclick="openDiscoverDetail('${escapeJsString(feedItem.id)}')" class="discover-post-card cursor-pointer p-3">
             <div class="flex justify-between items-start">
               <span class="bg-sandGold/20 text-deepTeal text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center">
                 <i data-lucide="mic" class="w-3 h-3 mr-0.5"></i> ${getPublicAssetLabel(item)}
@@ -3718,7 +3942,7 @@
       }
 
       return `
-        <article onclick="openDiscoverDetail('${escapeJsString(feedItem.id)}')" class="cursor-pointer bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+        <article onclick="openDiscoverDetail('${escapeJsString(feedItem.id)}')" class="discover-post-card cursor-pointer overflow-hidden">
           <div class="relative">
             ${renderApprovedMedia(item)}
             <div class="absolute top-2 right-2 bg-emerald-600/90 text-white text-[10px] px-2 py-0.5 rounded flex items-center font-semibold">
