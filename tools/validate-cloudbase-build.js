@@ -139,7 +139,8 @@ const stickyCloseControls = [
   ['discover-detail-modal', 'closeDiscoverDetailModal()'],
   ['cloud-discussion-modal', 'id="cloud-discussion-close"'],
   ['cloud-notification-modal', 'id="cloud-notification-close"'],
-  ['cloud-story-evidence-modal', 'id="cloud-story-evidence-close"']
+  ['cloud-story-evidence-modal', 'id="cloud-story-evidence-close"'],
+  ['cloud-resource-detail-modal', 'data-close-resource-detail']
 ];
 for (const [modalId, closeMarker] of stickyCloseControls) {
   const modalStart = modalMarkup.indexOf(`id="${modalId}"`);

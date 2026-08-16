@@ -3629,6 +3629,10 @@
         showToast('相关资源正在同步，请稍后再试', 'clock');
         return;
       }
+      if (typeof window.openUnifiedResourceDetail === 'function') {
+        window.openUnifiedResourceDetail(resourceId);
+        return;
+      }
       const aliases = Array.isArray(resource.legacyAliases) ? resource.legacyAliases : [];
       const contentAlias = aliases.find(alias => alias.type === 'content');
       if (contentAlias) {

@@ -122,6 +122,16 @@ check('相关资源入口内嵌在原有详情并使用可解释推荐', () => {
   assert(cloudClientSource.includes('loadUnifiedRelatedResources'));
 });
 
+check('统一资源详情保持故事优先并渐进展开到访与路线内容', () => {
+  assert(cloudClientSource.includes('id="cloud-resource-detail-modal"'));
+  assert(cloudClientSource.includes('function openUnifiedResourceDetail'));
+  assert(cloudClientSource.includes('data-resource-story'));
+  assert(cloudClientSource.includes('到访与采集提示'));
+  assert(cloudClientSource.includes('路线步骤 · ${routeSteps.length} 站'));
+  assert(cloudClientSource.includes('getResourceDetail'));
+  assert(indexHtml.includes("typeof window.openUnifiedResourceDetail === 'function'"));
+});
+
 check('搜索排序只使用确定性资源字段', () => {
   const base = seed.find((item) => item.id === 'article-yellow-crane-tower');
   const landmark = seed.find((item) => item.id === 'yellow-crane-tower');

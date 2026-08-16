@@ -38,6 +38,7 @@ let storyFeedbackSubmitting = false;
   let unifiedResources = [];
   let unifiedResourceSyncState = { status: 'idle', count: 0, updatedAt: null };
   let unifiedRelatedRequestId = 0;
+  let activeUnifiedResourceDetail = null;
   const legacyToggleSubmissionLike = typeof toggleSubmissionLike === 'function'
     ? toggleSubmissionLike
     : null;
@@ -1856,6 +1857,166 @@ renderCloudRewards();
     return String(value.title || value.name || value.label || value.description || '').trim();
   }
 
+  function unifiedResourceTypeText(type) {
+    return {
+      landmark: '文化点位',
+      hotspot: '守护热点',
+      activity: '社区活动',
+      article: '文化导读',
+      experience: '文化体验',
+      route: '游览路线'
+    }[type] || '文化资源';
+  }
+
+  function injectUnifiedResourceDetailModal() {
+    if (document.getElementById('cloud-resource-detail-modal')) return;
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="cloud-resource-detail-modal" class="hidden fixed inset-0 z-[94] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
+        <section class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-[#f3ebdd] shadow-2xl sm:rounded-3xl">
+          <header class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/10 bg-gradient-to-br from-[#17110f] via-[#351815] to-[#6c2721] px-5 py-4 text-white">
+            <div class="min-w-0">
+              <p id="cloud-resource-detail-kicker" class="text-[9px] font-black tracking-[0.22em] text-[#d7b46e]">统一文化资源</p>
+              <h2 id="cloud-resource-detail-title" class="cultural-font mt-1 text-lg font-black leading-tight text-[#fff5df]">资源详情</h2>
+              <p id="cloud-resource-detail-region" class="mt-1 text-[10px] text-[#eadcca]/70"></p>
+            </div>
+            <button type="button" data-close-resource-detail class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-[#fff5df]" aria-label="关闭资源详情">✕</button>
+          </header>
+          <div id="cloud-resource-detail-content" class="p-4 sm:p-5">
+            <div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在整理资源内容…</div>
+          </div>
+        </section>
+      </div>`);
+    document.querySelectorAll('[data-close-resource-detail]').forEach((button) => button.addEventListener('click', closeUnifiedResourceDetail));
+    document.getElementById('cloud-resource-detail-modal').addEventListener('click', (event) => {
+      if (event.target.id === 'cloud-resource-detail-modal') closeUnifiedResourceDetail();
+    });
+  }
+
+  function closeUnifiedResourceDetail() {
+    document.getElementById('cloud-resource-detail-modal')?.classList.add('hidden');
+    activeUnifiedResourceDetail = null;
+  }
+
+  function unifiedResourceLegacyContent(resource) {
+    const contentId = resourceAliasId(resource, 'content');
+    if (!contentId || typeof getDiscoverFeedItemById !== 'function') return null;
+    return getDiscoverFeedItemById(contentId);
+  }
+
+  function unifiedResourceVisitDetail(resource) {
+    const landmarkId = resourceAliasId(resource, 'landmark') || String(resource.id || '');
+    if (typeof mapPlannerDetails !== 'undefined' && mapPlannerDetails[landmarkId]) return mapPlannerDetails[landmarkId];
+    const transport = resource.transport && typeof resource.transport === 'object' ? resource.transport : {};
+    const access = Array.isArray(transport.modes) ? transport.modes.map(resourceCollectableText).filter(Boolean) : [];
+    const collect = Array.isArray(resource.collectables) ? resource.collectables.map(resourceCollectableText).filter(Boolean) : [];
+    if (!access.length && !collect.length) return null;
+    return { area: resourceRegionText(resource.region), access, collect, arrival: '' };
+  }
+
+  function unifiedResourceRoutePlan(resource) {
+    const routeId = resourceAliasId(resource, 'activity') || String(resource.id || '');
+    if (typeof communityRoutePlans === 'undefined' || !Array.isArray(communityRoutePlans)) return null;
+    return communityRoutePlans.find((item) => item.id === routeId) || null;
+  }
+
+  function renderUnifiedResourceDetail(resource) {
+    const content = document.getElementById('cloud-resource-detail-content');
+    if (!content) return;
+    const legacyContent = unifiedResourceLegacyContent(resource);
+    const visit = unifiedResourceVisitDetail(resource);
+    const route = unifiedResourceRoutePlan(resource);
+    const region = resourceRegionText(resource.region) || '湖北';
+    const access = visit && Array.isArray(visit.access) ? visit.access.filter(Boolean) : [];
+    const collect = visit && Array.isArray(visit.collect) ? visit.collect.filter(Boolean) : [];
+    const routeSteps = route && Array.isArray(route.steps) ? route.steps : [];
+    const completeness = Math.max(0, Math.min(100, Number(resource.completeness) || 0));
+    document.getElementById('cloud-resource-detail-kicker').textContent = `统一文化资源 · ${unifiedResourceTypeText(resource.type)}`;
+    document.getElementById('cloud-resource-detail-title').textContent = resource.title || '资源详情';
+    document.getElementById('cloud-resource-detail-region').textContent = `${region}${completeness ? ` · 资料完整度 ${completeness}%` : ''}`;
+    content.innerHTML = `
+      <article class="overflow-hidden rounded-2xl border border-[#b68a4a]/25 bg-[#fffaf1] shadow-[0_14px_38px_rgba(58,31,23,0.08)]">
+        <div class="border-l-4 border-[#9e2f24] p-5">
+          <p class="text-[9px] font-black tracking-[0.16em] text-[#9e2f24]">文化导读</p>
+          <p class="cultural-font mt-2 text-base font-bold leading-7 text-[#2b2421]">${safeText(resource.summary || '这项文化资源正在由社区持续补充。')}</p>
+          ${legacyContent && legacyContent.researchValue ? `<p class="mt-3 text-xs leading-6 text-stone-600">${safeText(legacyContent.researchValue)}</p>` : ''}
+        </div>
+      </article>
+      <button type="button" data-resource-story class="mt-4 flex min-h-11 w-full items-center justify-between rounded-2xl bg-[#241a17] px-4 text-left text-[#fff5df] shadow-[0_8px_24px_rgba(36,26,23,0.14)]">
+        <span><span class="block text-xs font-bold">阅读共同故事</span><span class="mt-0.5 block text-[9px] text-[#d7b46e]">先读已审核讲述，再按需查看来源和链迹图</span></span>
+        <span class="text-lg text-[#d7b46e]">›</span>
+      </button>
+      ${visit ? `
+        <details class="mt-4 overflow-hidden rounded-2xl border border-[#b68a4a]/25 bg-white">
+          <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold text-[#2b2421]">到访与采集提示<span class="text-[#9e2f24]">展开</span></summary>
+          <div class="space-y-4 border-t border-stone-100 px-4 py-4 text-xs leading-relaxed text-stone-600">
+            ${visit.stay ? `<p><strong class="text-stone-800">建议停留：</strong>${safeText(visit.stay)}</p>` : ''}
+            ${visit.arrival ? `<p><strong class="text-stone-800">现场提示：</strong>${safeText(visit.arrival)}</p>` : ''}
+            ${access.length ? `<div><p class="font-bold text-stone-800">到达方式</p><div class="mt-2 flex flex-wrap gap-2">${access.map((item) => `<span class="rounded-full bg-[#f3ebdd] px-3 py-1.5 text-[10px]">${safeText(item)}</span>`).join('')}</div></div>` : ''}
+            ${collect.length ? `<div><p class="font-bold text-stone-800">适合补充</p><ul class="mt-2 space-y-2">${collect.map((item) => `<li class="flex gap-2"><span class="text-[#9e2f24]">◆</span><span>${safeText(item)}</span></li>`).join('')}</ul></div>` : ''}
+          </div>
+        </details>` : ''}
+      ${routeSteps.length ? `
+        <details class="mt-4 overflow-hidden rounded-2xl border border-[#b68a4a]/25 bg-white">
+          <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold text-[#2b2421]">路线步骤 · ${routeSteps.length} 站<span class="text-[#9e2f24]">展开</span></summary>
+          <div class="border-t border-stone-100 px-4 py-4">
+            <ol class="space-y-4">${routeSteps.map((step, index) => `<li class="relative pl-10"><span class="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-[#9e2f24] text-[10px] font-black text-[#fff5df]">${index + 1}</span><p class="text-xs font-bold text-stone-800">${safeText(step.title || `第 ${index + 1} 站`)}</p><p class="mt-1 text-[10px] leading-relaxed text-stone-500">${safeText(step.guide || step.desc || '')}</p>${step.stay ? `<p class="mt-1 text-[9px] font-bold text-[#8b672d]">${safeText(step.stay)}</p>` : ''}</li>`).join('')}</ol>
+          </div>
+        </details>` : ''}
+      <div class="mt-4 grid gap-2 sm:grid-cols-2">
+        ${resourceAliasId(resource, 'landmark') ? '<button type="button" data-resource-map class="min-h-11 rounded-xl border border-[#9e2f24]/20 bg-white px-4 text-xs font-bold text-[#8f302b]">在地图中查看</button>' : ''}
+        ${resourceAliasId(resource, 'content') ? '<button type="button" data-resource-legacy-content class="min-h-11 rounded-xl border border-[#b68a4a]/30 bg-white px-4 text-xs font-bold text-[#735322]">查看关联投稿</button>' : ''}
+        ${resourceAliasId(resource, 'activity') ? '<button type="button" data-resource-route class="min-h-11 rounded-xl border border-[#9e2f24]/20 bg-white px-4 text-xs font-bold text-[#8f302b]">在地图规划路线</button>' : ''}
+      </div>
+      <p class="mt-4 text-center text-[9px] leading-relaxed text-stone-400">开放时间、票务和道路状态可能变化，请以场馆及地图服务当天信息为准。</p>`;
+    content.querySelector('[data-resource-story]')?.addEventListener('click', () => {
+      closeUnifiedResourceDetail();
+      window.openStoryEvidence?.(resource.id, resource.title, 'story');
+    });
+    content.querySelector('[data-resource-map]')?.addEventListener('click', () => {
+      const landmarkId = resourceAliasId(resource, 'landmark');
+      const landmark = typeof heritageLandmarks !== 'undefined' ? heritageLandmarks.find((item) => item.id === landmarkId) : null;
+      closeUnifiedResourceDetail();
+      if (landmark && typeof switchTab === 'function') {
+        switchTab('map');
+        setTimeout(() => { focusLandmark(landmark); selectMapPlannerPoint(landmark.id, { focusMap: true }); }, 120);
+      }
+    });
+    content.querySelector('[data-resource-legacy-content]')?.addEventListener('click', () => {
+      const contentId = resourceAliasId(resource, 'content');
+      closeUnifiedResourceDetail();
+      if (contentId && typeof openDiscoverDetail === 'function') setTimeout(() => openDiscoverDetail(contentId), 0);
+    });
+    content.querySelector('[data-resource-route]')?.addEventListener('click', () => {
+      const routeId = resourceAliasId(resource, 'activity');
+      closeUnifiedResourceDetail();
+      if (routeId && typeof openActivityRoutesOnMap === 'function') openActivityRoutesOnMap(routeId);
+    });
+  }
+
+  async function openUnifiedResourceDetail(resourceId) {
+    injectUnifiedResourceDetailModal();
+    const fallback = unifiedResources.find((item) => item.id === resourceId) || null;
+    const modal = document.getElementById('cloud-resource-detail-modal');
+    const content = document.getElementById('cloud-resource-detail-content');
+    modal.classList.remove('hidden');
+    document.getElementById('cloud-resource-detail-title').textContent = fallback && fallback.title || '资源详情';
+    document.getElementById('cloud-resource-detail-region').textContent = '正在读取统一资源内容';
+    content.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在整理资源内容…</div>';
+    try {
+      const result = await callCore({ action: 'getResourceDetail', resourceId });
+      activeUnifiedResourceDetail = result && result.item || fallback;
+      if (!activeUnifiedResourceDetail) throw new Error('没有找到这项文化资源');
+      renderUnifiedResourceDetail(activeUnifiedResourceDetail);
+    } catch (error) {
+      if (fallback) {
+        activeUnifiedResourceDetail = fallback;
+        renderUnifiedResourceDetail(fallback);
+        return;
+      }
+      content.innerHTML = `<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">${safeText(error.message || '资源详情暂时无法读取')}</div>`;
+    }
+  }
+
   function setUnifiedResourceSyncState(status, count = 0, error = '') {
     unifiedResourceSyncState = {
       status,
@@ -2744,6 +2905,8 @@ renderCloudRewards();
   window.closeCloudDiscussion = closeCloudDiscussion;
   window.openStoryEvidence = openStoryEvidence;
   window.closeStoryEvidence = closeStoryEvidence;
+  window.openUnifiedResourceDetail = openUnifiedResourceDetail;
+  window.closeUnifiedResourceDetail = closeUnifiedResourceDetail;
   window.openCloudNotifications = openCloudNotifications;
   window.submitCloudManualReview = async () => {
     throw new Error('请使用正式提交按钮将素材写入 CloudBase 审核池');
