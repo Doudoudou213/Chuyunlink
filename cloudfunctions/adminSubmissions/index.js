@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const RESOURCE_SEED = require('./data/resources.v1.json');
 const { createAdminStoryEvidenceService } = require('./domains/story-evidence');
 const { createAdminStoryChainService } = require('./domains/story-chains');
+const { buildResourceBindingCandidates, resourceBindingOption } = require('./domains/resource-binding');
 
 const app = cloudbase.init({
   env: process.env.TCB_ENV || cloudbase.SYMBOL_CURRENT_ENV
@@ -87,6 +88,17 @@ function cleanId(value) {
   return id;
 }
 
+function cleanOptionalResourceId(value) {
+  const id = cleanText(value, 128);
+  if (!id) return '';
+  if (!/^[A-Za-z0-9_-]+$/.test(id)) {
+    const error = new Error('资源 ID 格式不正确');
+    error.code = 'INVALID_RESOURCE_ID';
+    throw error;
+  }
+  return id;
+}
+
 function firstDocument(result) {
   if (!result) return null;
   if (Array.isArray(result.data)) return result.data[0] || null;
@@ -122,7 +134,12 @@ function serializeSubmission(item) {
     aiReviewDecision: item.aiReviewDecision || '',
     aiReviewProvider: item.aiReviewProvider || '',
     aiReviewSummary: item.aiReviewSummary || '',
-    aiReviewUpdatedAt: item.aiReviewUpdatedAt || null
+    aiReviewUpdatedAt: item.aiReviewUpdatedAt || null,
+    resourceId: item.resourceId || '',
+    resourceBindingStatus: item.resourceBindingStatus || (item.resourceId ? 'confirmed' : 'unbound'),
+    resourceBoundAt: item.resourceBoundAt || null,
+    resourceBoundBy: item.resourceBoundBy || '',
+    resourceBindingSource: item.resourceBindingSource || ''
   };
 }
 
@@ -146,7 +163,19 @@ async function listSubmissions(event) {
     .limit(limit)
     .get();
 
-  const items = (result.data || []).map(serializeSubmission);
+  const rawItems = result.data || [];
+  const items = rawItems.map(serializeSubmission);
+  let resources = [];
+  try {
+    const resourceResult = await db.collection(RESOURCE_COLLECTION)
+      .where({ status: 'published' })
+      .limit(100)
+      .get();
+    resources = resourceResult.data || [];
+  } catch (error) {
+    console.warn('[adminSubmissions] unable to load resource binding options', error);
+  }
+  const resourceOptions = resources.map(resourceBindingOption).filter((item) => item.id);
   const fileIDs = items.map((item) => item.imageFileID).filter(Boolean).slice(0, 50);
   let urls = new Map();
   if (fileIDs.length) {
@@ -162,8 +191,10 @@ async function listSubmissions(event) {
     ok: true,
     action: 'list',
     status: requestedStatus,
+    resourceOptions,
     items: items.map((item) => ({
       ...item,
+      resourceCandidates: buildResourceBindingCandidates(item, resources, 6),
       fileUrl: urls.get(item.imageFileID) || ''
     }))
   };
@@ -173,6 +204,9 @@ async function reviewSubmission(event, reviewerId) {
   const submissionId = cleanId(event.submissionId);
   const nextStatus = cleanText(event.status, 32);
   const reviewNote = cleanText(event.reviewNote, 500);
+  const requestedResourceId = nextStatus === 'approved'
+    ? cleanOptionalResourceId(event.resourceId)
+    : '';
 
   if (!ALLOWED_REVIEW_STATUSES.has(nextStatus)) {
     const error = new Error('审核结果只能是通过、拒绝或需修改');
@@ -200,6 +234,18 @@ async function reviewSubmission(event, reviewerId) {
       throw error;
     }
 
+    let selectedResource = null;
+    if (requestedResourceId) {
+      selectedResource = firstDocument(
+        await transaction.collection(RESOURCE_COLLECTION).doc(requestedResourceId).get()
+      );
+      if (!selectedResource || selectedResource.status !== 'published') {
+        const error = new Error('所选资源不存在或尚未发布');
+        error.code = 'RESOURCE_NOT_AVAILABLE';
+        throw error;
+      }
+    }
+
     const reviewedAt = db.serverDate();
     const rewardPoints = nextStatus === 'approved'
       ? Math.max(0, Math.min(Number(current.rewardPoints) || 100, 1000))
@@ -212,6 +258,11 @@ async function reviewSubmission(event, reviewerId) {
       aiAnalysisStatus: current.aiAnalysisConsent === true && nextStatus === 'approved'
         ? 'eligible'
         : (current.aiAnalysisConsent === true ? 'not_eligible' : 'not_requested'),
+      resourceId: requestedResourceId,
+      resourceBindingStatus: requestedResourceId ? 'confirmed' : 'unbound',
+      resourceBoundAt: requestedResourceId ? reviewedAt : null,
+      resourceBoundBy: requestedResourceId ? reviewerId : '',
+      resourceBindingSource: requestedResourceId ? 'admin_review' : '',
       updatedAt: reviewedAt
     });
 
@@ -260,6 +311,9 @@ async function reviewSubmission(event, reviewerId) {
       aiReviewDecision: current.aiReviewDecision || '',
       aiReviewProvider: current.aiReviewProvider || '',
       aiReviewSummary: current.aiReviewSummary || '',
+      resourceId: requestedResourceId,
+      resourceTitle: selectedResource ? selectedResource.title || '' : '',
+      resourceBindingSource: requestedResourceId ? 'admin_review' : '',
       createdAt: db.serverDate()
     });
 
@@ -271,7 +325,66 @@ async function reviewSubmission(event, reviewerId) {
       status: nextStatus,
       reviewNote,
       reviewerId,
-      rewardPoints
+      rewardPoints,
+      resourceId: requestedResourceId,
+      resourceTitle: selectedResource ? selectedResource.title || '' : ''
+    };
+  });
+}
+
+async function bindSubmissionResource(event, reviewerId) {
+  const submissionId = cleanId(event.submissionId);
+  const resourceId = cleanOptionalResourceId(event.resourceId);
+  return db.runTransaction(async (transaction) => {
+    const submissionRef = transaction.collection(SUBMISSION_COLLECTION).doc(submissionId);
+    const current = firstDocument(await submissionRef.get());
+    if (!current) {
+      const error = new Error('没有找到这条投稿');
+      error.code = 'SUBMISSION_NOT_FOUND';
+      throw error;
+    }
+    if (current.status !== 'approved') {
+      const error = new Error('只有已通过投稿可以补充资源关联');
+      error.code = 'SUBMISSION_NOT_APPROVED';
+      throw error;
+    }
+
+    let selectedResource = null;
+    if (resourceId) {
+      selectedResource = firstDocument(
+        await transaction.collection(RESOURCE_COLLECTION).doc(resourceId).get()
+      );
+      if (!selectedResource || selectedResource.status !== 'published') {
+        const error = new Error('所选资源不存在或尚未发布');
+        error.code = 'RESOURCE_NOT_AVAILABLE';
+        throw error;
+      }
+    }
+
+    const changedAt = db.serverDate();
+    await submissionRef.update({
+      resourceId,
+      resourceBindingStatus: resourceId ? 'confirmed' : 'unbound',
+      resourceBoundAt: resourceId ? changedAt : null,
+      resourceBoundBy: resourceId ? reviewerId : '',
+      resourceBindingSource: resourceId ? 'admin_binding_workspace' : '',
+      updatedAt: changedAt
+    });
+    await transaction.collection('moderation_logs').add({
+      action: 'submission_resource_binding',
+      submissionId,
+      previousResourceId: current.resourceId || '',
+      resourceId,
+      resourceTitle: selectedResource ? selectedResource.title || '' : '',
+      reviewerId,
+      createdAt: db.serverDate()
+    });
+    return {
+      ok: true,
+      action: 'bindSubmissionResource',
+      submissionId,
+      resourceId,
+      resourceTitle: selectedResource ? selectedResource.title || '' : ''
     };
   });
 }
@@ -1192,6 +1305,7 @@ exports.main = async (event = {}) => {
     await ensureInteractionCollections();
     if (action === 'list') return await listSubmissions(event);
     if (action === 'review') return await reviewSubmission(event, callerUid);
+    if (action === 'bindSubmissionResource') return await bindSubmissionResource(event, callerUid);
     if (action === 'listSupplements') return await listSupplements(event);
     if (action === 'reviewSupplement') return await reviewSupplement(event, callerUid);
     if (action === 'listComments') return await listComments(event);

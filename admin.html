@@ -45,6 +45,7 @@
           </div>
           <div id="admin-navigation" class="flex flex-wrap gap-2">
             <button id="refresh" data-admin-view="submissions" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">待审投稿</button>
+            <button id="resource-binding-refresh" data-admin-view="resource-bindings" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">投稿关联</button>
             <button id="supplement-refresh" data-admin-view="supplements" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">待审补充</button>
             <button id="comment-refresh" data-admin-view="comments" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">评论管理</button>
             <button id="report-refresh" data-admin-view="reports" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">内容举报</button>
@@ -224,7 +225,7 @@
         const items = result.items || [];
         let urls = new Map();
         try { urls = await resolveUrls(items); } catch (_) {}
-        renderItems(items, urls);
+        renderItems(items, urls, result.resourceOptions || []);
         viewCount.textContent = `${items.length} 条`;
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = `已读取 ${items.length} 条待审投稿。`;
@@ -813,6 +814,102 @@
       `;
     }
 
+    function resourceBindingSelectHtml(item, resourceOptions, selectClass = "") {
+      const selectedId = String(item.resourceId || "");
+      const candidates = Array.isArray(item.resourceCandidates) ? item.resourceCandidates : [];
+      const candidateIds = new Set(candidates.map((candidate) => candidate.id));
+      const optionById = new Map((resourceOptions || []).map((option) => [option.id, option]));
+      const selectedMissing = selectedId && !optionById.has(selectedId);
+      const candidateOptions = candidates.map((candidate) => {
+        const reason = (candidate.reasons || []).slice(0, 1).join(" · ");
+        return `<option value="${escapeHtml(candidate.id)}" ${selectedId === candidate.id ? "selected" : ""}>候选：${escapeHtml(candidate.title)}${reason ? `｜${escapeHtml(reason)}` : ""}</option>`;
+      }).join("");
+      const otherOptions = (resourceOptions || [])
+        .filter((option) => !candidateIds.has(option.id))
+        .map((option) => `<option value="${escapeHtml(option.id)}" ${selectedId === option.id ? "selected" : ""}>${escapeHtml(option.regionName ? `${option.regionName}｜` : "")}${escapeHtml(option.title)}</option>`)
+        .join("");
+      return `
+        <select data-resource-binding-select class="${selectClass} w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-xs outline-none focus:border-[#123c3a]">
+          <option value="" ${selectedId ? "" : "selected"}>暂不关联资源</option>
+          ${selectedMissing ? `<option value="${escapeHtml(selectedId)}" selected>当前关联：${escapeHtml(selectedId)}</option>` : ""}
+          ${candidateOptions}
+          ${otherOptions}
+        </select>`;
+    }
+
+    function resourceCandidateHint(item) {
+      const candidate = Array.isArray(item.resourceCandidates) ? item.resourceCandidates[0] : null;
+      if (!candidate) return "系统未找到可靠候选，可留空或由管理员手动选择。";
+      const reasons = (candidate.reasons || []).join(" · ");
+      return `候选首位：${candidate.title}${reasons ? `（${reasons}）` : ""}。系统不会自动绑定，请人工确认。`;
+    }
+
+    async function loadResourceBindings() {
+      setActiveView("resource-bindings", "已通过投稿关联");
+      message.className = "mt-2 text-xs text-stone-500";
+      message.textContent = "正在读取已通过投稿和资源候选...";
+      list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在准备投稿关联工作台…</div>';
+      try {
+        const result = await callAdmin({ action: "list", status: "approved", limit: 50 });
+        const items = result.items || [];
+        renderResourceBindingItems(items, result.resourceOptions || []);
+        viewCount.textContent = `${items.length} 条`;
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "只保存管理员明确选择的资源；留空不会自动归类。";
+      } catch (error) {
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    function renderResourceBindingItems(items, resourceOptions) {
+      if (!items.length) {
+        list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有已通过投稿。</div>';
+        return;
+      }
+      list.innerHTML = items.map((item) => `
+        <article data-binding-submission-id="${escapeHtml(item.id)}" class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="font-bold text-stone-900">${escapeHtml(item.title || "未命名投稿")}</h3>
+                <span class="rounded-full ${item.resourceId ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"} px-2 py-1 text-[10px] font-bold">${item.resourceId ? "已关联" : "待关联"}</span>
+              </div>
+              <p class="mt-1 text-xs leading-relaxed text-stone-500">${escapeHtml(item.description || "未填写说明")}</p>
+              <p class="mt-2 text-[10px] text-stone-400">投稿 ID：${escapeHtml(item.id)} · ${escapeHtml(item.regionName || "湖北")}</p>
+            </div>
+          </div>
+          <div class="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <p class="mb-2 text-[10px] leading-relaxed text-stone-500">${escapeHtml(resourceCandidateHint(item))}</p>
+            <div class="flex flex-col gap-2 sm:flex-row">
+              ${resourceBindingSelectHtml(item, resourceOptions, "flex-1")}
+              <button type="button" data-save-resource-binding class="shrink-0 rounded-xl bg-[#123c3a] px-4 py-2.5 text-xs font-bold text-[#d9ad52]">保存关联</button>
+            </div>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    async function saveResourceBinding(card, button) {
+      const submissionId = card.dataset.bindingSubmissionId;
+      const select = card.querySelector("[data-resource-binding-select]");
+      const resourceId = select ? select.value : "";
+      button.disabled = true;
+      try {
+        const result = await callAdmin({ action: "bindSubmissionResource", submissionId, resourceId });
+        const successMessage = result.resourceId
+          ? `已将投稿关联到：${result.resourceTitle || result.resourceId}`
+          : "已取消这条投稿的资源关联。";
+        await loadResourceBindings();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = successMessage;
+      } catch (error) {
+        button.disabled = false;
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
     function showResourceSeedConfirmation(button) {
       const card = button.closest("[data-resource-import-card]");
       if (!card) return;
@@ -1361,7 +1458,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       }
     }
 
-    function renderItems(items, urls) {
+    function renderItems(items, urls, resourceOptions) {
       if (!items.length) {
         list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待审投稿。</div>';
         return;
@@ -1385,6 +1482,11 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
                 <span class="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700">待审核</span>
               </div>
               <p class="mt-3 break-all text-[10px] leading-relaxed text-stone-400">投稿人：${escapeHtml(item.contributorName || item.userId)}<br>投稿 ID：${id}<br>位置：${escapeHtml(item.regionName || "湖北")} ${escapeHtml(item.longitude)}，${escapeHtml(item.latitude)}<br>初审状态：${escapeHtml(initialReviewLabel(item.aiReviewStatus))}${item.aiReviewSummary ? ` · ${escapeHtml(item.aiReviewSummary)}` : ""}<br>通过奖励：${Number(item.rewardPoints || 100)} 积分</p>
+              <div class="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+                <label class="text-xs font-bold text-stone-700">归入统一资源（可选）</label>
+                <p class="mt-1 text-[10px] leading-relaxed text-stone-500">${escapeHtml(resourceCandidateHint(item))}</p>
+                <div class="mt-2">${resourceBindingSelectHtml(item, resourceOptions)}</div>
+              </div>
               <textarea rows="3" placeholder="拒绝或要求修改时必须填写审核说明" class="mt-3 w-full rounded-xl border border-stone-200 p-3 text-xs outline-none focus:border-[#d9ad52]"></textarea>
               <div class="mt-3 flex flex-wrap gap-2">
                 <button data-status="approved" class="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white">通过并发积分</button>
@@ -1399,6 +1501,8 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
     async function review(card, status) {
       const submissionId = card.dataset.id;
       const reviewNote = card.querySelector("textarea").value.trim();
+      const resourceSelect = card.querySelector("[data-resource-binding-select]");
+      const resourceId = status === "approved" && resourceSelect ? resourceSelect.value : "";
       if (status !== "approved" && !reviewNote) {
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = "拒绝或要求修改时必须填写审核说明。";
@@ -1407,10 +1511,10 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       const buttons = card.querySelectorAll("button");
       buttons.forEach((button) => { button.disabled = true; });
       try {
-        const result = await callAdmin({ action: "review", submissionId, status, reviewNote });
+        const result = await callAdmin({ action: "review", submissionId, status, reviewNote, resourceId });
         card.remove();
         message.className = "mt-2 text-xs text-emerald-700";
-        message.textContent = `审核完成：${submissionId} → ${status}${result.rewardPoints ? `，已发放 ${result.rewardPoints} 积分` : ""}`;
+        message.textContent = `审核完成：${submissionId} → ${status}${result.rewardPoints ? `，已发放 ${result.rewardPoints} 积分` : ""}${result.resourceId ? `，已关联 ${result.resourceTitle || result.resourceId}` : ""}`;
         if (!list.querySelector("article")) {
           list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待审投稿。</div>';
         }
@@ -1423,6 +1527,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
 
     document.getElementById("login-form").addEventListener("submit", login);
     document.getElementById("refresh").addEventListener("click", loadPending);
+    document.getElementById("resource-binding-refresh").addEventListener("click", loadResourceBindings);
     document.getElementById("supplement-refresh").addEventListener("click", loadSupplements);
     document.getElementById("comment-refresh").addEventListener("click", loadComments);
     document.getElementById("comment-filter-apply").addEventListener("click", loadComments);
@@ -1449,6 +1554,9 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       const button = event.target.closest("button[data-status]");
       const card = event.target.closest("article[data-id]");
       if (button && card) review(card, button.dataset.status);
+      const resourceBindingButton = event.target.closest("button[data-save-resource-binding]");
+      const resourceBindingCard = event.target.closest("article[data-binding-submission-id]");
+      if (resourceBindingButton && resourceBindingCard) saveResourceBinding(resourceBindingCard, resourceBindingButton);
       const supplementButton = event.target.closest("button[data-supplement-status]");
       const supplementCard = event.target.closest("article[data-supplement-id]");
       if (supplementButton && supplementCard) {

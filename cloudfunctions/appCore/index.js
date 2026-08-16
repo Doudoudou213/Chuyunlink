@@ -595,6 +595,8 @@ function submissionView(item, includeOwnerDetails = false) {
     aiReviewUpdatedAt: item.aiReviewUpdatedAt || null,
     aiAnalysisConsent: item.aiAnalysisConsent === true,
     aiAnalysisStatus: item.aiAnalysisStatus || 'not_requested',
+    resourceId: item.resourceId || '',
+    resourceBindingStatus: item.resourceBindingStatus || (item.resourceId ? 'confirmed' : 'unbound'),
     likeCount: Math.max(0, Number(item.likeCount) || 0),
     commentCount: Math.max(0, Number(item.commentCount) || 0),
     completeness,
