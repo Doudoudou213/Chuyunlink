@@ -19,10 +19,10 @@
       theme: {
         extend: {
           colors: {
-            sandGold: '#C5A880',    // 流沙金
-            deepTeal: '#2C4C4E',    // 黛青色
-            cinnabarRed: '#962D2D', // 朱砂红
-            parchment: '#F9F8F4',   // 宣纸白
+            sandGold: '#B68A4A',    // 鎏金
+            deepTeal: '#241A17',    // 夜漆墨（保留旧 token 名兼容全站）
+            cinnabarRed: '#9E2F24', // 楚朱红
+            parchment: '#F3EBDD',   // 骨白
           }
         }
       }
@@ -628,6 +628,50 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .story-evidence-shell {
+      background:
+        radial-gradient(circle at 92% 0%, rgba(182, 138, 74, 0.13), transparent 22rem),
+        linear-gradient(180deg, #f8f0e3 0%, #f3ebdd 100%);
+      color: var(--chu-ink);
+    }
+    .story-evidence-header {
+      border-bottom: 1px solid rgba(182, 138, 74, 0.32);
+      background: linear-gradient(110deg, rgba(23, 17, 15, 0.98), rgba(83, 29, 24, 0.97));
+      color: #fff5df;
+      box-shadow: 0 10px 30px rgba(41, 21, 17, 0.18);
+    }
+    .story-evidence-tabs {
+      border: 1px solid rgba(182, 138, 74, 0.2);
+      background: rgba(255, 250, 241, 0.74);
+    }
+    .story-evidence-tab {
+      min-height: 44px;
+      border-radius: 0.7rem;
+      color: #75665b;
+      font-size: 0.72rem;
+      font-weight: 800;
+      transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    }
+    .story-evidence-tab.is-active {
+      background: var(--chu-night-lacquer);
+      color: #e6c789;
+      box-shadow: 0 7px 16px rgba(44, 25, 20, 0.14);
+    }
+    .story-source-note {
+      border: 1px solid rgba(182, 138, 74, 0.26);
+      border-left: 4px solid var(--chu-vermilion);
+      background: rgba(255, 250, 241, 0.9);
+    }
+    .story-chapter-rail::before {
+      content: "";
+      position: absolute;
+      top: 1.8rem;
+      bottom: -1.25rem;
+      left: 0.82rem;
+      width: 1px;
+      background: linear-gradient(180deg, rgba(158, 47, 36, 0.52), rgba(182, 138, 74, 0.18));
+    }
+    .story-chapter-rail:last-of-type::before { display: none; }
     @media (min-width: 768px) {
       #discover-share-feed,
       #discover-needs-feed {
@@ -712,7 +756,7 @@
           </div>
         </div>
         <div id="onboarding-card" class="hidden px-4">
-          <div class="rounded-2xl border border-sandGold/20 bg-gradient-to-r from-deepTeal via-emerald-900 to-stone-900 p-4 text-white shadow-sm">
+          <div class="rounded-2xl border border-sandGold/20 bg-gradient-to-r from-[#17110f] via-[#4b1d19] to-[#241a17] p-4 text-white shadow-sm">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-[10px] uppercase tracking-[0.24em] text-sandGold/80">新手引导</p>
@@ -800,7 +844,7 @@
 
         <!-- 濒危重点推荐 -->
         <div class="px-4">
-          <button type="button" onclick="openEndangeredHotspot('suizhou-window-carving')" class="block w-full bg-gradient-to-r from-deepTeal to-emerald-900 rounded-2xl p-4 text-left text-white relative overflow-hidden shadow-md transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-sandGold focus:ring-offset-2" aria-label="查看随州楚式花窗木雕守护热点详情">
+          <button type="button" onclick="openEndangeredHotspot('suizhou-window-carving')" class="block w-full bg-gradient-to-r from-[#241a17] via-[#4d1e1a] to-[#7d2b23] rounded-2xl p-4 text-left text-white relative overflow-hidden shadow-md transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-sandGold focus:ring-offset-2" aria-label="查看随州楚式花窗木雕守护热点详情">
             <div class="absolute right-[-10px] bottom-[-10px] opacity-10">
               <i data-lucide="compass" class="w-32 h-32"></i>
             </div>
@@ -835,10 +879,10 @@
 
           <div id="discover-share-section" class="space-y-2">
             <div class="flex items-center justify-between">
-              <h5 class="flex items-center text-xs font-black text-[#496a61]">
+              <h5 class="flex items-center text-xs font-black text-[#5f4635]">
                 <i data-lucide="sparkles" class="mr-1.5 h-4 w-4 text-[#b68a4a]"></i> 故事优先 · 科普分享
               </h5>
-              <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">可申诉</span>
+              <span class="rounded-full border border-[#b68a4a]/20 bg-[#b68a4a]/10 px-2 py-0.5 text-[10px] font-bold text-[#775426]">可申诉</span>
             </div>
             <div id="discover-share-feed" class="space-y-3"></div>
           </div>
@@ -3720,7 +3764,7 @@
         ? `内容完整度 ${completeness}% · 科普分享`
         : `内容完整度 ${completeness}% · 等待补充`;
       const statusClass = board === 'share'
-        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        ? 'border-[#b68a4a]/25 bg-[#f7edda] text-[#735322]'
         : 'border-amber-200 bg-amber-50 text-amber-700';
       if (item.contentType === 'oral') {
         return `
@@ -3860,7 +3904,7 @@
                 <div class="story-trace-node"><span>楚</span><p>${escapeHtml(resourceTitle)}</p></div>
               </div>
               <p class="mt-3 text-[10px] leading-5 text-[#79695d]">这段故事由已审核投稿串联而成。展开完整图可核对每份资料、关系类型与记录者。</p>
-              <button type="button" onclick="event.stopPropagation(); if (window.openStoryEvidence) window.openStoryEvidence('${escapeJsString(story.resourceId)}', '${escapeJsString(resourceTitle)}')" class="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-[#496a61]/25 bg-[#496a61]/10 px-3 py-2 text-[10px] font-black text-[#36534c] transition hover:bg-[#496a61]/15"><i data-lucide="route" class="h-3.5 w-3.5"></i>查看完整链迹图与原始记录</button>
+              <button type="button" onclick="event.stopPropagation(); if (window.openStoryEvidence) window.openStoryEvidence('${escapeJsString(story.resourceId)}', '${escapeJsString(resourceTitle)}', 'graph')" class="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-[#9e2f24]/20 bg-[#f6e8e2] px-3 py-2 text-[10px] font-black text-[#7d2b23] transition hover:bg-[#f1d9d0]"><i data-lucide="route" class="h-3.5 w-3.5"></i>查看完整链迹图与原始记录</button>
             </div>
           </details>`
         : '';
@@ -3906,7 +3950,7 @@
       const approvedBoard = getDiscoverBoard(feedItem);
       const approvedCompleteness = getDiscoverCompleteness(feedItem);
       const approvedStatusClass = approvedBoard === 'share'
-        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        ? 'border-[#b68a4a]/25 bg-[#f7edda] text-[#735322]'
         : 'border-amber-200 bg-amber-50 text-amber-700';
       const approvedStatusText = approvedBoard === 'share'
         ? `采集完善度 ${approvedCompleteness}% · 科普分享`
@@ -3945,7 +3989,7 @@
         <article onclick="openDiscoverDetail('${escapeJsString(feedItem.id)}')" class="discover-post-card cursor-pointer overflow-hidden">
           <div class="relative">
             ${renderApprovedMedia(item)}
-            <div class="absolute top-2 right-2 bg-emerald-600/90 text-white text-[10px] px-2 py-0.5 rounded flex items-center font-semibold">
+            <div class="absolute top-2 right-2 bg-[#496a61]/95 text-white text-[10px] px-2 py-0.5 rounded flex items-center font-semibold">
               <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i> 管理员已通过
             </div>
             <div class="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded flex items-center backdrop-blur-xs">

@@ -27,7 +27,7 @@ let rewardRedeemPending = false;
 let pendingCommentRequestId = '';
 let pendingCommentFingerprint = '';
 let activeStoryEvidenceResult = null;
-let activeStoryEvidenceView = 'graph';
+let activeStoryEvidenceView = 'story';
 let activeStoryEvidenceNodeId = '';
   let cloudNotifications = [];
   let cloudNotificationUnreadCount = 0;
@@ -705,16 +705,16 @@ feedback_closed: '反馈处理',
     if (document.getElementById('cloud-story-evidence-modal')) return;
     document.body.insertAdjacentHTML('beforeend', `
       <div id="cloud-story-evidence-modal" class="hidden fixed inset-0 z-[96] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
-        <section class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl bg-[#faf8f2] shadow-2xl sm:rounded-3xl">
-          <header class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-stone-200 bg-[#faf8f2]/95 px-5 py-4 backdrop-blur">
+        <section class="story-evidence-shell max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl shadow-2xl sm:rounded-3xl">
+          <header class="story-evidence-header sticky top-0 z-10 flex items-start justify-between gap-4 px-5 py-4">
             <div>
-              <p class="text-[9px] font-black tracking-[0.24em] text-sandGold">楚韵链迹 · 共同讲述</p>
-              <h2 id="cloud-story-evidence-title" class="mt-1 text-lg font-black text-stone-900">链迹故事</h2>
-              <p id="cloud-story-evidence-subtitle" class="mt-1 text-[10px] text-stone-500">由社区共同留下的真实文化资料</p>
+              <p class="text-[9px] font-black tracking-[0.24em] text-[#d7b46e]">楚韵链迹 · 共同讲述</p>
+              <h2 id="cloud-story-evidence-title" class="cultural-font mt-1 text-lg font-black text-[#fff5df]">链迹故事</h2>
+              <p id="cloud-story-evidence-subtitle" class="mt-1 text-[10px] text-[#e7d7c4]/70">由社区共同留下的真实文化资料</p>
             </div>
-            <button id="cloud-story-evidence-close" type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm" aria-label="关闭链迹故事">✕</button>
+            <button id="cloud-story-evidence-close" type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-[#fff5df]" aria-label="关闭链迹故事">✕</button>
           </header>
-          <div id="cloud-story-evidence-content" class="p-5">
+          <div id="cloud-story-evidence-content" class="p-4 sm:p-5">
             <div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在整理资料来源...</div>
           </div>
         </section>
@@ -878,7 +878,7 @@ feedback_closed: '反馈处理',
     let runningIndex = 0;
     return `
       <div class="space-y-4">
-        <section class="relative overflow-hidden rounded-2xl border border-[#d8c6a7] bg-gradient-to-br from-[#173f40] to-[#285b58] px-5 py-5 text-white shadow-sm">
+        <section class="relative overflow-hidden rounded-2xl border border-[#b68a4a]/35 bg-gradient-to-br from-[#17110f] via-[#3c1b18] to-[#772a23] px-5 py-5 text-white shadow-sm">
           <div class="absolute -right-8 -top-8 h-28 w-28 rounded-full border border-white/10"></div>
           <div class="absolute -right-2 top-5 h-16 w-16 rounded-full border border-[#d9ad52]/20"></div>
           <p class="text-[9px] font-black tracking-[0.2em] text-[#e3bd69]">链迹起点</p>
@@ -909,7 +909,7 @@ feedback_closed: '反馈处理',
                   return `
                     <article data-story-evidence-node="${safeText(item.id)}" role="button" tabindex="0" class="group cursor-pointer rounded-2xl border ${selected ? 'border-[#b99855] bg-[#fffaf0] ring-2 ring-[#b99855]/15' : 'border-stone-200 bg-white hover:border-[#b99855]/60'} p-4 shadow-sm transition">
                       <div class="flex items-start gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${selected ? 'bg-[#173f40] text-[#e3bd69]' : 'bg-[#edf3f1] text-[#315c5c]'} text-[10px] font-black">${runningIndex}</span>
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${selected ? 'bg-[#241a17] text-[#e3bd69]' : 'bg-[#f3e8d7] text-[#7d2b23]'} text-[10px] font-black">${runningIndex}</span>
                         <div class="min-w-0 flex-1">
                           <div class="flex items-start justify-between gap-2">
                             <h5 class="text-xs font-black leading-5 text-stone-800">${safeText(submission.title || '社区文化记录')}</h5>
@@ -932,7 +932,7 @@ feedback_closed: '反馈处理',
               <h4 class="mt-1 text-sm font-bold text-stone-900">${safeText(selectedSubmission.title || '社区文化记录')}</h4>
               <p class="mt-1 text-[11px] leading-5 text-stone-500">${safeText(selectedItem.evidenceSummary)}</p>
             </div>
-            <button type="button" data-story-open-timeline="${safeText(selectedItem.id)}" class="mt-3 shrink-0 rounded-xl bg-[#173f40] px-4 py-2.5 text-[10px] font-bold text-[#e3bd69] sm:mt-0">查看完整记录</button>
+            <button type="button" data-story-open-timeline="${safeText(selectedItem.id)}" class="mt-3 min-h-11 shrink-0 rounded-xl bg-[#241a17] px-4 py-2.5 text-[10px] font-bold text-[#e3bd69] sm:mt-0">查看完整记录</button>
           </section>` : ''}
         ${(result.items || []).length > items.length ? `<p class="text-center text-[9px] text-stone-400">当前展示前 ${items.length} 份资料，完整内容保留在资料时间线中。</p>` : ''}
       </div>`;
@@ -945,7 +945,7 @@ feedback_closed: '反馈处理',
         const date = submission.createdAt ? new Date(submission.createdAt).toLocaleDateString('zh-CN') : '记录时间待补充';
         return `
           <article id="story-timeline-${safeText(item.id)}" class="relative pl-11">
-            <span class="absolute left-0 top-4 z-[1] flex h-9 w-9 items-center justify-center rounded-full border-4 border-[#faf8f2] bg-deepTeal text-xs font-black text-sandGold">${index + 1}</span>
+            <span class="absolute left-0 top-4 z-[1] flex h-9 w-9 items-center justify-center rounded-full border-4 border-[#f3ebdd] bg-[#9e2f24] text-xs font-black text-[#fff5df]">${index + 1}</span>
             <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
               <div class="flex flex-wrap items-start justify-between gap-2"><div><p class="text-[9px] font-black uppercase tracking-[0.14em] text-sandGold">${safeText(storyRelationLabel(item.relationType))}</p><h3 class="mt-1 font-bold text-stone-900">${safeText(submission.title || '社区文化记录')}</h3></div><span class="rounded-full bg-stone-100 px-2 py-1 text-[9px] text-stone-500">${safeText(date)}</span></div>
               <p class="mt-3 rounded-xl bg-stone-50 p-3 text-xs font-medium leading-relaxed text-stone-700">${safeText(item.evidenceSummary)}</p>
@@ -963,22 +963,23 @@ feedback_closed: '反馈处理',
     if (!story) return '<div class="rounded-2xl border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-500">这处资源还没有已发布的故事版本。</div>';
     const evidenceMap = new Map((result.items || []).map((item) => [item.id, item]));
     return `
-      <article class="overflow-hidden rounded-2xl border border-[#d8c6a7] bg-white shadow-sm">
-        <header class="bg-gradient-to-br from-[#173f40] to-[#285b58] px-5 py-6 text-white">
-          <p class="text-[9px] font-black uppercase tracking-[0.22em] text-sandGold">共同讲述 · 第 ${Number(story.version || 1)} 版</p>
-          <h3 class="mt-2 text-xl font-black leading-tight">${safeText(story.title)}</h3>
-          <p class="mt-3 text-xs leading-relaxed text-white/75">${safeText(story.introduction)}</p>
+      <article class="overflow-hidden rounded-2xl border border-[#b68a4a]/30 bg-[#fffaf1] shadow-[0_14px_38px_rgba(58,31,23,0.09)]">
+        <header class="relative overflow-hidden bg-gradient-to-br from-[#17110f] via-[#401b18] to-[#762a23] px-5 py-6 text-white">
+          <span class="absolute -bottom-8 -right-3 cultural-font text-[7rem] font-black leading-none text-white/5">楚</span>
+          <p class="relative text-[9px] font-black uppercase tracking-[0.22em] text-[#d7b46e]">共同讲述 · 第 ${Number(story.version || 1)} 版</p>
+          <h3 class="cultural-font relative mt-2 text-xl font-black leading-tight text-[#fff5df]">${safeText(story.title)}</h3>
+          <p class="relative mt-3 text-xs leading-relaxed text-[#eadcca]/75">${safeText(story.introduction)}</p>
         </header>
         <div class="space-y-5 p-5">
           ${(story.chapters || []).map((chapter, index) => {
             const sources = (chapter.sourceLinkIds || []).map((id) => evidenceMap.get(id)).filter(Boolean);
             return `
-              <section class="relative pl-10">
-                <span class="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-[#8f302b] text-xs font-black text-white">${index + 1}</span>
-                <h4 class="font-bold text-stone-900">${safeText(chapter.title)}</h4>
+              <section class="story-chapter-rail relative pl-10">
+                <span class="absolute left-0 top-0 z-[1] flex h-7 w-7 items-center justify-center rounded-full bg-[#9e2f24] text-xs font-black text-[#fff5df] shadow-[0_4px_10px_rgba(158,47,36,0.2)]">${index + 1}</span>
+                <h4 class="cultural-font font-bold text-[#2b2421]">${safeText(chapter.title)}</h4>
                 <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">${safeText(chapter.body)}</p>
                 <div class="mt-3 flex flex-wrap gap-2">
-                  ${sources.map((source) => `<button type="button" data-story-open-source="${safeText(source.id)}" class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-800">来源 · ${safeText(source.submission && source.submission.title || '社区资料')}</button>`).join('')}
+                  ${sources.map((source) => `<button type="button" data-story-open-source="${safeText(source.id)}" class="min-h-9 rounded-full border border-[#b68a4a]/30 bg-[#f7edda] px-3 py-1 text-[10px] font-bold text-[#735322]">来源 · ${safeText(source.submission && source.submission.title || '社区资料')}</button>`).join('')}
                 </div>
               </section>`;
           }).join('')}
@@ -1030,7 +1031,7 @@ feedback_closed: '反馈处理',
       ? `${items.length} 份资料 · ${Number(result.contributorCount || 0)} 位记录者共同讲述`
       : '等待社区共同补充的文化线索';
     activeStoryEvidenceResult = result;
-    if (activeStoryEvidenceView === 'story' && !result.story) activeStoryEvidenceView = 'graph';
+    if (activeStoryEvidenceView === 'story' && !result.story) activeStoryEvidenceView = 'timeline';
     if (!activeStoryEvidenceNodeId && items[0]) activeStoryEvidenceNodeId = items[0].id;
     if (!items.length) {
       content.innerHTML = `
@@ -1043,20 +1044,20 @@ feedback_closed: '反馈处理',
       return;
     }
     content.innerHTML = `
-      <div class="mb-4 grid ${result.story ? 'grid-cols-3' : 'grid-cols-2'} gap-1 rounded-xl bg-stone-200/70 p-1">
-        <button type="button" data-story-view="graph" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'graph' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">链迹关系</button>
-        <button type="button" data-story-view="timeline" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'timeline' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">资料时间线</button>
-        ${result.story ? `<button type="button" data-story-view="story" class="rounded-lg px-3 py-2 text-xs font-bold ${activeStoryEvidenceView === 'story' ? 'bg-white text-deepTeal shadow-sm' : 'text-stone-500'}">故事讲述</button>` : ''}
+      <div class="story-evidence-tabs mb-4 grid ${result.story ? 'grid-cols-3' : 'grid-cols-2'} gap-1 rounded-xl p-1">
+        ${result.story ? `<button type="button" data-story-view="story" class="story-evidence-tab ${activeStoryEvidenceView === 'story' ? 'is-active' : ''}">故事讲述</button>` : ''}
+        <button type="button" data-story-view="timeline" class="story-evidence-tab ${activeStoryEvidenceView === 'timeline' ? 'is-active' : ''}">来源记录</button>
+        <button type="button" data-story-view="graph" class="story-evidence-tab ${activeStoryEvidenceView === 'graph' ? 'is-active' : ''}">链迹图</button>
       </div>
-      <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-        <p class="text-[10px] font-bold text-emerald-800">资料来源说明</p>
-        <p class="mt-1 text-xs leading-relaxed text-emerald-900/70">以下内容均来自已审核的社区投稿，并由管理员确认与“${safeText(resource.title)}”相关。原始记录保持不变，可继续补充和修订关系。</p>
+      <div class="story-source-note rounded-2xl p-4">
+        <p class="text-[10px] font-black tracking-[0.08em] text-[#9e2f24]">资料来源说明</p>
+        <p class="mt-1 text-xs leading-relaxed text-[#66574c]">以下内容均来自已审核的社区投稿，并由管理员确认与“${safeText(resource.title)}”相关。原始记录保持不变，可继续补充和修订关系。</p>
       </div>
       <div class="mt-5">${activeStoryEvidenceView === 'graph' ? renderStoryEvidenceGraphV2(result) : activeStoryEvidenceView === 'timeline' ? renderStoryEvidenceTimeline(items) : renderPublishedStory(result)}</div>`;
     bindStoryEvidenceControls();
   }
 
-  async function openStoryEvidence(resourceId, resourceTitle) {
+  async function openStoryEvidence(resourceId, resourceTitle, preferredView = 'story') {
     injectStoryEvidenceModal();
     const modal = document.getElementById('cloud-story-evidence-modal');
     const content = document.getElementById('cloud-story-evidence-content');
@@ -1064,7 +1065,7 @@ feedback_closed: '反馈处理',
     document.getElementById('cloud-story-evidence-subtitle').textContent = '正在读取已审核资料来源';
     content.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在整理资料来源...</div>';
     modal.classList.remove('hidden');
-    activeStoryEvidenceView = 'graph';
+    activeStoryEvidenceView = preferredView === 'graph' ? 'graph' : preferredView === 'timeline' ? 'timeline' : 'story';
     activeStoryEvidenceNodeId = '';
     activeStoryEvidenceResult = null;
     try {
