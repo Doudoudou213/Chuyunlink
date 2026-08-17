@@ -398,33 +398,38 @@ feedback_closed: '反馈处理',
 
     profileView.insertAdjacentHTML('afterbegin', `
       <section id="cloud-profile-card" class="rounded-2xl border border-sandGold/30 bg-deepTeal p-4 text-white shadow-lg">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <p class="text-[10px] text-stone-300">个人中心</p>
-              <span id="cloud-account-badge" class="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[9px] font-bold text-stone-200">连接中</span>
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex min-w-0 items-center gap-3">
+            <div id="cloud-profile-avatar" class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#f1908c] text-lg font-black text-[#592620] shadow-sm">楚</div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="text-[10px] text-stone-300">个人主页</p>
+                <span id="cloud-account-badge" class="bg-white/10 px-2 py-0.5 text-[9px] font-bold text-stone-200">连接中</span>
+              </div>
+              <button id="cloud-profile-edit" type="button" class="mt-1 flex max-w-full items-center gap-1.5 text-left" aria-label="编辑昵称">
+                <span id="cloud-profile-name" class="cultural-font truncate text-base font-bold text-[#fff8ef]">正在连接...</span>
+                <span class="shrink-0 text-[#f1908c]" aria-hidden="true">✎</span>
+              </button>
+              <p id="cloud-profile-uid" class="mt-1 break-all font-mono text-[9px] text-stone-300"></p>
             </div>
-            <h4 id="cloud-profile-name" class="cultural-font mt-1 truncate text-base font-bold text-sandGold">正在连接...</h4>
-            <p id="cloud-profile-uid" class="mt-1 break-all font-mono text-[9px] text-stone-300"></p>
           </div>
           <div class="shrink-0 text-right">
             <p class="text-[9px] text-stone-300">流光积分</p>
             <p id="cloud-profile-points" class="text-xl font-bold text-sandGold">0</p>
           </div>
         </div>
-        <div class="mt-3 grid grid-cols-4 gap-2 text-center">
-          <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-total" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">全部投稿</p></div>
-          <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-pending" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">待审核</p></div>
-          <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-approved" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">已通过</p></div>
-          <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-attention" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">需处理</p></div>
+        <div class="mt-4 grid grid-cols-4 divide-x divide-white/10 text-center">
+          <div class="px-1 py-1"><p id="cloud-stat-total" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">全部投稿</p></div>
+          <div class="px-1 py-1"><p id="cloud-stat-pending" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">待审核</p></div>
+          <div class="px-1 py-1"><p id="cloud-stat-approved" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">已通过</p></div>
+          <div class="px-1 py-1"><p id="cloud-stat-attention" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">需处理</p></div>
         </div>
         <p id="cloud-account-hint" class="mt-3 rounded-lg border border-white/10 bg-black/10 px-2.5 py-2 text-[9px] leading-relaxed text-stone-300"></p>
-        <div class="mt-3 grid grid-cols-2 gap-2">
-          <button id="cloud-profile-upload" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">继续投稿</button>
-          <button id="cloud-profile-edit" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">编辑资料</button>
-          <button id="cloud-feedback-open" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">意见反馈</button>
-          <button id="cloud-notification-open" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">我的消息</button>
-          <button id="cloud-account-action" type="button" class="rounded-lg bg-sandGold px-2 py-2 text-[10px] font-bold text-deepTeal">账号登录</button>
+        <div class="mt-3 grid grid-cols-2 gap-px overflow-hidden bg-white/10">
+          <button id="cloud-profile-upload" type="button" class="bg-white/10 px-2 py-2 text-[10px] font-bold">继续投稿</button>
+          <button id="cloud-feedback-open" type="button" class="bg-white/10 px-2 py-2 text-[10px] font-bold">意见反馈</button>
+          <button id="cloud-notification-open" type="button" class="bg-white/10 px-2 py-2 text-[10px] font-bold">我的消息</button>
+          <button id="cloud-account-action" type="button" class="bg-[#f1908c] px-2 py-2 text-[10px] font-bold text-[#592620]">账号登录</button>
         </div>
         <div class="mt-3 grid grid-cols-2 gap-2 border-t border-white/10 pt-3">
           <button type="button" data-profile-feature="profile-badges-section" class="rounded-lg bg-white/10 px-2 py-2 text-[10px] font-bold text-stone-100">查看徽章</button>
@@ -581,12 +586,13 @@ feedback_closed: '反馈处理',
           <form id="cloud-profile-edit-form" class="mt-4 space-y-3">
             <div>
               <label for="cloud-profile-nickname" class="text-xs font-bold text-stone-700">公开昵称</label>
-              <input id="cloud-profile-nickname" maxlength="40" class="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-deepTeal" required>
+              <input id="cloud-profile-nickname" maxlength="20" autocomplete="nickname" class="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none focus:border-deepTeal" required>
+              <p class="mt-1 text-right text-[9px] text-stone-400"><span id="cloud-profile-nickname-count">0</span>/20</p>
             </div>
             <p id="cloud-profile-edit-message" class="min-h-4 text-[10px] text-red-600"></p>
             <div class="flex gap-2">
-              <button type="button" data-close-profile-edit class="flex-1 rounded-xl bg-stone-100 py-2.5 text-xs font-bold text-stone-600">取消</button>
-              <button type="submit" class="flex-1 rounded-xl bg-deepTeal py-2.5 text-xs font-bold text-sandGold">保存</button>
+              <button type="button" data-close-profile-edit class="flex-1 bg-[#ead7c5] py-2.5 text-xs font-bold text-[#592620]">取消</button>
+              <button type="submit" class="flex-1 bg-[#ac1f18] py-2.5 text-xs font-bold text-white">保存昵称</button>
             </div>
           </form>
         </div>
@@ -689,6 +695,10 @@ feedback_closed: '反馈处理',
       button.addEventListener('click', () => document.getElementById('cloud-reward-modal').classList.add('hidden'));
     });
     document.getElementById('cloud-profile-edit-form').addEventListener('submit', saveCloudNickname);
+    document.getElementById('cloud-profile-nickname').addEventListener('input', (event) => {
+      const count = document.getElementById('cloud-profile-nickname-count');
+      if (count) count.textContent = String(event.target.value.length);
+    });
     document.getElementById('cloud-feedback-form').addEventListener('submit', submitCloudFeedback);
     document.getElementById('cloud-reward-confirm').addEventListener('click', confirmCloudRewardRedemption);
     document.getElementById('cloud-redemption-copy').addEventListener('click', copyActiveRedemptionCode);
@@ -1420,9 +1430,13 @@ feedback_closed: '反馈处理',
       return;
     }
     injectProductModals();
-    document.getElementById('cloud-profile-nickname').value = latestBootstrap.profile.nickname || '';
+    const input = document.getElementById('cloud-profile-nickname');
+    input.value = latestBootstrap.profile.nickname || '';
+    const count = document.getElementById('cloud-profile-nickname-count');
+    if (count) count.textContent = String(input.value.length);
     document.getElementById('cloud-profile-edit-message').textContent = '';
     document.getElementById('cloud-profile-edit-modal').classList.remove('hidden');
+    setTimeout(() => input.focus(), 0);
   }
 
   async function saveCloudNickname(event) {
@@ -1430,8 +1444,8 @@ feedback_closed: '反馈处理',
     const nickname = document.getElementById('cloud-profile-nickname').value.trim();
     const message = document.getElementById('cloud-profile-edit-message');
     const button = event.currentTarget.querySelector('button[type="submit"]');
-    if (!nickname) {
-      message.textContent = '昵称不能为空';
+    if (!nickname || nickname.length > 20) {
+      message.textContent = nickname ? '昵称最多 20 个字' : '昵称不能为空';
       return;
     }
     button.disabled = true;
@@ -1793,7 +1807,10 @@ feedback_closed: '反馈处理',
     const stats = data.stats || {};
     const uid = profile.uid || cloudUser && (cloudUser.uid || cloudUser.id) || '';
     const stable = isStableAccount(cloudUser);
-    document.getElementById('cloud-profile-name').textContent = profile.nickname || '楚韵守护者';
+    const displayNickname = profile.nickname || '楚韵守护者';
+    document.getElementById('cloud-profile-name').textContent = displayNickname;
+    const avatar = document.getElementById('cloud-profile-avatar');
+    if (avatar) avatar.textContent = Array.from(displayNickname.trim())[0] || '楚';
     document.getElementById('cloud-profile-uid').textContent = `身份编号 ${maskedUid(uid)}`;
     document.getElementById('cloud-account-badge').textContent = stable ? '正式账号' : '游客';
     document.getElementById('cloud-account-hint').textContent = stable
@@ -2294,9 +2311,10 @@ renderCloudRewards();
     if (!panel || !summary || !list) return;
     panel.classList.remove('hidden');
     if (title) title.textContent = result.targetTitle || (activeInteractionTarget && activeInteractionTarget.targetTitle) || '内容讨论';
+    const actualCommentCount = Math.max(0, Number(result.commentCount) || 0);
     summary.textContent = result.targetType === 'submission'
-      ? `${Number(result.likeCount || 0)} 个赞 · ${Number(result.commentCount || 0)} 条评论`
-      : `${Number(result.commentCount || 0)} 条评论 · 登录后可参与交流`;
+      ? `${Number(result.likeCount || 0)} 个赞 · ${actualCommentCount ? `${actualCommentCount} 条评论` : '暂无评论'}`
+      : `${actualCommentCount ? `${actualCommentCount} 条真实评论` : '暂无评论'} · 登录后可参与交流`;
     const likers = result.likers || [];
     if (likeUsers) {
       likeUsers.classList.toggle('hidden', !likers.length);
