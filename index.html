@@ -771,6 +771,301 @@
       .discover-post-card:hover { transform: none; }
       .chu-quick-entry:hover .chu-feature-icon { transform: none; }
     }
+
+    /* 全站视觉统一：宣纸底、漆器色与低密度楚纹水印 */
+    :root {
+      --chu-paper: #f5efe4;
+      --chu-paper-deep: #eee3d2;
+      --chu-paper-light: #fbf7ef;
+      --chu-camel: #592620;
+      --chu-raspberry: #ac1f18;
+      --chu-rose-gray: #4b2e2b;
+      --chu-pomegranate: #f1908c;
+      --chu-gold-muted: #a9874f;
+      --chu-line: rgba(89, 38, 32, 0.13);
+      --chu-soft-shadow: 0 12px 32px rgba(75, 46, 43, 0.07);
+    }
+    html,
+    body,
+    #app-shell,
+    #app-viewport {
+      background: var(--chu-paper);
+      color: var(--chu-rose-gray);
+    }
+    html,
+    body,
+    #app-shell,
+    #app-viewport,
+    #app-viewport > .page-view {
+      overflow-x: hidden;
+    }
+    #app-navigation {
+      border-color: var(--chu-line);
+      background: rgba(250, 246, 237, 0.97);
+      color: #88745f;
+      box-shadow: 0 -7px 24px rgba(75, 46, 43, 0.055);
+    }
+    #app-navigation .nav-item:hover,
+    #app-navigation .nav-item:focus-visible,
+    #app-navigation .nav-item.is-active {
+      color: var(--chu-camel);
+    }
+    #app-viewport > .page-view:not(#view-map) {
+      position: relative;
+      isolation: isolate;
+      background:
+        radial-gradient(circle at 92% 6%, rgba(169, 135, 79, 0.09), transparent 19rem),
+        linear-gradient(180deg, var(--chu-paper-light), var(--chu-paper));
+    }
+    #app-viewport > .page-view:not(#view-map) > :not(.chu-page-watermark) {
+      position: relative;
+      z-index: 1;
+    }
+    .chu-page-watermark {
+      position: absolute;
+      z-index: 0;
+      width: min(54vw, 330px);
+      color: var(--chu-camel);
+      opacity: 0.055;
+      pointer-events: none;
+    }
+    .chu-page-watermark svg { display: block; width: 100%; height: auto; }
+    .chu-page-watermark--phoenix { top: 18rem; right: -4rem; transform: rotate(-7deg); }
+    .chu-page-watermark--cloud { top: 4.5rem; right: -2.5rem; width: min(48vw, 290px); opacity: 0.065; }
+    .chu-page-watermark--ring { top: 26rem; left: -5.5rem; width: min(58vw, 340px); opacity: 0.045; }
+
+    /* 三个工作栏目共用的纸面、标题与操作语言 */
+    #view-collect,
+    #view-community {
+      min-height: calc(100vh - 122px);
+      color: var(--chu-rose-gray);
+    }
+    #view-collect .chu-page-heading,
+    #view-community .chu-page-heading {
+      border: 0;
+      text-align: left;
+    }
+    .chu-page-kicker {
+      color: var(--chu-raspberry);
+      font-size: 0.58rem;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    .chu-section-heading {
+      color: var(--chu-rose-gray) !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.92rem !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.03em !important;
+      text-transform: none !important;
+    }
+    .chu-paper-panel,
+    #view-collect form > div:not(#ai-check-modal),
+    #view-collect form > label,
+    #view-community #community-route-card,
+    #view-community .chu-learning-card {
+      border-color: transparent !important;
+      background-color: rgba(251, 247, 239, 0.92) !important;
+      box-shadow: var(--chu-soft-shadow) !important;
+    }
+    #view-community #quick-learning-list > * {
+      border-color: transparent !important;
+      background: rgba(251, 247, 239, 0.92) !important;
+      box-shadow: var(--chu-soft-shadow) !important;
+    }
+    #view-discover button[onclick*="openEndangeredHotspot"] {
+      border: 0 !important;
+      background: linear-gradient(120deg, #eadcc7, #f8f1e6) !important;
+      color: var(--chu-rose-gray) !important;
+      box-shadow: var(--chu-soft-shadow) !important;
+    }
+    #view-discover button[onclick*="openEndangeredHotspot"] h3 { color: var(--chu-camel) !important; }
+    #view-discover button[onclick*="openEndangeredHotspot"] p { color: #75645a !important; }
+    #view-discover button[onclick*="openEndangeredHotspot"] .text-sandGold { color: #806637 !important; }
+    #view-discover button[onclick*="openEndangeredHotspot"] > .absolute { color: var(--chu-camel); opacity: 0.055 !important; }
+    #view-collect input:not([type="checkbox"]):not([type="radio"]),
+    #view-collect textarea,
+    #view-collect select,
+    #view-community button[id^="quiz-option"] {
+      border-color: transparent !important;
+      background: rgba(238, 227, 210, 0.58) !important;
+      color: var(--chu-rose-gray) !important;
+      box-shadow: inset 0 0 0 1px rgba(89, 38, 32, 0.055);
+    }
+    #view-community button[id^="quiz-option"] {
+      min-height: 44px;
+      border-radius: 0.35rem !important;
+      transition: background-color 150ms ease, color 150ms ease;
+    }
+    #view-community button[id^="quiz-option"]:hover,
+    #view-community button[id^="quiz-option"]:focus-visible {
+      background: rgba(241, 144, 140, 0.17) !important;
+      color: var(--chu-camel) !important;
+      outline: 2px solid rgba(172, 31, 24, 0.22);
+      outline-offset: 1px;
+    }
+
+    /* 地图：真实地图保持清晰，控制层改为骨白展卷 */
+    #view-map {
+      background: #e9e2d6;
+    }
+    #map-loading,
+    #map-planner-panel,
+    #map-route-panel,
+    #landmark-drawer,
+    #view-map [class*="bg-white/95"] {
+      border-color: var(--chu-line) !important;
+      background-color: rgba(250, 246, 237, 0.96) !important;
+      color: var(--chu-rose-gray) !important;
+      box-shadow: var(--chu-soft-shadow) !important;
+    }
+    #map-planner-panel {
+      border-radius: 0.65rem 1.4rem 0.65rem 1.4rem;
+    }
+    #map-planner-panel::after {
+      content: "";
+      position: absolute;
+      right: -2.5rem;
+      bottom: 4.5rem;
+      width: 11rem;
+      height: 11rem;
+      border: 1.1rem double rgba(89, 38, 32, 0.045);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    #map-planner-panel section,
+    #map-planner-detail {
+      position: relative;
+      z-index: 1;
+    }
+    #view-map button.bg-deepTeal,
+    #map-planner-panel button.bg-deepTeal,
+    #map-planner-panel button.bg-\[\#9e2f24\] {
+      border: 0 !important;
+      background: var(--chu-camel) !important;
+      color: #f8ead3 !important;
+      box-shadow: 0 7px 16px rgba(89, 38, 32, 0.13) !important;
+    }
+    #view-map .heritage-marker.verified { background: #715f4c; }
+    #view-map .heritage-marker.pending,
+    #view-map .route-marker.origin { background: var(--chu-raspberry); }
+    #view-map .heritage-marker.user,
+    #view-map .route-marker { background: var(--chu-camel); }
+
+    /* 采集：楚简式分段表单，不以描边卡片堆叠 */
+    #view-collect form {
+      counter-reset: collect-section;
+    }
+    #view-collect form > div:not(#ai-check-modal),
+    #view-collect form > label {
+      border-radius: 0.45rem 1.15rem 0.45rem 1.15rem !important;
+      padding: 0.95rem;
+    }
+    #view-collect form > div:not(#ai-check-modal)::before,
+    #view-collect form > label::before {
+      content: "";
+      position: absolute;
+      top: 0.8rem;
+      bottom: 0.8rem;
+      left: 0;
+      width: 2px;
+      background: linear-gradient(var(--chu-raspberry), rgba(169, 135, 79, 0.25));
+    }
+    #view-collect form > div:not(#ai-check-modal),
+    #view-collect form > label { position: relative; }
+    #view-collect label[class*="border-2"],
+    #view-collect .border-2.border-dashed {
+      border-width: 0 !important;
+      border-radius: 0.4rem !important;
+      background: rgba(238, 227, 210, 0.56) !important;
+      box-shadow: none !important;
+    }
+    #view-collect label.border-sandGold {
+      background: rgba(241, 144, 140, 0.15) !important;
+      color: var(--chu-camel) !important;
+      box-shadow: inset 0 -2px 0 var(--chu-raspberry) !important;
+    }
+    #view-collect button[type="submit"] {
+      min-height: 48px;
+      border: 0;
+      border-radius: 0.35rem !important;
+      background: var(--chu-camel) !important;
+      color: #faead0 !important;
+      box-shadow: 0 9px 20px rgba(89, 38, 32, 0.14) !important;
+    }
+
+    /* 活动科普：活动册式大图 + 米白知识页 */
+    #view-community .community-hero {
+      height: clamp(13.5rem, 38vw, 21rem);
+      border-radius: 0.5rem 1.5rem 0.5rem 1.5rem !important;
+      box-shadow: 0 18px 42px rgba(75, 46, 43, 0.13) !important;
+    }
+    #view-community .community-hero::after {
+      content: "楚纹寻访";
+      position: absolute;
+      top: 1rem;
+      right: 0.9rem;
+      color: rgba(255, 248, 235, 0.7);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.32em;
+      writing-mode: vertical-rl;
+    }
+    #view-community .community-hero .bg-cinnabarRed {
+      background: rgba(172, 31, 24, 0.78) !important;
+    }
+    #view-community .community-hero button {
+      min-height: 40px;
+      border: 0 !important;
+      border-radius: 0.3rem !important;
+      box-shadow: none !important;
+    }
+    #view-community .community-hero button:first-child {
+      background: #ead8b6 !important;
+      color: var(--chu-camel) !important;
+    }
+    #view-community .chu-knowledge-panel {
+      border: 0 !important;
+      border-radius: 0.45rem 1.15rem 0.45rem 1.15rem !important;
+      background: rgba(251, 247, 239, 0.94) !important;
+      box-shadow: var(--chu-soft-shadow) !important;
+    }
+    #view-community #quiz-feedback {
+      border: 0 !important;
+      background: rgba(169, 135, 79, 0.14) !important;
+      color: #655033 !important;
+    }
+    #view-collect [class*="bg-emerald"],
+    #view-community [class*="bg-emerald"],
+    #view-map [class*="bg-emerald"] {
+      border-color: transparent !important;
+      background-color: rgba(169, 135, 79, 0.16) !important;
+    }
+    #view-collect [class*="text-emerald"],
+    #view-community [class*="text-emerald"],
+    #view-map [class*="text-emerald"] {
+      color: #6d5737 !important;
+    }
+    #view-collect [class*="border-emerald"],
+    #view-community [class*="border-emerald"],
+    #view-map [class*="border-emerald"] {
+      border-color: rgba(169, 135, 79, 0.2) !important;
+    }
+    #view-community .bg-deepTeal {
+      background: var(--chu-camel) !important;
+      color: #f1d8a8 !important;
+    }
+
+    @media (max-width: 767px) {
+      #view-collect,
+      #view-community { min-height: calc(100vh - 60px); }
+      .chu-page-watermark { width: 72vw; }
+      .chu-page-watermark--cloud { width: 62vw; }
+      #map-planner-panel { border-radius: 1.2rem 1.2rem 0.45rem 0.45rem; }
+      #view-community .community-hero { height: 13.5rem; }
+    }
   </style>
 </head>
 <body class="min-h-screen bg-parchment">
@@ -827,6 +1122,14 @@
       
       <!-- 页面 1：发现 (DISCOVER) -->
       <section id="view-discover" class="page-view space-y-4 py-4">
+        <div class="chu-page-watermark chu-page-watermark--phoenix" aria-hidden="true">
+          <svg viewBox="0 0 360 310" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M53 209c38-41 81-52 126-31 28 13 54 8 78-18-14 39-39 61-76 64-33 3-56 20-71 51 0-31 9-56 27-76-31-5-59-2-84 10Z" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+            <path d="M99 159c15-61 53-103 113-126-24 34-31 68-21 103 8 28 29 45 63 51-39 9-70 3-92-18-17-16-38-19-63-10Z" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/>
+            <path d="M182 57c19 9 32 24 39 46m-97 113c-20 23-29 49-26 78m57-88c8 30 5 59-10 86m40-87c23 22 35 48 36 79" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="214" cy="111" r="5" fill="currentColor"/>
+          </svg>
+        </div>
         <div class="px-4">
           <div class="discover-masthead px-5 py-6 sm:px-7 sm:py-7">
             <div class="relative z-[1] max-w-2xl">
@@ -1201,8 +1504,15 @@
 
       <!-- 页面 3：采集发布中心 (COLLECT) -->
       <section id="view-collect" class="page-view hidden space-y-4 py-4 px-4">
-        <div class="text-center pb-2 border-b border-stone-100">
-          <h3 class="cultural-font text-base font-bold text-stone-800">记录一条文化线索</h3>
+        <div class="chu-page-watermark chu-page-watermark--cloud" aria-hidden="true">
+          <svg viewBox="0 0 360 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 112h112c20 0 20-29 0-29H77c-18 0-18-28 0-28h129c22 0 22-32 0-32h-50M111 143h181c25 0 25-37 0-37h-75c-20 0-20-30 0-30h125" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+            <path d="M47 127h80m111-89h64" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="chu-page-heading pb-2">
+          <p class="chu-page-kicker">FIELD NOTE · 楚地采集簿</p>
+          <h3 class="cultural-font mt-1 text-xl font-bold text-[#4b2e2b]">记录一条文化线索</h3>
           <p class="text-xs text-stone-500 mt-1">仅收录景点、文物或技艺衍生线索，需具备可复核的历史研究价值</p>
         </div>
 
@@ -1396,8 +1706,20 @@
 
       <!-- 页面 4：科普与实地活动 (COMMUNITY/LEARN) -->
       <section id="view-community" class="page-view hidden space-y-4 py-4">
+        <div class="chu-page-watermark chu-page-watermark--ring" aria-hidden="true">
+          <svg viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="160" cy="160" r="118" stroke="currentColor" stroke-width="18"/>
+            <circle cx="160" cy="160" r="82" stroke="currentColor" stroke-width="4" stroke-dasharray="6 13"/>
+            <path d="M160 54c16 39 35 58 72 75-37 16-56 36-72 73-16-37-35-57-72-73 37-17 56-36 72-75Z" stroke="currentColor" stroke-width="5"/>
+          </svg>
+        </div>
+        <div class="chu-page-heading px-4">
+          <p class="chu-page-kicker">FIELD PROGRAM · 共学共访</p>
+          <h2 class="cultural-font mt-1 text-xl font-bold text-[#4b2e2b]">活动与科普</h2>
+          <p class="mt-1 text-xs leading-5 text-stone-500">先了解，再抵达现场；把每次寻访变成可复核的文化记录。</p>
+        </div>
         <div class="px-4">
-          <div class="relative h-44 overflow-hidden rounded-xl shadow-md">
+          <div class="community-hero relative h-44 overflow-hidden rounded-xl shadow-md">
             <img src="https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&q=80&w=900" alt="荆楚文化活动" class="absolute inset-0 h-full w-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/30 to-transparent"></div>
             <div class="absolute left-3 right-3 bottom-3 text-white">
@@ -1425,22 +1747,22 @@
         <!-- 推荐路线 -->
         <div class="px-4 space-y-3">
           <div class="flex justify-between items-center">
-            <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
+            <h4 class="chu-section-heading text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
               <i data-lucide="route" class="w-4 h-4 mr-1 text-deepTeal"></i> 今日推荐路线
             </h4>
             <span id="activity-progress" class="text-[10px] text-deepTeal font-semibold">0/3 已点亮</span>
           </div>
 
-          <div id="community-route-card" class="bg-white rounded-xl border border-stone-200 shadow-sm p-3"></div>
+          <div id="community-route-card" class="chu-paper-panel bg-white rounded-xl border border-stone-200 shadow-sm p-3"></div>
         </div>
 
         <!-- 科普闯关 -->
         <div class="px-4 space-y-3">
-          <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
+          <h4 class="chu-section-heading text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
             <i data-lucide="book-open" class="w-4 h-4 mr-1 text-deepTeal"></i> 三分钟科普闯关
           </h4>
 
-          <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-3">
+          <div class="chu-knowledge-panel bg-white rounded-xl border border-stone-200 shadow-sm p-3">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <div class="flex items-center gap-2">
@@ -1471,7 +1793,7 @@
         <div class="px-4 space-y-3">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
+              <h4 class="chu-section-heading text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
                 <i data-lucide="graduation-cap" class="w-4 h-4 mr-1 text-deepTeal"></i> 采集前速学
               </h4>
               <p id="quick-learning-summary" class="mt-1 text-[10px] text-stone-400">每次登录随机展示 2 个知识点</p>
