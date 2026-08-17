@@ -7,6 +7,7 @@
     "test:ai": "node tools/test-ai-foundation.js",
     "test:ai-pipeline": "node tools/test-ai-submission-pipeline.js",
     "test:story-drafts": "node tools/test-sourced-story-drafts.js",
+    "test:story-quality": "node tools/test-story-quality.js",
     "test:stories": "node tools/test-story-evidence.js",
     "test:story-feedback": "node tools/test-story-feedback.js",
     "test:routes": "node tools/test-map-personalization.js",

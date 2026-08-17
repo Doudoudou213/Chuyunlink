@@ -3914,6 +3914,7 @@
     function renderInlineStoryCard(item, expanded = false) {
       const story = item && item.storyCard;
       const readiness = item && item.storyReadiness;
+      const editorialLabel = story && story.editorialLabel ? story.editorialLabel : '已人工校读';
       const isCloudSubmission = String(item && (item.feedId || item.id) || '').startsWith('approved-');
       const quickSupplementAction = expanded && isCloudSubmission
         ? `<button type="button" onclick="event.stopPropagation(); if (window.startQuickStorySupplement) window.startQuickStorySupplement('${escapeJsString(item.feedId || item.id)}')" class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-deepTeal px-4 py-2.5 text-[10px] font-bold text-sandGold shadow-sm transition hover:brightness-110"><i data-lucide="plus" class="h-3.5 w-3.5"></i>补充这段链迹</button>`
@@ -3926,8 +3927,8 @@
             <div class="flex items-start gap-3">
               <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sandGold shadow-sm"><i data-lucide="link-2" class="h-4 w-4"></i></span>
               <div>
-                <p class="text-xs font-bold text-stone-800">这条链迹还在等待补充</p>
-                <p class="mt-1 text-[11px] leading-relaxed text-stone-500">${missing.length ? `还需要${missing.map(escapeHtml).join('、')}，资料充分后再由编辑整理成短故事。` : '资料充分并核实关系后，再由编辑整理成短故事。'}</p>
+                <p class="text-xs font-bold text-stone-800">还差一点资料</p>
+                <p class="mt-1 text-[11px] leading-relaxed text-stone-500">${missing.length ? `补充${missing.map(escapeHtml).join('、')}后，可以整理成可靠的短故事。` : '资料核实后，可以整理成可靠的短故事。'}</p>
                 ${quickSupplementAction ? `<div class="mt-3">${quickSupplementAction}</div>` : ''}
               </div>
             </div>
@@ -3961,8 +3962,8 @@
               <span class="story-seal shrink-0">楚述</span>
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                  <p class="text-[9px] font-black tracking-[0.18em] text-[#9e2f24]">投稿下方的楚韵故事</p>
-                  <span class="rounded-full border border-[#496a61]/15 bg-[#496a61]/10 px-2 py-1 text-[9px] font-bold text-[#496a61]">已审核资料串联</span>
+                  <p class="text-[9px] font-black tracking-[0.18em] text-[#9e2f24]">共同讲述</p>
+                  <span class="rounded-full border border-[#496a61]/15 bg-[#496a61]/10 px-2 py-1 text-[9px] font-bold text-[#496a61]">${escapeHtml(editorialLabel)}</span>
                 </div>
                 <p class="mt-1 truncate text-[10px] text-[#8b735f]">${escapeHtml(resourceTitle)}</p>
               </div>

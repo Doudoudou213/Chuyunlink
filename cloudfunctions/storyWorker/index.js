@@ -4,6 +4,11 @@ const cloudbase = require('@cloudbase/node-sdk');
 const crypto = require('crypto');
 const { loadConfig, publicConfig } = require('./lib/config');
 const { createTokenHubClient } = require('./lib/tokenhub-client');
+const {
+  assessStoryReadiness,
+  evidenceContextFromInput,
+  assessStoryQuality
+} = require('./lib/story-quality');
 
 const app = cloudbase.init({ env: process.env.TCB_ENV || cloudbase.SYMBOL_CURRENT_ENV });
 const db = app.database();
@@ -166,34 +171,7 @@ function storyDraftIdFor(jobId) {
 }
 
 function storyReadiness(input) {
-  const sources = Array.isArray(input && input.sources) ? input.sources : [];
-  const descriptions = sources.map((item) => cleanText(item && item.submission && item.submission.description, 900));
-  const evidence = sources.map((item) => cleanText(item && item.evidenceSummary, 500));
-  const supplementCount = sources.reduce((total, item) => (
-    total + (Array.isArray(item && item.submission && item.submission.supplements) ? item.submission.supplements.length : 0)
-  ), 0);
-  const relationTypes = new Set(sources.map((item) => item.relationType).filter(Boolean));
-  const hasDetailedDescription = descriptions.some((text) => text.length >= 60);
-  const hasUsefulEvidence = evidence.some((text) => text.length >= 20);
-  const score = Math.min(100,
-    Math.min(50, sources.length * 25)
-    + Math.min(15, supplementCount * 8)
-    + (hasDetailedDescription ? 20 : 0)
-    + (hasUsefulEvidence ? 15 : 0)
-    + (relationTypes.size >= 2 ? 15 : 0)
-  );
-  const missing = [];
-  if (sources.length < 2 && supplementCount < 1) missing.push('再补充一份不同角度的已审核资料');
-  if (!hasDetailedDescription) missing.push('补充至少 60 字的现场细节或背景说明');
-  if (!hasUsefulEvidence) missing.push('把投稿与文化资源的关系说明得更具体');
-  if (relationTypes.size < 2) missing.push('补充题刻、口述、地点现状或时间变化等不同类型证据');
-  return {
-    ready: sources.length >= 1 && score >= 55,
-    score,
-    sourceCount: sources.length,
-    supplementCount,
-    missing: missing.slice(0, 3)
-  };
+  return assessStoryReadiness(input);
 }
 
 function shanghaiDayId() {
@@ -654,11 +632,19 @@ async function runStoryDraft(config, adminUid, event) {
   let dayId = '';
   try {
     const client = createTokenHubClient({ config });
-    const result = await client.draftStory(acquired.job.input || input, {
+    const storyInput = acquired.job.input || input;
+    const result = await client.draftStory(storyInput, {
       beforeAttempt: async () => {
         dayId = await reserveDailyCall(config, jobId);
       }
     });
+    const qualityAssessment = assessStoryQuality(result.output, evidenceContextFromInput(storyInput));
+    if (qualityAssessment.hardFailures.length) {
+      await recordCompletedUsage(dayId, jobId, result.usage);
+      throw Object.assign(new Error('生成内容未通过来源、结构或隐私检查，未保存为故事草稿'), {
+        code: 'AI_STORY_QUALITY_BLOCKED'
+      });
+    }
     const sourceLinkIds = [...new Set(result.output.chapters.flatMap((chapter) => chapter.sourceLinkIds))];
     await db.runTransaction(async (transaction) => {
       const currentLinks = await Promise.all(sourceLinkIds.map(async (linkId) => ({
@@ -684,6 +670,8 @@ async function runStoryDraft(config, adminUid, event) {
         promptVersion: config.storyPromptVersion,
         jobId,
         usage: result.usage,
+        qualityAssessment,
+        publicationEligible: qualityAssessment.publicationEligible,
         createdBy: adminUid,
         createdAt: now,
         updatedAt: now
@@ -789,6 +777,8 @@ async function storyDraftWorkspace() {
     chapters: Array.isArray(item.chapters) ? item.chapters : [],
     closing: item.closing || '',
     sourceLinkIds: Array.isArray(item.sourceLinkIds) ? item.sourceLinkIds : [],
+    qualityAssessment: item.qualityAssessment || null,
+    publicationEligible: item.publicationEligible === true,
     status: item.status || 'draft',
     version: Math.max(1, Number(item.version) || 1)
   }));

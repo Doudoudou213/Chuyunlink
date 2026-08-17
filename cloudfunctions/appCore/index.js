@@ -698,6 +698,9 @@ async function attachSubmissionStoryCards(items) {
           resourceId: cleanText(story.resourceId || linkedResource.resourceId, 128),
           resourceTitle: cleanText(story.resourceTitle || linkedResource.resourceTitle, 120),
           sourceCount: new Set(chapters.flatMap((chapter) => chapter.sourceLinkIds)).size,
+          editorialLabel: story.qualityAssessment && story.qualityAssessment.grade === 'strong'
+            ? '资料较完整 · 已校读'
+            : '已人工校读',
           version: Math.max(1, Number(story.version) || 1)
         };
         break;

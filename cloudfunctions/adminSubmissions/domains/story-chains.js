@@ -5,6 +5,7 @@ const STORY_LOG_COLLECTION = 'story_chain_logs';
 const LINK_COLLECTION = 'story_evidence_links';
 const SUBMISSION_COLLECTION = 'submissions';
 const RESOURCE_COLLECTION = 'resources';
+const { assessStoryQuality } = require('./story-quality');
 
 function cleanText(value, maxLength) {
   return String(value == null ? '' : value).trim().slice(0, maxLength);
@@ -43,6 +44,7 @@ function createAdminStoryChainService({ db }) {
     const title = cleanText(event.title, 24);
     const introduction = cleanText(event.introduction, 150);
     const closing = cleanText(event.closing, 120);
+    const qualityOverrideReason = cleanText(event.qualityOverrideReason, 300);
     const chapters = normalizeChapters(event.chapters);
     if (title.length < 4 || introduction.length < 12) {
       throw Object.assign(new Error('故事标题或导语不完整'), { code: 'INVALID_STORY_TEXT' });
@@ -80,6 +82,29 @@ function createAdminStoryChainService({ db }) {
       if (submissionStates.some((submission) => !submission || submission.status !== 'approved')) {
         throw Object.assign(new Error('故事引用的投稿已不再公开'), { code: 'INVALID_STORY_SUBMISSION' });
       }
+      const sourceTextById = {};
+      linkStates.forEach(({ linkId, link }, index) => {
+        const submission = submissionStates[index] || {};
+        sourceTextById[linkId] = [
+          link && link.evidenceSummary,
+          submission.title,
+          submission.description
+        ].map((value) => cleanText(value, 1600)).filter(Boolean).join('\n');
+      });
+      const qualityAssessment = assessStoryQuality({ title, introduction, chapters, closing }, {
+        allowedSourceIds: sourceLinkIds,
+        sourceTextById,
+        resourceText: [resource.title, resource.summary || resource.description]
+          .map((value) => cleanText(value, 1600)).filter(Boolean).join('\n')
+      });
+      if (qualityAssessment.hardFailures.length) {
+        throw Object.assign(new Error('故事仍有来源、结构或隐私问题，请修改后再发布'), { code: 'STORY_QUALITY_BLOCKED' });
+      }
+      if (!qualityAssessment.publicationEligible && qualityOverrideReason.length < 8) {
+        throw Object.assign(new Error('故事质量仍需改进；如确认发布，请填写至少 8 个字的人工判断说明'), {
+          code: 'STORY_QUALITY_OVERRIDE_REQUIRED'
+        });
+      }
       const previousStories = await Promise.all(previousPublishedIds.map(async (storyId) => ({
         ref: transaction.collection(STORY_COLLECTION).doc(storyId),
         story: firstDocument(await transaction.collection(STORY_COLLECTION).doc(storyId).get())
@@ -98,6 +123,9 @@ function createAdminStoryChainService({ db }) {
         sourceLinkIds,
         status: 'published',
         version: nextVersion,
+        qualityAssessment,
+        publicationEligible: qualityAssessment.publicationEligible,
+        qualityOverrideReason: qualityAssessment.publicationEligible ? '' : qualityOverrideReason,
         reviewedBy: reviewerId,
         publishedAt: now,
         updatedAt: now
@@ -107,6 +135,8 @@ function createAdminStoryChainService({ db }) {
         resourceId: draft.resourceId,
         action: 'publish',
         sourceLinkIds,
+        qualityAssessment,
+        qualityOverrideReason: qualityAssessment.publicationEligible ? '' : qualityOverrideReason,
         reviewerId,
         createdAt: now
       });

@@ -40,7 +40,7 @@ function loadConfig(env = process.env) {
     maxAttempts: positiveInteger(env.AI_JOB_MAX_ATTEMPTS, 2, 1, 5),
     lockTimeoutMs: positiveInteger(env.AI_JOB_LOCK_TIMEOUT_MS, 120000, 30000, 900000),
     promptVersion: 'story-link-contract-v3',
-    storyPromptVersion: 'sourced-story-contract-v1'
+    storyPromptVersion: 'sourced-story-contract-v2'
   };
 }
 
