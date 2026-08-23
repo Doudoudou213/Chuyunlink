@@ -12,6 +12,7 @@
     "test:story-feedback": "node tools/test-story-feedback.js",
     "test:routes": "node tools/test-map-personalization.js",
     "test:rewards": "node tools/test-reward-security.js",
+    "test:miniprogram": "node tools/test-miniprogram-scaffold.js",
     "deploy:cloudbase": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/deploy-cloudbase.ps1"
   },
   "dependencies": {

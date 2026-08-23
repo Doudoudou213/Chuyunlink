@@ -1,0 +1,38 @@
+page {
+  --lacquer: #17110f;
+  --vermilion: #9e2f24;
+  --bone: #f3ebdd;
+  --bronze: #496a61;
+  --gold: #b68a4a;
+  --ink: #2b2421;
+  --muted: #756c66;
+  --paper: #fffdf8;
+  background: var(--bone);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+}
+
+button {
+  border-radius: 18rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+button::after { border: 0; }
+
+.page-shell { min-height: 100vh; padding: 32rpx 28rpx 56rpx; box-sizing: border-box; }
+.display-title { font-family: "Songti SC", "STSong", serif; font-weight: 700; letter-spacing: 2rpx; }
+.eyebrow { color: var(--gold); font-size: 22rpx; font-weight: 700; letter-spacing: 5rpx; text-transform: uppercase; }
+.section-head { display: flex; align-items: end; justify-content: space-between; margin: 44rpx 0 22rpx; }
+.section-title { margin: 0; color: var(--lacquer); font-family: "Songti SC", "STSong", serif; font-size: 38rpx; font-weight: 700; }
+.section-note { color: var(--muted); font-size: 22rpx; }
+.paper-card { background: var(--paper); border: 1rpx solid rgba(43, 36, 33, .12); border-radius: 22rpx; box-shadow: 0 12rpx 32rpx rgba(43, 36, 33, .06); }
+.primary-button { min-height: 88rpx; background: var(--vermilion); color: #fff8ec; display: flex; align-items: center; justify-content: center; }
+.secondary-button { min-height: 88rpx; background: transparent; color: var(--lacquer); border: 1rpx solid rgba(43, 36, 33, .28); display: flex; align-items: center; justify-content: center; }
+.muted { color: var(--muted); }
+.empty-state { padding: 44rpx 32rpx; text-align: center; }
+.empty-title { display: block; color: var(--lacquer); font-weight: 650; margin-bottom: 12rpx; }
+.empty-copy { color: var(--muted); font-size: 24rpx; line-height: 1.7; }
+.status-strip { margin: 20rpx 0; padding: 20rpx 24rpx; border-radius: 16rpx; background: rgba(73, 106, 97, .1); color: var(--bronze); font-size: 24rpx; }
+.status-strip.error { background: rgba(158, 47, 36, .09); color: var(--vermilion); }

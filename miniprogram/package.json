@@ -1,0 +1,9 @@
+{
+  "name": "chulink-legacy-miniprogram",
+  "private": true,
+  "version": "0.1.0",
+  "dependencies": {
+    "@cloudbase/adapter-wx_mp": "1.3.1",
+    "@cloudbase/js-sdk": "2.27.3"
+  }
+}

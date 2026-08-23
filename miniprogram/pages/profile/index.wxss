@@ -1,0 +1,22 @@
+.guest-panel { min-height: 75vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.seal { width: 128rpx; height: 128rpx; display: flex; align-items: center; justify-content: center; border: 4rpx double #b68a4a; border-radius: 38% 62% 48% 52%; background: #17110f; color: #f3ebdd; font-family: "Songti SC", serif; font-size: 56rpx; transform: rotate(-5deg); }
+.guest-title { display: block; margin-top: 38rpx; color: #17110f; font-size: 46rpx; }
+.guest-copy { display: block; max-width: 560rpx; margin: 20rpx auto 34rpx; color: #756c66; font-size: 26rpx; line-height: 1.75; }
+.guest-panel .primary-button { width: 100%; }
+.privacy-note { margin-top: 22rpx; color: #948b84; font-size: 21rpx; }
+.profile-hero { padding: 44rpx 36rpx 32rpx; border-radius: 26rpx; background: #17110f; color: #f3ebdd; }
+.profile-name { display: block; margin-top: 20rpx; font-size: 48rpx; }
+.profile-note { display: block; margin-top: 12rpx; color: rgba(243,235,221,.65); font-size: 24rpx; }
+.stats-row { display: flex; margin-top: 38rpx; border-top: 1rpx solid rgba(243,235,221,.16); }
+.stat { flex: 1; padding-top: 28rpx; text-align: center; }
+.stat + .stat { border-left: 1rpx solid rgba(243,235,221,.16); }
+.stat-value, .stat-label { display: block; }
+.stat-value { color: #d1a95d; font-family: Georgia, serif; font-size: 42rpx; }
+.stat-label { margin-top: 6rpx; color: rgba(243,235,221,.65); font-size: 21rpx; }
+.record { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; margin-bottom: 16rpx; padding: 25rpx; }
+.record-title, .record-time { display: block; }
+.record-title { color: #2b2421; font-size: 27rpx; font-weight: 650; }
+.record-time { margin-top: 7rpx; color: #756c66; font-size: 21rpx; }
+.record-status { flex: none; padding: 8rpx 14rpx; border-radius: 999rpx; background: rgba(182,138,74,.12); color: #8c6729; font-size: 21rpx; }
+.record-status.approved { background: rgba(73,106,97,.12); color: #496a61; }
+.record-status.rejected { background: rgba(158,47,36,.1); color: #9e2f24; }

@@ -1,0 +1,18 @@
+<scroll-view scroll-y class="page-shell">
+  <text class="eyebrow">VERIFIED CONNECTIONS</text>
+  <text class="page-title display-title">顺着一条线索，认识更多故事</text>
+  <text class="page-intro">这里先展示已发布的文化资源。之后每一条关系都会标明来自哪份审核资料。</text>
+  <view wx:if="{{error}}" class="status-strip error">{{error}}</view>
+  <view class="trace-list">
+    <view wx:for="{{items}}" wx:key="id" class="trace-row" data-id="{{item.id}}" bindtap="openResource">
+      <view class="trace-rail"><view class="trace-dot"></view><view wx:if="{{index < items.length - 1}}" class="trace-stem"></view></view>
+      <view class="trace-content paper-card">
+        <text class="trace-meta">{{item.typeLabel}} · {{item.regionLabel}}</text>
+        <text class="trace-title display-title">{{item.title}}</text>
+        <text class="trace-summary">{{item.summary}}</text>
+        <text class="trace-action">阅读这段链迹 →</text>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{!loading && !items.length}}" class="paper-card empty-state"><text class="empty-title">链迹尚未发布</text><text class="empty-copy">经过人工确认的关系会逐步出现在这里。</text></view>
+</scroll-view>

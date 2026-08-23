@@ -1,0 +1,12 @@
+.page-title { display: block; margin-top: 18rpx; color: #17110f; font-size: 52rpx; line-height: 1.25; }
+.page-intro { display: block; margin-top: 22rpx; color: #756c66; font-size: 26rpx; line-height: 1.75; }
+.trace-list { margin-top: 44rpx; }
+.trace-row { display: flex; align-items: stretch; }
+.trace-rail { width: 52rpx; flex: none; display: flex; flex-direction: column; align-items: center; }
+.trace-dot { width: 19rpx; height: 19rpx; margin-top: 34rpx; border: 5rpx solid #b68a4a; border-radius: 50%; background: #9e2f24; box-shadow: 0 0 0 8rpx #f3ebdd; }
+.trace-stem { width: 4rpx; flex: 1; min-height: 200rpx; background: linear-gradient(#9e2f24, rgba(158,47,36,.18)); }
+.trace-content { flex: 1; margin: 0 0 22rpx 8rpx; padding: 30rpx; }
+.trace-meta { color: #9e2f24; font-size: 22rpx; }
+.trace-title { display: block; margin-top: 14rpx; color: #17110f; font-size: 35rpx; }
+.trace-summary { display: -webkit-box; overflow: hidden; margin-top: 14rpx; color: #756c66; font-size: 24rpx; line-height: 1.65; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.trace-action { display: block; margin-top: 24rpx; color: #496a61; font-size: 23rpx; font-weight: 650; }

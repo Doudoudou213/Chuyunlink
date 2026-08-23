@@ -1,0 +1,27 @@
+<scroll-view scroll-y class="page-shell">
+  <text class="eyebrow">FIELD NOTE</text>
+  <text class="page-title display-title">把此刻看见的，留给下一位发现者</text>
+  <text class="page-intro">原始资料会完整保存。审核通过后，它才会出现在公开内容和链迹故事中。</text>
+
+  <view wx:if="{{!sessionReady}}" class="login-card paper-card">
+    <text class="login-title">投稿前先连接微信账号</text>
+    <text class="login-copy">这样审核结果、积分和上传记录才能一直跟随你的账号。</text>
+    <button class="primary-button" bindtap="login">微信登录</button>
+  </view>
+
+  <view class="form-card paper-card">
+    <view class="field">
+      <text class="field-label">照片</text>
+      <view class="media-picker" bindtap="chooseMedia">
+        <image wx:if="{{media}}" class="media-preview" mode="aspectFill" src="{{media.tempFilePath}}"></image>
+        <view wx:else class="media-empty"><text class="media-plus">＋</text><text>拍照或从相册选择</text></view>
+      </view>
+    </view>
+    <view class="field"><text class="field-label">这是什么</text><input maxlength="120" value="{{title}}" bindinput="onTitle" placeholder="例如：黄鹤楼碑廊题刻" /></view>
+    <view class="field"><text class="field-label">你观察到了什么</text><textarea maxlength="1000" value="{{description}}" bindinput="onDescription" placeholder="写下地点、年代线索、纹样或你听到的讲述"></textarea></view>
+    <view class="consent-row"><view><text class="consent-title">允许 AI 辅助整理文字</text><text class="consent-copy">只产生候选草稿，仍由管理员确认</text></view><switch color="#9E2F24" checked="{{aiConsent}}" bindchange="onAiConsent" /></view>
+    <view class="consent-row"><view><text class="consent-title">允许识别图片中的文字</text><text class="consent-copy">识别结果不会直接公开</text></view><switch color="#9E2F24" checked="{{materialConsent}}" bindchange="onMaterialConsent" /></view>
+    <button class="primary-button submit-button" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submit">保存并提交审核</button>
+    <view wx:if="{{message}}" class="status-strip">{{message}}</view>
+  </view>
+</scroll-view>

@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/explore/index",
+    "pages/traces/index",
+    "pages/submit/index",
+    "pages/profile/index",
+    "pages/resource-detail/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#17110F",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "楚韵链迹",
+    "backgroundColor": "#F3EBDD",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#756C66",
+    "selectedColor": "#9E2F24",
+    "backgroundColor": "#FFFDF8",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/explore/index", "text": "探楚" },
+      { "pagePath": "pages/traces/index", "text": "链迹" },
+      { "pagePath": "pages/submit/index", "text": "投稿" },
+      { "pagePath": "pages/profile/index", "text": "我的" }
+    ]
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于记录文化采集点位，并为你规划到访路线"
+    }
+  },
+  "requiredPrivateInfos": ["getLocation"],
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

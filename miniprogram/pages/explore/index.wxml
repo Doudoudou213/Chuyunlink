@@ -1,0 +1,38 @@
+<scroll-view scroll-y class="page-shell explore-page">
+  <view class="hero">
+    <text class="eyebrow">CHU CULTURAL TRAILS</text>
+    <text class="hero-title display-title">从一份记录，走进一段荆楚往事</text>
+    <text class="hero-copy">看见地点、纹样与人的联系，也把你遇见的文化痕迹留下来。</text>
+    <view class="lacquer-trace"><view class="trace-node"></view><view class="trace-line"></view><view class="trace-node small"></view></view>
+  </view>
+
+  <view wx:if="{{error}}" class="status-strip error">{{error}}，下拉可重试。</view>
+
+  <view class="section-head">
+    <text class="section-title">今日探楚</text><text class="section-note">已审核资源</text>
+  </view>
+  <scroll-view wx:if="{{resources.length}}" scroll-x enable-flex class="resource-rail">
+    <view wx:for="{{resources}}" wx:key="id" class="resource-card paper-card" data-id="{{item.id}}" bindtap="openResource">
+      <view class="resource-index">{{index + 1}}</view>
+      <text class="resource-type">{{item.typeLabel}} · {{item.regionLabel}}</text>
+      <text class="resource-title display-title">{{item.title}}</text>
+      <text class="resource-summary">{{item.summary}}</text>
+      <view class="tag-row"><text wx:for="{{item.tagPreview}}" wx:for-item="tag" wx:key="*this" class="tag">{{tag}}</text></view>
+    </view>
+  </scroll-view>
+  <view wx:elif="{{!loading}}" class="paper-card empty-state"><text class="empty-title">资源正在整理</text><text class="empty-copy">管理员发布后的文化资源会出现在这里。</text></view>
+
+  <view class="section-head">
+    <text class="section-title">大家刚留下的</text><text class="section-note">审核通过的投稿</text>
+  </view>
+  <view wx:for="{{submissions}}" wx:key="id" class="submission-card paper-card">
+    <image wx:if="{{item.fileUrl}}" class="submission-image" mode="aspectFill" src="{{item.fileUrl}}"></image>
+    <view class="submission-body">
+      <text class="submission-meta">{{item.regionName}} · {{item.contributorName}}</text>
+      <text class="submission-title display-title">{{item.title}}</text>
+      <text class="submission-copy">{{item.summary}}</text>
+      <view wx:if="{{item.storyLead}}" class="story-lead"><text class="story-mark">链</text><text>{{item.storyLead}}</text></view>
+    </view>
+  </view>
+  <view wx:if="{{!loading && !submissions.length}}" class="paper-card empty-state"><text class="empty-title">还没有公开投稿</text><text class="empty-copy">完成审核的公众记录会从这里开始串联。</text></view>
+</scroll-view>

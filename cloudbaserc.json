@@ -11,6 +11,14 @@
       "installDependency": true
     },
     {
+      "name": "miniProgramAuth",
+      "runtime": "Nodejs18.15",
+      "handler": "index.main",
+      "timeout": 15,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
       "name": "adminSubmissions",
       "runtime": "Nodejs18.15",
       "handler": "index.main",

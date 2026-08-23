@@ -1,0 +1,22 @@
+<scroll-view scroll-y class="detail-page">
+  <view wx:if="{{item}}">
+    <view class="detail-hero">
+      <text class="eyebrow">{{item.typeLabel}} · {{item.regionLabel}}</text>
+      <text class="detail-title display-title">{{item.title}}</text>
+      <view class="detail-rule"></view>
+      <text class="detail-summary">{{item.summary}}</text>
+    </view>
+    <view class="detail-body">
+      <view class="section-head"><text class="section-title">先读这段故事</text><text class="section-note">人工审核内容</text></view>
+      <view class="story-panel paper-card">
+        <text class="story-copy">{{item.summary || '这项文化资源的故事正在依据审核资料继续整理。'}}</text>
+        <view class="source-note"><text class="source-label">资料说明</text><text>公开内容只采用已审核资料，AI 生成内容不会自动发布。</text></view>
+      </view>
+      <view wx:if="{{item.collectables.length}}" class="section-head"><text class="section-title">到访可留意</text></view>
+      <view wx:if="{{item.collectables.length}}" class="collect-grid">
+        <text wx:for="{{item.collectables}}" wx:key="*this" class="collect-item">{{item}}</text>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{error}}" class="page-shell"><view class="status-strip error">{{error}}</view><button class="secondary-button" bindtap="loadDetail">重新加载</button></view>
+</scroll-view>
