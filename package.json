@@ -10,6 +10,7 @@
     "test:story-quality": "node tools/test-story-quality.js",
     "test:stories": "node tools/test-story-evidence.js",
     "test:story-feedback": "node tools/test-story-feedback.js",
+    "test:story-claims": "node tools/test-story-claims.js",
     "test:routes": "node tools/test-map-personalization.js",
     "test:rewards": "node tools/test-reward-security.js",
     "test:miniprogram": "node tools/test-miniprogram-scaffold.js",

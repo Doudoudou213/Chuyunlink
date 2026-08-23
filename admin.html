@@ -1139,6 +1139,30 @@
     function renderStoryDraftWorkspace(result) {
       const resources = result.resources || [];
       const drafts = result.drafts || [];
+      const claims = result.claimWorkspace && result.claimWorkspace.claims || [];
+      const claimSources = new Map((result.claimWorkspace && result.claimWorkspace.sources || []).map((source) => [source.id, source]));
+      const claimStatusLabels = { supported: "已有依据", needs_evidence: "待补依据", disputed: "存在争议" };
+      const renderClaimTools = (draft) => {
+        const storyClaims = claims.filter((claim) => claim.storyId === draft.id);
+        const claimForms = (draft.chapters || []).map((chapter, chapterIndex) => {
+          const chapterClaims = storyClaims.filter((claim) => Number(claim.chapterIndex) === chapterIndex);
+          const sourceChoices = (chapter.sourceLinkIds || []).map((linkId) => {
+            const source = claimSources.get(linkId) || {};
+            return `<label class="flex items-start gap-2 rounded-lg border border-stone-200 bg-white p-2 text-[10px] text-stone-600"><input type="checkbox" name="sourceLinkIds" value="${escapeHtml(linkId)}" class="mt-0.5"> <span><strong class="block text-stone-700">${escapeHtml(source.label || "社区资料")}</strong><span class="mt-0.5 block leading-4 text-stone-400">${escapeHtml(source.evidenceSummary || linkId)}</span></span></label>`;
+          }).join("");
+          return `<section class="rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <div class="flex items-center justify-between gap-2"><strong class="text-xs text-stone-800">第 ${chapterIndex + 1} 章 · ${escapeHtml(chapter.title)}</strong><span class="text-[9px] text-stone-400">${chapterClaims.length} 条事实</span></div>
+            <p class="mt-2 rounded-lg bg-white p-3 text-[10px] leading-5 text-stone-500">${escapeHtml(chapter.body)}</p>
+            <form data-story-claim-form data-story-id="${escapeHtml(draft.id)}" data-chapter-index="${chapterIndex}" class="mt-3 space-y-2">
+              <textarea name="claimText" rows="2" class="w-full rounded-lg border border-stone-200 bg-white p-3 text-xs leading-relaxed outline-none focus:border-[#9e2f24]" placeholder="从上方正文完整复制一句需要标注依据的话"></textarea>
+              <div class="grid gap-2 sm:grid-cols-2">${sourceChoices}</div>
+              <div class="flex flex-wrap items-center gap-2"><select name="status" class="rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs"><option value="supported">确认已有依据</option><option value="needs_evidence">标记待补依据</option><option value="disputed">标记存在争议</option></select><button type="submit" class="rounded-lg bg-[#9e2f24] px-4 py-2 text-xs font-bold text-white">保存句级依据</button></div>
+            </form>
+            ${chapterClaims.length ? `<div class="mt-3 space-y-2">${chapterClaims.map((claim) => `<article data-story-claim-id="${escapeHtml(claim.id)}" class="rounded-lg border border-[#d8c6a7] bg-white p-3"><div class="flex flex-wrap items-start justify-between gap-2"><p class="min-w-0 flex-1 text-[10px] leading-5 text-stone-700">${escapeHtml(claim.claimText)}</p><span class="rounded-full bg-amber-50 px-2 py-1 text-[9px] font-bold text-amber-800">${escapeHtml(claimStatusLabels[claim.status] || claim.status)}</span></div><div class="mt-2 flex gap-2"><input data-story-claim-retire-reason class="min-w-0 flex-1 rounded-lg border border-stone-200 px-2 py-1.5 text-[10px]" placeholder="停用原因"><button type="button" data-story-claim-retire class="rounded-lg border border-red-200 px-3 py-1.5 text-[10px] font-bold text-red-700">停用</button></div></article>`).join("")}</div>` : ""}
+          </section>`;
+        }).join("");
+        return `<details class="mt-4 rounded-xl border border-[#d8c6a7] bg-[#fffaf1] p-4"><summary class="cursor-pointer text-xs font-bold text-[#7d2b23]">事实依据标注 · ${storyClaims.length} 条</summary><p class="mt-2 text-[10px] leading-relaxed text-stone-500">只标注可被原始材料直接支持的句子。复制正文原句、勾选对应来源后保存；用户会在句末看到“依据”。</p><div class="mt-3 grid gap-3">${claimForms}</div></details>`;
+      };
       const resourceOptions = resources.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.title)} · ${Number(item.confirmedSourceCount || 0)} 份来源${Number(item.approvedSupplementCount || 0) ? ` + ${Number(item.approvedSupplementCount || 0)} 份补充` : ''}${item.hasNewMaterial ? ' · 有新补充待更新' : item.readiness && !item.readiness.ready ? ' · 建议先补充' : ' · 可进行质量检查'}</option>`).join("");
       const cards = drafts.length ? drafts.map((draft) => {
         const isDraft = draft.status === "draft";
@@ -1180,6 +1204,7 @@
             ` : `
               <h4 class="mt-4 text-lg font-bold text-stone-900">${escapeHtml(draft.title)}</h4><p class="mt-2 text-xs leading-relaxed text-stone-600">${escapeHtml(draft.introduction)}</p>
               ${qualitySlip}
+              ${isPublished ? renderClaimTools(draft) : ""}
               ${isPublished ? `<div class="mt-4 flex gap-2"><input data-story-archive-reason class="min-w-0 flex-1 rounded-lg border border-stone-200 px-3 py-2 text-xs" placeholder="归档原因"><button type="button" data-story-draft-archive class="rounded-lg border border-red-200 px-4 py-2 text-xs font-bold text-red-700">归档故事</button></div>` : '<p class="mt-3 text-[10px] text-stone-400">这是历史版本，仅保留用于追溯。</p>'}
             `}
           </article>`;
@@ -1203,7 +1228,11 @@
       message.textContent = "正在读取已确认链迹和故事版本，不会调用模型...";
       list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在准备故事工作台...</div>';
       try {
-        const result = await callAiWorker({ action: "getStoryDraftWorkspace" });
+        const [result, claimWorkspace] = await Promise.all([
+          callAiWorker({ action: "getStoryDraftWorkspace" }),
+          callAdmin({ action: "getStoryClaimWorkspace" }).catch(() => ({ claims: [], count: 0 }))
+        ]);
+        result.claimWorkspace = claimWorkspace;
         renderStoryDraftWorkspace(result);
         viewCount.textContent = `${Number(result.counts && result.counts.drafts || 0)} 份草稿`;
         message.className = "mt-2 text-xs text-emerald-700";
@@ -1263,6 +1292,45 @@
         await loadStoryDrafts();
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = "故事已归档并停止公开，原始投稿和链迹关系均保留。";
+      } catch (error) {
+        button.disabled = false;
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function saveStoryClaim(event) {
+      event.preventDefault();
+      const form = event.target;
+      const button = form.querySelector('button[type="submit"]');
+      const sourceLinkIds = [...form.querySelectorAll('input[name="sourceLinkIds"]:checked')].map((input) => input.value);
+      button.disabled = true;
+      try {
+        await callAdmin({
+          action: "saveStoryClaim",
+          storyId: form.dataset.storyId,
+          chapterIndex: Number(form.dataset.chapterIndex),
+          claimText: form.elements.claimText.value.trim(),
+          status: form.elements.status.value,
+          sourceLinkIds
+        });
+        await loadStoryDrafts();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "句级依据已保存；只有“已有依据”的内容会显示给用户。";
+      } catch (error) {
+        button.disabled = false;
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function retireStoryClaim(card, button) {
+      button.disabled = true;
+      try {
+        await callAdmin({ action: "retireStoryClaim", claimId: card.dataset.storyClaimId, reason: card.querySelector("[data-story-claim-retire-reason]").value.trim() });
+        await loadStoryDrafts();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = "事实依据已停用，原故事和投稿仍然保留。";
       } catch (error) {
         button.disabled = false;
         message.className = "mt-2 text-xs text-red-600";
@@ -1779,6 +1847,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       if (event.target && event.target.id === "redemption-lookup-form") lookupRedemption(event);
       if (event.target && event.target.id === "story-link-form") saveStoryLink(event);
       if (event.target && event.target.id === "story-draft-generate-form") generateStoryDraft(event);
+      if (event.target && event.target.matches("[data-story-claim-form]")) saveStoryClaim(event);
     });
     document.getElementById("list").addEventListener("input", (event) => {
       const input = event.target.closest("[data-resource-confirm-input]");
@@ -1846,6 +1915,9 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       if (storyDraftCard && storyPublishButton) publishStoryDraft(storyDraftCard);
       const storyChainArchiveButton = event.target.closest("button[data-story-draft-archive]");
       if (storyDraftCard && storyChainArchiveButton) archiveStoryDraft(storyDraftCard);
+      const storyClaimRetireButton = event.target.closest("button[data-story-claim-retire]");
+      const storyClaimCard = event.target.closest("article[data-story-claim-id]");
+      if (storyClaimRetireButton && storyClaimCard) retireStoryClaim(storyClaimCard, storyClaimRetireButton);
     });
     logoutButton.addEventListener("click", async () => {
       await auth.signOut();

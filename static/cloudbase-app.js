@@ -720,17 +720,36 @@ feedback_closed: '反馈处理',
             <div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在整理资料来源...</div>
           </div>
         </section>
+        <div id="cloud-story-claim-drawer" class="hidden fixed inset-0 z-[97] flex items-end bg-black/45">
+          <section class="max-h-[78vh] w-full overflow-y-auto rounded-t-3xl border-t border-[#d7b46e]/30 bg-[#fffaf1] px-5 pb-7 pt-4 shadow-2xl sm:mx-auto sm:max-w-xl">
+            <div class="sticky top-0 z-10 flex items-center justify-between gap-3 bg-[#fffaf1]/95 pb-3 backdrop-blur">
+              <div><p class="text-[9px] font-black tracking-[0.2em] text-[#9e2f24]">句级依据</p><h3 class="mt-1 font-black text-stone-900">这句话依据什么</h3></div>
+              <button id="cloud-story-claim-close" type="button" class="flex h-11 w-11 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700" aria-label="关闭依据详情">✕</button>
+            </div>
+            <div id="cloud-story-claim-content"></div>
+          </section>
+        </div>
       </div>
     `);
     document.getElementById('cloud-story-evidence-close').addEventListener('click', closeStoryEvidence);
     document.getElementById('cloud-story-evidence-modal').addEventListener('click', (event) => {
       if (event.target.id === 'cloud-story-evidence-modal') closeStoryEvidence();
     });
+    document.getElementById('cloud-story-claim-close').addEventListener('click', closeStoryClaimDrawer);
+    document.getElementById('cloud-story-claim-drawer').addEventListener('click', (event) => {
+      if (event.target.id === 'cloud-story-claim-drawer') closeStoryClaimDrawer();
+    });
   }
 
   function closeStoryEvidence() {
+    closeStoryClaimDrawer();
     const modal = document.getElementById('cloud-story-evidence-modal');
     if (modal) modal.classList.add('hidden');
+  }
+
+  function closeStoryClaimDrawer() {
+    const drawer = document.getElementById('cloud-story-claim-drawer');
+    if (drawer) drawer.classList.add('hidden');
   }
 
   function storyRelationLabel(value) {
@@ -754,6 +773,75 @@ feedback_closed: '反馈处理',
       return `<video controls preload="metadata" class="mt-3 max-h-72 w-full rounded-xl bg-black" src="${fileUrl}"></video>`;
     }
     return `<img loading="lazy" src="${fileUrl}" alt="${safeText(submission.title || '社区资料')}" class="mt-3 max-h-80 w-full rounded-xl object-cover">`;
+  }
+
+  function renderStoryBodyWithClaims(body, claims, chapterIndex) {
+    const text = String(body || '');
+    const positioned = (claims || [])
+      .filter((claim) => Number(claim.chapterIndex) === chapterIndex && claim.text)
+      .map((claim) => ({ ...claim, position: text.indexOf(claim.text) }))
+      .filter((claim) => claim.position >= 0)
+      .sort((left, right) => left.position - right.position || right.text.length - left.text.length);
+    if (!positioned.length) return safeText(text).replace(/\n/g, '<br>');
+    let cursor = 0;
+    let number = 0;
+    const parts = [];
+    positioned.forEach((claim) => {
+      if (claim.position < cursor) return;
+      parts.push(safeText(text.slice(cursor, claim.position)));
+      parts.push(safeText(text.slice(claim.position, claim.position + claim.text.length)));
+      number += 1;
+      parts.push(`<button type="button" data-story-open-claim="${safeText(claim.id)}" class="mx-1 inline-flex min-h-7 items-center rounded-full border border-[#9e2f24]/25 bg-[#9e2f24]/5 px-2 py-0.5 align-middle text-[9px] font-black text-[#8f302b]" aria-label="查看第 ${number} 条事实依据">依据 ${number}</button>`);
+      cursor = claim.position + claim.text.length;
+    });
+    parts.push(safeText(text.slice(cursor)));
+    return parts.join('').replace(/\n/g, '<br>');
+  }
+
+  function openStoryClaimDrawer(claimId) {
+    const result = activeStoryEvidenceResult || {};
+    const claim = (result.claims || []).find((item) => item.id === claimId);
+    const drawer = document.getElementById('cloud-story-claim-drawer');
+    const content = document.getElementById('cloud-story-claim-content');
+    if (!claim || !drawer || !content) return;
+    const sourceMap = new Map((result.items || []).map((item) => [item.id, item]));
+    const sources = (claim.sourceLinkIds || []).map((id) => sourceMap.get(id)).filter(Boolean);
+    content.innerHTML = `
+      <blockquote class="rounded-2xl border-l-4 border-[#9e2f24] bg-white px-4 py-4 text-sm font-bold leading-7 text-stone-800">${safeText(claim.text)}</blockquote>
+      <p class="mt-4 text-[10px] leading-relaxed text-stone-500">以下原始材料已经过投稿审核和管理员事实确认。它们只支撑上面这句话，不代表整篇故事的所有内容。</p>
+      <div class="mt-4 space-y-3">
+        ${sources.map((source, index) => {
+          const submission = source.submission || {};
+          return `<article class="rounded-2xl border border-[#d8c6a7] bg-white p-4">
+            <div class="flex items-start gap-3"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#241a17] text-[10px] font-black text-[#e3bd69]">${index + 1}</span><div><h4 class="text-xs font-black text-stone-900">${safeText(submission.title || '社区文化记录')}</h4><p class="mt-1 text-[10px] leading-5 text-stone-500">${safeText(source.evidenceSummary || submission.description)}</p></div></div>
+            ${storyEvidenceMedia(submission)}
+            <p class="mt-3 border-t border-stone-100 pt-3 text-[9px] text-stone-400">贡献者：${safeText(submission.contributorName || '社区守护者')}${submission.regionName ? ` · ${safeText(submission.regionName)}` : ''}</p>
+          </article>`;
+        }).join('')}
+      </div>`;
+    drawer.classList.remove('hidden');
+  }
+
+  function renderStoryTrail(result) {
+    const nodes = result.trail && Array.isArray(result.trail.nodes) ? result.trail.nodes.slice(0, 5) : [];
+    if (nodes.length < 2) return '';
+    return `
+      <section class="overflow-hidden rounded-2xl border border-[#b68a4a]/25 bg-white p-4">
+        <div class="flex items-end justify-between gap-3"><div><p class="text-[9px] font-black tracking-[0.18em] text-[#9e2f24]">朱漆链迹</p><h4 class="mt-1 text-sm font-black text-stone-900">这些材料为什么连在一起</h4></div><span class="text-[9px] text-stone-400">${Number(result.trail.totalEvidenceCount || nodes.length - 1)} 份资料</span></div>
+        <div class="mt-4 overflow-x-auto pb-2">
+          <ol class="flex min-w-max items-stretch">
+            ${nodes.map((node, index) => `<li class="relative flex w-40 shrink-0 items-start ${index ? 'pl-7' : ''}">
+              ${index ? '<span class="absolute left-0 top-4 h-0.5 w-7 bg-[#9e2f24]/55"></span>' : ''}
+              ${node.kind === 'evidence' ? `<button type="button" data-story-trail-source="${safeText(node.sourceLinkId)}" class="w-full rounded-xl border border-[#eadbc3] bg-[#fffaf1] p-3 text-left transition hover:border-[#9e2f24]/40">` : '<div class="w-full rounded-xl bg-[#241a17] p-3 text-[#fff5df]">'}
+                <span class="flex h-6 w-6 items-center justify-center rounded-full ${node.kind === 'resource' ? 'bg-[#d7b46e] text-[#241a17]' : 'bg-[#9e2f24] text-white'} text-[9px] font-black">${index + 1}</span>
+                <strong class="mt-2 block text-[11px] leading-5">${safeText(node.label)}</strong>
+                <span class="mt-1 block text-[9px] leading-4 ${node.kind === 'resource' ? 'text-[#eadcca]/70' : 'text-stone-500'}">${safeText(node.why)}</span>
+              ${node.kind === 'evidence' ? '</button>' : '</div>'}
+            </li>`).join('')}
+          </ol>
+        </div>
+        <p class="mt-1 text-[9px] text-stone-400">点击材料节点可查看原始记录；链迹只表达已确认关系，不表示 AI 已证明历史因果。</p>
+      </section>`;
   }
 
   function storyGraphLines(value, maxLength) {
@@ -979,12 +1067,13 @@ feedback_closed: '反馈处理',
               <section class="story-chapter-rail relative pl-10">
                 <span class="absolute left-0 top-0 z-[1] flex h-7 w-7 items-center justify-center rounded-full bg-[#9e2f24] text-xs font-black text-[#fff5df] shadow-[0_4px_10px_rgba(158,47,36,0.2)]">${index + 1}</span>
                 <h4 class="cultural-font font-bold text-[#2b2421]">${safeText(chapter.title)}</h4>
-                <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">${safeText(chapter.body)}</p>
+                <p class="mt-2 text-sm leading-7 text-stone-700">${renderStoryBodyWithClaims(chapter.body, result.claims || [], index)}</p>
                 <div class="mt-3 flex flex-wrap gap-2">
                   ${sources.map((source) => `<button type="button" data-story-open-source="${safeText(source.id)}" class="min-h-9 rounded-full border border-[#b68a4a]/30 bg-[#f7edda] px-3 py-1 text-[10px] font-bold text-[#735322]">来源 · ${safeText(source.submission && source.submission.title || '社区资料')}</button>`).join('')}
                 </div>
               </section>`;
           }).join('')}
+          ${renderStoryTrail(result)}
           ${story.closing ? `<footer class="rounded-xl bg-amber-50 p-4 text-xs leading-relaxed text-stone-700"><strong class="text-[#8f302b]">结语</strong><p class="mt-1">${safeText(story.closing)}</p></footer>` : ''}
           <p class="border-t border-stone-100 pt-3 text-[9px] leading-relaxed text-stone-400">本故事由已确认链迹资料编排，并经管理员审核发布。点击每章来源可回到对应的原始社区记录。</p>
           <section class="rounded-2xl border border-[#b68a4a]/25 bg-[#f8f0e2] p-4">
@@ -1096,6 +1185,12 @@ feedback_closed: '反馈处理',
     });
     content.querySelectorAll('[data-story-open-source]').forEach((sourceButton) => {
       sourceButton.addEventListener('click', () => switchStoryEvidenceView('timeline', sourceButton.dataset.storyOpenSource));
+    });
+    content.querySelectorAll('[data-story-open-claim]').forEach((claimButton) => {
+      claimButton.addEventListener('click', () => openStoryClaimDrawer(claimButton.dataset.storyOpenClaim));
+    });
+    content.querySelectorAll('[data-story-trail-source]').forEach((trailButton) => {
+      trailButton.addEventListener('click', () => switchStoryEvidenceView('timeline', trailButton.dataset.storyTrailSource));
     });
     content.querySelector('[data-story-feedback-toggle]')?.addEventListener('click', openStoryFeedbackForm);
     content.querySelector('#cloud-story-feedback-form')?.addEventListener('submit', submitStoryFeedback);

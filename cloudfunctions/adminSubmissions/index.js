@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const RESOURCE_SEED = require('./data/resources.v1.json');
 const { createAdminStoryEvidenceService } = require('./domains/story-evidence');
 const { createAdminStoryChainService } = require('./domains/story-chains');
+const { createAdminStoryClaimService } = require('./domains/story-claims');
 const { buildResourceBindingCandidates, resourceBindingOption } = require('./domains/resource-binding');
 
 const app = cloudbase.init({
@@ -26,15 +27,18 @@ const STORY_LINK_COLLECTION = 'story_evidence_links';
 const STORY_LOG_COLLECTION = 'story_evidence_logs';
 const STORY_CHAIN_COLLECTION = 'story_chains';
 const STORY_CHAIN_LOG_COLLECTION = 'story_chain_logs';
+const STORY_CLAIM_COLLECTION = 'story_claims';
+const STORY_CLAIM_LOG_COLLECTION = 'story_claim_logs';
 const RESOURCE_SEED_CONFIRM_TOKEN = 'IMPORT_RESOURCES_V1';
 const storyEvidenceService = createAdminStoryEvidenceService({ db, app });
 const storyChainService = createAdminStoryChainService({ db });
+const storyClaimService = createAdminStoryClaimService({ db });
 let interactionCollectionsReady = null;
 
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION, STORY_LINK_COLLECTION, STORY_LOG_COLLECTION, STORY_CHAIN_COLLECTION, STORY_CHAIN_LOG_COLLECTION].map(async (name) => {
+      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION, STORY_LINK_COLLECTION, STORY_LOG_COLLECTION, STORY_CHAIN_COLLECTION, STORY_CHAIN_LOG_COLLECTION, STORY_CLAIM_COLLECTION, STORY_CLAIM_LOG_COLLECTION].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {
@@ -1344,6 +1348,9 @@ exports.main = async (event = {}) => {
     if (action === 'archiveStoryEvidenceLink') return await storyEvidenceService.archive(event, callerUid);
     if (action === 'publishStoryDraft') return await storyChainService.publish(event, callerUid);
     if (action === 'archiveStoryChain') return await storyChainService.archive(event, callerUid);
+    if (action === 'getStoryClaimWorkspace') return await storyClaimService.workspace();
+    if (action === 'saveStoryClaim') return await storyClaimService.save(event, callerUid);
+    if (action === 'retireStoryClaim') return await storyClaimService.retire(event, callerUid);
 
     return {
       ok: false,
