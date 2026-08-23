@@ -397,63 +397,95 @@ feedback_closed: '反馈处理',
     if (legacyCard) legacyCard.classList.add('hidden');
 
     profileView.insertAdjacentHTML('afterbegin', `
-      <section id="cloud-profile-card" class="rounded-2xl border border-sandGold/30 bg-deepTeal p-4 text-white shadow-lg">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <p class="text-[10px] text-stone-300">个人中心</p>
-              <span id="cloud-account-badge" class="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[9px] font-bold text-stone-200">连接中</span>
+      <section id="cloud-profile-card" class="profile-gallery-header">
+        <div class="profile-gallery-titlebar">
+          <div>
+            <p class="profile-gallery-kicker">MY COLLECTION</p>
+            <h2 class="profile-gallery-page-title">我的</h2>
+          </div>
+          <button id="cloud-profile-settings" type="button" class="profile-settings-trigger" aria-label="打开个人设置" aria-expanded="false" aria-controls="profile-utility-menu">
+            <i data-lucide="settings" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="profile-identity">
+          <div class="profile-avatar-frame">
+            <img id="cloud-profile-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&amp;fit=crop&amp;q=80&amp;w=240" alt="楚韵链迹个人头像">
+          </div>
+          <div class="profile-identity-copy">
+            <div class="profile-name-row">
+              <h3 id="cloud-profile-name">正在连接...</h3>
+              <button id="cloud-profile-edit-inline" type="button" class="profile-inline-edit" aria-label="编辑昵称" title="编辑昵称">
+                <i data-lucide="pencil-line" aria-hidden="true"></i>
+              </button>
+              <span id="cloud-account-badge" class="profile-account-badge">连接中</span>
             </div>
-            <h4 id="cloud-profile-name" class="cultural-font mt-1 truncate text-base font-bold text-sandGold">正在连接...</h4>
-            <p id="cloud-profile-uid" class="mt-1 break-all font-mono text-[9px] text-stone-300"></p>
-          </div>
-          <div class="shrink-0 text-right">
-            <p class="text-[9px] text-stone-300">流光积分</p>
-            <p id="cloud-profile-points" class="text-xl font-bold text-sandGold">0</p>
+            <p id="cloud-profile-uid" class="profile-identity-number"></p>
+            <p class="profile-biography">在江汉与楚地之间，记录建筑、漆器纹样与乡土记忆。</p>
           </div>
         </div>
-        <div class="mt-3 grid grid-cols-4 gap-2 text-center">
-          <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-total" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">全部投稿</p></div>
-          <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-pending" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">待审核</p></div>
-          <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-approved" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">已通过</p></div>
-          <div class="rounded-lg bg-white/10 p-2"><p id="cloud-stat-attention" class="font-bold text-sandGold">0</p><p class="text-[9px] text-stone-300">需处理</p></div>
+
+        <div class="profile-stat-ledger" aria-label="个人图鉴数据">
+          <div><strong id="cloud-stat-total">0</strong><span>作品</span></div>
+          <div><strong id="cloud-stat-approved">0</strong><span>已入藏</span></div>
+          <div><strong id="cloud-profile-points">0</strong><span>流光</span></div>
         </div>
-        <p id="cloud-account-hint" class="mt-3 rounded-lg border border-white/10 bg-black/10 px-2.5 py-2 text-[9px] leading-relaxed text-stone-300"></p>
-        <div class="mt-3 grid grid-cols-2 gap-2">
-          <button id="cloud-profile-upload" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">继续投稿</button>
-          <button id="cloud-profile-edit" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">编辑资料</button>
-          <button id="cloud-feedback-open" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">意见反馈</button>
-          <button id="cloud-notification-open" type="button" class="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-[10px] font-bold">我的消息</button>
-          <button id="cloud-account-action" type="button" class="rounded-lg bg-sandGold px-2 py-2 text-[10px] font-bold text-deepTeal">账号登录</button>
+        <div class="profile-hidden-stats" aria-hidden="true">
+          <span id="cloud-stat-pending">0</span><span id="cloud-stat-attention">0</span>
         </div>
-        <div class="mt-3 grid grid-cols-2 gap-2 border-t border-white/10 pt-3">
-          <button type="button" data-profile-feature="profile-badges-section" class="rounded-lg bg-white/10 px-2 py-2 text-[10px] font-bold text-stone-100">查看徽章</button>
-          <button type="button" data-profile-feature="profile-coupons-section" class="rounded-lg bg-white/10 px-2 py-2 text-[10px] font-bold text-stone-100">兑换优惠券</button>
+
+        <div id="profile-utility-menu" class="profile-utility-menu hidden" aria-label="个人设置菜单">
+          <p id="cloud-account-hint" class="profile-account-hint"></p>
+          <div class="profile-utility-grid">
+            <button id="cloud-profile-edit" type="button"><i data-lucide="user-pen" aria-hidden="true"></i><span>编辑资料</span></button>
+            <button id="cloud-profile-upload" type="button"><i data-lucide="scan-line" aria-hidden="true"></i><span>继续采集</span></button>
+            <button id="cloud-notification-open" type="button"><i data-lucide="bell" aria-hidden="true"></i><span>我的消息</span></button>
+            <button id="cloud-feedback-open" type="button"><i data-lucide="message-circle-more" aria-hidden="true"></i><span>意见反馈</span></button>
+            <button id="cloud-account-action" type="button"><i data-lucide="log-in" aria-hidden="true"></i><span>账号登录</span></button>
+          </div>
+        </div>
+
+        <div class="profile-atlas-banner">
+          <div class="profile-atlas-copy">
+            <p>MY JINGCHU ATLAS</p>
+            <h3>我的荆楚图鉴</h3>
+            <span>把走过的地方与看见的器物，慢慢收进一张图里。</span>
+            <div class="profile-atlas-links">
+              <button type="button" data-profile-feature="profile-badges-section">浏览图鉴 <i data-lucide="arrow-right" aria-hidden="true"></i></button>
+              <button type="button" data-profile-feature="profile-coupons-section">流光反哺 <i data-lucide="sparkles" aria-hidden="true"></i></button>
+            </div>
+          </div>
+          <div id="profile-atlas-preview" class="profile-atlas-preview" aria-hidden="true">
+            <img id="profile-atlas-preview-a" src="https://commons.wikimedia.org/wiki/Special:FilePath/20240621%20Yellow%20Crane%20Tower.jpg?width=900" alt="">
+            <img id="profile-atlas-preview-b" src="https://commons.wikimedia.org/wiki/Special:FilePath/20250526%20Wudangshan%20Jindian%20%28155228%29.jpg?width=900" alt="">
+          </div>
         </div>
       </section>
-      <section class="space-y-2">
-        <div class="flex items-center justify-between">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500">我的投稿</h4>
-          <button id="cloud-record-refresh" type="button" class="text-[10px] font-bold text-deepTeal">刷新</button>
+
+      <section class="profile-submission-section" aria-labelledby="profile-submission-heading">
+        <div class="profile-submission-heading-row">
+          <div>
+            <p class="profile-gallery-kicker">FIELD NOTES</p>
+            <h3 id="profile-submission-heading">我的采集图鉴</h3>
+          </div>
+          <button id="cloud-record-refresh" type="button" class="profile-refresh-button" aria-label="刷新投稿记录" title="刷新投稿记录">
+            <i data-lucide="refresh-cw" aria-hidden="true"></i>
+          </button>
         </div>
-        <div id="cloud-record-filters" class="flex gap-1.5 overflow-x-auto pb-1">
-          <button type="button" data-cloud-filter="all" class="shrink-0 rounded-full bg-deepTeal px-2.5 py-1 text-[9px] font-bold text-white">全部</button>
-          <button type="button" data-cloud-filter="pending" class="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[9px] font-bold text-stone-500">待审核</button>
-          <button type="button" data-cloud-filter="approved" class="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[9px] font-bold text-stone-500">已通过</button>
-          <button type="button" data-cloud-filter="attention" class="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[9px] font-bold text-stone-500">需处理</button>
+        <div id="cloud-record-filters" class="profile-record-filters" aria-label="投稿记录筛选">
+          <button type="button" data-cloud-filter="all" aria-pressed="true">作品</button>
+          <button type="button" data-cloud-filter="approved" aria-pressed="false">已入藏</button>
+          <button type="button" data-cloud-filter="pending" aria-pressed="false">待整理</button>
+          <button type="button" data-cloud-filter="attention" aria-pressed="false">待补充</button>
         </div>
-        <div id="cloud-my-submissions" class="space-y-2">
-          <div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">正在读取...</div>
+        <div id="cloud-my-submissions" class="profile-submission-gallery" aria-live="polite">
+          <div class="profile-gallery-empty">正在整理你的采集图鉴…</div>
         </div>
       </section>
-      <section class="space-y-2">
-        <div class="flex items-center justify-between">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500">我的反馈</h4>
-          <button id="cloud-feedback-add" type="button" class="text-[10px] font-bold text-deepTeal">提交反馈</button>
-        </div>
-        <div id="cloud-my-feedback" class="space-y-2">
-          <div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">正在读取...</div>
-        </div>
+
+      <section id="profile-feedback-history" class="hidden" aria-label="我的反馈">
+        <button id="cloud-feedback-add" type="button">提交反馈</button>
+        <div id="cloud-my-feedback"><span>正在读取...</span></div>
       </section>
     `);
 
@@ -468,10 +500,19 @@ feedback_closed: '反馈处理',
       if (typeof switchTab === 'function') switchTab('collect');
     });
     document.getElementById('cloud-profile-edit').addEventListener('click', editCloudNickname);
+    document.getElementById('cloud-profile-edit-inline').addEventListener('click', editCloudNickname);
     document.getElementById('cloud-feedback-open').addEventListener('click', openCloudFeedback);
     document.getElementById('cloud-notification-open').addEventListener('click', openCloudNotifications);
     document.getElementById('cloud-feedback-add').addEventListener('click', openCloudFeedback);
     document.getElementById('cloud-record-refresh').addEventListener('click', refreshCloudProfile);
+    document.getElementById('cloud-profile-settings').addEventListener('click', () => {
+      const trigger = document.getElementById('cloud-profile-settings');
+      const menu = document.getElementById('profile-utility-menu');
+      const shouldOpen = menu.classList.contains('hidden');
+      menu.classList.toggle('hidden', !shouldOpen);
+      trigger.setAttribute('aria-expanded', String(shouldOpen));
+      trigger.classList.toggle('is-open', shouldOpen);
+    });
     document.getElementById('cloud-record-filters').addEventListener('click', (event) => {
       const button = event.target.closest('button[data-cloud-filter]');
       if (!button) return;
@@ -493,10 +534,8 @@ feedback_closed: '反馈处理',
     });
     document.querySelectorAll('[data-profile-feature]').forEach((button) => {
       const selected = shouldOpen && button.dataset.profileFeature === sectionId;
-      button.classList.toggle('bg-sandGold', selected);
-      button.classList.toggle('text-deepTeal', selected);
-      button.classList.toggle('bg-white/10', !selected);
-      button.classList.toggle('text-stone-100', !selected);
+      button.classList.toggle('is-active', selected);
+      button.setAttribute('aria-pressed', String(selected));
     });
     if (shouldOpen) {
       section.classList.remove('hidden');
@@ -1748,6 +1787,85 @@ feedback_closed: '反馈处理',
     return copyTextValue(code && code.textContent);
   }
 
+  function profileAssetLabel(assetType) {
+    return {
+      image: '影像采集',
+      video: '现场影像',
+      audio: '口述采集',
+      text: '文化手记'
+    }[assetType] || '文化采集';
+  }
+
+  function profileAssetIcon(assetType) {
+    return {
+      image: 'image',
+      video: 'clapperboard',
+      audio: 'audio-lines',
+      text: 'notebook-tabs'
+    }[assetType] || 'archive';
+  }
+
+  function profileSubmissionTitle(item) {
+    const rawTitle = String(item && item.title || '').trim();
+    const looksLikeFileName = /\.(?:jpe?g|png|webp|gif|heic|mp4|mov|m4v|mp3|wav|m4a|aac|pdf)$/i.test(rawTitle)
+      || /^(?:img|dsc|wx_camera|mmexport|screenshot|屏幕截图|微信图片)[-_\s]?\d+/i.test(rawTitle);
+    if (rawTitle && !looksLikeFileName) {
+      return rawTitle.length > 28 ? `${rawTitle.slice(0, 27)}…` : rawTitle;
+    }
+    const description = String(item && item.description || '')
+      .replace(/\s+/g, ' ')
+      .split(/[。！？\n]/)[0]
+      .trim();
+    if (description) return description.length > 22 ? `${description.slice(0, 21)}…` : description;
+    const region = String(item && item.regionName || '荆楚').replace(/省$/, '');
+    return `${region}·${profileAssetLabel(item && item.assetType)}`;
+  }
+
+  function profileStatusClass(status) {
+    return {
+      approved: 'profile-status-verified',
+      pending: 'profile-status-gold',
+      rejected: 'profile-status-attention',
+      needs_revision: 'profile-status-attention'
+    }[status] || 'profile-status-gold';
+  }
+
+  function profileStatusLabel(status) {
+    return {
+      approved: '已入藏',
+      pending: '待整理',
+      rejected: '待补充',
+      needs_revision: '待补充'
+    }[status] || '整理中';
+  }
+
+  function profileSubmissionCover(item) {
+    const fileUrl = String(item && item.fileUrl || '');
+    if (item && item.assetType === 'image' && fileUrl) {
+      return `<div class="profile-submission-cover"><img data-profile-cover loading="lazy" src="${safeText(fileUrl)}" alt="${safeText(profileSubmissionTitle(item))}"></div>`;
+    }
+    return `<div class="profile-submission-cover profile-submission-cover--icon"><i data-lucide="${profileAssetIcon(item && item.assetType)}" aria-hidden="true"></i><span>${safeText(profileAssetLabel(item && item.assetType))}</span></div>`;
+  }
+
+  function updateProfileAtlasPreview(items) {
+    const imageUrls = (items || [])
+      .filter((item) => item.assetType === 'image' && item.fileUrl)
+      .map((item) => item.fileUrl)
+      .slice(0, 2);
+    const fallbackUrls = [
+      'https://commons.wikimedia.org/wiki/Special:FilePath/20240621%20Yellow%20Crane%20Tower.jpg?width=900',
+      'https://commons.wikimedia.org/wiki/Special:FilePath/20250526%20Wudangshan%20Jindian%20%28155228%29.jpg?width=900'
+    ];
+    ['a', 'b'].forEach((slot, index) => {
+      const image = document.getElementById(`profile-atlas-preview-${slot}`);
+      if (!image) return;
+      image.src = imageUrls[index] || fallbackUrls[index];
+      image.classList.remove('hidden');
+    });
+    const preview = document.getElementById('profile-atlas-preview');
+    if (preview) preview.classList.toggle('has-submission-images', imageUrls.length > 0);
+  }
+
   function renderCloudSubmissionRecords() {
     const list = document.getElementById('cloud-my-submissions');
     if (!list || !latestBootstrap) return;
@@ -1761,30 +1879,37 @@ feedback_closed: '反馈处理',
     });
     document.querySelectorAll('[data-cloud-filter]').forEach((button) => {
       const selected = button.dataset.cloudFilter === activeSubmissionFilter;
-      button.classList.toggle('bg-deepTeal', selected);
-      button.classList.toggle('text-white', selected);
-      button.classList.toggle('bg-stone-100', !selected);
-      button.classList.toggle('text-stone-500', !selected);
+      button.classList.toggle('is-active', selected);
+      button.setAttribute('aria-pressed', String(selected));
     });
     list.innerHTML = items.length ? items.map((item) => `
-      <article class="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
-        <div class="flex items-start justify-between gap-2">
-          <div class="min-w-0">
-            <p class="truncate text-xs font-bold text-stone-800">${safeText(item.title || '未命名素材')}</p>
-            <p class="mt-1 text-[9px] text-stone-400">${safeText(displayDate(item.createdAt))} · ${safeText(item.assetType)}</p>
+      <article class="profile-submission-card">
+        ${profileSubmissionCover(item)}
+        <div class="profile-submission-caption">
+          <div class="profile-submission-meta">
+            <span>${safeText(profileAssetLabel(item.assetType))}</span>
+            <time>${safeText(displayDate(item.createdAt).split(' ')[0])}</time>
           </div>
-          <span class="shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold ${statusClass(item.status)}">${safeText(statusLabel(item.status))}</span>
+          <h4>${safeText(profileSubmissionTitle(item))}</h4>
+          <span class="profile-status-tag ${profileStatusClass(item.status)}">${safeText(profileStatusLabel(item.status))}</span>
+          ${item.reviewNote ? `<details class="profile-review-note"><summary>查看整理意见</summary><p>${safeText(item.reviewNote)}</p></details>` : ''}
+          ${item.status === 'approved' ? `<p class="profile-reward-note">入藏奖励 · +${Number(item.rewardPoints || 100)} 流光</p>` : ''}
         </div>
-        <div class="mt-2 flex flex-wrap gap-1.5 text-[9px]">
-          <span class="rounded-full bg-stone-100 px-2 py-0.5 text-stone-600">${safeText(reviewStageLabel(item.aiReviewStatus))}</span>
-          <span class="rounded-full bg-stone-100 px-2 py-0.5 text-stone-600">审核编号 ${safeText(item.id)}</span>
-        </div>
-        ${item.reviewNote ? `<p class="mt-2 rounded-lg bg-stone-50 p-2 text-[10px] text-stone-600">审核意见：${safeText(item.reviewNote)}</p>` : ''}
-        ${item.status === 'approved' ? `<p class="mt-2 text-[10px] font-bold text-emerald-600">已发放 +${Number(item.rewardPoints || 100)} 流光积分</p>` : ''}
       </article>
-    `).join('') : `<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">${
-      allItems.length ? '当前筛选条件下没有投稿。' : '还没有云端上传记录。'
+    `).join('') : `<div class="profile-gallery-empty">${
+      allItems.length ? '这一册暂时没有记录，换个分类看看。' : '你的图鉴还空着，从一次真实采集开始吧。'
     }</div>`;
+    list.querySelectorAll('img[data-profile-cover]').forEach((image) => {
+      image.addEventListener('error', () => {
+        const cover = image.closest('.profile-submission-cover');
+        if (!cover) return;
+        cover.classList.add('profile-submission-cover--icon');
+        cover.innerHTML = `<i data-lucide="image-off" aria-hidden="true"></i><span>影像待恢复</span>`;
+        if (window.lucide) window.lucide.createIcons();
+      }, { once: true });
+    });
+    updateProfileAtlasPreview(allItems);
+    if (window.lucide) window.lucide.createIcons();
   }
 
   function renderCloudProfile(data) {
@@ -1805,7 +1930,9 @@ feedback_closed: '反馈处理',
     document.getElementById('cloud-stat-approved').textContent = Number(stats.approved || 0);
     document.getElementById('cloud-stat-attention').textContent =
       Number(stats.rejected || 0) + Number(stats.needs_revision || 0);
-    document.getElementById('cloud-account-action').textContent = stable ? '退出账号' : '账号登录';
+    const accountAction = document.getElementById('cloud-account-action');
+    accountAction.querySelector('span').textContent = stable ? '退出账号' : '账号登录';
+    accountAction.querySelector('svg, i')?.setAttribute('data-lucide', stable ? 'log-out' : 'log-in');
     const headerAccount = document.getElementById('header-account-entry');
     if (headerAccount) {
       headerAccount.title = stable ? '打开个人中心' : '登录账号';
@@ -1819,19 +1946,30 @@ feedback_closed: '反馈处理',
     try { userPoints = Number(profile.points || 0); } catch (_) {}
     renderCloudSubmissionRecords();
     renderCloudFeedback();
-renderCloudRewards();
+    renderCloudRewards();
     updateNotificationEntry();
+    if (window.lucide) window.lucide.createIcons();
   }
 
   async function refreshCloudProfile() {
     injectAccountUi();
     bootstrapPromise = callCore({ action: 'bootstrap' });
     try {
-      renderCloudProfile(await bootstrapPromise);
+      const data = await bootstrapPromise;
+      try {
+        const fileUrls = await resolveFileUrls(data.mySubmissions || []);
+        data.mySubmissions = (data.mySubmissions || []).map((item) => ({
+          ...item,
+          fileUrl: fileUrls.get(item.fileID || item.imageFileID) || ''
+        }));
+      } catch (fileError) {
+        console.warn('[CloudBase profile thumbnails]', fileError);
+      }
+      renderCloudProfile(data);
       await loadCloudNotifications();
     } catch (error) {
       const list = document.getElementById('cloud-my-submissions');
-      if (list) list.innerHTML = `<div class="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">${safeText(error.message)}</div>`;
+      if (list) list.innerHTML = `<div class="profile-gallery-empty profile-gallery-empty--error">${safeText(error.message)}</div>`;
     }
   }
 
