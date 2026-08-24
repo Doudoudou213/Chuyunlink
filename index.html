@@ -1058,6 +1058,730 @@
       color: #f1d8a8 !important;
     }
 
+    /* 活动科普页第二阶段：活动册首章。规则严格限制在 #view-community。 */
+    #view-community {
+      --community-paper: #f5efe4;
+      --community-surface: #fbf7ef;
+      --community-surface-warm: #eee3d2;
+      --community-ink: #4b2e2b;
+      --community-action: #592620;
+      --community-lacquer: #17110f;
+      --community-vermilion: #9e2f24;
+      --community-gold: #b68a4a;
+      --community-patina: #496a61;
+      --community-shadow: 0 12px 32px rgba(65, 39, 27, 0.08);
+      color: var(--community-ink);
+    }
+    #view-community .community-page-intro {
+      position: absolute !important;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    #view-community .community-hero {
+      height: clamp(20rem, 43vw, 25rem);
+      border-radius: 0.55rem 1.15rem 0.55rem 1.15rem !important;
+      background: var(--community-lacquer);
+      box-shadow: 0 14px 34px rgba(65, 39, 27, 0.14) !important;
+    }
+    #view-community .community-hero-image {
+      object-position: center 52%;
+      transform: scale(1.01);
+    }
+    #view-community .community-hero-overlay {
+      background:
+        linear-gradient(180deg, rgba(23, 17, 15, 0.12) 4%, rgba(23, 17, 15, 0.26) 38%, rgba(23, 17, 15, 0.96) 100%);
+    }
+    #view-community .community-hero-content {
+      right: clamp(1.1rem, 3vw, 2rem);
+      bottom: clamp(1.1rem, 3vw, 1.7rem);
+      left: clamp(1.1rem, 3vw, 2rem);
+    }
+    #view-community .community-hero-meta {
+      margin-bottom: 0.72rem;
+    }
+    #view-community .community-seal,
+    #view-community .community-enrolled {
+      display: inline-flex;
+      min-height: 26px;
+      align-items: center;
+      padding: 0.28rem 0.58rem;
+      border-radius: 0.32rem;
+      font-size: 0.72rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    #view-community .community-seal {
+      background: var(--community-vermilion);
+      color: #fff5df;
+      box-shadow: 0 4px 12px rgba(23, 17, 15, 0.18);
+    }
+    #view-community .community-enrolled {
+      background: rgba(255, 250, 241, 0.9);
+      color: var(--community-ink);
+      backdrop-filter: blur(8px);
+    }
+    #view-community .community-hero-title {
+      margin-top: 0;
+      color: #f1d6a0;
+      font-size: clamp(1.65rem, 4vw, 2.35rem);
+      font-weight: 800;
+      letter-spacing: 0.025em;
+      line-height: 1.22;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.42);
+    }
+    #view-community .community-hero-description {
+      max-width: 42rem;
+      margin-top: 0.48rem;
+      color: rgba(255, 250, 241, 0.92);
+      font-size: 0.86rem;
+      line-height: 1.65;
+    }
+    #view-community .community-hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.9rem;
+    }
+    #view-community .community-hero-actions button {
+      display: inline-flex;
+      min-width: 0;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      gap: 0.42rem;
+      border: 0 !important;
+      border-radius: 0.42rem !important;
+      font-size: 0.78rem;
+      font-weight: 800;
+      line-height: 1;
+      box-shadow: none !important;
+    }
+    #view-community .community-hero-actions button svg {
+      width: 1rem;
+      height: 1rem;
+    }
+    #view-community .community-hero .community-hero-actions .community-hero-primary {
+      padding: 0 1rem;
+      background: var(--community-vermilion) !important;
+      color: #fff5df !important;
+      box-shadow: 0 7px 18px rgba(91, 26, 21, 0.28) !important;
+    }
+    #view-community .community-hero-secondary {
+      padding: 0 0.58rem;
+      background: transparent !important;
+      color: rgba(255, 250, 241, 0.94) !important;
+    }
+    #view-community .community-hero-secondary + .community-hero-secondary {
+      position: relative;
+    }
+    #view-community .community-hero-secondary + .community-hero-secondary::before {
+      content: "";
+      position: absolute;
+      top: 12px;
+      bottom: 12px;
+      left: -0.28rem;
+      width: 1px;
+      background: rgba(255, 250, 241, 0.34);
+    }
+    #view-community .community-section-titlebar {
+      min-height: 44px;
+    }
+    #view-community .chu-section-heading {
+      gap: 0.4rem;
+      color: var(--community-ink) !important;
+      font-size: 1.05rem !important;
+      letter-spacing: 0.015em !important;
+    }
+    #view-community .chu-section-heading svg {
+      width: 1.05rem;
+      height: 1.05rem;
+      color: var(--community-action);
+      stroke-width: 1.8;
+    }
+    #view-community .community-progress {
+      color: var(--community-action);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    #view-community #community-route-card {
+      overflow: hidden;
+      padding: clamp(1rem, 2.4vw, 1.35rem) !important;
+      border: 0 !important;
+      border-radius: 0.85rem !important;
+      background: rgba(251, 247, 239, 0.96) !important;
+      box-shadow: var(--community-shadow) !important;
+    }
+    #view-community .community-route-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    #view-community .community-route-chip {
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 0.18rem 0.5rem;
+      border-radius: 0.34rem;
+      background: rgba(182, 138, 74, 0.13);
+      color: #735322;
+      font-size: 0.7rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-chip--patina {
+      background: rgba(73, 106, 97, 0.12);
+      color: var(--community-patina);
+    }
+    #view-community .community-route-chip--quiet {
+      background: rgba(238, 227, 210, 0.72);
+      color: #75645a;
+    }
+    #view-community .community-route-duration {
+      margin-left: auto;
+      color: #735322;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-title {
+      margin-top: 0.72rem;
+      color: var(--community-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-description {
+      display: -webkit-box;
+      overflow: hidden;
+      margin-top: 0.26rem;
+      color: #75645a;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
+    }
+    #view-community .community-route-trace {
+      position: relative;
+      display: grid;
+      min-height: 11.75rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.35rem;
+      margin-top: 0.85rem;
+      padding: 0.15rem 0.1rem 0;
+      isolation: isolate;
+    }
+    #view-community .community-route-trace::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 1.7rem;
+      right: -1.2rem;
+      left: -1.2rem;
+      height: 6.5rem;
+      background: url('./static/assets/community-route-trace.png') center / 100% 100% no-repeat;
+      opacity: 0.92;
+      pointer-events: none;
+    }
+    #view-community .community-route-stop {
+      display: flex;
+      min-width: 0;
+      min-height: 10rem;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: var(--trace-offset, 2.2rem) 0.25rem 0.45rem;
+      border: 0;
+      border-radius: 0.45rem;
+      background: transparent;
+      color: var(--community-ink);
+      text-align: center;
+      transition: background-color 150ms ease, transform 150ms ease;
+    }
+    #view-community .community-route-stop:nth-child(1) { --trace-offset: 3.7rem; }
+    #view-community .community-route-stop:nth-child(2) { --trace-offset: 1.65rem; }
+    #view-community .community-route-stop:nth-child(3) { --trace-offset: 3.25rem; }
+    #view-community .community-route-stop:hover {
+      background: rgba(238, 227, 210, 0.36);
+      transform: translateY(-2px);
+    }
+    #view-community .community-route-marker {
+      display: inline-flex;
+      width: 2rem;
+      height: 2rem;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid rgba(255, 245, 223, 0.9);
+      border-radius: 999px;
+      background: var(--community-vermilion);
+      color: #fff5df;
+      box-shadow: 0 4px 10px rgba(89, 38, 32, 0.2);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.88rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-landmark {
+      display: flex;
+      width: 2.2rem;
+      height: 2.2rem;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.28rem;
+      color: #8a6b3b;
+    }
+    #view-community .community-route-landmark svg {
+      width: 1.55rem;
+      height: 1.55rem;
+      stroke-width: 1.35;
+    }
+    #view-community .community-route-stop strong {
+      margin-top: 0.35rem;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+    #view-community .community-route-stop small {
+      display: -webkit-box;
+      overflow: hidden;
+      margin-top: 0.2rem;
+      color: #75645a;
+      font-size: 0.68rem;
+      line-height: 1.45;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+    #view-community .community-route-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.35rem;
+      margin-top: 0.45rem;
+      padding-top: 0.7rem;
+      border-top: 1px solid rgba(89, 38, 32, 0.08);
+    }
+    #view-community .community-route-action {
+      display: inline-flex;
+      min-width: 0;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.45rem 0.35rem;
+      border: 0;
+      border-radius: 0.38rem;
+      background: transparent;
+      color: var(--community-action);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-action--primary {
+      background: var(--community-action);
+      color: #f3d9a9;
+    }
+    #view-community .community-route-action svg {
+      width: 0.95rem;
+      height: 0.95rem;
+      flex: 0 0 auto;
+    }
+    #view-community .community-route-services-toggle {
+      display: flex;
+      width: 100%;
+      min-height: 48px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.55rem;
+      padding: 0.2rem 0.15rem;
+      border: 0;
+      border-top: 1px solid rgba(89, 38, 32, 0.08);
+      border-radius: 0;
+      background: transparent;
+      color: var(--community-ink);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-services-toggle span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    #view-community .community-route-services-toggle svg {
+      width: 1rem;
+      height: 1rem;
+      transition: transform 160ms ease;
+    }
+    #view-community .community-route-services-toggle[aria-expanded="true"] > svg {
+      transform: rotate(180deg);
+    }
+    #view-community .community-route-services[hidden] {
+      display: none !important;
+    }
+    #view-community .community-route-services {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem;
+      padding-top: 0.55rem;
+    }
+    #view-community .community-service-panel {
+      padding: 0.7rem;
+      border-radius: 0.55rem;
+      background: rgba(238, 227, 210, 0.56);
+    }
+    #view-community .community-service-heading {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    #view-community .community-service-icon {
+      display: flex;
+      width: 1.8rem;
+      height: 1.8rem;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      color: var(--community-action);
+    }
+    #view-community .community-service-icon svg {
+      width: 1.1rem;
+      height: 1.1rem;
+    }
+    #view-community .community-service-panel h6 {
+      color: var(--community-ink);
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+    #view-community .community-service-panel p {
+      margin-top: 0.12rem;
+      color: #75645a;
+      font-size: 0.68rem;
+      line-height: 1.45;
+    }
+    #view-community .community-service-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.35rem;
+      margin-top: 0.55rem;
+    }
+    #view-community .community-service-actions button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 0.35rem;
+      background: rgba(251, 247, 239, 0.8);
+      color: var(--community-action);
+      font-size: 0.68rem;
+      font-weight: 800;
+    }
+    #view-community .community-service-actions button:last-child {
+      background: var(--community-action);
+      color: #f3d9a9;
+    }
+    #view-community .chu-knowledge-panel {
+      padding: clamp(1rem, 2.4vw, 1.35rem) !important;
+      border: 0 !important;
+      border-radius: 0.85rem !important;
+      background: rgba(251, 247, 239, 0.96) !important;
+      box-shadow: var(--community-shadow) !important;
+    }
+    #view-community .community-daily-tag {
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 0.18rem 0.5rem;
+      border-radius: 0.32rem;
+      background: rgba(182, 138, 74, 0.13);
+      color: #735322;
+      font-size: 0.7rem;
+      font-weight: 800;
+    }
+    #view-community .community-quiz-date,
+    #view-community .community-learning-summary,
+    #view-community .community-quiz-update {
+      color: #847267;
+      font-size: 0.72rem;
+      line-height: 1.5;
+    }
+    #view-community .community-quiz-question {
+      margin-top: 0.6rem;
+      color: var(--community-ink);
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.55;
+    }
+    #view-community .community-quiz-icon {
+      display: flex;
+      width: 2.75rem;
+      height: 2.75rem;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.55rem;
+      background: var(--community-lacquer);
+      color: #e3c98f;
+    }
+    #view-community .community-quiz-icon svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+    #view-community .community-quiz-options {
+      display: grid;
+      gap: 0.55rem;
+      margin-top: 0.9rem;
+    }
+    #view-community .community-quiz-option {
+      width: 100%;
+      min-height: 48px !important;
+      padding: 0.72rem 0.85rem !important;
+      border: 1px solid transparent !important;
+      border-radius: 0.5rem !important;
+      background: rgba(238, 227, 210, 0.7) !important;
+      color: var(--community-ink) !important;
+      box-shadow: none !important;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      text-align: left;
+    }
+    #view-community .community-quiz-option:hover,
+    #view-community .community-quiz-option:focus-visible {
+      border-color: rgba(182, 138, 74, 0.55) !important;
+      background: rgba(182, 138, 74, 0.12) !important;
+      color: var(--community-ink) !important;
+      outline: 2px solid rgba(182, 138, 74, 0.25);
+      outline-offset: 2px;
+    }
+    #view-community .community-quiz-option:disabled {
+      cursor: default;
+      opacity: 0.64;
+    }
+    #view-community .community-quiz-option.is-correct {
+      border-color: rgba(73, 106, 97, 0.32) !important;
+      background: rgba(73, 106, 97, 0.13) !important;
+      color: var(--community-patina) !important;
+      font-weight: 800;
+      opacity: 1;
+    }
+    #view-community .community-quiz-option.is-wrong {
+      border-color: rgba(158, 47, 36, 0.32) !important;
+      background: rgba(158, 47, 36, 0.1) !important;
+      color: var(--community-vermilion) !important;
+      font-weight: 800;
+      opacity: 1;
+    }
+    #view-community .community-quiz-feedback {
+      margin-top: 0.75rem;
+      padding: 0.8rem;
+      border: 1px solid rgba(182, 138, 74, 0.2) !important;
+      border-radius: 0.55rem;
+      background: rgba(182, 138, 74, 0.1) !important;
+      color: #68584c !important;
+      font-size: 0.75rem;
+      line-height: 1.6;
+    }
+    #view-community .community-quiz-feedback strong {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.2rem;
+    }
+    #view-community .community-quiz-feedback svg {
+      width: 1rem;
+      height: 1rem;
+    }
+    #view-community .community-quiz-feedback.is-correct strong {
+      color: var(--community-patina);
+    }
+    #view-community .community-quiz-feedback.is-wrong strong {
+      color: var(--community-vermilion);
+    }
+    #view-community .community-quiz-update {
+      margin-top: 0.72rem;
+    }
+    #view-community .community-learning-refresh {
+      display: inline-flex;
+      min-width: 44px;
+      min-height: 44px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      gap: 0.32rem;
+      padding: 0 0.42rem;
+      border: 0;
+      border-radius: 0.35rem;
+      background: transparent;
+      color: var(--community-action);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    #view-community .community-learning-refresh svg {
+      width: 1rem;
+      height: 1rem;
+    }
+    #view-community .community-learning-list {
+      display: grid;
+      gap: 0.65rem;
+    }
+    #view-community .community-learning-card {
+      display: grid;
+      width: 100%;
+      min-height: 82px;
+      grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.8rem 0.9rem;
+      border: 0 !important;
+      border-radius: 0.65rem;
+      background: rgba(251, 247, 239, 0.96) !important;
+      color: var(--community-ink);
+      box-shadow: var(--community-shadow) !important;
+      text-align: left;
+    }
+    #view-community .community-learning-icon {
+      display: flex;
+      width: 2.6rem;
+      height: 2.6rem;
+      align-items: center;
+      justify-content: center;
+      color: var(--community-gold);
+    }
+    #view-community .community-learning-icon svg {
+      width: 1.55rem;
+      height: 1.55rem;
+      stroke-width: 1.5;
+    }
+    #view-community .community-learning-copy {
+      min-width: 0;
+    }
+    #view-community .community-learning-copy h5 {
+      color: var(--community-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.84rem;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+    #view-community .community-learning-copy p {
+      margin-top: 0.16rem;
+      color: #847267;
+      font-size: 0.7rem;
+    }
+    #view-community .community-learning-state {
+      display: inline-flex;
+      min-height: 26px;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.2rem 0.45rem;
+      border-radius: 999px;
+      background: rgba(182, 138, 74, 0.12);
+      color: #735322;
+      font-size: 0.67rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    #view-community .community-learning-state.is-complete {
+      background: rgba(73, 106, 97, 0.1);
+      color: var(--community-patina);
+    }
+    #view-community .community-learning-state svg {
+      width: 0.85rem;
+      height: 0.85rem;
+    }
+    #view-community button:focus-visible {
+      outline: 2px solid rgba(182, 138, 74, 0.72);
+      outline-offset: 3px;
+    }
+    @media (max-width: 520px) {
+      #view-community {
+        row-gap: 1.15rem;
+        margin-top: -0.5rem;
+        padding-top: 0;
+      }
+      #view-community .community-hero {
+        height: 19rem !important;
+      }
+      #view-community .community-hero::after {
+        display: none;
+      }
+      #view-community .community-hero-title {
+        font-size: 1.72rem;
+      }
+      #view-community .community-hero-description {
+        font-size: 0.82rem;
+      }
+      #view-community .community-hero-actions {
+        gap: 0.25rem;
+      }
+      #view-community .community-hero-primary {
+        padding: 0 0.8rem;
+      }
+      #view-community .community-hero-secondary {
+        flex: 1 1 auto;
+        padding: 0 0.25rem;
+      }
+      #view-community .community-route-trace {
+        min-height: 9.75rem;
+        margin-right: -0.25rem;
+        margin-left: -0.25rem;
+        margin-top: 0.4rem;
+      }
+      #view-community .community-route-stop {
+        min-height: 8.35rem;
+        padding-right: 0.12rem;
+        padding-left: 0.12rem;
+      }
+      #view-community .community-route-stop:nth-child(1) { --trace-offset: 2.65rem; }
+      #view-community .community-route-stop:nth-child(2) { --trace-offset: 0.85rem; }
+      #view-community .community-route-stop:nth-child(3) { --trace-offset: 2.15rem; }
+      #view-community .community-route-stop strong {
+        font-size: 0.72rem;
+      }
+      #view-community .community-route-stop small {
+        font-size: 0.64rem;
+      }
+      #view-community .community-route-action span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #view-community .community-route-services {
+        grid-template-columns: 1fr;
+      }
+      #view-community .community-learning-refresh span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+      #view-community .community-learning-card {
+        grid-template-columns: 2.35rem minmax(0, 1fr) auto;
+        gap: 0.62rem;
+        padding-right: 0.7rem;
+        padding-left: 0.7rem;
+      }
+    }
+    @media (min-width: 768px) {
+      #view-community .community-hero-content {
+        max-width: 48rem;
+      }
+      #view-community .community-route-stop strong {
+        font-size: 0.84rem;
+      }
+      #view-community .community-route-stop small {
+        max-width: 12rem;
+        font-size: 0.72rem;
+      }
+      #view-community .community-learning-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #view-community .community-route-stop,
+      #view-community .community-route-services-toggle svg {
+        transition: none !important;
+      }
+      #view-community .community-route-stop:hover {
+        transform: none;
+      }
+    }
+
     /* 我的：宣纸图鉴厅。功能入口收进齿轮，投稿以藏品缩略图为主。 */
     body.profile-view-active #phone-status,
     body.profile-view-active #platform-header {
@@ -2230,31 +2954,31 @@
             <path d="M160 54c16 39 35 58 72 75-37 16-56 36-72 73-16-37-35-57-72-73 37-17 56-36 72-75Z" stroke="currentColor" stroke-width="5"/>
           </svg>
         </div>
-        <div class="chu-page-heading px-4">
+        <div class="chu-page-heading community-page-intro px-4">
           <p class="chu-page-kicker">FIELD PROGRAM · 共学共访</p>
           <h2 class="cultural-font mt-1 text-xl font-bold text-[#4b2e2b]">活动与科普</h2>
           <p class="mt-1 text-xs leading-5 text-stone-500">先了解，再抵达现场；把每次寻访变成可复核的文化记录。</p>
         </div>
         <div class="px-4">
-          <div class="community-hero relative h-44 overflow-hidden rounded-xl shadow-md">
-            <img src="https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&q=80&w=900" alt="荆楚文化活动" class="absolute inset-0 h-full w-full object-cover">
-            <div class="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/30 to-transparent"></div>
-            <div class="absolute left-3 right-3 bottom-3 text-white">
-              <div class="flex items-center justify-between">
-                <span class="bg-cinnabarRed text-white text-[10px] px-2 py-0.5 rounded font-bold">进行中 · 7天后结算</span>
-                <span class="bg-white/90 text-deepTeal text-[10px] px-2 py-0.5 rounded font-bold">已报名 326 人</span>
+          <div class="community-hero relative overflow-hidden" aria-labelledby="community-activity-title">
+            <img src="https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&q=80&w=900" alt="荆楚纹样寻访周活动场景" class="community-hero-image absolute inset-0 h-full w-full object-cover">
+            <div class="community-hero-overlay absolute inset-0" aria-hidden="true"></div>
+            <div class="community-hero-content absolute text-white">
+              <div class="community-hero-meta flex items-center justify-between gap-2">
+                <span class="community-seal">进行中 · 7天后结算</span>
+                <span class="community-enrolled">已报名 326 人</span>
               </div>
-              <h3 class="cultural-font text-lg font-bold text-sandGold mt-2">荆楚纹样寻访周</h3>
-              <p class="text-xs text-stone-100 mt-1 line-clamp-2">从武汉、钟祥到恩施，寻找建筑纹样、碑刻题记与民间口述线索。</p>
-              <div class="mt-3 flex items-center gap-2">
-                <button onclick="joinCommunityActivity('荆楚纹样寻访周')" class="bg-sandGold text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="ticket-check" class="w-3.5 h-3.5 mr-1"></i> 报名活动
+              <h3 id="community-activity-title" class="community-hero-title cultural-font">荆楚纹样寻访周</h3>
+              <p class="community-hero-description">从武汉、钟祥到恩施，寻找建筑纹样、碑刻题记与民间口述线索。</p>
+              <div class="community-hero-actions">
+                <button onclick="joinCommunityActivity('荆楚纹样寻访周')" class="community-hero-primary">
+                  <i data-lucide="ticket-check" aria-hidden="true"></i><span>报名活动</span>
                 </button>
-                <button onclick="openCommunityMapPoint('yellow-crane-tower')" class="bg-white/95 text-stone-800 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="map" class="w-3.5 h-3.5 mr-1"></i> 看任务点
+                <button onclick="openCommunityMapPoint('yellow-crane-tower')" class="community-hero-secondary">
+                  <i data-lucide="map" aria-hidden="true"></i><span>看任务点</span>
                 </button>
-                <button type="button" onclick="window.openCloudDiscussion('activity', 'jingchu-pattern-week', '荆楚纹样寻访周')" class="border border-white/70 bg-stone-950/35 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="messages-square" class="w-3.5 h-3.5 mr-1"></i> 讨论
+                <button type="button" onclick="window.openCloudDiscussion('activity', 'jingchu-pattern-week', '荆楚纹样寻访周')" class="community-hero-secondary">
+                  <i data-lucide="messages-square" aria-hidden="true"></i><span>讨论</span>
                 </button>
               </div>
             </div>
@@ -2263,46 +2987,46 @@
 
         <!-- 推荐路线 -->
         <div class="px-4 space-y-3">
-          <div class="flex justify-between items-center">
-            <h4 class="chu-section-heading text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-              <i data-lucide="route" class="w-4 h-4 mr-1 text-deepTeal"></i> 今日推荐路线
+          <div class="community-section-titlebar flex justify-between items-center">
+            <h4 class="chu-section-heading flex items-center">
+              <i data-lucide="route" aria-hidden="true"></i> 今日推荐路线
             </h4>
-            <span id="activity-progress" class="text-[10px] text-deepTeal font-semibold">0/3 已点亮</span>
+            <span id="activity-progress" class="community-progress">0/3 已点亮</span>
           </div>
 
-          <div id="community-route-card" class="chu-paper-panel bg-white rounded-xl border border-stone-200 shadow-sm p-3"></div>
+          <div id="community-route-card" class="chu-paper-panel"></div>
         </div>
 
         <!-- 科普闯关 -->
         <div class="px-4 space-y-3">
-          <h4 class="chu-section-heading text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-            <i data-lucide="book-open" class="w-4 h-4 mr-1 text-deepTeal"></i> 三分钟科普闯关
+          <h4 class="chu-section-heading flex items-center">
+            <i data-lucide="book-open" aria-hidden="true"></i> 三分钟科普闯关
           </h4>
 
-          <div class="chu-knowledge-panel bg-white rounded-xl border border-stone-200 shadow-sm p-3">
-            <div class="flex items-start justify-between gap-3">
+          <div class="chu-knowledge-panel">
+            <div class="community-quiz-heading flex items-start justify-between gap-3">
               <div>
                 <div class="flex items-center gap-2">
-                  <span class="text-[10px] bg-sandGold/20 text-deepTeal px-2 py-0.5 rounded font-bold">每日更新</span>
-                  <span id="quiz-date" class="text-[10px] text-stone-400"></span>
+                  <span class="community-daily-tag">每日更新</span>
+                  <span id="quiz-date" class="community-quiz-date"></span>
                 </div>
-                <h5 id="quiz-question" class="cultural-font font-bold text-stone-800 text-sm mt-2">采集古建筑纹样时，最应该优先补充哪类信息？</h5>
+                <h5 id="quiz-question" class="community-quiz-question cultural-font">采集古建筑纹样时，最应该优先补充哪类信息？</h5>
               </div>
-              <div class="bg-deepTeal text-sandGold w-9 h-9 rounded-lg flex items-center justify-center shrink-0">
-                <i data-lucide="brain" class="w-4 h-4"></i>
+              <div class="community-quiz-icon" aria-hidden="true">
+                <i data-lucide="brain"></i>
               </div>
             </div>
 
-            <div class="mt-3 space-y-2">
-              <button id="quiz-option-a" onclick="answerCommunityQuiz(0)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">只拍一张远景照片，方便快速完成任务</button>
-              <button id="quiz-option-b" onclick="answerCommunityQuiz(1)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">补充纹样近景、所在位置、保存状态和尺度参照</button>
-              <button id="quiz-option-c" onclick="answerCommunityQuiz(2)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">尽量加滤镜，让图像看起来更清晰</button>
+            <div class="community-quiz-options">
+              <button id="quiz-option-a" onclick="answerCommunityQuiz(0)" class="community-quiz-option">只拍一张远景照片，方便快速完成任务</button>
+              <button id="quiz-option-b" onclick="answerCommunityQuiz(1)" class="community-quiz-option">补充纹样近景、所在位置、保存状态和尺度参照</button>
+              <button id="quiz-option-c" onclick="answerCommunityQuiz(2)" class="community-quiz-option">尽量加滤镜，让图像看起来更清晰</button>
             </div>
 
-            <div id="quiz-feedback" class="hidden mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-[10px] text-emerald-800">
+            <div id="quiz-feedback" class="community-quiz-feedback hidden" aria-live="polite">
               答对了：近景、位置、保存状态和尺度参照能帮助专家复核，也能减少后续补采。
             </div>
-            <p id="quiz-update-tip" class="mt-3 text-[10px] text-stone-400">明日 00:00 更新 · 答对可得 50 积分</p>
+            <p id="quiz-update-tip" class="community-quiz-update">明日 00:00 更新 · 答对可得 50 积分</p>
           </div>
         </div>
 
@@ -2310,17 +3034,17 @@
         <div class="px-4 space-y-3">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h4 class="chu-section-heading text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-                <i data-lucide="graduation-cap" class="w-4 h-4 mr-1 text-deepTeal"></i> 采集前速学
+              <h4 class="chu-section-heading flex items-center">
+                <i data-lucide="graduation-cap" aria-hidden="true"></i> 采集前速学
               </h4>
-              <p id="quick-learning-summary" class="mt-1 text-[10px] text-stone-400">每次登录随机展示 2 个知识点</p>
+              <p id="quick-learning-summary" class="community-learning-summary">每次登录随机展示 2 个知识点</p>
             </div>
-            <button type="button" onclick="refreshQuickLearningSet(true)" class="shrink-0 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-deepTeal">
-              <i data-lucide="refresh-cw" class="mr-1 inline-block h-3.5 w-3.5"></i> 换一组
+            <button type="button" onclick="refreshQuickLearningSet(true)" class="community-learning-refresh">
+              <i data-lucide="refresh-cw" aria-hidden="true"></i><span>换一组</span>
             </button>
           </div>
 
-          <div id="quick-learning-list" class="grid grid-cols-2 gap-3"></div>
+          <div id="quick-learning-list" class="community-learning-list"></div>
         </div>
       </section>
 
@@ -3370,32 +4094,33 @@
 
       options.forEach((option, index) => {
         option.disabled = true;
-        option.className = 'w-full text-left bg-stone-100 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400';
+        option.className = 'community-quiz-option';
         if (index === question.correctIndex) {
-          option.className = 'w-full text-left bg-emerald-100 border border-emerald-300 rounded-lg px-3 py-2 text-xs text-emerald-800 font-bold';
+          option.classList.add('is-correct');
         }
       });
 
       if (!state.isCorrect && options[state.selectedIndex]) {
-        options[state.selectedIndex].className = 'w-full text-left bg-red-100 border border-red-300 rounded-lg px-3 py-2 text-xs text-red-800 font-bold';
+        options[state.selectedIndex].classList.add('is-wrong');
       }
 
       if (state.isCorrect) {
-        feedback.className = 'mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-[11px] text-emerald-800 leading-tight';
-        feedback.innerHTML = `<strong>🟢 回答正确！</strong><br>${question.explanation}<br><span class="font-bold">积分 +${DAILY_QUIZ_REWARD} 已到账！</span>`;
+        feedback.className = 'community-quiz-feedback is-correct';
+        feedback.innerHTML = `<strong><i data-lucide="circle-check-big" aria-hidden="true"></i>回答正确</strong><br>${question.explanation}<br><span class="font-bold">积分 +${DAILY_QUIZ_REWARD} 已到账</span>`;
         updateTip.innerText = `今日已完成 · 已获得 ${DAILY_QUIZ_REWARD} 积分 · 明日 00:00 更新`;
         if (shouldNotify) {
           showToast(`每日答题成功！+${DAILY_QUIZ_REWARD} 积分已放入多宝阁`, 'award');
         }
       } else {
-        feedback.className = 'mt-3 bg-red-50 border border-red-200 rounded-lg p-2.5 text-[11px] text-red-800 leading-tight';
-        feedback.innerHTML = `<strong>🔴 今日回答未通过：</strong><br>${question.explanation}<br>明天会有一道新题，记得再来挑战。`;
+        feedback.className = 'community-quiz-feedback is-wrong';
+        feedback.innerHTML = `<strong><i data-lucide="circle-x" aria-hidden="true"></i>今日回答未通过</strong><br>${question.explanation}<br>明天会有一道新题，记得再来挑战。`;
         updateTip.innerText = '今日已完成 · 明日 00:00 更新';
         if (shouldNotify) {
           showToast('已记录今日答题，查看解析继续学习', 'book-open');
         }
       }
       feedback.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
     }
 
     function initializeDailyCommunityQuiz() {
@@ -3411,7 +4136,7 @@
       options.forEach((option, index) => {
         option.innerText = question.options[index];
         option.disabled = false;
-        option.className = 'w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700';
+        option.className = 'community-quiz-option';
       });
 
       const savedState = readDailyQuizState(dateKey);
@@ -6803,79 +7528,82 @@
       const route = recommendation.route;
       activeCommunityRoute = route;
       const distanceLabel = recommendation.distanceKm ? `约 ${recommendation.distanceKm}km` : recommendation.reason;
+      const routeIcons = ['landmark', 'waves', 'map-pinned'];
 
       container.innerHTML = `
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="bg-sandGold/20 text-deepTeal text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(route.city)}</span>
-              <span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(route.badge)}</span>
-              <span class="bg-stone-100 text-stone-500 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(distanceLabel)}</span>
-            </div>
-            <h5 class="cultural-font font-bold text-stone-800 text-sm mt-2">${escapeHtml(route.title)}</h5>
-            <p class="text-[10px] text-stone-500 mt-1 leading-relaxed">${escapeHtml(route.desc)}</p>
-          </div>
-          <span class="shrink-0 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(route.duration)}</span>
+        <div class="community-route-meta">
+          <span class="community-route-chip">${escapeHtml(route.city)}</span>
+          <span class="community-route-chip community-route-chip--patina">${escapeHtml(route.badge)}</span>
+          <span class="community-route-chip community-route-chip--quiet">${escapeHtml(distanceLabel)}</span>
+          <span class="community-route-duration">${escapeHtml(route.duration)}</span>
         </div>
+        <h5 class="community-route-title">${escapeHtml(route.title)}</h5>
+        <p class="community-route-description">${escapeHtml(route.desc)}</p>
 
-        <div class="mt-3 grid grid-cols-3 gap-2 text-[10px]">
+        <div class="community-route-trace" aria-label="今日推荐路线的三个打卡点">
           ${route.steps.map((step, index) => `
-            <button type="button" onclick="handleCommunityRouteStep(${index})" class="bg-stone-50 border border-stone-200 rounded-lg p-2 text-left hover:border-sandGold transition-colors">
-              <p class="font-bold ${step.action === 'collect' ? 'text-deepTeal' : 'text-stone-800'}">${index + 1}. ${escapeHtml(step.title)}</p>
-              <p class="text-[9px] text-stone-500 mt-0.5">${escapeHtml(step.desc)}</p>
+            <button type="button" onclick="handleCommunityRouteStep(${index})" class="community-route-stop" aria-label="第${index + 1}站：${escapeHtml(step.title)}">
+              <span class="community-route-marker">${index + 1}</span>
+              <span class="community-route-landmark" aria-hidden="true"><i data-lucide="${routeIcons[index] || 'map-pin'}"></i></span>
+              <strong>${escapeHtml(step.title)}</strong>
+              <small>${escapeHtml(step.desc)}</small>
             </button>
           `).join('')}
         </div>
 
-        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <button type="button" onclick="openActivityRouteGraphModal()" class="flex w-full items-center justify-center rounded-xl border border-deepTeal bg-white px-3 py-2 text-xs font-black text-deepTeal">
-            <i data-lucide="list-ordered" class="mr-1.5 h-3.5 w-3.5"></i> 游览引导
+        <div class="community-route-actions">
+          <button type="button" onclick="openActivityRouteGraphModal()" class="community-route-action">
+            <i data-lucide="list-ordered" aria-hidden="true"></i><span>游览引导</span>
           </button>
-          <button type="button" onclick="openActivityRoutesOnMap('${escapeJsString(route.id)}')" class="flex w-full items-center justify-center rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold">
-            <i data-lucide="route" class="mr-1.5 h-3.5 w-3.5"></i> 站点地图
+          <button type="button" onclick="openActivityRoutesOnMap('${escapeJsString(route.id)}')" class="community-route-action community-route-action--primary">
+            <i data-lucide="route" aria-hidden="true"></i><span>站点地图</span>
           </button>
-          <button type="button" onclick="window.openCloudDiscussion('activity', '${escapeJsString(route.id)}', '${escapeJsString(route.title)}')" class="flex w-full items-center justify-center rounded-xl border border-sandGold/50 bg-sandGold/10 px-3 py-2 text-xs font-black text-deepTeal">
-            <i data-lucide="messages-square" class="mr-1.5 h-3.5 w-3.5"></i> 路线讨论
+          <button type="button" onclick="window.openCloudDiscussion('activity', '${escapeJsString(route.id)}', '${escapeJsString(route.title)}')" class="community-route-action">
+            <i data-lucide="messages-square" aria-hidden="true"></i><span>路线讨论</span>
           </button>
         </div>
 
-        <div class="mt-3 rounded-xl border border-sandGold/25 bg-sandGold/5 p-3">
-          <div class="flex items-center justify-between">
-            <h5 class="text-xs font-bold text-stone-700 flex items-center">
-              <i data-lucide="map-pinned" class="w-3.5 h-3.5 mr-1 text-deepTeal"></i> 路线周边
-            </h5>
-            <span class="text-[9px] text-stone-400">城市站评分优先</span>
-          </div>
-          <div class="mt-2 grid grid-cols-2 gap-2">
-            ${renderRouteServicePanel('food', route.services.food, 'utensils')}
-            ${renderRouteServicePanel('hotel', route.services.hotel, 'bed')}
-          </div>
+        <button id="community-route-services-toggle" type="button" class="community-route-services-toggle" aria-expanded="false" aria-controls="community-route-services" onclick="toggleCommunityRouteServices()">
+          <span><i data-lucide="map-pinned" aria-hidden="true"></i>路线周边</span>
+          <i data-lucide="chevron-down" aria-hidden="true"></i>
+        </button>
+        <div id="community-route-services" class="community-route-services" hidden>
+          ${renderRouteServicePanel('food', route.services.food, 'utensils')}
+          ${renderRouteServicePanel('hotel', route.services.hotel, 'bed')}
         </div>
       `;
       lucide.createIcons();
     }
 
+    function toggleCommunityRouteServices(forceExpanded) {
+      const toggle = document.getElementById('community-route-services-toggle');
+      const services = document.getElementById('community-route-services');
+      if (!toggle || !services) return;
+
+      const expanded = typeof forceExpanded === 'boolean'
+        ? forceExpanded
+        : toggle.getAttribute('aria-expanded') !== 'true';
+      toggle.setAttribute('aria-expanded', String(expanded));
+      services.hidden = !expanded;
+    }
+
     function renderRouteServicePanel(type, service, icon) {
       return `
-        <div class="rounded-lg border border-stone-200 bg-white p-2">
-          <div class="flex items-start gap-2">
-            <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-deepTeal text-sandGold">
-              <i data-lucide="${icon}" class="h-3.5 w-3.5"></i>
+        <section class="community-service-panel">
+          <div class="community-service-heading">
+            <div class="community-service-icon" aria-hidden="true">
+              <i data-lucide="${icon}"></i>
             </div>
-            <div class="min-w-0">
-              <p class="text-[11px] font-bold text-stone-800">${escapeHtml(service.title)}</p>
-              <p class="mt-0.5 text-[9px] leading-snug text-stone-500">${escapeHtml(service.desc)}</p>
+            <div>
+              <h6>${escapeHtml(service.title)}</h6>
+              <p>${escapeHtml(service.desc)}</p>
             </div>
           </div>
-          <div class="mt-2 grid grid-cols-2 gap-1.5">
-            <button type="button" onclick="openRouteService('${type}', 'dianping')" class="rounded-md border border-stone-200 bg-stone-50 px-1.5 py-1 text-[9px] font-bold text-deepTeal">
-              点评好评
-            </button>
-            <button type="button" onclick="openRouteService('${type}', 'meituan')" class="rounded-md bg-deepTeal px-1.5 py-1 text-[9px] font-bold text-sandGold">
-              美团好评
-            </button>
+          <div class="community-service-actions">
+            <button type="button" onclick="openRouteService('${type}', 'dianping')">点评好评</button>
+            <button type="button" onclick="openRouteService('${type}', 'meituan')">美团好评</button>
           </div>
-        </div>
+        </section>
       `;
     }
 
@@ -7417,13 +8145,18 @@
         const isCompleted = Boolean(completed[module.id]);
         const rewardText = hasClaimedToday ? '今日已领' : `今日+${module.reward}积分`;
         return `
-          <button type="button" onclick="openLearningTip('${escapeJsString(module.id)}')" class="bg-white border ${isCompleted ? 'border-emerald-200' : 'border-stone-200'} rounded-xl p-3 shadow-sm text-left">
-            <div class="bg-deepTeal text-sandGold w-8 h-8 rounded-lg flex items-center justify-center mb-2">
-              <i data-lucide="${escapeHtml(module.icon)}" class="w-4 h-4"></i>
+          <button type="button" onclick="openLearningTip('${escapeJsString(module.id)}')" class="community-learning-card">
+            <div class="community-learning-icon" aria-hidden="true">
+              <i data-lucide="${escapeHtml(module.icon)}"></i>
             </div>
-            <h5 class="cultural-font font-bold text-xs text-stone-800">${escapeHtml(module.title)}</h5>
-            <p class="text-[10px] text-stone-400 mt-1">${escapeHtml(module.minutes)}分钟 · ${escapeHtml(rewardText)}</p>
-            ${isCompleted ? '<p class="mt-1 text-[9px] font-bold text-emerald-700">已学会</p>' : ''}
+            <div class="community-learning-copy">
+              <h5>${escapeHtml(module.title)}</h5>
+              <p>${escapeHtml(module.minutes)}分钟 · ${escapeHtml(rewardText)}</p>
+            </div>
+            <span class="community-learning-state ${isCompleted ? 'is-complete' : ''}">
+              <i data-lucide="${isCompleted ? 'circle-check-big' : 'arrow-right'}" aria-hidden="true"></i>
+              ${isCompleted ? '已学会' : '去学习'}
+            </span>
           </button>
         `;
       }).join('');
