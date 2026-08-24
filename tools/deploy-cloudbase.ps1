@@ -180,6 +180,10 @@ try {
       )
       Copy-Item -LiteralPath $hostingRootFiles -Destination $hostingDirectory
       Copy-Item -LiteralPath $hostingStaticFiles -Destination $hostingStaticDirectory
+      $hostingAssetsDirectory = Join-Path $staticDirectory 'assets'
+      if (Test-Path -LiteralPath $hostingAssetsDirectory) {
+        Copy-Item -LiteralPath $hostingAssetsDirectory -Destination $hostingStaticDirectory -Recurse -Force
+      }
 
       Write-Host 'Deploying static hosting...'
       Invoke-CloudBaseCli -CliArguments @('hosting', 'deploy', $hostingDirectory, '-e', $environmentId, '--concurrency', '2', '--retry-count', '3')
