@@ -144,6 +144,10 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(ROOT_DIR, 'admin.html'));
 });
 
+app.get('/preview/story-gap-task', (req, res) => {
+  res.sendFile(path.join(__dirname, 'previews', 'story-gap-task.html'));
+});
+
 app.get('/', (req, res) => {
   res.sendFile(INDEX_FILE);
 });

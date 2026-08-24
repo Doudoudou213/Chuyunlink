@@ -11,6 +11,8 @@
     "test:stories": "node tools/test-story-evidence.js",
     "test:story-feedback": "node tools/test-story-feedback.js",
     "test:story-claims": "node tools/test-story-claims.js",
+    "test:story-revisions": "node tools/test-story-revisions.js",
+    "test:story-gap-tasks": "node tools/test-story-gap-tasks.js",
     "test:routes": "node tools/test-map-personalization.js",
     "test:rewards": "node tools/test-reward-security.js",
     "test:miniprogram": "node tools/test-miniprogram-scaffold.js",

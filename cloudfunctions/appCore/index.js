@@ -30,6 +30,8 @@ const REDEMPTION_COUNTER_COLLECTION = 'reward_redemption_counters';
 const POINT_LEDGER_COLLECTION = 'point_ledger';
 const STORY_LINK_COLLECTION = 'story_evidence_links';
 const STORY_CHAIN_COLLECTION = 'story_chains';
+const STORY_GAP_TASK_COLLECTION = 'story_gap_tasks';
+const STORY_CONTRIBUTION_COLLECTION = 'story_contributions';
 const ALLOWED_ASSET_TYPES = new Set(['image', 'audio', 'video']);
 const ALLOWED_REPORT_REASONS = new Set(['spam', 'abuse', 'false_information', 'copyright', 'other']);
 const ALLOWED_FEEDBACK_TYPES = new Set(['suggestion', 'bug', 'content', 'story_correction', 'other']);
@@ -600,6 +602,8 @@ function submissionView(item, includeOwnerDetails = false) {
     materialAnalysisStatus: item.materialAnalysisStatus || 'not_requested',
     resourceId: item.resourceId || '',
     resourceBindingStatus: item.resourceBindingStatus || (item.resourceId ? 'confirmed' : 'unbound'),
+    gapTaskId: item.gapTaskId || '',
+    gapTaskTitle: item.gapTaskTitle || '',
     likeCount: Math.max(0, Number(item.likeCount) || 0),
     commentCount: Math.max(0, Number(item.commentCount) || 0),
     completeness,
@@ -701,7 +705,8 @@ async function attachSubmissionStoryCards(items) {
           editorialLabel: story.qualityAssessment && story.qualityAssessment.grade === 'strong'
             ? '资料较完整 · 已校读'
             : '已人工校读',
-          version: Math.max(1, Number(story.version) || 1)
+          version: Math.max(1, Number(story.version) || 1),
+          revisionSummary: cleanText(story.revisionSummary, 180)
         };
         break;
       }
@@ -1116,14 +1121,45 @@ async function listOwnFeedback(uid, limit = 10) {
   return sortNewest(result.data || []).map(feedbackView);
 }
 
+async function getContributionImpact(uid) {
+  try {
+    const result = await db.collection(STORY_CONTRIBUTION_COLLECTION).where({ userId: uid }).limit(100).get();
+    const contributions = (result.data || []).filter((item) => item.status === 'adopted');
+    const storyIds = new Set(contributions.map((item) => item.storyId).filter(Boolean));
+    const totalRewardPoints = contributions.reduce((sum, item) => sum + Math.max(0, Number(item.rewardPointsAwarded) || 0), 0);
+    const items = sortNewest(contributions).slice(0, 8).map((item) => ({
+      id: item._id || item.id || '',
+      submissionId: item.submissionId || '',
+      taskTitle: cleanText(item.taskTitle, 48),
+      storyId: cleanText(item.storyId, 128),
+      storyTitle: cleanText(item.storyTitle, 100),
+      storyVersion: Math.max(1, Number(item.storyVersion) || 1),
+      resourceId: cleanText(item.resourceId, 128),
+      chapterIndex: Number.isInteger(Number(item.chapterIndex)) ? Number(item.chapterIndex) : null,
+      rewardStatus: item.rewardStatus || 'not_applicable',
+      rewardPointsAwarded: Math.max(0, Number(item.rewardPointsAwarded) || 0),
+      adoptedAt: item.adoptedAt || null,
+      rewardAwardedAt: item.rewardAwardedAt || null
+    }));
+    return { adoptedCount: contributions.length, storyCount: storyIds.size, totalRewardPoints, items };
+  } catch (error) {
+    const details = `${error && error.code || ''} ${error && error.message || ''}`;
+    if (/collection.*not.*exist|DATABASE_COLLECTION_NOT_EXIST|ResourceNotFound/i.test(details)) {
+      return { adoptedCount: 0, storyCount: 0, totalRewardPoints: 0, items: [], collectionReady: false };
+    }
+    throw error;
+  }
+}
+
 async function bootstrap(uid, userInfo) {
   const profile = await ensureProfile(uid, userInfo);
-  const [mySubmissions, publicSubmissions, myFeedback, rewards, myRedemptions] = await Promise.all([
+  const [mySubmissions, publicSubmissions, myFeedback, rewards, myRedemptions, contributionImpact] = await Promise.all([
     listOwn(uid, 50),
     listPublic(30, uid),
     listOwnFeedback(uid, 10),
     listRewards(),
-    listOwnRedemptions(uid, 30)
+    listOwnRedemptions(uid, 30),
+    getContributionImpact(uid)
   ]);
   const stats = mySubmissions.reduce((result, item) => {
     result.total += 1;
@@ -1140,7 +1176,8 @@ async function bootstrap(uid, userInfo) {
     publicSubmissions,
     myFeedback,
     rewards,
-    myRedemptions
+    myRedemptions,
+    contributionImpact
   };
 }
 
@@ -1756,6 +1793,8 @@ async function createSubmission(uid, userInfo, event) {
   const size = Number(event.size) || 0;
   const aiAnalysisConsent = event.aiAnalysisConsent === true;
   const materialAnalysisConsent = event.materialAnalysisConsent === true;
+  const gapTaskId = cleanText(event.gapTaskId, 128);
+  let gapTaskContext = null;
 
   if (!ALLOWED_ASSET_TYPES.has(assetType)) {
     const error = new Error('不支持的素材类型');
@@ -1781,6 +1820,29 @@ async function createSubmission(uid, userInfo, event) {
     const error = new Error('文件大小必须在 25MB 以内');
     error.code = 'INVALID_FILE_SIZE';
     throw error;
+  }
+
+  if (gapTaskId) {
+    if (!/^[A-Za-z0-9_-]+$/.test(gapTaskId)) {
+      throw Object.assign(new Error('征集任务 ID 格式不正确'), { code: 'INVALID_GAP_TASK_ID' });
+    }
+    const task = firstDocument(await db.collection(STORY_GAP_TASK_COLLECTION).doc(gapTaskId).get());
+    if (!task || task.status !== 'published') {
+      throw Object.assign(new Error('这项资料征集已经结束，请返回故事页查看最新任务'), { code: 'GAP_TASK_NOT_ACTIVE' });
+    }
+    if (task.requestedAssetType && task.requestedAssetType !== 'any' && task.requestedAssetType !== assetType) {
+      throw Object.assign(new Error('当前素材类型不符合这项征集要求'), { code: 'GAP_TASK_ASSET_TYPE_MISMATCH' });
+    }
+    gapTaskContext = {
+      gapTaskId,
+      gapTaskTitle: cleanText(task.title, 48),
+      gapTaskStoryId: cleanText(task.storyId, 128),
+      gapTaskStoryVersion: Math.max(1, Number(task.storyVersion) || 1),
+      targetResourceId: cleanText(task.resourceId, 128),
+      gapTaskChapterIndex: Number.isInteger(Number(task.chapterIndex)) ? Number(task.chapterIndex) : null,
+      gapTaskRewardPoints: Math.max(0, Math.min(500, Number(task.rewardPoints) || 0)),
+      gapTaskRewardRule: 'manual_after_approved_and_adopted'
+    };
   }
 
   const longitude = Number(event.longitude);
@@ -1832,6 +1894,7 @@ async function createSubmission(uid, userInfo, event) {
     board: 'needs',
     supplementCount: 0,
     approvedSupplements: [],
+    ...(gapTaskContext || {}),
     source: 'cloudbase_formal_web',
     createdAt: db.serverDate(),
     updatedAt: db.serverDate()

@@ -6,6 +6,8 @@ const RESOURCE_SEED = require('./data/resources.v1.json');
 const { createAdminStoryEvidenceService } = require('./domains/story-evidence');
 const { createAdminStoryChainService } = require('./domains/story-chains');
 const { createAdminStoryClaimService } = require('./domains/story-claims');
+const { createStoryRevisionImpactService } = require('./domains/story-revision-impact');
+const { createStoryGapTaskService } = require('./domains/story-gap-tasks');
 const { buildResourceBindingCandidates, resourceBindingOption } = require('./domains/resource-binding');
 
 const app = cloudbase.init({
@@ -29,16 +31,21 @@ const STORY_CHAIN_COLLECTION = 'story_chains';
 const STORY_CHAIN_LOG_COLLECTION = 'story_chain_logs';
 const STORY_CLAIM_COLLECTION = 'story_claims';
 const STORY_CLAIM_LOG_COLLECTION = 'story_claim_logs';
+const STORY_GAP_TASK_COLLECTION = 'story_gap_tasks';
+const STORY_GAP_TASK_LOG_COLLECTION = 'story_gap_task_logs';
+const STORY_CONTRIBUTION_COLLECTION = 'story_contributions';
 const RESOURCE_SEED_CONFIRM_TOKEN = 'IMPORT_RESOURCES_V1';
 const storyEvidenceService = createAdminStoryEvidenceService({ db, app });
 const storyChainService = createAdminStoryChainService({ db });
 const storyClaimService = createAdminStoryClaimService({ db });
+const storyRevisionImpactService = createStoryRevisionImpactService({ db });
+const storyGapTaskService = createStoryGapTaskService({ db });
 let interactionCollectionsReady = null;
 
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION, STORY_LINK_COLLECTION, STORY_LOG_COLLECTION, STORY_CHAIN_COLLECTION, STORY_CHAIN_LOG_COLLECTION, STORY_CLAIM_COLLECTION, STORY_CLAIM_LOG_COLLECTION].map(async (name) => {
+      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION, STORY_LINK_COLLECTION, STORY_LOG_COLLECTION, STORY_CHAIN_COLLECTION, STORY_CHAIN_LOG_COLLECTION, STORY_CLAIM_COLLECTION, STORY_CLAIM_LOG_COLLECTION, STORY_GAP_TASK_COLLECTION, STORY_GAP_TASK_LOG_COLLECTION, STORY_CONTRIBUTION_COLLECTION].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {
@@ -1347,10 +1354,17 @@ exports.main = async (event = {}) => {
     if (action === 'rejectAiStoryCandidate') return await storyEvidenceService.rejectCandidate(event, callerUid);
     if (action === 'archiveStoryEvidenceLink') return await storyEvidenceService.archive(event, callerUid);
     if (action === 'publishStoryDraft') return await storyChainService.publish(event, callerUid);
+    if (action === 'createStoryRevisionDraft') return await storyChainService.createRevisionDraft(event, callerUid);
     if (action === 'archiveStoryChain') return await storyChainService.archive(event, callerUid);
     if (action === 'getStoryClaimWorkspace') return await storyClaimService.workspace();
     if (action === 'saveStoryClaim') return await storyClaimService.save(event, callerUid);
     if (action === 'retireStoryClaim') return await storyClaimService.retire(event, callerUid);
+    if (action === 'getStoryRevisionImpactWorkspace') return await storyRevisionImpactService.workspace();
+    if (action === 'getStoryGapTaskWorkspace') return await storyGapTaskService.workspace();
+    if (action === 'publishStoryGapTask') return await storyGapTaskService.publish(event, callerUid);
+    if (action === 'archiveStoryGapTask') return await storyGapTaskService.archive(event, callerUid);
+    if (action === 'fulfillStoryGapTask') return await storyGapTaskService.fulfill(event, callerUid);
+    if (action === 'awardStoryGapTask') return await storyGapTaskService.award(event, callerUid);
 
     return {
       ok: false,

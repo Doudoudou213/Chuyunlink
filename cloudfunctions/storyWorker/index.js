@@ -780,7 +780,14 @@ async function storyDraftWorkspace() {
     qualityAssessment: item.qualityAssessment || null,
     publicationEligible: item.publicationEligible === true,
     status: item.status || 'draft',
-    version: Math.max(1, Number(item.version) || 1)
+    version: Math.max(1, Number(item.version) || 1),
+    revisionMode: item.revisionMode || '',
+    parentStoryId: item.parentStoryId || '',
+    previousVersion: Math.max(0, Number(item.previousVersion) || 0),
+    targetChapterIndex: item.targetChapterIndex != null && Number.isInteger(Number(item.targetChapterIndex)) ? Number(item.targetChapterIndex) : null,
+    revisionReason: cleanText(item.revisionReason, 300),
+    revisionSummary: cleanText(item.revisionSummary, 180),
+    revisionDiff: item.revisionDiff || null
   }));
   return {
     ok: true,

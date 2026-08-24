@@ -30,6 +30,7 @@ let activeStoryEvidenceResult = null;
 let activeStoryEvidenceView = 'story';
 let activeStoryEvidenceNodeId = '';
 let storyFeedbackSubmitting = false;
+let activeStoryGapTask = null;
   let cloudNotifications = [];
   let cloudNotificationUnreadCount = 0;
   const cloudSupplementState = new Map();
@@ -193,6 +194,11 @@ feedback_closed: '反馈处理',
       }
     }
     closeCloudNotifications();
+    if (String(item.type || '').startsWith('story_contribution_')) {
+      if (typeof switchTab === 'function') switchTab('profile');
+      document.getElementById('cloud-contribution-impact')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     if (item.targetType && item.targetId) {
       openCloudDiscussion(item.targetType, item.targetId, item.targetTitle || '内容讨论');
     }
@@ -429,6 +435,16 @@ feedback_closed: '反馈处理',
         <div class="mt-3 grid grid-cols-2 gap-2 border-t border-white/10 pt-3">
           <button type="button" data-profile-feature="profile-badges-section" class="rounded-lg bg-white/10 px-2 py-2 text-[10px] font-bold text-stone-100">查看徽章</button>
           <button type="button" data-profile-feature="profile-coupons-section" class="rounded-lg bg-white/10 px-2 py-2 text-[10px] font-bold text-stone-100">兑换优惠券</button>
+        </div>
+      </section>
+      <section id="cloud-contribution-impact" class="overflow-hidden rounded-2xl border border-[#b68a4a]/30 bg-[#fffaf1] shadow-sm">
+        <div class="flex items-stretch">
+          <div class="flex w-14 shrink-0 items-center justify-center bg-[#241a17] text-[#e3bd69]"><span class="cultural-font text-2xl font-black">链</span></div>
+          <div class="min-w-0 flex-1 p-4">
+            <div class="flex items-start justify-between gap-3"><div><p class="text-[9px] font-black uppercase tracking-[0.16em] text-[#9e2f24]">我的文化贡献</p><h4 class="mt-1 text-sm font-bold text-stone-900">被故事采用的真实资料</h4></div><strong id="cloud-impact-adopted" class="text-2xl text-[#7d2b23]">0</strong></div>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-center"><div class="rounded-lg bg-white p-2"><strong id="cloud-impact-stories" class="block text-sm text-stone-800">0</strong><span class="text-[9px] text-stone-400">帮助补全故事</span></div><div class="rounded-lg bg-white p-2"><strong id="cloud-impact-points" class="block text-sm text-stone-800">0</strong><span class="text-[9px] text-stone-400">贡献额外积分</span></div></div>
+            <div id="cloud-impact-recent" class="mt-3"></div>
+          </div>
         </div>
       </section>
       <section class="space-y-2">
@@ -1052,6 +1068,7 @@ feedback_closed: '反馈处理',
     const story = result.story;
     if (!story) return '<div class="rounded-2xl border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-500">这处资源还没有已发布的故事版本。</div>';
     const evidenceMap = new Map((result.items || []).map((item) => [item.id, item]));
+    const gapTasks = Array.isArray(result.gapTasks) ? result.gapTasks : [];
     return `
       <article class="overflow-hidden rounded-2xl border border-[#b68a4a]/30 bg-[#fffaf1] shadow-[0_14px_38px_rgba(58,31,23,0.09)]">
         <header class="relative overflow-hidden bg-gradient-to-br from-[#17110f] via-[#401b18] to-[#762a23] px-5 py-6 text-white">
@@ -1059,6 +1076,7 @@ feedback_closed: '反馈处理',
           <p class="relative text-[9px] font-black uppercase tracking-[0.22em] text-[#d7b46e]">共同讲述 · 第 ${Number(story.version || 1)} 版</p>
           <h3 class="cultural-font relative mt-2 text-xl font-black leading-tight text-[#fff5df]">${safeText(story.title)}</h3>
           <p class="relative mt-3 text-xs leading-relaxed text-[#eadcca]/75">${safeText(story.introduction)}</p>
+          ${story.revisionSummary ? `<div class="relative mt-4 rounded-xl border border-[#d7b46e]/20 bg-white/10 px-3 py-2.5 text-[10px] leading-5 text-[#f1dfbf]"><strong class="text-[#d7b46e]">本版修订</strong> · ${safeText(story.revisionSummary)}</div>` : ''}
         </header>
         <div class="space-y-5 p-5">
           ${(story.chapters || []).map((chapter, index) => {
@@ -1075,6 +1093,20 @@ feedback_closed: '反馈处理',
           }).join('')}
           ${renderStoryTrail(result)}
           ${story.closing ? `<footer class="rounded-xl bg-amber-50 p-4 text-xs leading-relaxed text-stone-700"><strong class="text-[#8f302b]">结语</strong><p class="mt-1">${safeText(story.closing)}</p></footer>` : ''}
+          ${gapTasks.length ? `<section class="overflow-hidden rounded-2xl border border-[#9e2f24]/25 bg-white">
+            <div class="border-b border-[#b68a4a]/20 bg-[#f8f0e2] px-4 py-3">
+              <p class="text-[9px] font-black uppercase tracking-[0.14em] text-[#9e2f24]">帮助补全这段链迹</p>
+              <p class="mt-1 text-[11px] leading-5 text-stone-600">任务由内容管理员发布。投稿通过审核并被采纳后，再由管理员确认积分。</p>
+            </div>
+            <div class="divide-y divide-stone-100">${gapTasks.map((task) => {
+              const typeLabel = { image: '照片', audio: '录音', video: '视频', any: '照片、录音或视频' }[task.requestedAssetType] || '资料';
+              const chapter = task.chapterIndex == null ? '整篇故事' : `第 ${Number(task.chapterIndex) + 1} 章`;
+              return `<article class="p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+                <div class="min-w-0"><div class="flex flex-wrap gap-2"><span class="rounded-full bg-[#9e2f24]/8 px-2 py-1 text-[9px] font-bold text-[#8f302b]">${safeText(chapter)}</span><span class="rounded-full bg-stone-100 px-2 py-1 text-[9px] text-stone-500">征集${safeText(typeLabel)}</span></div><h4 class="mt-2 text-sm font-bold text-stone-900">${safeText(task.title)}</h4><p class="mt-1 text-[11px] leading-5 text-stone-600">${safeText(task.description)}</p>${Number(task.rewardPoints) > 0 ? `<p class="mt-2 text-[10px] font-bold text-[#8a6b32]">审核采纳后可获 ${Number(task.rewardPoints)} 积分 · 不自动发放</p>` : ''}</div>
+                <button type="button" data-story-gap-task="${safeText(task.id)}" class="mt-3 min-h-11 shrink-0 rounded-xl bg-[#241a17] px-4 text-xs font-bold text-[#e3bd69] sm:mt-0">带着任务去采集</button>
+              </article>`;
+            }).join('')}</div>
+          </section>` : ''}
           <p class="border-t border-stone-100 pt-3 text-[9px] leading-relaxed text-stone-400">本故事由已确认链迹资料编排，并经管理员审核发布。点击每章来源可回到对应的原始社区记录。</p>
           <section class="rounded-2xl border border-[#b68a4a]/25 bg-[#f8f0e2] p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -1193,7 +1225,37 @@ feedback_closed: '反馈处理',
       trailButton.addEventListener('click', () => switchStoryEvidenceView('timeline', trailButton.dataset.storyTrailSource));
     });
     content.querySelector('[data-story-feedback-toggle]')?.addEventListener('click', openStoryFeedbackForm);
+    content.querySelectorAll('[data-story-gap-task]').forEach((button) => {
+      button.addEventListener('click', () => startStoryGapTask(button.dataset.storyGapTask));
+    });
     content.querySelector('#cloud-story-feedback-form')?.addEventListener('submit', submitStoryFeedback);
+  }
+
+  function clearStoryGapTask() {
+    activeStoryGapTask = null;
+    const panel = document.getElementById('collect-gap-task-context');
+    if (panel) panel.classList.add('hidden');
+  }
+
+  function startStoryGapTask(taskId) {
+    const task = (activeStoryEvidenceResult && activeStoryEvidenceResult.gapTasks || []).find((item) => item.id === taskId);
+    if (!task) return;
+    activeStoryGapTask = { ...task };
+    closeStoryEvidence();
+    if (typeof switchTab === 'function') switchTab('collect');
+    const panel = document.getElementById('collect-gap-task-context');
+    if (panel) {
+      panel.classList.remove('hidden');
+      document.getElementById('collect-gap-task-title').textContent = task.title || '定向资料征集';
+      document.getElementById('collect-gap-task-description').textContent = task.description || '';
+      document.getElementById('collect-gap-task-reward').textContent = Number(task.rewardPoints) > 0
+        ? `审核通过并被管理员采纳后，可确认 ${Number(task.rewardPoints)} 积分。`
+        : '投稿仍需经过人工审核与采纳确认。';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    const description = document.getElementById('collect-description');
+    if (description && !description.value.trim()) description.value = `回应资料征集「${task.title}」：`;
+    if (typeof showToast === 'function') showToast('已带入征集任务，请按要求采集', 'clipboard-check');
   }
 
   function switchStoryEvidenceView(view, focusId) {
@@ -1873,6 +1935,7 @@ feedback_closed: '反馈处理',
         <div class="mt-2 flex flex-wrap gap-1.5 text-[9px]">
           <span class="rounded-full bg-stone-100 px-2 py-0.5 text-stone-600">${safeText(reviewStageLabel(item.aiReviewStatus))}</span>
           <span class="rounded-full bg-stone-100 px-2 py-0.5 text-stone-600">审核编号 ${safeText(item.id)}</span>
+          ${item.gapTaskId ? `<span class="rounded-full bg-amber-50 px-2 py-0.5 font-bold text-amber-800">定向征集 · ${safeText(item.gapTaskTitle || '共同补全')}</span>` : ''}
         </div>
         ${item.reviewNote ? `<p class="mt-2 rounded-lg bg-stone-50 p-2 text-[10px] text-stone-600">审核意见：${safeText(item.reviewNote)}</p>` : ''}
         ${item.status === 'approved' ? `<p class="mt-2 text-[10px] font-bold text-emerald-600">已发放 +${Number(item.rewardPoints || 100)} 流光积分</p>` : ''}
@@ -1880,6 +1943,22 @@ feedback_closed: '反馈处理',
     `).join('') : `<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">${
       allItems.length ? '当前筛选条件下没有投稿。' : '还没有云端上传记录。'
     }</div>`;
+  }
+
+  function renderCloudContributionImpact(data) {
+    const impact = data.contributionImpact || {};
+    const items = Array.isArray(impact.items) ? impact.items : [];
+    const adopted = document.getElementById('cloud-impact-adopted');
+    const stories = document.getElementById('cloud-impact-stories');
+    const points = document.getElementById('cloud-impact-points');
+    const recent = document.getElementById('cloud-impact-recent');
+    if (!adopted || !stories || !points || !recent) return;
+    adopted.textContent = Number(impact.adoptedCount || 0);
+    stories.textContent = Number(impact.storyCount || 0);
+    points.textContent = `+${Number(impact.totalRewardPoints || 0)}`;
+    recent.innerHTML = items.length
+      ? `<details class="rounded-xl border border-[#b68a4a]/20 bg-white px-3 py-2"><summary class="cursor-pointer text-[10px] font-bold text-[#7d2b23]">查看最近采用记录</summary><div class="mt-2 space-y-2">${items.slice(0, 4).map((item) => `<article class="border-t border-stone-100 pt-2 first:border-0 first:pt-0"><p class="text-[10px] font-bold text-stone-700">${safeText(item.storyTitle || item.taskTitle || '楚韵故事')}</p><p class="mt-0.5 text-[9px] text-stone-400">${safeText(item.taskTitle || '资料补充')}${item.rewardStatus === 'awarded' ? ` · 已获 +${Number(item.rewardPointsAwarded || 0)} 积分` : item.rewardStatus === 'pending_manual_confirmation' ? ' · 积分待管理员确认' : ''}</p></article>`).join('')}</div></details>`
+      : '<p class="text-[10px] leading-5 text-stone-400">资料被故事采用后，贡献记录会出现在这里。</p>';
   }
 
   function renderCloudProfile(data) {
@@ -1913,6 +1992,7 @@ feedback_closed: '反馈处理',
     if (legacyPoints) legacyPoints.textContent = Number(profile.points || 0).toLocaleString();
     try { userPoints = Number(profile.points || 0); } catch (_) {}
     renderCloudSubmissionRecords();
+    renderCloudContributionImpact(data);
     renderCloudFeedback();
 renderCloudRewards();
     updateNotificationEntry();
@@ -2915,7 +2995,8 @@ renderCloudRewards();
         locationAccuracy: currentLocation.accuracy,
         regionName: '湖北',
         aiAnalysisConsent: document.getElementById('collect-ai-consent')?.checked === true,
-        materialAnalysisConsent: document.getElementById('collect-material-consent')?.checked === true
+        materialAnalysisConsent: document.getElementById('collect-material-consent')?.checked === true,
+        gapTaskId: activeStoryGapTask && activeStoryGapTask.id || ''
       });
       const aiTask = await enqueueCloudAiReview(result.submission.id);
 
@@ -2930,6 +3011,7 @@ renderCloudRewards();
       if (description) description.value = '';
       const aiConsent = document.getElementById('collect-ai-consent');
       if (aiConsent) aiConsent.checked = false;
+      clearStoryGapTask();
       await refreshCloudProfile();
       if (typeof switchTab === 'function') switchTab('profile');
     } catch (error) {
@@ -2950,6 +3032,7 @@ renderCloudRewards();
     injectLoginModal();
     injectProductModals();
     injectStoryEvidenceModal();
+    document.getElementById('collect-gap-task-clear')?.addEventListener('click', clearStoryGapTask);
     const headerAccount = document.getElementById('header-account-entry');
     if (headerAccount && !headerAccount.dataset.cloudBound) {
       headerAccount.dataset.cloudBound = 'true';

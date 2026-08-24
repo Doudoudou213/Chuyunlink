@@ -1517,6 +1517,17 @@
         </div>
 
         <form id="collect-form" onsubmit="handleUploadSubmit(event)" class="space-y-4">
+          <section id="collect-gap-task-context" class="hidden rounded-2xl border border-[#b68a4a]/35 bg-[#fff8e9] p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-[9px] font-black uppercase tracking-[0.16em] text-[#9e2f24]">定向资料征集</p>
+                <h3 id="collect-gap-task-title" class="mt-1 text-sm font-bold text-stone-900"></h3>
+                <p id="collect-gap-task-description" class="mt-1 text-[11px] leading-5 text-stone-600"></p>
+                <p id="collect-gap-task-reward" class="mt-2 text-[10px] font-bold text-[#7d5d26]"></p>
+              </div>
+              <button id="collect-gap-task-clear" type="button" class="shrink-0 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-[10px] font-bold text-stone-500">退出任务</button>
+            </div>
+          </section>
           <!-- 云端审核说明：AI 能力将在 CloudBase 云函数中启用 -->
           <div class="bg-amber-50 border border-sandGold/30 rounded-2xl p-3 flex justify-between items-center text-xs">
             <div>
@@ -4418,6 +4429,7 @@
             <h4 class="cultural-font mt-3 text-base font-black leading-snug text-[#2b2421]">${escapeHtml(story.title || story.chapterTitle || '一段正在被看见的地方记忆')}</h4>
             ${story.chapterTitle && expanded ? `<p class="mt-3 text-[10px] font-bold text-[#8f302b]">${escapeHtml(story.chapterTitle)}</p>` : ''}
             <p class="mt-2 whitespace-pre-line ${expanded ? 'text-sm leading-7' : 'text-xs leading-6'} text-[#5f534b]">${escapeHtml(lead)}</p>
+            ${story.revisionSummary ? `<p class="mt-3 border-l-2 border-[#9e2f24] bg-[#9e2f24]/5 px-3 py-2 text-[10px] leading-5 text-[#76564d]"><strong class="text-[#9e2f24]">本版修订</strong> · ${escapeHtml(story.revisionSummary)}</p>` : ''}
             ${quickSupplementAction ? `<div class="mt-3">${quickSupplementAction}</div>` : ''}
             <div class="mt-3 flex items-center gap-2 text-[10px] text-[#8b796b]">
               <span class="h-px flex-1 bg-[#b68a4a]/25"></span>

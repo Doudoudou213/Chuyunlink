@@ -5,6 +5,7 @@ const SUBMISSION_COLLECTION = 'submissions';
 const RESOURCE_COLLECTION = 'resources';
 const STORY_COLLECTION = 'story_chains';
 const CLAIM_COLLECTION = 'story_claims';
+const GAP_TASK_COLLECTION = 'story_gap_tasks';
 
 function cleanText(value, maxLength) {
   return String(value == null ? '' : value).trim().slice(0, maxLength);
@@ -80,6 +81,8 @@ function createStoryEvidenceService({ db, app }) {
         story: null,
         claims: [],
         claimsReady: false,
+        gapTasks: [],
+        gapTasksReady: false,
         trail: buildPublicTrail({ id: resourceId, title: resource.title, summary: resource.summary }, []),
         collectionReady: false
       };
@@ -134,6 +137,8 @@ function createStoryEvidenceService({ db, app }) {
     let story = null;
     let claims = [];
     let claimsReady = true;
+    let gapTasks = [];
+    let gapTasksReady = true;
     try {
       const storyResult = await db.collection(STORY_COLLECTION).where({ resourceId }).limit(20).get();
       const published = (storyResult.data || [])
@@ -157,8 +162,30 @@ function createStoryEvidenceService({ db, app }) {
             chapters,
             closing: cleanText(selected.closing, 600),
             version: Math.max(1, Number(selected.version) || 1),
+            revisionSummary: cleanText(selected.revisionSummary, 180),
+            previousVersion: Math.max(0, Number(selected.previousVersion) || 0),
+            changedChapterIndex: selected.targetChapterIndex != null && Number.isInteger(Number(selected.targetChapterIndex)) ? Number(selected.targetChapterIndex) : null,
             publishedAt: timeValue(selected.publishedAt)
           };
+          try {
+            const taskResult = await db.collection(GAP_TASK_COLLECTION).where({ storyId: story.id }).limit(50).get();
+            gapTasks = (taskResult.data || [])
+              .filter((item) => item.status === 'published'
+                && item.resourceId === resourceId
+                && Number(item.storyVersion || 1) === story.version)
+              .map((item) => ({
+                id: item._id || item.id || '',
+                title: cleanText(item.title, 48),
+                description: cleanText(item.description, 360),
+                requestedAssetType: ['image', 'audio', 'video', 'any'].includes(item.requestedAssetType) ? item.requestedAssetType : 'any',
+                rewardPoints: Math.max(0, Math.min(500, Number(item.rewardPoints) || 0)),
+                chapterIndex: Number.isInteger(Number(item.chapterIndex)) ? Number(item.chapterIndex) : null
+              }))
+              .filter((item) => item.id && item.title && item.description);
+          } catch (error) {
+            if (!isMissingCollectionError(error)) throw error;
+            gapTasksReady = false;
+          }
           try {
             const claimResult = await db.collection(CLAIM_COLLECTION).where({ storyId: story.id }).limit(100).get();
             const validLinkIds = new Set(items.map((item) => item.id));
@@ -198,6 +225,8 @@ function createStoryEvidenceService({ db, app }) {
       story,
       claims,
       claimsReady,
+      gapTasks,
+      gapTasksReady,
       trail: buildPublicTrail({ id: resourceId, title: resource.title, summary: resource.summary }, items)
     };
   }
@@ -208,6 +237,7 @@ function createStoryEvidenceService({ db, app }) {
 module.exports = {
   LINK_COLLECTION,
   CLAIM_COLLECTION,
+  GAP_TASK_COLLECTION,
   buildPublicTrail,
   createStoryEvidenceService
 };
