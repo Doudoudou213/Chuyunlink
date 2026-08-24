@@ -49,4 +49,118 @@
 
 - P3: after real user submissions provide a wider range of image aspect ratios, consider tuning `object-position` per EXIF orientation; current `object-fit: cover` is safe and visually consistent.
 
+collect result: passed
+
+---
+
+# 楚韵链迹地图地点题签 Design QA
+
+## Evidence
+
+- Source visual truth, layout: `C:\Users\lenovo\.codex\generated_images\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\exec-77faa530-7e3c-4227-b89b-6e5c15f3a393.png`
+- Source visual truth, illustration direction: `C:\Users\lenovo\.codex\generated_images\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\exec-02eb8a81-8eb2-410f-93dc-664e42cf7443.png`
+- Dedicated illustration asset: `C:\Users\lenovo\.codex\generated_images\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\exec-eac39b52-1c3c-4dcd-abad-5af125dd2fc5.png`
+- Browser-rendered mobile implementation: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-ticket-implementation-20260824\mobile-427.png`
+- Browser-rendered tablet implementation: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-ticket-implementation-20260824\tablet-768.png`
+- Browser-rendered desktop implementation: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-ticket-implementation-20260824\desktop-1440.png`
+- Combined source/implementation comparison: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-ticket-implementation-20260824\comparison-source-implementation.png`
+- Browser test report: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-ticket-implementation-20260824\report.json`
+- Browser: Microsoft Edge through Playwright Chromium, headless, with the existing online Tailwind, Lucide, Leaflet, font and map resources loaded.
+- Source layout pixels: 853 × 1844, normalized to 427 × 922 for comparison.
+- Illustration source pixels: 2241 × 702, cropped responsively into a 3.15rem-high panoramic slot without stretching.
+- Implementation pixels and CSS viewports: 427 × 922, 768 × 1024 and 1440 × 1000; deviceScaleFactor 1.
+- State: map page open, route planner closed, “湖北省博物馆东湖片区” landmark focused, detail ticket open.
+
+## Findings
+
+- No actionable P0, P1, or P2 findings remain.
+- Fonts and typography: the vertical location slip and landmark heading use Noto Serif SC; utility copy and actions use Noto Sans SC. Long location names remain readable without horizontal overflow; description is intentionally limited to one line to preserve the compact map-first layout.
+- Spacing and layout rhythm: the final mobile ticket is 405 × 242 px, fixed 7 px above the map bottom and clear of the 60 px persistent navigation. The panel occupies about 26% of the mobile viewport; its extra height versus option 2 is the intentional accommodation for the user-selected option 3 panorama. Tablet and desktop use a 480 px right-aligned ticket rather than stretching across the map.
+- Colors and visual tokens: paper ivory, lacquer brown, muted gold, Chu vermilion and patina green match the approved four-page system. There are no cold-gray borders or high-contrast red fields; verified, pending and exploration states retain text labels in addition to color.
+- Image quality and asset fidelity: the popup uses a dedicated original East Lake ink panorama rather than a screenshot crop, placeholder, CSS drawing or handcrafted SVG. The image remains sharp at all three viewports and uses a restrained multiply treatment that integrates it with the paper surface.
+- Copy and content: landmark title, description, reward points and status remain dynamic. Existing point semantics stay “积分”; visual work does not rename or alter the reward rule.
+- Interaction and accessibility: close, collect, navigation, chain and discussion controls remain wired to their existing handlers. Close and all four actions have 44 px touch targets, visible focus styles, `aria-hidden` state updates and reduced-motion fallback.
+
+## Comparison History
+
+1. First Edge comparison found a P1 positioning mismatch: removal of the former `absolute` utility left the redesigned ticket in the map container's centered flex flow, so it floated in the middle of the screen. Fixed by restoring explicit absolute positioning and recapturing all three viewports.
+2. The same comparison found a P2 density mismatch: the first implementation was 292 px high and used a two-line description. Fixed by reducing the illustration slot, tightening type and spacing, limiting description to one line, and recapturing. Final height is 242 px with all touch targets still 44 px.
+3. Post-fix Edge capture reports no horizontal overflow, no console errors, and no clipping at 427, 768 or 1440 px widths. Discussion opening and collect-page navigation both pass.
+
+## Focused Region Evidence
+
+- Full-view comparison: `comparison-source-implementation.png` shows the same map-first composition, low paper ticket, vertical lacquer title slip, restrained action hierarchy and persistent bottom navigation as the selected option.
+- Popup-focused evidence: `mobile-427.png` shows the panoramic ink illustration, dynamic reward, one-line description, primary collect action, secondary navigation and quiet chain/discussion actions at native mobile size. No further crop was required because all key details are legible in the full-resolution mobile capture.
+
+## Implementation Checklist
+
+- [x] Preserve `landmark-drawer`, `drawer-title`, `drawer-desc`, `drawer-points` and existing event handlers.
+- [x] Use option 2's compact title-slip structure with option 3's ink panorama direction.
+- [x] Keep the map visually dominant and bottom navigation unobstructed.
+- [x] Add dynamic status text for verified, pending and exploration landmarks.
+- [x] Verify 44 px touch targets, focus treatment, reduced motion and no horizontal overflow.
+- [x] Pass CloudBase build validation and map-personalization tests.
+
+## Follow-up Polish
+
+- P3: a later content pass may supply location-specific panorama variants. The current East Lake ink artwork is intentionally decorative and does not claim to be documentary photography of every landmark.
+
+map ticket result: passed
+
+---
+
+# 楚韵链迹地图路线手记侧栏 Design QA
+
+## Evidence
+
+- Source style truth, selected title-ticket direction: `C:\Users\lenovo\.codex\generated_images\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\exec-77faa530-7e3c-4227-b89b-6e5c15f3a393.png`
+- Source style truth, implemented location ticket: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-ticket-implementation-20260824\desktop-1440.png`
+- Pre-change desktop baseline: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-planner-redesign-20260824\desktop-both-before.png`
+- Browser-rendered desktop, point clicked with planner hidden: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-planner-redesign-20260824\desktop-marker-default-hidden.png`
+- Browser-rendered desktop, planner explicitly opened: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-planner-redesign-20260824\desktop-planner-open.png`
+- Browser-rendered mobile planner: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-planner-redesign-20260824\mobile-planner-open.png`
+- Full-view comparison: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-planner-redesign-20260824\comparison-desktop-before-after.png`
+- Focused planner comparison: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-planner-redesign-20260824\comparison-planner-focused.png`
+- Browser interaction report: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\map-planner-redesign-20260824\after-report.json`
+- Browser: Microsoft Edge through Playwright Chromium, headless, with existing online Tailwind, Lucide, Leaflet, fonts and map tiles loaded.
+- CSS viewports and image pixels: desktop 1440 × 1000 and mobile 427 × 922, deviceScaleFactor 1; comparison captures retain the same state and dimensions before normalization.
+- State: map opened with planner initially collapsed; a real Leaflet heritage marker clicked; location ticket open; planner then opened and closed through the existing toggle function; mobile route item added to expose sorting/removal controls.
+
+## Findings
+
+- No actionable P0, P1 or P2 findings remain.
+- Fonts and typography: the planner now uses Noto Serif SC for the vertical “路线手记” slip and section headings, with Noto Sans SC for controls and route metadata. English is limited to the small editorial eyebrow and paired with “楚地寻访”; long Chinese titles wrap without clipping.
+- Spacing and layout rhythm: desktop keeps the established 370 × 804 px side-rail footprint; mobile uses a 411 × 650 px bottom sheet. The illustration, title slip and section spacing establish the same hierarchy as the location ticket without reducing the scrollable route workspace.
+- Colors and visual tokens: the former white/gray SaaS cards are replaced by xuan-paper ivory, warm apricot surfaces, lacquer brown actions, muted gold and patina green states. Large red blocks and cold gray outlines are absent.
+- Image quality and asset fidelity: the planner reuses the approved 50 KB original ink panorama asset at the correct aspect ratio. It is not a screenshot crop, placeholder, CSS drawing or handcrafted SVG, and it remains sharp at desktop and mobile sizes.
+- Copy and content: route planning, recommendation, transport and navigation copy remains unchanged except for the clearer header sentence “挑选点位，按自己的节奏编排行程。” No recommendation, distance, point or route logic changed.
+- Interaction and accessibility: initial desktop state is collapsed with `aria-hidden=true`; clicking a real exploration marker opens the location ticket while the planner remains collapsed; only explicit “行程篮” opening sets `aria-hidden=false`. Closing restores the collapsed state. All exposed planner buttons, including clear, move, reorder and remove, measure at least 44 × 44 px; no horizontal overflow or console errors were recorded.
+
+## Comparison History
+
+1. Baseline showed the planner automatically open on desktop because `initializeMapPlanner()` expanded at widths above 768 px, and marker selection expanded it again through `selectMapPlannerPoint()`. Fixed by initializing collapsed, adding the collapsed class in HTML to prevent first-paint flash, removing implicit expansion from point selection, and preserving the explicit `planner=open` override.
+2. First post-style touch audit found the “清空”、前移、后移 and remove controls below the 44 px target. Fixed with scoped planner touch-target rules and re-ran the mobile route-item state. Final report records 44 px for all four controls.
+3. Final visual comparison confirms the side rail now shares the same vertical lacquer title slip, ink panorama, paper surface, restrained radii and flat action hierarchy as the location ticket. The map remains visible and scroll behavior is unchanged.
+
+## Focused Region Evidence
+
+- `comparison-planner-focused.png` compares the exact 370 × 804 px side-rail region before and after, showing removal of cold borders, addition of the ink header and preservation of the same route content hierarchy.
+- `desktop-planner-open.png` shows the redesigned planner and location ticket simultaneously, allowing direct inspection of shared colors, imagery, title treatment and action hierarchy.
+- `desktop-marker-default-hidden.png` verifies the user's requested first-click state: the point detail appears while the planner side rail is absent.
+
+## Implementation Checklist
+
+- [x] Planner hidden on first desktop map load.
+- [x] Planner remains hidden after the first exploration-point click.
+- [x] “行程篮” remains the explicit open control; close restores hidden state.
+- [x] “行程篮” trigger is visually discoverable with a warm-apricot paper surface, lacquer-brown label, vermilion route icon and gold-on-lacquer count badge, while the location action remains primary.
+- [x] Existing selection, recommendation, ordering, transport and navigation handlers remain intact.
+- [x] Desktop and mobile planner surfaces match the approved location-ticket system.
+- [x] All planner controls pass the 44 px touch-target check.
+- [x] CloudBase build validation and deterministic map-personalization tests pass.
+
+## Follow-up Polish
+
+- P3: after real route baskets contain many points, evaluate whether the vertical title slip can collapse while scrolling to expose one additional route item on short laptop screens; current fixed header is clear and stable.
+
 final result: passed

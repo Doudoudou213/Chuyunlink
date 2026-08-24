@@ -3355,6 +3355,529 @@
         animation: none !important;
       }
     }
+
+    /* 行程篮：用暖杏纸色和鎏金计数轻提层级，仍让漆色定位按钮保持主操作地位 */
+    #view-map .map-planner-trigger {
+      min-height: 2rem;
+      border: 1px solid rgba(182, 138, 74, 0.38) !important;
+      border-radius: 0.4rem 0.72rem 0.4rem 0.72rem !important;
+      background: rgba(238, 227, 210, 0.96) !important;
+      color: #592620 !important;
+      box-shadow: 0 8px 20px rgba(65, 39, 27, 0.11) !important;
+      backdrop-filter: blur(10px);
+    }
+    #view-map .map-planner-trigger svg { color: #9e2f24; }
+    #view-map .map-planner-trigger #map-planner-count {
+      display: inline-flex;
+      min-width: 1.2rem;
+      min-height: 1.2rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.28rem;
+      background: #592620 !important;
+      color: #ead39d !important;
+    }
+    #view-map .map-planner-trigger:focus-visible {
+      outline: 2px solid rgba(158, 47, 36, 0.48);
+      outline-offset: 2px;
+    }
+
+    /* 地图路线手记：与地点题签共享宣纸、漆色题签和淡墨图语言 */
+    #map-planner-panel.map-planner-ticket {
+      --planner-paper: #fbf7ef;
+      --planner-paper-deep: #eee3d2;
+      --planner-ink: #4b2e2b;
+      --planner-lacquer: #592620;
+      --planner-vermilion: #9e2f24;
+      --planner-gold: #b68a4a;
+      --planner-patina: #496a61;
+      border: 0;
+      border-radius: 0.55rem 1.25rem 0.55rem 1.25rem;
+      background-color: rgba(251, 247, 239, 0.98);
+      background-image: url('./static/assets/community-paper-atlas-v2.webp');
+      background-position: center;
+      background-size: cover;
+      color: var(--planner-ink);
+      box-shadow: 0 20px 52px rgba(65, 39, 27, 0.2);
+      backdrop-filter: blur(10px);
+    }
+    #map-planner-panel.map-planner-ticket::after { display: none; }
+    .map-planner-cover {
+      position: relative;
+      display: grid;
+      flex: 0 0 auto;
+      grid-template-columns: 2.55rem minmax(0, 1fr);
+      gap: 0.65rem;
+      padding: 1.15rem 0.72rem 0.72rem;
+      overflow: hidden;
+      box-shadow: inset 0 -1px rgba(182, 138, 74, 0.18);
+    }
+    .map-planner-slip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.26rem 0.52rem 0.26rem 0.52rem;
+      background: var(--planner-lacquer);
+      color: #ead39d;
+      box-shadow: inset 0 0 0 1px rgba(227, 201, 143, 0.4), 0 8px 18px rgba(89, 38, 32, 0.14);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+    }
+    .map-planner-cover-main { min-width: 0; padding-right: 2.25rem; }
+    .map-planner-cover-art {
+      height: 3.7rem;
+      margin: 0 0 0.48rem;
+      overflow: hidden;
+      border-radius: 0.34rem 0.68rem 0.34rem 0.68rem;
+      background: var(--planner-paper-deep);
+    }
+    .map-planner-cover-art img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 38% center;
+      mix-blend-mode: multiply;
+    }
+    .map-planner-eyebrow {
+      margin: 0;
+      color: var(--planner-vermilion);
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+    }
+    .map-planner-cover h3 {
+      margin-top: 0.08rem;
+      color: var(--planner-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .map-planner-cover h3 + p {
+      margin-top: 0.12rem;
+      color: rgba(75, 46, 43, 0.62);
+      font-size: 0.67rem;
+      line-height: 1.45;
+    }
+    .map-planner-close {
+      position: absolute;
+      top: 0.45rem;
+      right: 0.45rem;
+      display: inline-flex;
+      width: 2.75rem;
+      height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(251, 247, 239, 0.86);
+      color: rgba(75, 46, 43, 0.68);
+    }
+    .map-planner-close svg { width: 1.05rem; height: 1.05rem; }
+    #map-planner-scroll {
+      padding: 0.7rem 0.72rem 0.8rem !important;
+      scrollbar-color: rgba(89, 38, 32, 0.22) transparent;
+    }
+    #map-planner-scroll h4 {
+      color: var(--planner-ink) !important;
+      font-family: 'Noto Serif SC', serif;
+    }
+    #resource-sync-status {
+      color: var(--planner-patina) !important;
+      font-weight: 700;
+    }
+    #map-planner-point-strip { gap: 0.42rem !important; }
+    #map-planner-point-strip > button {
+      min-height: 4rem;
+      min-width: 7rem;
+      border: 0 !important;
+      border-radius: 0.35rem 0.72rem 0.35rem 0.72rem !important;
+      background: rgba(238, 227, 210, 0.72) !important;
+      color: var(--planner-ink) !important;
+      box-shadow: none !important;
+    }
+    #map-planner-point-strip > button.bg-deepTeal {
+      background: var(--planner-lacquer) !important;
+      color: #f5e5bd !important;
+      box-shadow: 0 8px 18px rgba(89, 38, 32, 0.14) !important;
+    }
+    #map-planner-point-strip > button.bg-deepTeal .text-stone-400 { color: #d9bd7d !important; }
+    #map-planner-detail {
+      margin-top: 0.65rem !important;
+      border: 0 !important;
+      border-radius: 0.45rem 0.95rem 0.45rem 0.95rem !important;
+      background: rgba(251, 247, 239, 0.76) !important;
+      box-shadow: 0 8px 22px rgba(65, 39, 27, 0.055) !important;
+    }
+    #map-planner-detail [class*="border-stone-200"] {
+      border-color: transparent !important;
+      background: rgba(238, 227, 210, 0.62) !important;
+    }
+    #map-planner-detail .rounded-full,
+    #map-planner-detail .rounded-lg,
+    #map-planner-detail .rounded-xl { border-radius: 0.34rem !important; }
+    #map-planner-detail button {
+      min-height: 2.75rem;
+      border: 0 !important;
+      border-radius: 0.38rem !important;
+    }
+    #map-planner-detail button.bg-deepTeal {
+      background: var(--planner-lacquer) !important;
+      color: #ead39d !important;
+      box-shadow: 0 7px 16px rgba(89, 38, 32, 0.13) !important;
+    }
+    #map-planner-detail button.bg-white {
+      background: rgba(182, 138, 74, 0.14) !important;
+      color: var(--planner-ink) !important;
+    }
+    .map-planner-section--warm,
+    .map-planner-section--transport {
+      border: 0 !important;
+      border-radius: 0.45rem 0.95rem 0.45rem 0.95rem !important;
+      background: rgba(238, 227, 210, 0.58) !important;
+      box-shadow: none !important;
+    }
+    .map-planner-section--warm select {
+      border: 0 !important;
+      border-radius: 0.36rem !important;
+      background: var(--planner-paper) !important;
+      color: var(--planner-ink) !important;
+    }
+    #map-planner-interest-options label {
+      border: 0 !important;
+      border-radius: 0.34rem !important;
+      background: rgba(251, 247, 239, 0.78) !important;
+      color: var(--planner-ink) !important;
+    }
+    #map-planner-interest-options label.bg-\[\#9e2f24\] {
+      background: var(--planner-lacquer) !important;
+      color: #f5e5bd !important;
+    }
+    .map-planner-section--warm > button {
+      border: 0 !important;
+      border-radius: 0.38rem !important;
+      background: var(--planner-lacquer) !important;
+      color: #ead39d !important;
+      box-shadow: 0 8px 18px rgba(89, 38, 32, 0.14);
+    }
+    .map-planner-section--route {
+      border-color: rgba(182, 138, 74, 0.22) !important;
+    }
+    .map-planner-section--route > div:first-child > button {
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+      border-radius: 0.34rem;
+    }
+    #map-planner-route-list .planner-route-item {
+      border: 0 !important;
+      border-radius: 0.38rem 0.78rem 0.38rem 0.78rem !important;
+      background: rgba(251, 247, 239, 0.82) !important;
+      box-shadow: 0 6px 16px rgba(65, 39, 27, 0.045) !important;
+    }
+    #map-planner-route-list .planner-route-item > span {
+      background: var(--planner-lacquer) !important;
+      color: #ead39d !important;
+    }
+    #map-planner-route-list button[aria-label="前移"],
+    #map-planner-route-list button[aria-label="后移"],
+    #map-planner-route-list button[aria-label="移除"] {
+      display: inline-flex;
+      width: 2.75rem;
+      height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.34rem;
+    }
+    #map-planner-mode-options button {
+      min-height: 2.75rem;
+      border: 0 !important;
+      border-radius: 0.34rem !important;
+      background: rgba(251, 247, 239, 0.82) !important;
+      color: var(--planner-ink) !important;
+    }
+    #map-planner-mode-options button.bg-deepTeal {
+      background: var(--planner-lacquer) !important;
+      color: #ead39d !important;
+    }
+    .map-planner-footer {
+      border-color: rgba(182, 138, 74, 0.2) !important;
+      background: rgba(251, 247, 239, 0.94) !important;
+      padding: 0.65rem 0.72rem !important;
+    }
+    .map-planner-footer button {
+      min-height: 2.75rem;
+      border: 0 !important;
+      border-radius: 0.38rem !important;
+    }
+    .map-planner-footer button:first-child {
+      background: rgba(182, 138, 74, 0.15) !important;
+      color: var(--planner-ink) !important;
+    }
+    .map-planner-footer button:last-child {
+      background: var(--planner-lacquer) !important;
+      color: #ead39d !important;
+      box-shadow: 0 8px 18px rgba(89, 38, 32, 0.14) !important;
+    }
+    .map-planner-close:focus-visible,
+    #map-planner-panel button:focus-visible,
+    #map-planner-panel select:focus-visible,
+    #map-planner-panel label:focus-within {
+      outline: 2px solid rgba(158, 47, 36, 0.46);
+      outline-offset: 2px;
+    }
+    @media (max-width: 767px) {
+      #map-planner-panel.map-planner-ticket {
+        max-height: min(78vh, 650px);
+        border-radius: 0.8rem 1.2rem 0.45rem 0.45rem;
+      }
+      .map-planner-cover { grid-template-columns: 2.35rem minmax(0, 1fr); }
+      .map-planner-cover-art { height: 3.2rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #map-planner-panel.map-planner-ticket { transition: none; }
+    }
+
+    /* 地图地点题签：保留地图主导，用低矮宣纸抽屉承接地点与采集动作 */
+    #landmark-drawer.landmark-ticket-drawer {
+      --map-ticket-paper: #fbf7ef;
+      --map-ticket-paper-deep: #eee3d2;
+      --map-ticket-ink: #4b2e2b;
+      --map-ticket-lacquer: #592620;
+      --map-ticket-vermilion: #9e2f24;
+      --map-ticket-gold: #b68a4a;
+      --map-ticket-patina: #496a61;
+      position: absolute;
+      bottom: 0.7rem;
+      left: 0.7rem;
+      right: 0.7rem;
+      z-index: 404;
+      max-width: 48rem;
+      margin-inline: auto;
+      padding: 1.35rem 0.78rem 0.4rem;
+      overflow: hidden;
+      border: 0 !important;
+      border-radius: 0.55rem 1.25rem 0.55rem 1.25rem !important;
+      background-color: rgba(251, 247, 239, 0.975) !important;
+      background-image: url('./static/assets/community-paper-atlas-v2.webp');
+      background-position: center 62%;
+      background-size: cover;
+      color: var(--map-ticket-ink) !important;
+      box-shadow: 0 18px 44px rgba(65, 39, 27, 0.2) !important;
+      backdrop-filter: blur(9px);
+      transform: translateY(calc(100% + 1.5rem));
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 260ms cubic-bezier(.2,.76,.28,1), opacity 180ms ease;
+    }
+    #landmark-drawer.landmark-ticket-drawer.is-open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .landmark-ticket-handle {
+      position: absolute;
+      top: 0.55rem;
+      left: 50%;
+      width: 2.45rem;
+      height: 0.25rem;
+      border-radius: 999px;
+      background: rgba(89, 38, 32, 0.28);
+      transform: translateX(-50%);
+    }
+    .landmark-ticket-close {
+      position: absolute;
+      top: 0.42rem;
+      right: 0.5rem;
+      z-index: 3;
+      display: inline-flex;
+      width: 2.75rem;
+      height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(251, 247, 239, 0.82);
+      color: rgba(75, 46, 43, 0.72);
+    }
+    .landmark-ticket-close svg { width: 1.1rem; height: 1.1rem; }
+    .landmark-ticket-layout {
+      display: grid;
+      grid-template-columns: 3rem minmax(0, 1fr);
+      gap: 0.65rem;
+      min-width: 0;
+    }
+    .landmark-ticket-slip {
+      display: flex;
+      align-self: stretch;
+      min-height: 0;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 0.28rem 0.55rem 0.28rem 0.55rem;
+      background: var(--map-ticket-lacquer);
+      color: #ead39d;
+      box-shadow: inset 0 0 0 1px rgba(227, 201, 143, 0.42), 0 8px 20px rgba(89, 38, 32, 0.14);
+    }
+    #drawer-title-slip {
+      max-height: 11rem;
+      padding: 0.3rem 0;
+      overflow: hidden;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.88rem;
+      font-weight: 800;
+      line-height: 1.35;
+      letter-spacing: 0.08em;
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+    }
+    .landmark-ticket-main { min-width: 0; padding-right: 0.15rem; }
+    .landmark-ticket-art {
+      width: 100%;
+      height: 3.15rem;
+      margin-bottom: 0.38rem;
+      overflow: hidden;
+      border-radius: 0.38rem 0.72rem 0.38rem 0.72rem;
+      background: var(--map-ticket-paper-deep);
+      box-shadow: inset 0 0 0 1px rgba(182, 138, 74, 0.12);
+    }
+    .landmark-ticket-art img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 38% center;
+      mix-blend-mode: multiply;
+    }
+    .landmark-ticket-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.65rem;
+    }
+    .landmark-ticket-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-bottom: 0.08rem;
+      color: var(--map-ticket-vermilion);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+    .landmark-ticket-eyebrow svg { width: 0.85rem; height: 0.85rem; }
+    #landmark-drawer[data-status="verified"] .landmark-ticket-eyebrow { color: var(--map-ticket-patina); }
+    #landmark-drawer[data-status="pending"] .landmark-ticket-eyebrow { color: var(--map-ticket-vermilion); }
+    #landmark-drawer #drawer-title {
+      margin: 0;
+      color: var(--map-ticket-ink) !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.92rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .landmark-ticket-reward {
+      display: inline-flex;
+      min-height: 1.8rem;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 0.28rem;
+      padding: 0.28rem 0.5rem;
+      border-radius: 0.35rem;
+      background: rgba(73, 106, 97, 0.1);
+      color: var(--map-ticket-patina);
+      font-size: 0.64rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .landmark-ticket-reward svg { width: 0.9rem; height: 0.9rem; }
+    #landmark-drawer #drawer-desc {
+      display: -webkit-box;
+      margin-top: 0.18rem;
+      overflow: hidden;
+      color: rgba(75, 46, 43, 0.72) !important;
+      font-size: 0.7rem;
+      line-height: 1.45;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
+    }
+    .landmark-ticket-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: 0.5rem;
+      margin-top: 0.38rem;
+    }
+    .landmark-ticket-action {
+      display: inline-flex;
+      min-height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+      gap: 0.38rem;
+      border: 0;
+      border-radius: 0.38rem;
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+    .landmark-ticket-action svg { width: 1rem; height: 1rem; }
+    .landmark-ticket-action--primary {
+      background: var(--map-ticket-lacquer);
+      color: #ead39d;
+      box-shadow: 0 8px 18px rgba(89, 38, 32, 0.16);
+    }
+    .landmark-ticket-action--secondary {
+      background: rgba(182, 138, 74, 0.17);
+      color: var(--map-ticket-ink);
+    }
+    .landmark-ticket-quiet-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 0;
+    }
+    .landmark-ticket-quiet {
+      display: inline-flex;
+      min-height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      border: 0;
+      background: transparent;
+      color: var(--map-ticket-ink);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .landmark-ticket-quiet + .landmark-ticket-quiet {
+      box-shadow: inset 1px 0 rgba(182, 138, 74, 0.26);
+    }
+    .landmark-ticket-quiet svg { width: 0.96rem; height: 0.96rem; }
+    .landmark-ticket-close:focus-visible,
+    .landmark-ticket-action:focus-visible,
+    .landmark-ticket-quiet:focus-visible {
+      outline: 2px solid rgba(158, 47, 36, 0.48);
+      outline-offset: 2px;
+    }
+    @media (min-width: 768px) {
+      #landmark-drawer.landmark-ticket-drawer {
+        right: 1rem;
+        left: auto;
+        width: min(30rem, calc(100% - 2rem));
+        margin-inline: 0;
+      }
+    }
+    @media (max-width: 420px) {
+      #landmark-drawer.landmark-ticket-drawer { padding-inline: 0.72rem; }
+      .landmark-ticket-layout { grid-template-columns: 2.65rem minmax(0, 1fr); gap: 0.62rem; }
+      .landmark-ticket-art { height: 3rem; }
+      #drawer-title-slip { font-size: 0.79rem; }
+      #landmark-drawer #drawer-title { font-size: 0.92rem; }
+      .landmark-ticket-reward { padding-inline: 0.38rem; font-size: 0.62rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #landmark-drawer.landmark-ticket-drawer { transition: none; }
+    }
     </style>
 </head>
 <body class="min-h-screen bg-parchment">
@@ -3632,7 +4155,7 @@
               真实地图：高德在线瓦片
             </div>
             <div class="pointer-events-auto flex items-center gap-2">
-              <button type="button" onclick="toggleMapPlanner()" class="flex items-center rounded-lg border border-stone-200 bg-white/95 px-2.5 py-1.5 text-[10px] font-black text-deepTeal shadow">
+              <button type="button" onclick="toggleMapPlanner()" class="map-planner-trigger flex items-center px-2.5 py-1.5 text-[10px] font-black">
                 <i data-lucide="route" class="mr-1 h-3.5 w-3.5"></i> 行程篮 <span id="map-planner-count" class="ml-1 rounded-full bg-sandGold/25 px-1.5 text-[9px]">0</span>
               </button>
               <button type="button" onclick="refreshGPS()" class="bg-deepTeal text-sandGold px-2.5 py-1.5 rounded-lg shadow text-[10px] font-bold flex items-center">
@@ -3642,20 +4165,24 @@
           </div>
 
           <!-- 自选点位与路线规划侧栏；移动端自动变为底部抽屉 -->
-          <aside id="map-planner-panel" aria-label="自选点位路线规划">
-            <div class="flex shrink-0 items-start justify-between gap-3 border-b border-stone-200 px-4 py-3">
-              <div>
-                <p class="text-[9px] font-black uppercase tracking-[0.18em] text-sandGold">Trip Builder</p>
-                <h3 class="cultural-font mt-0.5 text-base font-bold text-deepTeal">自选探索路线</h3>
-                <p class="mt-0.5 text-[10px] text-stone-500">挑选点位并安排自己的前往顺序</p>
+          <aside id="map-planner-panel" class="map-planner-ticket is-collapsed" aria-label="自选点位路线规划" aria-hidden="true">
+            <header class="map-planner-cover">
+              <span class="map-planner-slip" aria-hidden="true">路线手记</span>
+              <div class="map-planner-cover-main">
+                <figure class="map-planner-cover-art">
+                  <img src="./static/assets/map-landmark-east-lake-ink-v1.webp" alt="楚地湖亭与水岸淡墨插画">
+                </figure>
+                <p class="map-planner-eyebrow">ROUTE FIELD NOTE · 楚地寻访</p>
+                <h3>自选探索路线</h3>
+                <p>挑选点位，按自己的节奏编排行程。</p>
               </div>
-              <button type="button" onclick="toggleMapPlanner(false)" class="rounded-lg border border-stone-200 bg-stone-50 p-1.5 text-stone-500" aria-label="收起路线规划">
-                <i data-lucide="x" class="h-4 w-4"></i>
+              <button type="button" onclick="toggleMapPlanner(false)" class="map-planner-close" aria-label="收起路线规划">
+                <i data-lucide="x" aria-hidden="true"></i>
               </button>
-            </div>
+            </header>
 
             <div id="map-planner-scroll" class="flex-1 px-4 py-3 text-stone-700">
-              <section>
+              <section class="map-planner-section map-planner-section--points">
                 <div class="flex items-center justify-between">
                   <h4 class="text-xs font-black text-stone-800">选择点位</h4>
                   <span id="resource-sync-status" class="text-[9px] text-stone-400">本地兼容数据</span>
@@ -3665,7 +4192,7 @@
 
               <section id="map-planner-detail" class="mt-3 rounded-2xl border border-stone-200 bg-stone-50 p-3"></section>
 
-              <section class="mt-4 rounded-2xl border border-sandGold/35 bg-[#fbf5e9] p-3">
+              <section class="map-planner-section map-planner-section--warm mt-4 rounded-2xl border border-sandGold/35 bg-[#fbf5e9] p-3">
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <h4 class="text-xs font-black text-stone-800">按偏好推荐路线</h4>
@@ -3697,7 +4224,7 @@
                 <p id="map-planner-recommendation-status" class="mt-2 text-[9px] leading-relaxed text-stone-500">推荐只调整行程篮，你仍可继续增删或拖动顺序。</p>
               </section>
 
-              <section class="mt-4 border-t border-stone-200 pt-3">
+              <section class="map-planner-section map-planner-section--route mt-4 border-t border-stone-200 pt-3">
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <h4 class="text-xs font-black text-stone-800">我的前往顺序</h4>
@@ -3708,7 +4235,7 @@
                 <div id="map-planner-route-list" class="mt-2 space-y-2"></div>
               </section>
 
-              <section class="mt-4 rounded-xl border border-sandGold/30 bg-sandGold/5 p-3">
+              <section class="map-planner-section map-planner-section--transport mt-4 rounded-xl border border-sandGold/30 bg-sandGold/5 p-3">
                 <div class="flex items-center justify-between gap-2">
                   <h4 class="text-xs font-black text-deepTeal">交通偏好</h4>
                   <span class="text-[9px] text-stone-400">影响打开导航的方式</span>
@@ -3718,7 +4245,7 @@
               </section>
             </div>
 
-            <div class="grid shrink-0 grid-cols-2 gap-2 border-t border-stone-200 bg-white px-4 py-3">
+            <div class="map-planner-footer grid shrink-0 grid-cols-2 gap-2 border-t border-stone-200 bg-white px-4 py-3">
               <button type="button" onclick="previewMapPlannerRoute()" class="rounded-xl border border-deepTeal bg-white py-2 text-[11px] font-black text-deepTeal">
                 地图预览
               </button>
@@ -3757,37 +4284,53 @@
             <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 mr-1.5 inline-block"></span>文博认证数字点</div>
           </div>
 
-          <!-- 导航提示浮窗 -->
-          <div id="landmark-drawer" class="absolute bottom-4 right-4 left-4 bg-white/95 rounded-2xl p-3 shadow-xl border border-sandGold/30 transform translate-y-[200px] transition-transform duration-300">
-            <div class="flex justify-between items-start">
-              <div>
-                <h4 id="drawer-title" class="cultural-font text-sm font-bold text-stone-800">曾侯遗韵牌楼</h4>
-                <p id="drawer-desc" class="text-xs text-stone-500 mt-0.5">面临漏水及倒塌危险，需要外墙及结构件细节拍摄和定位采集。</p>
+          <!-- 地点题签：紧凑承接地点信息，保持地图为主画面 -->
+          <section id="landmark-drawer" class="landmark-ticket-drawer translate-y-[200px]" role="dialog" aria-label="地点详情" aria-hidden="true">
+            <span class="landmark-ticket-handle" aria-hidden="true"></span>
+            <button type="button" onclick="closeLandmarkDrawer()" class="landmark-ticket-close" aria-label="关闭地点详情">
+              <i data-lucide="x" aria-hidden="true"></i>
+            </button>
+
+            <div class="landmark-ticket-layout">
+              <div class="landmark-ticket-slip" aria-hidden="true">
+                <span id="drawer-title-slip">曾侯遗韵牌楼</span>
               </div>
-              <button onclick="closeLandmarkDrawer()" class="text-stone-400 hover:text-stone-600">
-                <i data-lucide="x" class="w-4 h-4"></i>
-              </button>
-            </div>
-            <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-stone-100">
-              <span class="text-xs text-deepTeal font-semibold flex items-center">
-                <i data-lucide="zap" class="w-4 h-4 mr-1 text-sandGold fill-sandGold"></i> 任务奖励：+<span id="drawer-points">50</span> 积分
-              </span>
-              <div class="flex flex-wrap items-center justify-end gap-2">
-                <button type="button" onclick="window.openStoryEvidence(activeLandmark.id, activeLandmark.title)" class="border border-sandGold/50 bg-amber-50 text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="link-2" class="w-3.5 h-3.5 mr-1"></i> 链迹
-                </button>
-                <button type="button" onclick="window.openCloudDiscussion('landmark', activeLandmark.id, activeLandmark.title)" class="border border-deepTeal/20 bg-white text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="messages-square" class="w-3.5 h-3.5 mr-1"></i> 讨论
-                </button>
-                <button id="drawer-nav-btn" onclick="openCurrentLandmarkNavigation()" class="bg-sandGold text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="navigation" class="w-3.5 h-3.5 mr-1"></i> 打开导航
-                </button>
-                <button onclick="switchTab('collect')" class="bg-deepTeal text-sandGold px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="camera" class="w-3.5 h-3.5 mr-1"></i> 采集
-                </button>
+
+              <div class="landmark-ticket-main">
+                <figure class="landmark-ticket-art" aria-label="楚地湖亭淡墨图">
+                  <img src="./static/assets/map-landmark-east-lake-ink-v1.webp" alt="楚地湖亭与水岸淡墨插画">
+                </figure>
+
+                <div class="landmark-ticket-heading">
+                  <div class="min-w-0">
+                    <span class="landmark-ticket-eyebrow"><i data-lucide="map-pin-check" aria-hidden="true"></i><span id="drawer-status">实地寻访</span></span>
+                    <h4 id="drawer-title">曾侯遗韵牌楼</h4>
+                  </div>
+                  <span class="landmark-ticket-reward">
+                    <i data-lucide="gem" aria-hidden="true"></i>入藏奖励 +<span id="drawer-points">50</span> 积分
+                  </span>
+                </div>
+                <p id="drawer-desc">面临漏水及倒塌危险，需要外墙及结构件细节拍摄和定位采集。</p>
+
+                <div class="landmark-ticket-actions">
+                  <button type="button" onclick="switchTab('collect')" class="landmark-ticket-action landmark-ticket-action--primary">
+                    <i data-lucide="camera" aria-hidden="true"></i><span>去采集</span>
+                  </button>
+                  <button id="drawer-nav-btn" type="button" onclick="openCurrentLandmarkNavigation()" class="landmark-ticket-action landmark-ticket-action--secondary">
+                    <i data-lucide="navigation" aria-hidden="true"></i><span>导航到这里</span>
+                  </button>
+                </div>
+                <div class="landmark-ticket-quiet-actions">
+                  <button type="button" onclick="window.openStoryEvidence(activeLandmark.id, activeLandmark.title)" class="landmark-ticket-quiet">
+                    <i data-lucide="link-2" aria-hidden="true"></i><span>查看链迹</span>
+                  </button>
+                  <button type="button" onclick="window.openCloudDiscussion('landmark', activeLandmark.id, activeLandmark.title)" class="landmark-ticket-quiet">
+                    <i data-lucide="messages-square" aria-hidden="true"></i><span>参与讨论</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
         </div>
       </section>
 
@@ -7053,8 +7596,8 @@
         mapPlannerSelectedIds = [];
       }
 
-      const shouldOpen = window.matchMedia('(min-width: 768px)').matches;
-      toggleMapPlanner(shouldOpen);
+      // 路线手记默认收起；只有用户主动点击“行程篮”或显式 planner=open 时展开。
+      toggleMapPlanner(false);
       renderMapPlanner();
     }
 
@@ -7072,6 +7615,7 @@
       if (!panel) return;
       const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : panel.classList.contains('is-collapsed');
       panel.classList.toggle('is-collapsed', !shouldOpen);
+      panel.setAttribute('aria-hidden', String(!shouldOpen));
       document.body.classList.toggle('map-planner-visible', shouldOpen);
       if (shouldOpen) renderMapPlanner();
       if (heritageMap) setTimeout(() => heritageMap.invalidateSize(), 240);
@@ -7396,7 +7940,6 @@
       mapPlannerActiveId = id;
       activeLandmark = item;
       saveMapPlannerState();
-      toggleMapPlanner(true);
       renderMapPlanner();
       if (heritageMap && options.focusMap !== false) {
         heritageMap.setView(getStaticMapLatLng(item.coords), Math.max(heritageMap.getZoom(), 12), { animate: true });
@@ -7891,13 +8434,27 @@
       document.getElementById('drawer-desc').innerText = item.desc;
       document.getElementById('drawer-points').innerText = item.points;
       const drawer = document.getElementById('landmark-drawer');
+      const titleSlip = document.getElementById('drawer-title-slip');
+      const statusLabel = document.getElementById('drawer-status');
+      const statusText = item.status === 'verified'
+        ? '已入藏'
+        : item.status === 'pending'
+          ? '急需采集'
+          : '实地寻访';
+      if (titleSlip) titleSlip.innerText = item.title;
+      if (statusLabel) statusLabel.innerText = statusText;
+      drawer.dataset.status = item.status || 'explore';
       drawer.classList.remove('translate-y-[200px]');
+      drawer.classList.add('is-open');
+      drawer.setAttribute('aria-hidden', 'false');
       lucide.createIcons();
     }
 
     function closeLandmarkDrawer() {
       const drawer = document.getElementById('landmark-drawer');
+      drawer.classList.remove('is-open');
       drawer.classList.add('translate-y-[200px]');
+      drawer.setAttribute('aria-hidden', 'true');
     }
 
     function buildLandmarkNavigationUrls(item) {
