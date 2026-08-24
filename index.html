@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>楚韵链迹 - 荆楚物质文化遗产众包采集系统</title>
+  <link rel="icon" href="data:,">
   <!-- Tailwind CSS 引入 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide 图标库引入 -->
@@ -2715,6 +2716,645 @@
         grid-template-columns: 9rem minmax(0, 1fr);
       }
     }
+
+    /* 采集页：青绿山水入卷，沿用活动科普页的宣纸、漆器与楚石绿视觉。 */
+    #view-collect.collect-field-page {
+      --collect-paper: #f5efe4;
+      --collect-paper-light: #fffaf1;
+      --collect-paper-warm: #eee3d2;
+      --collect-ink: #4b2e2b;
+      --collect-lacquer: #592620;
+      --collect-vermilion: #9e2f24;
+      --collect-gold: #b68a4a;
+      --collect-patina: #496a61;
+      max-width: 760px;
+      min-height: calc(100vh - 122px);
+      padding: 0 0 2rem !important;
+      background: var(--collect-paper) !important;
+      color: var(--collect-ink);
+    }
+    #view-collect .collect-hero {
+      position: relative;
+      min-height: clamp(20rem, 63vw, 29rem);
+      overflow: hidden;
+      background: var(--collect-paper);
+      isolation: isolate;
+    }
+    #view-collect .collect-hero-image {
+      position: absolute;
+      inset: -1rem 0 0;
+      width: 100%;
+      height: calc(100% + 1rem);
+      object-fit: cover;
+      object-position: 48% 50%;
+      transform: translate3d(0, var(--collect-hero-drift, 0), 0) scale(1.015);
+      transition: transform 120ms linear;
+    }
+    #view-collect .collect-hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: linear-gradient(180deg, rgba(245, 239, 228, 0.04) 0%, rgba(245, 239, 228, 0.02) 52%, var(--collect-paper) 100%);
+      pointer-events: none;
+    }
+    #view-collect .collect-hero-copy {
+      position: relative;
+      z-index: 2;
+      width: min(78%, 30rem);
+      padding: clamp(2.1rem, 7vw, 4rem) clamp(1.4rem, 6vw, 3rem);
+      color: #3d2824;
+      text-shadow: 0 1px 0 rgba(255, 250, 241, 0.62);
+    }
+    #view-collect .collect-hero-kicker {
+      color: var(--collect-vermilion);
+      font-size: 0.58rem;
+      font-weight: 900;
+      letter-spacing: 0.24em;
+    }
+    #view-collect .collect-hero-title {
+      margin-top: 0.42rem;
+      color: #3d2824;
+      font-family: 'Noto Serif SC', serif;
+      font-size: clamp(2rem, 7vw, 3.25rem);
+      font-weight: 900;
+      letter-spacing: 0.035em;
+      line-height: 1.18;
+    }
+    #view-collect .collect-hero-description {
+      margin-top: 0.62rem;
+      color: #59443e;
+      font-family: 'Noto Serif SC', serif;
+      font-size: clamp(0.82rem, 2.8vw, 1.08rem);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1.7;
+    }
+    #view-collect .collect-scroll-shell {
+      position: relative;
+      z-index: 3;
+      margin-top: -2.25rem;
+    }
+    #view-collect .collect-scroll-roller {
+      position: relative;
+      z-index: 3;
+      height: 2.9rem;
+      margin: 0 -0.35rem -1.15rem;
+      border-radius: 999px;
+      background:
+        linear-gradient(180deg, rgba(255, 250, 241, 0.98), rgba(224, 207, 177, 0.98) 50%, rgba(255, 250, 241, 0.98));
+      box-shadow: 0 8px 18px rgba(65, 39, 27, 0.13), inset 0 0 0 1px rgba(182, 138, 74, 0.15);
+      pointer-events: none;
+    }
+    #view-collect .collect-scroll-roller::before,
+    #view-collect .collect-scroll-roller::after {
+      content: "";
+      position: absolute;
+      top: 0.36rem;
+      width: 0.72rem;
+      height: 2.18rem;
+      border-radius: 999px;
+      background: #806141;
+      box-shadow: inset 0 0 0 1px rgba(67, 38, 24, 0.22);
+    }
+    #view-collect .collect-scroll-roller::before { left: -0.16rem; }
+    #view-collect .collect-scroll-roller::after { right: -0.16rem; }
+    #view-collect .collect-scroll-sheet {
+      position: relative;
+      overflow: hidden;
+      padding: 2.9rem clamp(1rem, 4.8vw, 2.5rem) 1.4rem;
+      background: var(--collect-paper);
+      box-shadow: 0 -1px 0 rgba(182, 138, 74, 0.08);
+      transform-origin: 50% 0;
+      isolation: isolate;
+    }
+    #view-collect .collect-scroll-watermark {
+      position: absolute;
+      inset: 2rem 0 0;
+      z-index: -1;
+      width: 100%;
+      height: calc(100% - 2rem);
+      object-fit: cover;
+      object-position: center bottom;
+      opacity: 0.18;
+      pointer-events: none;
+    }
+    #view-collect .collect-form-intro {
+      display: none;
+      margin: 0 0 1.7rem 5.25rem;
+      padding: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    #view-collect .collect-form-intro::before,
+    #view-collect .collect-form-section::before,
+    #view-collect .collect-consent-disclosure::before {
+      display: none !important;
+    }
+    #view-collect .collect-form-intro p:first-child {
+      color: var(--collect-vermilion);
+      font-size: 0.58rem;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+    }
+    #view-collect .collect-form-intro h3 {
+      margin-top: 0.26rem;
+      color: var(--collect-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.12rem;
+      font-weight: 800;
+    }
+    #view-collect .collect-form-intro p:last-child {
+      margin-top: 0.38rem;
+      color: #76685e;
+      font-size: 0.65rem;
+      line-height: 1.65;
+    }
+    #view-collect #collect-form {
+      display: block;
+      counter-reset: none;
+    }
+    #view-collect #collect-form > * + * {
+      margin-top: 0 !important;
+    }
+    #view-collect .collect-form-section {
+      display: grid;
+      grid-template-columns: 4.35rem minmax(0, 1fr);
+      gap: 0.9rem;
+      position: relative;
+      padding: 1.1rem 0 !important;
+      border: 0 !important;
+      border-top: 1px solid rgba(182, 138, 74, 0.18) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    #view-collect .collect-form-section:first-of-type {
+      padding-top: 0 !important;
+      border-top: 0 !important;
+    }
+    #view-collect .collect-section-label {
+      align-self: stretch;
+      padding-right: 0.8rem;
+      border-right: 1px solid rgba(182, 138, 74, 0.24);
+      color: var(--collect-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.24rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      line-height: 1.5;
+      writing-mode: vertical-rl;
+    }
+    #view-collect .collect-section-label small {
+      margin-top: 0.42rem;
+      color: var(--collect-vermilion);
+      font-family: inherit;
+      font-size: 0.5rem;
+      letter-spacing: 0.08em;
+    }
+    #view-collect .collect-section-content {
+      min-width: 0;
+    }
+    #view-collect .collect-type-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-bottom: 0.9rem;
+    }
+    #view-collect .collect-type-option {
+      display: flex !important;
+      min-width: 0;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      gap: 0.38rem;
+      position: relative;
+      padding: 0.45rem 0.25rem !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: #74675d;
+      cursor: pointer;
+    }
+    #view-collect .collect-type-option::after {
+      content: "";
+      position: absolute;
+      right: 35%;
+      bottom: 0;
+      left: 35%;
+      height: 2px;
+      background: transparent;
+    }
+    #view-collect .collect-type-option.is-selected {
+      color: var(--collect-vermilion);
+    }
+    #view-collect .collect-type-option.is-selected::after {
+      background: var(--collect-vermilion);
+    }
+    #view-collect .collect-type-option svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      color: var(--collect-gold);
+      stroke-width: 1.7;
+    }
+    #view-collect .collect-type-option.is-selected svg {
+      color: var(--collect-vermilion);
+    }
+    #view-collect .collect-type-option span {
+      display: block;
+      margin: 0 !important;
+      color: currentColor !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.76rem !important;
+      font-weight: 700 !important;
+      white-space: nowrap;
+    }
+    #view-collect .collect-upload-zone {
+      position: relative;
+      min-height: 10.8rem;
+      overflow: hidden;
+      padding: 1.1rem !important;
+      border: 0 !important;
+      border-radius: 0.55rem !important;
+      background: rgba(238, 227, 210, 0.62) !important;
+      box-shadow: inset 0 0 0 1px rgba(182, 138, 74, 0.13) !important;
+      cursor: pointer;
+    }
+    #view-collect .collect-upload-placeholder {
+      display: flex;
+      min-height: 8.6rem;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: #716359;
+      text-align: center;
+    }
+    #view-collect .collect-upload-placeholder.hidden,
+    #view-collect #upload-preview.hidden {
+      display: none !important;
+    }
+    #view-collect .collect-upload-placeholder svg {
+      width: 2.15rem;
+      height: 2.15rem;
+      color: var(--collect-gold);
+      stroke-width: 1.45;
+    }
+    #view-collect .collect-upload-placeholder strong {
+      margin-top: 0.7rem;
+      color: var(--collect-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.82rem;
+    }
+    #view-collect .collect-upload-placeholder span {
+      margin-top: 0.28rem;
+      color: #8b7d72;
+      font-size: 0.58rem;
+      line-height: 1.55;
+    }
+    #view-collect #upload-preview {
+      position: relative;
+      width: 100%;
+    }
+    #view-collect #upload-preview > div {
+      max-height: none !important;
+      border-radius: 0.45rem !important;
+    }
+    #view-collect #preview-img,
+    #view-collect #preview-media-icon {
+      width: 100%;
+      height: clamp(10.5rem, 42vw, 16rem) !important;
+      border-radius: 0.45rem;
+    }
+    #view-collect #preview-media-icon {
+      background: rgba(89, 38, 32, 0.94) !important;
+      color: #e3c98f;
+    }
+    #view-collect .collect-preview-overlay {
+      align-items: flex-end !important;
+      justify-content: flex-end !important;
+      padding: 0.65rem;
+      background: linear-gradient(180deg, transparent 58%, rgba(42, 27, 23, 0.55)) !important;
+    }
+    #view-collect #preview-file-name {
+      border-radius: 0.3rem;
+      background: rgba(255, 250, 241, 0.87);
+      color: var(--collect-ink);
+      font-size: 0 !important;
+      backdrop-filter: blur(8px);
+    }
+    #view-collect #preview-file-name::after {
+      content: "已选择现场影像";
+      padding: 0.36rem 0.55rem;
+      font-size: 0.62rem;
+      font-weight: 700;
+    }
+    #view-collect .collect-replace-file {
+      margin-top: 0.58rem !important;
+      color: var(--collect-vermilion) !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.65rem !important;
+      font-weight: 700;
+    }
+    #view-collect .collect-audio-panel {
+      margin-top: 0.72rem;
+      padding: 0.8rem !important;
+      border: 0 !important;
+      border-radius: 0.45rem !important;
+      background: rgba(89, 38, 32, 0.96) !important;
+      color: #f6e7ca;
+      box-shadow: 0 8px 22px rgba(65, 39, 27, 0.1) !important;
+    }
+    #view-collect #record-audio-btn {
+      width: 2.8rem;
+      height: 2.8rem;
+      border: 1px solid rgba(227, 201, 143, 0.36);
+      background: transparent !important;
+      color: #e3c98f !important;
+      box-shadow: none !important;
+    }
+    #view-collect #record-audio-status { color: #fff4df !important; }
+    #view-collect #record-audio-time { color: rgba(255, 244, 223, 0.66) !important; }
+    #view-collect .audio-wave-bar { background: #b68a4a !important; }
+    #view-collect #audio-summary-card {
+      border: 0 !important;
+      background: rgba(255, 250, 241, 0.1) !important;
+      color: #f3dfb7;
+      box-shadow: none !important;
+    }
+    #view-collect #audio-summary-card p,
+    #view-collect #audio-summary-card div { color: inherit !important; }
+    #view-collect .collect-location-row {
+      display: flex;
+      min-height: 4.2rem;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.45rem 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    #view-collect .collect-location-copy {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.55rem;
+    }
+    #view-collect .collect-location-copy > svg {
+      width: 1.3rem;
+      height: 1.3rem;
+      color: var(--collect-gold);
+      flex: 0 0 auto;
+    }
+    #view-collect #geo-text {
+      color: var(--collect-ink) !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.82rem !important;
+      font-weight: 700;
+    }
+    #view-collect #coord-text {
+      margin-top: 0.16rem;
+      color: #8b7b6f !important;
+      font-size: 0.58rem !important;
+    }
+    #view-collect .collect-location-refresh {
+      display: inline-flex;
+      min-height: 36px;
+      align-items: center;
+      gap: 0.28rem;
+      flex: 0 0 auto;
+      padding: 0.38rem 0.52rem;
+      border: 1px solid rgba(73, 106, 97, 0.26);
+      border-radius: 0.35rem;
+      color: var(--collect-patina);
+      font-size: 0.58rem;
+      font-weight: 800;
+    }
+    #view-collect .collect-location-refresh svg {
+      width: 0.92rem;
+      height: 0.92rem;
+    }
+    #view-collect .collect-location-note {
+      margin-top: 0.32rem;
+      color: #948478;
+      font-size: 0.56rem;
+      line-height: 1.55;
+    }
+    #view-collect .collect-notes-paper {
+      position: relative;
+      min-height: 9.4rem;
+      overflow: hidden;
+      border-radius: 0.35rem;
+      background:
+        repeating-linear-gradient(180deg, transparent 0, transparent 2rem, rgba(182, 138, 74, 0.22) 2rem, rgba(182, 138, 74, 0.22) calc(2rem + 1px));
+    }
+    #view-collect #collect-description {
+      width: 100%;
+      min-height: 9.4rem;
+      resize: vertical;
+      padding: 0.45rem 0.7rem !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--collect-ink) !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.75rem;
+      line-height: 2rem;
+      box-shadow: none !important;
+    }
+    #view-collect #collect-description:focus-visible {
+      outline: 2px solid rgba(182, 138, 74, 0.34);
+      outline-offset: 2px;
+    }
+    #view-collect .collect-consent-disclosure {
+      position: relative;
+      margin-top: 0.35rem !important;
+      padding: 0 !important;
+      border: 0 !important;
+      border-top: 1px solid rgba(182, 138, 74, 0.18) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    #view-collect .collect-consent-disclosure summary {
+      display: flex;
+      min-height: 54px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+    #view-collect .collect-consent-disclosure summary::-webkit-details-marker { display: none; }
+    #view-collect .collect-consent-title {
+      display: inline-flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.42rem;
+      color: var(--collect-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    #view-collect .collect-consent-title svg {
+      width: 1rem;
+      height: 1rem;
+      color: var(--collect-gold);
+    }
+    #view-collect .collect-consent-summary {
+      display: inline-flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.38rem;
+      color: #88796d;
+      font-size: 0.58rem;
+      white-space: nowrap;
+    }
+    #view-collect .collect-consent-chevron {
+      width: 0.88rem;
+      height: 0.88rem;
+      transition: transform 180ms ease;
+    }
+    #view-collect .collect-consent-disclosure[open] .collect-consent-chevron {
+      transform: rotate(180deg);
+    }
+    #view-collect .collect-consent-body {
+      display: grid;
+      gap: 0.55rem;
+      padding: 0 0 0.85rem;
+    }
+    #view-collect .collect-consent-option {
+      display: grid !important;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.65rem;
+      position: relative;
+      padding: 0.72rem !important;
+      border: 0 !important;
+      border-radius: 0.38rem !important;
+      background: rgba(238, 227, 210, 0.52) !important;
+      box-shadow: none !important;
+      cursor: pointer;
+    }
+    #view-collect .collect-consent-option input {
+      margin-top: 0.12rem;
+      accent-color: var(--collect-patina);
+    }
+    #view-collect .collect-consent-option strong {
+      display: block;
+      color: var(--collect-ink);
+      font-size: 0.66rem;
+    }
+    #view-collect .collect-consent-option span span {
+      display: block;
+      margin-top: 0.24rem;
+      color: #817267;
+      font-size: 0.56rem;
+      line-height: 1.55;
+    }
+    #view-collect .collect-cloud-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.42rem;
+      padding: 0.55rem 0.15rem 0;
+      color: #88796d;
+      font-size: 0.55rem;
+      line-height: 1.55;
+    }
+    #view-collect .collect-cloud-note svg {
+      width: 0.88rem;
+      height: 0.88rem;
+      flex: 0 0 auto;
+      color: var(--collect-gold);
+    }
+    #view-collect #collect-form > button[type="submit"] {
+      width: calc(100% - 5.25rem);
+      min-height: 50px;
+      margin: 0.78rem 0 0 5.25rem !important;
+      border: 0 !important;
+      border-radius: 0.42rem !important;
+      background: var(--collect-lacquer) !important;
+      color: #e3c98f !important;
+      box-shadow: 0 10px 22px rgba(65, 39, 27, 0.13) !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+    #view-collect #collect-form > button[type="submit"] svg {
+      width: 1.08rem;
+      height: 1.08rem;
+      stroke-width: 1.65;
+    }
+    #view-collect #collect-form > button[type="submit"]:focus-visible,
+    #view-collect .collect-type-option:focus-within,
+    #view-collect .collect-location-refresh:focus-visible,
+    #view-collect .collect-consent-disclosure summary:focus-visible {
+      outline: 2px solid rgba(158, 47, 36, 0.42);
+      outline-offset: 3px;
+    }
+    #view-collect .collect-ai-modal-card {
+      border: 1px solid rgba(182, 138, 74, 0.18);
+      border-radius: 0.55rem 1.2rem 0.55rem 1.2rem !important;
+      background: var(--collect-paper-light) !important;
+      box-shadow: 0 24px 64px rgba(31, 19, 16, 0.26);
+    }
+    #view-collect .collect-ai-modal-card > div:first-child {
+      border-color: rgba(182, 138, 74, 0.18) !important;
+    }
+    #view-collect .collect-ai-modal-card h4 { color: var(--collect-ink) !important; }
+    #view-collect .collect-ai-modal-card #ai-btn-close:not(:disabled) {
+      background: var(--collect-lacquer) !important;
+      color: #e3c98f !important;
+    }
+    #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-roller {
+      animation: collect-roller-drop 780ms cubic-bezier(.22,.82,.26,1) both;
+    }
+    #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-sheet {
+      animation: collect-sheet-unroll 820ms cubic-bezier(.2,.78,.24,1) 80ms both;
+    }
+    #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-watermark {
+      animation: collect-watermark-arrive 620ms ease 520ms both;
+    }
+    @keyframes collect-roller-drop {
+      from { transform: translate3d(0, -1.15rem, 0); opacity: 0.72; }
+      to { transform: translate3d(0, 0, 0); opacity: 1; }
+    }
+    @keyframes collect-sheet-unroll {
+      from { clip-path: inset(0 0 100% 0); transform: scaleY(0.92); opacity: 0.5; }
+      to { clip-path: inset(0 0 0 0); transform: scaleY(1); opacity: 1; }
+    }
+    @keyframes collect-watermark-arrive {
+      from { opacity: 0; }
+      to { opacity: 0.18; }
+    }
+    @media (max-width: 767px) {
+      #view-collect.collect-field-page { min-height: calc(100vh - 60px); }
+      #view-collect .collect-hero { min-height: clamp(18.5rem, 78vw, 21rem); }
+      #view-collect .collect-hero-copy { width: 88%; padding: 2rem 1.25rem; }
+      #view-collect .collect-scroll-sheet { padding-right: 1rem; padding-left: 1rem; }
+    }
+    @media (max-width: 420px) {
+      #view-collect .collect-form-section { grid-template-columns: 3.7rem minmax(0, 1fr); gap: 0.72rem; }
+      #view-collect .collect-section-label { padding-right: 0.55rem; font-size: 1.08rem; }
+      #view-collect .collect-form-intro { margin-left: 4.42rem; }
+      #view-collect #collect-form > button[type="submit"] { width: calc(100% - 4.42rem); margin-left: 4.42rem !important; }
+      #view-collect .collect-type-option { gap: 0.22rem; }
+      #view-collect .collect-type-option svg { width: 1.08rem; height: 1.08rem; }
+      #view-collect .collect-type-option span { font-size: 0.68rem !important; }
+      #view-collect .collect-consent-summary > span { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #view-collect .collect-hero-image { transition: none; transform: none !important; }
+      #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-roller,
+      #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-sheet,
+      #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-watermark {
+        animation: none !important;
+      }
+    }
     </style>
 </head>
 <body class="min-h-screen bg-parchment">
@@ -3152,7 +3792,7 @@
       </section>
 
       <!-- 页面 3：采集发布中心 (COLLECT) -->
-      <section id="view-collect" class="page-view hidden space-y-4 py-4 px-4">
+      <template id="collect-legacy-template">
         <div class="chu-page-watermark chu-page-watermark--cloud" aria-hidden="true">
           <svg viewBox="0 0 360 190" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 112h112c20 0 20-29 0-29H77c-18 0-18-28 0-28h129c22 0 22-32 0-32h-50M111 143h181c25 0 25-37 0-37h-75c-20 0-20-30 0-30h125" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
@@ -3349,6 +3989,156 @@
                 请等待检测完成...
               </button>
             </div>
+          </div>
+        </div>
+      </template>
+
+      <section id="view-collect" class="page-view hidden collect-field-page">
+        <header class="collect-hero" aria-labelledby="collect-hero-title">
+          <img src="./static/assets/collect-hero-shanshui-v1.webp" alt="云山江水与临水古亭构成的荆楚山水长卷" class="collect-hero-image">
+          <div class="collect-hero-copy">
+            <p class="collect-hero-kicker">FIELD NOTE · 楚地采集</p>
+            <h2 id="collect-hero-title" class="collect-hero-title">楚地采集簿</h2>
+            <p class="collect-hero-description">把眼前所见，留进共同图鉴</p>
+          </div>
+        </header>
+
+        <div id="collect-scroll-shell" class="collect-scroll-shell">
+          <div class="collect-scroll-roller" aria-hidden="true"></div>
+          <div class="collect-scroll-sheet">
+            <img src="./static/assets/collect-scroll-watermark-v2.webp" alt="" class="collect-scroll-watermark" aria-hidden="true">
+            <div class="collect-form-intro">
+              <p>FIELD RECORD · 现场记录</p>
+              <h3>收存一条可复核的文化线索</h3>
+              <p>景点、文物、纹样、技艺或口述片段，都可以从这里进入共同图鉴。</p>
+            </div>
+
+            <form id="collect-form" onsubmit="handleUploadSubmit(event)">
+              <section class="collect-form-section" aria-labelledby="collect-media-label">
+                <div id="collect-media-label" class="collect-section-label">影像<small>壹</small></div>
+                <div class="collect-section-content">
+                  <div class="collect-type-grid" role="radiogroup" aria-label="采集素材类型">
+                    <label class="collect-type-option is-selected" onclick="selectType(this)">
+                      <input type="radio" name="asset-type" value="image" checked class="hidden">
+                      <i data-lucide="image"></i><span>图片</span>
+                    </label>
+                    <label class="collect-type-option" onclick="selectType(this)">
+                      <input type="radio" name="asset-type" value="audio" class="hidden">
+                      <i data-lucide="audio-lines"></i><span>音频</span>
+                    </label>
+                    <label class="collect-type-option" onclick="selectType(this)">
+                      <input type="radio" name="asset-type" value="video" class="hidden">
+                      <i data-lucide="video"></i><span>视频</span>
+                    </label>
+                  </div>
+
+                  <div class="collect-upload-zone" onclick="triggerFileSelect()">
+                    <input type="file" id="real-file-input" class="hidden" accept="image/*" onchange="previewFile(event)">
+                    <div id="upload-placeholder" class="collect-upload-placeholder">
+                      <i id="upload-placeholder-icon" data-lucide="scan-line"></i>
+                      <strong id="upload-placeholder-title">拍摄或选择一份现场影像</strong>
+                      <span id="upload-placeholder-desc">支持 JPG、PNG、WEBP、GIF，单份不超过 20MB</span>
+                    </div>
+                    <div id="upload-preview" class="hidden flex flex-col items-center">
+                      <div class="relative w-full overflow-hidden">
+                        <img id="preview-img" src="" alt="已选择的采集素材预览" class="w-full object-cover">
+                        <div id="preview-media-icon" class="hidden w-full flex items-center justify-center">
+                          <i data-lucide="file-audio" class="w-10 h-10"></i>
+                        </div>
+                        <div class="collect-preview-overlay absolute inset-0 flex">
+                          <p id="preview-file-name">已选择现场影像</p>
+                        </div>
+                      </div>
+                      <button type="button" onclick="resetFilePreview(event)" class="collect-replace-file">更换素材</button>
+                    </div>
+                  </div>
+
+                  <div id="audio-record-panel" class="collect-audio-panel hidden">
+                    <div class="flex items-center justify-between gap-3">
+                      <button type="button" id="record-audio-btn" onclick="toggleAudioRecording(event)" class="rounded-full flex items-center justify-center">
+                        <i data-lucide="mic" class="w-5 h-5"></i>
+                      </button>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                          <p id="record-audio-status" class="text-xs font-bold">口述采集待开始</p>
+                          <span id="record-audio-time" class="text-[10px] font-mono">00:00</span>
+                        </div>
+                        <div class="mt-2 flex items-end gap-1 h-8" aria-hidden="true">
+                          <span class="audio-wave-bar h-2 flex-1 rounded"></span><span class="audio-wave-bar h-5 flex-1 rounded"></span><span class="audio-wave-bar h-3 flex-1 rounded"></span><span class="audio-wave-bar h-7 flex-1 rounded"></span><span class="audio-wave-bar h-4 flex-1 rounded"></span><span class="audio-wave-bar h-6 flex-1 rounded"></span><span class="audio-wave-bar h-3 flex-1 rounded"></span>
+                        </div>
+                      </div>
+                    </div>
+                    <div id="audio-summary-card" class="hidden mt-3 rounded-lg p-2">
+                      <div class="flex items-center text-xs font-bold"><i data-lucide="list-checks" class="w-3.5 h-3.5 mr-1"></i> 识别梗概</div>
+                      <p id="audio-summary-text" class="text-[10px] mt-1 leading-relaxed"></p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="collect-form-section" aria-labelledby="collect-location-label">
+                <div id="collect-location-label" class="collect-section-label">方位<small>贰</small></div>
+                <div class="collect-section-content">
+                  <div class="collect-location-row">
+                    <div class="collect-location-copy">
+                      <i data-lucide="map-pin"></i>
+                      <div class="min-w-0">
+                        <p id="geo-text" class="line-clamp-1">尚未获取真实定位</p>
+                        <p id="coord-text">点击右侧题记当前位置</p>
+                      </div>
+                    </div>
+                    <button type="button" onclick="refreshGPS()" class="collect-location-refresh" aria-label="刷新真实定位"><i data-lucide="locate-fixed"></i><span>定位</span></button>
+                  </div>
+                  <p class="collect-location-note">定位仅用于投稿记录与地理围栏校验；公开内容不会展示精确坐标。</p>
+                </div>
+              </section>
+
+              <section class="collect-form-section" aria-labelledby="collect-notes-label">
+                <div id="collect-notes-label" class="collect-section-label">笔记<small>叁</small></div>
+                <div class="collect-section-content">
+                  <div class="collect-notes-paper">
+                    <textarea id="collect-description" name="description" placeholder="写下现场所见、纹样细节、人物口述或资料出处……" rows="4"></textarea>
+                  </div>
+                </div>
+              </section>
+
+              <details class="collect-consent-disclosure">
+                <summary>
+                  <span class="collect-consent-title"><i data-lucide="lock-keyhole"></i>公开与分析范围</span>
+                  <span class="collect-consent-summary"><span>默认仅供审核</span><i data-lucide="chevron-down" class="collect-consent-chevron"></i></span>
+                </summary>
+                <div class="collect-consent-body">
+                  <label class="collect-consent-option">
+                    <input id="collect-ai-consent" name="ai-analysis-consent" type="checkbox">
+                    <span><strong>审核通过后，允许分析公开文字</strong><span>只发送标题、描述、素材类型和地区；不发送账号、联系方式、原始文件或精确坐标。</span></span>
+                  </label>
+                  <label class="collect-consent-option">
+                    <input id="collect-material-consent" name="material-analysis-consent" type="checkbox">
+                    <span><strong>允许识别原始图片、音频或视频</strong><span>仅在审核通过后用于文字提取和资料整理，识别结果仍需管理员校对。</span></span>
+                  </label>
+                  <p class="collect-cloud-note"><i data-lucide="cloud-check"></i>素材先进入 CloudBase 人工审核，再按你的授权范围进入后续整理流程。</p>
+                </div>
+              </details>
+
+              <button type="submit" class="flex items-center justify-center gap-2"><i data-lucide="archive-restore"></i><span>收存这条采集记录</span></button>
+            </form>
+          </div>
+        </div>
+
+        <div id="ai-check-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-6 backdrop-blur-xs">
+          <div class="collect-ai-modal-card p-5 max-w-sm w-full space-y-4 text-stone-800">
+            <div class="flex items-center space-x-2 pb-2 border-b"><i data-lucide="scan-search" class="w-6 h-6 text-sandGold animate-pulse"></i><h4 class="cultural-font text-base font-bold">资料入藏前校验</h4></div>
+            <div class="space-y-3">
+              <div id="step-gps" class="flex justify-between items-center text-xs"><span class="flex items-center"><i data-lucide="loader" class="w-3.5 h-3.5 animate-spin mr-2 text-sandGold"></i> 核验现场方位与记录完整度</span><span class="text-stone-400">检测中</span></div>
+              <div id="step-deepfake" class="flex justify-between items-center text-xs"><span class="flex items-center"><i data-lucide="loader" class="w-3.5 h-3.5 animate-spin mr-2 text-sandGold"></i> 检查影像来源与安全合规</span><span class="text-stone-400">待开始</span></div>
+              <div id="step-watermark" class="flex justify-between items-center text-xs"><span class="flex items-center"><i data-lucide="loader" class="w-3.5 h-3.5 animate-spin mr-2 text-sandGold"></i> 写入资料保护水印</span><span class="text-stone-400">待开始</span></div>
+              <div id="step-milvus" class="flex justify-between items-center text-xs"><span class="flex items-center"><i data-lucide="loader" class="w-3.5 h-3.5 animate-spin mr-2 text-sandGold"></i> 检索相关馆藏与文化线索</span><span class="text-stone-400">待开始</span></div>
+            </div>
+            <div id="ai-success-result" class="hidden bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1">
+              <div class="flex items-center text-emerald-800 text-xs font-bold"><i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> 校验完成，记录已进入审核</div>
+              <p class="text-[10px] text-emerald-600 pl-5">素材真实度评估：<strong class="font-bold">98.7%</strong></p><p class="text-[10px] text-emerald-600 pl-5">候选关联：<strong class="font-bold">湖北省博物馆 · 曾侯乙青铜器</strong></p><p class="text-[10px] text-emerald-600 pl-5">入藏奖励：<strong class="font-bold">+100 流光值</strong></p>
+            </div>
+            <div class="pt-2 flex space-x-2"><button id="ai-btn-close" disabled onclick="closeAiModal()" class="flex-1 bg-stone-100 text-stone-400 py-2 rounded-xl text-xs font-bold w-full">请等待校验完成...</button></div>
           </div>
         </div>
       </section>
@@ -6995,6 +7785,28 @@
       heritageMap.setView(latLng, Math.max(heritageMap.getZoom(), 13), { animate: true });
     }
 
+    let collectScrollHasPlayed = false;
+
+    function playCollectScrollIntro() {
+      if (collectScrollHasPlayed || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const shell = document.getElementById('collect-scroll-shell');
+      if (!shell) return;
+      collectScrollHasPlayed = true;
+      shell.classList.remove('is-unrolling');
+      requestAnimationFrame(() => shell.classList.add('is-unrolling'));
+    }
+
+    function updateCollectHeroDrift() {
+      const collectView = document.getElementById('view-collect');
+      if (!collectView || collectView.classList.contains('hidden') || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const hero = collectView.querySelector('.collect-hero');
+      if (!hero) return;
+      const drift = Math.min(14, Math.max(0, window.scrollY * 0.035));
+      hero.style.setProperty('--collect-hero-drift', `${drift}px`);
+    }
+
+    window.addEventListener('scroll', updateCollectHeroDrift, { passive: true });
+
     // 1. TabBar 路由切换控制
     function switchTab(tabId) {
       document.body.classList.toggle('profile-view-active', tabId === 'profile');
@@ -7033,6 +7845,10 @@
       }
       if (tabId === 'community') {
         renderCommunityRouteCard();
+      }
+      if (tabId === 'collect') {
+        playCollectScrollIntro();
+        updateCollectHeroDrift();
       }
     }
 
@@ -9201,9 +10017,9 @@
       const configs = {
         image: {
           accept: 'image/*',
-          icon: 'cloud-lightning',
-          title: '点击拍照或上传本地图片',
-          desc: '大小限20MB内，支持 JPG, PNG, WEBP, GIF',
+          icon: 'scan-line',
+          title: '拍摄或选择一份现场影像',
+          desc: '支持 JPG、PNG、WEBP、GIF，单份不超过 20MB',
           previewIcon: 'image',
           invalidTip: '请上传 JPG、PNG、WEBP 或 GIF 图片文件'
         },
@@ -9259,7 +10075,7 @@
       document.getElementById('preview-img').src = '';
       document.getElementById('preview-img').classList.remove('hidden');
       document.getElementById('preview-media-icon').classList.add('hidden');
-      document.getElementById('preview-file-name').innerText = '已选择本地图片';
+      document.getElementById('preview-file-name').innerText = '已选择现场影像';
       document.getElementById('upload-placeholder').classList.remove('hidden');
       document.getElementById('upload-preview').classList.add('hidden');
     }
@@ -9300,7 +10116,7 @@
           previewMediaIcon.classList.remove('hidden');
           previewMediaIcon.querySelector('i').setAttribute('data-lucide', config.previewIcon);
         }
-        document.getElementById('preview-file-name').innerText = `已选：${file.name}`;
+        document.getElementById('preview-file-name').innerText = '已选择现场素材';
         lucide.createIcons();
       }
       if (mediaType === 'image') {
@@ -9351,7 +10167,7 @@
         const previewMediaIcon = document.getElementById('preview-media-icon');
         previewMediaIcon.classList.remove('hidden');
         previewMediaIcon.querySelector('i').setAttribute('data-lucide', 'file-audio');
-        document.getElementById('preview-file-name').innerText = `已录制：${selectedUploadFile.name}`;
+        document.getElementById('preview-file-name').innerText = '已完成一段现场口述';
       }
 
       document.getElementById('audio-summary-text').innerText = generateAudioSummary(audioRecordSeconds);
@@ -10027,31 +10843,30 @@
     function selectType(el) {
       const labels = el.parentNode.querySelectorAll('label');
       labels.forEach(l => {
-        l.className = "border-2 border-stone-200 bg-white rounded-xl p-3 text-center cursor-pointer block";
-        const icon = l.querySelector('i');
-        if (icon) {
-          icon.className = "w-6 h-6 mx-auto text-stone-400";
-        }
-        const text = l.querySelector('span');
-        if (text) {
-          text.className = "text-xs font-medium text-stone-500 block mt-1";
-        }
+        l.classList.remove('is-selected');
       });
-      el.className = "border-2 border-sandGold bg-sandGold/5 rounded-xl p-3 text-center cursor-pointer block";
-      const activeIcon = el.querySelector('i');
-      if (activeIcon) {
-        activeIcon.className = "w-6 h-6 mx-auto text-deepTeal";
-      }
-      const activeText = el.querySelector('span');
-      if (activeText) {
-        activeText.className = "text-xs font-bold text-stone-800 block mt-1";
-      }
+      el.classList.add('is-selected');
       const radio = el.querySelector('input[type="radio"]');
       if (radio) {
         radio.checked = true;
         updateCollectMediaMode(radio.value);
       }
     }
+
+    function keepCollectSubmitCopy() {
+      const button = document.querySelector('#collect-form button[type="submit"]');
+      if (!button) return;
+      const applyCopy = () => {
+        const label = button.querySelector('span');
+        if (label && label.textContent.trim() === '上传并提交审核') {
+          label.textContent = '收存这条采集记录';
+        }
+      };
+      applyCopy();
+      new MutationObserver(applyCopy).observe(button, { childList: true, subtree: true, characterData: true });
+    }
+
+    keepCollectSubmitCopy();
   </script>
   <script src="https://static.cloudbase.net/cloudbase-js-sdk/2.28.6/cloudbase.full.js"></script>
   <script src="./static/cloudbase-app.js"></script>
