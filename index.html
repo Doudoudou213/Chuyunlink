@@ -8218,16 +8218,6 @@
       openMapPlannerNavigation(firstId);
     }
 
-    function createLandmarkPopup(item) {
-      return `
-        <div>
-          <div class="map-popup-title">${escapeHtml(item.title)}</div>
-          <div class="map-popup-desc">${escapeHtml(item.desc)}</div>
-          <button class="map-popup-nav" onclick="openLandmarkNavigationById('${escapeHtml(item.id)}')">打开系统地图导航</button>
-        </div>
-      `;
-    }
-
     function renderHeritageMapMarkers() {
       if (!heritageMap || typeof L === 'undefined') return;
       if (!heritageMarkerLayerGroup) heritageMarkerLayerGroup = L.layerGroup().addTo(heritageMap);
@@ -8238,7 +8228,6 @@
           title: item.title
         })
         .addTo(heritageMarkerLayerGroup)
-        .bindPopup(createLandmarkPopup(item))
         .bindTooltip(item.title, { direction: 'top', offset: [0, -10] })
         .on('click', () => {
           focusLandmark(item);
@@ -8500,16 +8489,6 @@
 
     function openCurrentLandmarkNavigation() {
       openLandmarkNavigation(activeLandmark);
-    }
-
-    function openLandmarkNavigationById(id) {
-      const item = heritageLandmarks.find(landmark => landmark.id === id);
-      if (!item) {
-        showToast('未找到该探索点', 'map-pin');
-        return;
-      }
-      activeLandmark = item;
-      openLandmarkNavigation(item);
     }
 
     function openRouteStepNavigation(routeId, stepIndex) {
