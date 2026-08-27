@@ -456,6 +456,7 @@ feedback_closed: '反馈处理',
             </div>
           </div>
           <div id="profile-atlas-preview" class="profile-atlas-preview" aria-hidden="true">
+            <img class="profile-atlas-emblem" src="./static/assets/community-landmark-yellow-crane-v2.webp" alt="">
             <img id="profile-atlas-preview-a" src="https://commons.wikimedia.org/wiki/Special:FilePath/20240621%20Yellow%20Crane%20Tower.jpg?width=900" alt="">
             <img id="profile-atlas-preview-b" src="https://commons.wikimedia.org/wiki/Special:FilePath/20250526%20Wudangshan%20Jindian%20%28155228%29.jpg?width=900" alt="">
           </div>
@@ -1882,6 +1883,17 @@ feedback_closed: '反馈处理',
       button.classList.toggle('is-active', selected);
       button.setAttribute('aria-pressed', String(selected));
     });
+    const emptyGallery = allItems.length
+      ? `<div class="profile-gallery-empty profile-gallery-empty--filtered"><div class="profile-gallery-empty-copy"><p class="profile-gallery-empty-kicker">ARCHIVE FILTER</p><h4>这一册暂时没有记录</h4><p>换个分类看看，或继续采集新的荆楚文化线索。</p></div></div>`
+      : `<div class="profile-gallery-empty">
+          <div class="profile-gallery-empty-art" aria-hidden="true"><img src="./static/assets/profile-empty-chu-vessel-v1.webp" alt=""></div>
+          <div class="profile-gallery-empty-copy">
+            <p class="profile-gallery-empty-kicker">BEGIN YOUR FIELD NOTES</p>
+            <h4>图鉴等待第一件藏品</h4>
+            <p>从眼前的一处建筑、一件器物或一段乡音开始，把真实所见留进共同图鉴。</p>
+            <button type="button" class="profile-gallery-empty-action" onclick="switchTab('collect')"><i data-lucide="scan-line" aria-hidden="true"></i>去完成第一次采集</button>
+          </div>
+        </div>`;
     list.innerHTML = items.length ? items.map((item) => `
       <article class="profile-submission-card">
         ${profileSubmissionCover(item)}
@@ -1896,9 +1908,7 @@ feedback_closed: '反馈处理',
           ${item.status === 'approved' ? `<p class="profile-reward-note">入藏奖励 · +${Number(item.rewardPoints || 100)} 流光</p>` : ''}
         </div>
       </article>
-    `).join('') : `<div class="profile-gallery-empty">${
-      allItems.length ? '这一册暂时没有记录，换个分类看看。' : '你的图鉴还空着，从一次真实采集开始吧。'
-    }</div>`;
+    `).join('') : emptyGallery;
     list.querySelectorAll('img[data-profile-cover]').forEach((image) => {
       image.addEventListener('error', () => {
         const cover = image.closest('.profile-submission-cover');

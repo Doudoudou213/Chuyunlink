@@ -164,3 +164,45 @@ map ticket result: passed
 - P3: after real route baskets contain many points, evaluate whether the vertical title slip can collapse while scrolling to expose one additional route item on short laptop screens; current fixed header is clear and stable.
 
 final result: passed
+
+---
+
+# 楚韵链迹“我的”图鉴厅视觉重构 Design QA（2026-08-27）
+
+## Evidence
+
+- Approved reference: `C:\Users\lenovo\.codex\generated_images\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\exec-bcc7be6a-69da-4b51-b034-73d406806191.png`
+- Browser-rendered mobile implementation: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\profile-redesign-local-20260827.png`
+- Same-input visual comparison: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\profile-reference-comparison-20260827.png`
+- Browser-rendered desktop implementation: `C:\Users\lenovo\.codex\visualizations\2026\08\16\01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8\profile-redesign-desktop-20260827.png`
+- Browser: Codex in-app Browser, local static preview.
+- CSS viewports: mobile 390 × 844 and desktop 1280 × 800.
+- State: anonymous CloudBase profile loaded, zero submissions, “作品” filter active.
+
+## Findings
+
+- No actionable P0, P1, or P2 findings remain.
+- Visual unity: the profile page now shares the dark lacquer-and-gold global header used by the activity, collect, and map experiences. The content surface remains xuan-paper ivory with a restrained real raster phoenix-and-landscape watermark.
+- Hierarchy: identity is open and unboxed; statistics use a quiet ledger row; the warm-apricot Jingchu Atlas banner is the main cultural anchor; field notes follow as a separate editorial section instead of a SaaS dashboard stack.
+- Empty state: the former text-only placeholder is replaced by a compact display-case composition using a dedicated classical Jingchu still-life asset, a human invitation, and one primary collect action. The final mobile revision keeps artwork, copy, and action in one landscape panel above the persistent navigation.
+- Assets: decorative imagery uses project raster assets (`collect-scroll-watermark-v2.webp`, `community-landmark-yellow-crane-v2.webp`, and the ImageGen-created transparent `profile-empty-chu-vessel-v1.webp`). No placeholder box, CSS drawing, handcrafted SVG illustration, or emoji substitute was added.
+- Responsive behavior: the 390 px layout preserves two-column collection cards and the fixed five-item navigation; the 1280 px layout remains centered at the established 760 px profile width and does not stretch editorial content across the screen.
+- Interaction: settings still expands the existing utility menu, refresh and filters remain bound, and “去完成第一次采集” switches to the real collect view. Existing account, CloudBase record, atlas, badge, and reward handlers are unchanged.
+- Accessibility: interactive targets remain at least 44 px, focus-visible treatment is retained, decorative images are hidden from assistive output, status still includes text labels, and reduced-motion behavior is unchanged.
+
+## Comparison History
+
+1. First comparison showed the empty display case stacking vertically on mobile, pushing its action underneath the persistent navigation. Fixed by retaining a compact two-column exhibit layout and reducing artwork height without shrinking the 44 px CTA.
+2. Final comparison confirms matched structural rhythm: dark compact header, paper identity field, three-number ledger, warm atlas banner, editorial field-notes heading, four flat filters, and a culturally specific first-collection state.
+3. The implementation intentionally keeps live atlas preview photographs rather than baking the reference artwork into the interface; this preserves real submission preview behavior while maintaining the approved collage composition.
+
+## Verification
+
+- [x] CloudBase build validation passed.
+- [x] Map personalization regression suite passed (11/11).
+- [x] `git diff --check` passed.
+- [x] Settings menu opens and reports `aria-expanded=true`.
+- [x] Empty-state CTA switches to `#view-collect`.
+- [x] No merge, deployment, commit, or CloudBase data change performed.
+
+final result: passed
