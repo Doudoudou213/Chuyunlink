@@ -2817,6 +2817,285 @@
       }
     }
 
+    /* 活动科普页第四阶段：以朱漆路线为唯一强视觉，其他内容收束为宣纸展册。 */
+    #view-community {
+      --community-paper: #f4eddf;
+      --community-paper-light: #fbf5e9;
+      --community-paper-deep: #eadbc2;
+      --community-ink: #4b2e2b;
+      --community-lacquer: #592620;
+      --community-vermilion: #9e2f24;
+      --community-gold: #b68a4a;
+      --community-patina: #496a61;
+      --community-shadow: 0 10px 30px rgba(65, 39, 27, 0.065);
+      background-color: var(--community-paper);
+      background-image:
+        radial-gradient(circle at 10% 18%, rgba(182, 138, 74, 0.055), transparent 27%),
+        linear-gradient(90deg, rgba(89, 38, 32, 0.018) 1px, transparent 1px);
+      background-size: auto, 26px 26px;
+    }
+    #view-community .community-hero-overlay {
+      background:
+        linear-gradient(180deg, rgba(23, 17, 15, 0.03) 6%, rgba(23, 17, 15, 0.2) 48%, rgba(39, 25, 20, 0.92) 100%),
+        linear-gradient(90deg, rgba(50, 31, 22, 0.2), transparent 60%);
+    }
+    #view-community .community-hero .community-hero-actions .community-hero-primary,
+    #view-community #community-quiz-start {
+      background: var(--community-lacquer) !important;
+      color: #edcf91 !important;
+      box-shadow: 0 8px 20px rgba(48, 26, 21, 0.22) !important;
+    }
+    #view-community .community-hero .community-hero-actions .community-hero-primary {
+      border: 1px solid rgba(227, 201, 143, 0.18) !important;
+    }
+    #view-community .community-hero-secondary {
+      color: rgba(255, 250, 241, 0.9) !important;
+      font-weight: 700 !important;
+    }
+    #view-community .community-content-shell {
+      width: min(100%, 60rem);
+      margin: 0 auto;
+    }
+    #view-community #community-route-card,
+    #view-community .chu-knowledge-panel,
+    #view-community .community-learning-list {
+      border: 0 !important;
+      background-color: rgba(251, 245, 233, 0.96) !important;
+      box-shadow: var(--community-shadow) !important;
+    }
+    #view-community #community-route-card {
+      box-shadow: 0 12px 34px rgba(65, 39, 27, 0.075) !important;
+    }
+    #view-community .community-route-services-toggle {
+      min-height: 3.7rem;
+      border-top: 0 !important;
+      background: transparent !important;
+      color: var(--community-ink);
+    }
+    #view-community .community-route-services-toggle::before {
+      content: "";
+      width: 2.1rem;
+      height: 1px;
+      margin-right: 0.15rem;
+      background: linear-gradient(90deg, rgba(182, 138, 74, 0.55), transparent);
+    }
+    #view-community .community-route-services-toggle span {
+      margin-right: auto;
+    }
+    #view-community .community-route-services-toggle:focus-visible {
+      outline: 0;
+      box-shadow: inset 0 -2px 0 rgba(182, 138, 74, 0.48);
+    }
+    #view-community .community-route-services {
+      gap: 0;
+      padding-top: 0.2rem;
+      border-top: 0;
+      background: transparent;
+    }
+    #view-community .community-route-actions {
+      margin: 0 0 0.35rem;
+      padding: 0.35rem 0 0.65rem;
+      border-radius: 0;
+      border-bottom: 1px solid rgba(182, 138, 74, 0.16);
+      background: transparent;
+    }
+    #view-community .community-route-action,
+    #view-community .community-route-action--primary {
+      border-radius: 0;
+      background: transparent !important;
+      color: var(--community-lacquer);
+    }
+    #view-community .community-route-action--primary {
+      color: #8b642b;
+    }
+    #view-community .community-service-panel {
+      display: grid;
+      min-height: 5.75rem;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(182, 138, 74, 0.13);
+      border-radius: 0;
+      background: transparent;
+    }
+    #view-community .community-service-panel:last-child {
+      border-bottom: 0;
+    }
+    #view-community .community-service-heading {
+      align-items: center;
+    }
+    #view-community .community-service-icon {
+      width: 2.45rem;
+      height: 2.45rem;
+      border-radius: 50%;
+      background: rgba(73, 106, 97, 0.09);
+      color: var(--community-patina);
+    }
+    #view-community .community-service-copy {
+      min-width: 0;
+    }
+    #view-community .community-service-type,
+    #view-community .community-learning-phase {
+      color: var(--community-patina);
+      font-size: 0.64rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+    #view-community .community-service-panel h6 {
+      margin-top: 0.1rem;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.82rem;
+    }
+    #view-community .community-service-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.15rem;
+      margin: 0;
+    }
+    #view-community .community-service-actions button,
+    #view-community .community-service-actions button:last-child {
+      min-height: 44px;
+      padding: 0 0.15rem;
+      border-radius: 0;
+      background: transparent;
+      color: #735322;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-decoration-color: rgba(182, 138, 74, 0.45);
+      text-underline-offset: 0.2rem;
+    }
+    #view-community .community-service-actions button:hover {
+      text-decoration: underline;
+    }
+    #view-community .community-quick-section {
+      padding-top: 0.8rem;
+      padding-bottom: 0.5rem;
+    }
+    #view-community .community-learning-heading {
+      padding: 0 0.15rem;
+    }
+    #view-community .community-learning-kicker {
+      margin-bottom: 0.25rem;
+      color: var(--community-vermilion);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+    }
+    #view-community .community-learning-list {
+      display: block;
+      overflow: hidden;
+      padding: 0.2rem 0.85rem;
+      border-radius: 0.72rem;
+      background-image:
+        linear-gradient(rgba(251, 245, 233, 0.89), rgba(251, 245, 233, 0.89)),
+        url('./static/assets/community-paper-atlas-v2.webp');
+      background-position: center;
+      background-size: cover;
+    }
+    #view-community .community-learning-card {
+      min-height: 6.15rem;
+      grid-template-columns: 4.25rem minmax(0, 1fr) auto;
+      gap: 0.85rem;
+      padding: 0.75rem 0;
+      border: 0 !important;
+      border-bottom: 1px solid rgba(182, 138, 74, 0.14) !important;
+      border-radius: 0;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    #view-community .community-learning-card:last-child {
+      border-bottom: 0 !important;
+    }
+    #view-community .community-learning-icon {
+      width: 4.25rem;
+      height: 4.25rem;
+      overflow: hidden;
+      border-radius: 0.42rem;
+      background: rgba(234, 219, 194, 0.62);
+    }
+    #view-community .community-learning-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 0.25rem;
+      filter: saturate(0.76) contrast(0.94);
+    }
+    #view-community .community-learning-copy h5 {
+      margin-top: 0.18rem;
+      font-size: 0.9rem;
+    }
+    #view-community .community-learning-copy p {
+      font-size: 0.72rem;
+    }
+    #view-community .community-learning-state {
+      min-height: 44px;
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+      color: #735322;
+    }
+    #view-community .community-learning-state.is-complete {
+      background: transparent;
+      color: var(--community-patina);
+    }
+    @media (max-width: 520px) {
+      #view-community .community-route-section,
+      #view-community .community-quiz-section,
+      #view-community .community-quick-section {
+        padding-right: 0.65rem;
+        padding-left: 0.65rem;
+      }
+      #view-community .community-service-panel {
+        grid-template-columns: minmax(0, 1fr) 4.2rem;
+      }
+      #view-community .community-learning-card {
+        grid-template-columns: 3.7rem minmax(0, 1fr) auto;
+        gap: 0.65rem;
+      }
+      #view-community .community-learning-icon {
+        width: 3.7rem;
+        height: 3.7rem;
+      }
+      #view-community .community-learning-state {
+        font-size: 0.7rem;
+      }
+    }
+    @media (min-width: 768px) {
+      #view-community .community-content-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1.12fr) minmax(19rem, 0.88fr);
+        align-items: start;
+        gap: 0.8rem;
+        padding: 0.9rem 0.75rem 0;
+      }
+      #view-community .community-route-section,
+      #view-community .community-quiz-section,
+      #view-community .community-quick-section {
+        width: auto;
+        margin: 0;
+        padding: 0;
+      }
+      #view-community .community-study-column {
+        display: grid;
+        gap: 0.8rem;
+      }
+      #view-community .chu-knowledge-panel {
+        grid-template-columns: 6.2rem minmax(0, 1fr);
+      }
+      #view-community .community-quiz-preview-art img {
+        width: 6rem;
+      }
+      #view-community .community-learning-card {
+        grid-template-columns: 3.8rem minmax(0, 1fr) auto;
+      }
+      #view-community .community-learning-icon {
+        width: 3.8rem;
+        height: 3.8rem;
+      }
+    }
+
     /* 采集页：青绿山水入卷，沿用活动科普页的宣纸、漆器与楚石绿视觉。 */
     #view-collect.collect-field-page {
       --collect-paper: #f5efe4;
@@ -4825,14 +5104,16 @@
           </div>
         </div>
 
-        <!-- 推荐路线 -->
-        <div class="community-route-section">
-          <div id="community-route-card" class="chu-paper-panel"></div>
-        </div>
+        <div class="community-content-shell">
+          <!-- 推荐路线 -->
+          <div class="community-route-section">
+            <div id="community-route-card" class="chu-paper-panel"></div>
+          </div>
 
-        <!-- 科普闯关 -->
-        <div class="community-quiz-section">
-          <div class="chu-knowledge-panel">
+          <div class="community-study-column">
+            <!-- 科普闯关 -->
+            <div class="community-quiz-section">
+              <div class="chu-knowledge-panel">
             <div class="community-quiz-preview-art" aria-hidden="true">
               <img src="./static/assets/community-quiz-bronze-v2.webp" alt="">
             </div>
@@ -4870,24 +5151,27 @@
               </div>
               <p id="quiz-update-tip" class="community-quiz-update">明日 00:00 更新 · 答对可得 50 积分</p>
             </div>
-          </div>
-        </div>
-
-        <!-- 微课程 -->
-        <div class="px-4 space-y-3">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <h4 class="chu-section-heading flex items-center">
-                <i data-lucide="graduation-cap" aria-hidden="true"></i> 采集前速学
-              </h4>
-              <p id="quick-learning-summary" class="community-learning-summary">每次登录随机展示 2 个知识点</p>
+              </div>
             </div>
-            <button type="button" onclick="refreshQuickLearningSet(true)" class="community-learning-refresh">
-              <i data-lucide="refresh-cw" aria-hidden="true"></i><span>换一组</span>
-            </button>
-          </div>
 
-          <div id="quick-learning-list" class="community-learning-list"></div>
+            <!-- 微课程 -->
+            <div class="community-quick-section px-4 space-y-3">
+              <div class="community-learning-heading flex items-center justify-between gap-3">
+                <div>
+                  <p class="community-learning-kicker">FIELD NOTES · 入场前两课</p>
+                  <h4 class="chu-section-heading flex items-center">
+                    <i data-lucide="graduation-cap" aria-hidden="true"></i> 采集前速学
+                  </h4>
+                  <p id="quick-learning-summary" class="community-learning-summary">每次登录随机展示 2 个知识点</p>
+                </div>
+                <button type="button" onclick="refreshQuickLearningSet(true)" class="community-learning-refresh">
+                  <i data-lucide="refresh-cw" aria-hidden="true"></i><span>换一组</span>
+                </button>
+              </div>
+
+              <div id="quick-learning-list" class="community-learning-list"></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -9483,14 +9767,15 @@
             <div class="community-service-icon" aria-hidden="true">
               <i data-lucide="${icon}"></i>
             </div>
-            <div>
+            <div class="community-service-copy">
+              <span class="community-service-type">${type === 'food' ? '沿途风物' : '歇脚去处'}</span>
               <h6>${escapeHtml(service.title)}</h6>
               <p>${escapeHtml(service.desc)}</p>
             </div>
           </div>
           <div class="community-service-actions">
-            <button type="button" onclick="openRouteService('${type}', 'dianping')">点评好评</button>
-            <button type="button" onclick="openRouteService('${type}', 'meituan')">美团好评</button>
+            <button type="button" onclick="openRouteService('${type}', 'dianping')">大众点评 <span aria-hidden="true">↗</span></button>
+            <button type="button" onclick="openRouteService('${type}', 'meituan')">美团搜索 <span aria-hidden="true">↗</span></button>
           </div>
         </section>
       `;
@@ -10033,12 +10318,26 @@
       container.innerHTML = activeLearningModules.map((module) => {
         const isCompleted = Boolean(completed[module.id]);
         const rewardText = hasClaimedToday ? '今日已领' : `今日+${module.reward}积分`;
+        const artworkById = {
+          'pre-scope-permission': './static/assets/community-quiz-bronze-v2.webp',
+          'field-safety-boundary': './static/assets/community-landmark-hubei-museum-v2.webp',
+          'photo-evidence-package': './static/assets/community-landmark-yellow-crane-v2.webp',
+          'oral-history-audio': './static/assets/community-landmark-east-lake-v2.webp',
+          'location-metadata': './static/assets/community-landmark-east-lake-v2.webp',
+          'video-scan-route': './static/assets/community-landmark-yellow-crane-v2.webp',
+          'condition-description': './static/assets/community-quiz-bronze-v2.webp',
+          'upload-review': './static/assets/community-landmark-hubei-museum-v2.webp',
+          'light-shadow-check': './static/assets/community-landmark-east-lake-v2.webp',
+          'quick-note-naming': './static/assets/community-landmark-yellow-crane-v2.webp'
+        };
+        const artwork = artworkById[module.id] || './static/assets/community-quiz-bronze-v2.webp';
         return `
           <button type="button" onclick="openLearningTip('${escapeJsString(module.id)}')" class="community-learning-card">
             <div class="community-learning-icon" aria-hidden="true">
-              <i data-lucide="${escapeHtml(module.icon)}"></i>
+              <img src="${artwork}" alt="">
             </div>
             <div class="community-learning-copy">
+              <span class="community-learning-phase">${escapeHtml(module.phase)}</span>
               <h5>${escapeHtml(module.title)}</h5>
               <p>${escapeHtml(module.minutes)}分钟 · ${escapeHtml(rewardText)}</p>
             </div>
