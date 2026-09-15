@@ -7,20 +7,525 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-    body { background: #f5f2e9; color: #172b2a; }
+    body { background: #f3eee4; color: #403931; }
+    :root {
+      --admin-accent: #49665b; --admin-muted: #7b7062;
+      --admin-line: #e2d8c6; --admin-surface: #fffdf8;
+    }
+    body > header { background: #ece3d3 !important; box-shadow: none !important; }
+    body > header > div { max-width: none !important; padding: 18px 28px !important; }
+    body > header h1 { color: #403931 !important; font-size: 23px !important; letter-spacing: .08em; }
+    body > header p { color: #7b7062 !important; }
+    main { max-width: 1600px !important; padding: 24px !important; }
+    #admin-panel:not(.hidden) {
+      display: grid; grid-template-columns: 210px minmax(0, 1fr);
+      gap: 20px 28px; align-items: start;
+    }
+    #admin-panel > * { min-width: 0; margin: 0 !important; grid-column: 2; }
+    #admin-panel > .admin-sidebar {
+      grid-column: 1; grid-row: 1 / span 5; position: sticky; top: 20px;
+      padding: 0 !important; background: transparent !important;
+      border: 0 !important; box-shadow: none !important;
+      max-height: calc(100vh - 40px); overflow-y: auto;
+    }
+    .admin-sidebar > div { display: block; }
+    .admin-sidebar #identity { font-size: 12px; color: var(--admin-muted); overflow-wrap: anywhere; }
+    #admin-navigation { display: block !important; margin-top: 20px; }
+    .admin-menu-toggle { display: none; }
+    .admin-nav-group { margin-bottom: 19px; }
+    .admin-nav-label { padding: 0 12px 7px; font-size: 12px; color: #8a7658; font-weight: 600; }
+    #admin-navigation button {
+      width: 100%; display: block; min-height: 44px; text-align: left;
+      padding: 10px 12px; margin: 2px 0; border: 0 !important;
+      border-radius: 7px; background: transparent !important;
+      color: #65594d !important; font-size: 14px; font-weight: 500;
+    }
+    #admin-navigation button:hover { background: #ece4d5 !important; }
+    #admin-navigation button[aria-current="page"] {
+      background: #e8dfcd !important; color: #574832 !important;
+      box-shadow: inset 3px 0 var(--admin-accent); font-weight: 700;
+    }
+    #view-title { font-size: 25px !important; font-weight: 700; letter-spacing: -.025em; }
+    #view-count { font-size: 13px; color: var(--admin-muted); }
+    #message { min-height: 0; border-radius: 6px; line-height: 1.6; }
+    #message:not(:empty) { background: #fffdf8; padding: 10px 14px; border-left: 3px solid #ae8b54; }
+    #admin-panel p, #admin-panel label { line-height: 1.7; }
+    #admin-panel .text-xs, #admin-panel [class*="text-[10px]"] { font-size: 13px !important; }
+    #admin-panel .text-stone-400 { color: #7b7062 !important; }
+    #admin-panel textarea, #admin-panel select, #admin-panel input {
+      font-size: 14px !important; min-height: 44px; border-radius: 6px !important;
+      border-color: #d9ccb6; background: #fffdf8; color: #403931;
+    }
+    #admin-panel textarea { line-height: 1.75; }
+    #admin-panel button, #login-form button { min-height: 44px; }
+    #admin-panel button:disabled { opacity: .55; cursor: wait; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible {
+      outline: 3px solid #ae8b54 !important; outline-offset: 3px;
+    }
+    #list > article, #list > section { border-color: var(--admin-line) !important; border-radius: 10px !important; box-shadow: 0 3px 14px #18263c05 !important; }
+    .admin-review-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .admin-queue { position: sticky; top: 20px; background: #fffdf8; border: 1px solid var(--admin-line); border-radius: 10px; overflow: hidden; }
+    .admin-queue-head { padding: 18px 16px 14px; border-bottom: 1px solid var(--admin-line); }
+    .admin-queue-head h3 { font-size: 15px; font-weight: 700; }
+    .admin-queue-head p { color: var(--admin-muted); font-size: 12px !important; margin-top: 4px; }
+    .admin-queue-head input { width: 100%; margin-top: 12px; padding: 8px 10px; border: 1px solid var(--admin-line); }
+    .admin-queue-items { max-height: calc(100vh - 230px); overflow: auto; }
+    .admin-queue-item { display: flex; width: 100%; gap: 12px; padding: 16px; border-bottom: 1px solid #eee6d8; text-align: left; align-items: center; }
+    .admin-queue-item[aria-pressed="true"] { background: #e8dfcd; box-shadow: inset 3px 0 var(--admin-accent); }
+    .admin-queue-item:hover { background: #f5efe3; }
+    .admin-queue-item img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
+    .admin-queue-copy { min-width: 0; }
+    .admin-queue-copy strong { display: block; font-size: 14px; overflow-wrap: anywhere; line-height: 1.5; }
+    .admin-queue-copy small { color: var(--admin-muted); display: block; font-size: 12px; margin-top: 5px; }
+    #list.admin-details { display: block; min-width: 0; }
+    #list.admin-details > article { display: block; padding: 24px; background: #fffdf8; }
+    #list.admin-details > article[hidden] { display: none !important; }
+    #list.admin-details > article > div:first-child { max-height: 420px; background: #ece5d8; margin-bottom: 24px; }
+    #list.admin-details > article > div:first-child img { width: 100%; height: 340px; object-fit: contain; cursor: zoom-in; }
+    #list.admin-details h3 { font-size: 22px; line-height: 1.4; }
+    #list.admin-details h3 + p { font-size: 15px !important; white-space: pre-wrap; }
+    .admin-technical { margin: 18px 0; color: var(--admin-muted); }
+    .admin-technical summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-size: 13px; }
+    .admin-technical summary::before { content: "＋"; margin-right: 8px; }
+    .admin-technical[open] summary::before { content: "−"; }
+    .admin-review-actions { position: sticky; bottom: 0; background: #fffdf8; padding: 16px 0 4px; border-top: 1px solid var(--admin-line); gap: 10px; z-index: 1; }
+    .admin-review-actions button { border-radius: 6px; font-size: 14px; padding: 10px 16px; }
+    .admin-review-actions [data-status="approved"] { background: var(--admin-accent) !important; color: #fffdf8; }
+    .admin-review-actions [data-status="needs_revision"] { background: #ece5d8 !important; color: #65594d; }
+    .admin-review-actions [data-status="rejected"] { background: #fffdf8 !important; color: #b73342; border: 1px solid #e8c7cc; }
+    .admin-empty-search { padding: 20px; color: var(--admin-muted); font-size: 14px; }
+    .admin-image-dialog { width: min(94vw, 1100px); max-height: 94vh; padding: 16px; border: 0; border-radius: 10px; background: #fffdf8; }
+    .admin-image-dialog::backdrop { background: #152237cc; }
+    .admin-image-dialog img { max-height: 78vh; width: 100%; object-fit: contain; }
+    .admin-image-dialog button { display: block; margin-left: auto; min-height: 44px; padding: 8px 16px; color: #49665b; }
+    #comment-filters { border-color: var(--admin-line); border-radius: 10px; box-shadow: none; }
+    #comment-filter-apply { background: var(--admin-accent); color: #fffdf8; border-radius: 6px; }
+    .admin-triage-tools { background: var(--admin-surface); border: 1px solid var(--admin-line); border-radius: 10px; padding: 16px; }
+    .admin-triage-tools[hidden], .admin-triage-empty[hidden], #list > article[hidden] { display: none !important; }
+    .admin-triage-fields { display: flex; flex-wrap: wrap; gap: 12px; }
+    .admin-triage-fields label { display: grid; gap: 5px; font-size: 12px; color: var(--admin-muted); }
+    .admin-triage-fields label:first-child { flex: 1 1 240px; }
+    .admin-triage-fields input, .admin-triage-fields select { width: 100%; padding: 8px 12px; border: 1px solid var(--admin-line); }
+    .admin-triage-tools p { font-size: 12px; color: var(--admin-muted); margin-top: 10px; }
+    #list.admin-triage-list { gap: 10px; }
+    #list.admin-triage-list > article { padding: 0; overflow: hidden; background: var(--admin-surface); }
+    .admin-triage-row > summary { display: grid; grid-template-columns: 115px minmax(0, 1fr) 90px; gap: 18px; align-items: center; padding: 18px 20px; cursor: pointer; list-style: none; }
+    .admin-triage-row > summary::-webkit-details-marker { display: none; }
+    .admin-triage-row > summary:hover { background: #f5efe3; }
+    .admin-triage-category { font-size: 12px; color: var(--admin-muted); }
+    .admin-triage-copy { min-width: 0; }
+    .admin-triage-copy strong { display: block; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+    .admin-triage-copy small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; color: var(--admin-muted); margin-top: 5px; overflow-wrap: anywhere; }
+    .admin-triage-state { color: var(--admin-accent); font-size: 12px; text-align: right; }
+    .admin-triage-state::after { content: ' ＋'; }
+    .admin-triage-row[open] > summary { background: #eee5d3; border-bottom: 1px solid var(--admin-line); }
+    .admin-triage-row[open] .admin-triage-state::after { content: ' −'; }
+    .admin-triage-body { display: block !important; padding: 24px; max-width: 100%; }
+    .admin-triage-body > div:first-child { min-width: 0; }
+    .admin-triage-body p { overflow-wrap: anywhere; }
+    .admin-triage-body h3 { font-size: 18px; }
+    .admin-triage-body textarea { resize: vertical; min-height: 100px !important; }
+    .admin-triage-actions { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--admin-line); }
+    .admin-triage-actions button { border-radius: 6px; padding: 10px 16px; font-size: 14px !important; }
+    .admin-triage-actions button[data-comment-status="visible"], .admin-triage-actions button[data-feedback-resolution="resolved"], .admin-triage-actions button[data-feedback-resolution="accepted_for_revision"] { background: var(--admin-accent); color: #fffdf8; }
+    .admin-triage-actions button[data-comment-status="hidden"], .admin-triage-actions button[data-resolution="resolved"] { background: #fff3f3; color: #ad3343; border: 1px solid #e8c7cc; }
+    .admin-triage-actions button[data-resolution="dismissed"], .admin-triage-actions button[data-feedback-resolution="dismissed"] { background: #ece5d8; color: #65594d; }
+    .admin-triage-empty { background: #fffdf8; padding: 24px; color: var(--admin-muted); border-radius: 10px; }
+    .admin-triage-result:not(:empty) { margin-top: 12px; padding: 12px; background: #f3eee4; border-left: 3px solid var(--admin-accent); font-size: 14px; }
+    @media (max-width: 640px) {
+      .admin-triage-row > summary { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 16px; }
+      .admin-triage-category { grid-column: 1; }
+      .admin-triage-copy { grid-row: 2; grid-column: 1 / -1; }
+      .admin-triage-state { grid-row: 1; grid-column: 2; }
+      .admin-triage-body { padding: 16px; }
+      .admin-triage-fields label { flex: 1 1 100%; }
+    }
+    .admin-editor-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr); gap: 28px; margin-top: 20px; align-items: start; }
+    .admin-editor-fields { min-width: 0; }
+    .admin-editor-fields > label:first-child { margin-top: 0; }
+    #admin-panel .admin-editor-fields textarea { font-size: 15px !important; font-weight: 400; line-height: 1.9; min-height: 120px; resize: vertical; }
+    [data-story-chapter] { background: #f5efe3 !important; border-color: var(--admin-line) !important; padding: 16px !important; }
+    .admin-story-preview { position: sticky; top: 20px; padding: 20px; border: 1px solid var(--admin-line); background: #f5ecd9; border-radius: 8px; max-height: calc(100vh - 60px); overflow: auto; }
+    .admin-story-preview > summary { min-height: 44px; cursor: pointer; color: var(--admin-accent); font-size: 14px; font-weight: 600; }
+    .admin-story-preview small, .admin-editor-notice { display: block; font-size: 12px; color: var(--admin-muted); line-height: 1.7; }
+    .admin-story-preview h4 { font-family: Georgia, 'Songti SC', SimSun, serif; font-size: 24px; line-height: 1.6; margin: 20px 0 12px; }
+    .admin-story-preview h5, .admin-story-reading h4 { font-size: 17px; font-weight: 700; margin: 24px 0 8px; }
+    .admin-story-preview p, .admin-story-reading p, .admin-extracted-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; line-height: 1.9 !important; }
+    .admin-story-preview p { margin: 10px 0; }
+    .admin-story-reading { max-width: 78ch; padding: 8px 0 24px; }
+    .admin-story-actions { position: sticky; bottom: 0; padding: 16px 0; background: #fffdf8; border-top: 1px solid var(--admin-line); z-index: 1; }
+    .admin-story-actions button, #story-draft-generate-form button { background: var(--admin-accent) !important; color: #fffdf8 !important; border-radius: 6px; }
+    .admin-story-filter { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 18px; background: #fffdf8; border: 1px solid var(--admin-line); border-radius: 8px; }
+    .admin-story-filter label { font-size: 14px; }
+    .admin-story-filter select { margin-left: 8px; padding: 8px 12px; border: 1px solid var(--admin-line); }
+    .admin-story-filter p { font-size: 12px; color: var(--admin-muted); }
+    #admin-panel[data-view="story-drafts"] #list > section:first-child, #admin-panel[data-view="material-analysis"] #list > section:first-child { background: #fffdf8 !important; background-image: none !important; border-color: var(--admin-line) !important; }
+    .admin-material-card { grid-template-columns: minmax(230px, .9fr) minmax(0, 1.1fr) !important; align-items: start; padding: 24px !important; }
+    .admin-material-original { position: sticky; top: 20px; background: #ece5d8 !important; padding: 12px; }
+    .admin-material-original img { height: min(60vh, 550px) !important; width: 100%; object-fit: contain !important; cursor: zoom-in; }
+    .admin-material-original p { padding: 8px 0; font-size: 12px; color: var(--admin-muted); }
+    .admin-material-original button { display: block; width: 100%; padding: 10px; color: var(--admin-accent); background: #fffdf8; border-radius: 6px; }
+    .admin-material-editor { background: #f5efe3 !important; border-color: var(--admin-line) !important; }
+    .admin-material-editor textarea { min-height: 260px !important; font-weight: 400; resize: vertical; }
+    .admin-material-editor [data-material-review="approved"] { background: var(--admin-accent); }
+    .admin-material-editor [data-material-review="rejected"] { background: #ece5d8; color: #65594d; }
+    .admin-extracted-text { padding: 12px; background: #fffdf8; max-height: 320px; overflow: auto; }
+    .admin-workspace-settings { padding: 4px 16px; background: #fffdf8; border: 1px solid var(--admin-line); border-radius: 8px; }
+    .admin-workspace-settings > summary { cursor: pointer; min-height: 48px; padding: 12px 0; font-size: 14px; color: var(--admin-muted); }
+    .admin-workspace-settings > section { padding: 12px 0 !important; border: 0 !important; box-shadow: none !important; }
+    @media (max-width: 1150px) { .admin-editor-layout { grid-template-columns: 1fr; } .admin-story-preview { position: static; max-height: none; } }
+    @media (max-width: 640px) { .admin-material-card { grid-template-columns: 1fr !important; padding: 16px !important; } .admin-material-original { position: static; } .admin-material-original img { height: 280px !important; } .admin-story-actions { position: static; } }
+    #login-panel { margin-top: 7vh; padding: 32px; border-color: var(--admin-line); box-shadow: 0 18px 60px #18263c0a; }
+    #login-form button { background: var(--admin-accent); color: #fffdf8; }
+    @media (max-width: 1150px) { .admin-review-layout { grid-template-columns: 220px minmax(0, 1fr); } #admin-panel:not(.hidden) { grid-template-columns: 180px minmax(0, 1fr); gap: 18px; } }
+    @media (max-width: 900px) {
+      #admin-panel:not(.hidden) { grid-template-columns: 1fr; }
+      #admin-panel > *, #admin-panel > .admin-sidebar { grid-column: 1; grid-row: auto; }
+      #admin-panel > .admin-sidebar { position: static; max-height: none; }
+      #admin-navigation { display: flex !important; flex-wrap: nowrap; overflow-x: auto; gap: 14px; margin-top: 12px; padding-bottom: 8px; }
+      .admin-nav-group { min-width: 140px; flex-shrink: 0; margin-bottom: 0; }
+      .admin-review-layout { grid-template-columns: 230px minmax(0, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .admin-menu-toggle { display: block; margin-top: 12px; padding: 10px 14px; background: #e8dfcd; color: #574832; border-radius: 6px; font-size: 14px; }
+      .admin-sidebar:not([data-menu-open]) #admin-navigation { display: none !important; }
+      main { padding: 16px !important; } body > header > div { padding: 16px !important; }
+      .admin-review-layout { display: block; } .admin-queue { position: static; margin-bottom: 16px; }
+      .admin-queue-items { max-height: 230px; }
+      #list.admin-details > article { padding: 18px; }
+      #list.admin-details > article > div:first-child img { height: 240px; }
+    }
+
+    /* ChuLink archive desk: paper, bronze and a restrained book-binding signature. */
+    :root { --admin-paper: #f3eee4; --admin-ink: #403931; --admin-gold: #ae8b54; --admin-serif: "Songti SC", "STSong", "SimSun", Georgia, serif; }
+    body { background-image: radial-gradient(ellipse at 85% 0%, #d9c9a933, transparent 60%); }
+    body > header { border-bottom: 1px solid var(--admin-line); background: #f6f0e4 !important; }
+    body > header h1, #view-title, .admin-story-preview h4, .admin-story-reading h4 { font-family: var(--admin-serif); }
+    body > header h1::before { content: "楚"; display: inline-grid; place-items: center; width: 38px; height: 42px; margin-right: 15px; background: #826046; color: #fff5df; font-size: 25px; border-radius: 3px; vertical-align: middle; }
+    body > header a, body > header button { color: var(--admin-ink) !important; border-color: var(--admin-line) !important; background: #eee5d4 !important; }
+    body > header p { margin: 7px 0 0 54px !important; }
+    #view-title { font-size: 30px !important; color: var(--admin-ink); letter-spacing: .08em; }
+    .admin-nav-label { font-family: var(--admin-serif); font-size: 14px; letter-spacing: .12em; }
+    #admin-navigation button { border-radius: 3px; }
+    #admin-navigation button[aria-current="page"] { box-shadow: inset 3px 0 var(--admin-gold); }
+    #admin-panel > .admin-sidebar { border-right: 1px solid var(--admin-line) !important; padding-right: 18px !important; }
+    #admin-panel .bg-white, #login-panel { background-color: var(--admin-surface) !important; }
+    #admin-panel .bg-stone-50, #admin-panel .bg-stone-100 { background-color: #f1ebdf !important; }
+    #admin-panel .text-stone-900, #admin-panel .text-stone-800, #admin-panel .text-stone-700 { color: var(--admin-ink) !important; }
+    #admin-panel .text-stone-500, #admin-panel .text-stone-600 { color: #786c5e !important; }
+    #admin-panel .border-stone-200, #admin-panel .border-stone-100 { border-color: var(--admin-line) !important; }
+    #admin-panel .bg-blue-700 { background-color: var(--admin-accent) !important; }
+    #admin-panel .text-blue-700 { color: var(--admin-accent) !important; }
+    #list > article, #list > section, .admin-queue, .admin-triage-tools, .admin-story-filter { box-shadow: 0 5px 20px #60482508 !important; }
+    #list > article[data-story-draft-id] { border-top: 3px solid #b69c70 !important; }
+    .admin-story-preview { background: linear-gradient(90deg, #dccbaa55, transparent 20px), #f7efdd; padding: 24px 28px; border: 0; border-radius: 2px 9px 9px 2px; box-shadow: inset 5px 0 #baa27a55, 4px 7px 20px #70533710; }
+    .admin-story-preview > summary { color: #826046; letter-spacing: .08em; border-bottom: 1px solid #d8c7a4; margin-bottom: 12px; }
+    .admin-story-preview h4 { color: #574832; font-weight: 500; font-size: 26px; }
+    .admin-story-preview h5 { color: #66533e; }
+    .admin-story-preview p { color: #594e40; }
+    #admin-panel textarea { font-weight: 400 !important; }
+    #admin-panel input, #admin-panel textarea, #admin-panel select { box-shadow: inset 0 1px 3px #73553804; }
+    .admin-material-original { box-shadow: inset 0 0 0 1px #d5c8b4; }
+    .admin-material-original img { border-radius: 3px; }
+    .admin-story-actions, .admin-review-actions { background: #fffdf8; }
+    .admin-workspace-settings { background: #efe8dc; }
+    @media (max-width: 900px) { #admin-panel > .admin-sidebar { border-right: 0 !important; padding-right: 0 !important; } }
+    @media (max-width: 640px) { body > header p { margin-left: 0 !important; } .admin-story-preview { padding: 20px; } }
+    /* Action hierarchy: quiet paper controls, bronze commitments, cinnabar caution. */
+    :root {
+      --action-fill: #eee5d5; --action-ink: #65523d;
+      --action-hover: #e3d6bf; --action-pressed: #dac9ac;
+      --action-bronze: #49665b; --action-danger: #963f32;
+    }
+    :where(#admin-panel button, #login-form button, body > header a, body > header button, .admin-image-dialog button) {
+      --button-fill: var(--action-fill); --button-ink: var(--action-ink);
+      --button-hover: var(--action-hover); --button-pressed: var(--action-pressed);
+    }
+    #admin-panel button:not([data-admin-view]):not(.admin-queue-item):not(.admin-menu-toggle),
+    #login-form button, body > header a, body > header button, .admin-image-dialog button {
+      background: var(--button-fill) !important; color: var(--button-ink) !important;
+      border: 0 !important; border-radius: 4px !important;
+      min-height: 44px; padding: 11px 18px !important;
+      font-family: inherit; font-size: 14px !important; font-weight: 600;
+      line-height: 1.5; letter-spacing: .025em; text-align: center;
+      white-space: normal; overflow-wrap: anywhere;
+      box-shadow: 0 2px 5px #6048250b, inset 0 1px #ffffff44 !important;
+      transition: background-color 140ms ease, box-shadow 140ms ease;
+      cursor: pointer;
+    }
+    body > header a { display: inline-flex; align-items: center; justify-content: center; }
+    #admin-panel button:is([type="submit"], [data-status="approved"], [data-supplement-status="approved"], [data-save-resource-binding], [data-ai-candidate-confirm], [data-story-draft-publish], [data-material-review="approved"], [data-comment-status="visible"], [data-feedback-resolution="resolved"], [data-redeem-code]),
+    #admin-panel #comment-filter-apply, #login-form button {
+      --button-fill: var(--action-bronze); --button-ink: #fffaf0;
+      --button-hover: #3d584e; --button-pressed: #324a41;
+      box-shadow: 0 3px 8px #314b3d18, inset 0 1px #ffffff22 !important;
+    }
+    #admin-panel button:is([data-status="rejected"], [data-supplement-status="rejected"], [data-ai-candidate-reject], [data-story-draft-archive], [data-story-link-archive], [data-comment-status="hidden"], [data-resolution="resolved"], [data-material-review="rejected"], [data-resource-seed-import]) {
+      --button-fill: #f3e5de; --button-ink: var(--action-danger);
+      --button-hover: #ebd4c9; --button-pressed: #e3c4b6;
+      box-shadow: none !important;
+    }
+    #admin-panel button:is([data-material-real-start], [data-ai-analyze-submission], [data-feedback-resolution="accepted_for_revision"]) {
+      --button-fill: #e8dbc1; --button-ink: #70552e;
+      --button-hover: #dfcba6; --button-pressed: #d5bd90;
+    }
+    @media (hover: hover) {
+      #admin-panel button:not([data-admin-view]):not(.admin-queue-item):not(.admin-menu-toggle):not(:disabled):hover,
+      #login-form button:not(:disabled):hover, body > header a:hover, body > header button:not(:disabled):hover, .admin-image-dialog button:hover {
+        background: var(--button-hover) !important;
+      }
+      #admin-panel summary:hover { color: #826046; }
+    }
+    #admin-panel button:not([data-admin-view]):not(.admin-queue-item):not(.admin-menu-toggle):not(:disabled):active,
+    #login-form button:not(:disabled):active, body > header a:active, .admin-image-dialog button:active {
+      background: var(--button-pressed) !important; box-shadow: inset 0 1px 3px #46351e20 !important;
+    }
+    #admin-panel button:focus-visible, #login-form button:focus-visible, body > header a:focus-visible, body > header button:focus-visible, .admin-image-dialog button:focus-visible {
+      outline: 2px solid #9b783e !important; outline-offset: 3px;
+    }
+    #admin-panel button:not([data-admin-view]):not(.admin-queue-item):disabled, #login-form button:disabled {
+      background: #e9e4da !important; color: #82796b !important; opacity: 1;
+      box-shadow: none !important; cursor: not-allowed;
+    }
+    #admin-panel .admin-menu-toggle { border: 0; border-radius: 4px; background: #e8dfcd; color: #65523d; }
+    #admin-navigation button { transition: background-color 140ms ease; }
+    .admin-story-actions, .admin-review-actions, .admin-triage-actions { gap: 12px; }
+    @media (max-width: 640px) {
+      .admin-story-actions > button { width: 100%; }
+      .admin-triage-actions > button, .admin-review-actions > button { flex: 1 1 auto; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #admin-panel button, #login-form button, body > header a, body > header button, .admin-image-dialog button { transition: none !important; }
+    }
+    body > .admin-topbar {
+      position: sticky; top: 0; z-index: 40; width: 100%;
+      box-sizing: border-box;
+      border: 0; border-bottom: 1px solid #ded3c1;
+      background: #f6f0e5 !important;
+      box-shadow: 0 5px 18px rgba(77, 58, 34, .045) !important;
+    }
+    .admin-topbar-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      box-sizing: border-box;
+      width: min(100%, 1600px); min-height: 66px; margin: 0 auto;
+      padding: 0 28px !important;
+    }
+    .admin-brand { display: flex; align-items: baseline; gap: 13px; min-width: 0; }
+    body > header .admin-brand-name {
+      color: #3f382f !important; font-family: var(--admin-serif);
+      font-size: 21px !important; font-weight: 600; letter-spacing: .12em;
+      white-space: nowrap;
+    }
+    body > header .admin-brand-name::before { content: none !important; }
+    .admin-brand-context {
+      color: #897d6c; font-size: 12px; font-weight: 500;
+      letter-spacing: .14em; white-space: nowrap;
+    }
+    .admin-topbar-actions { display: flex; align-items: center; gap: 5px; }
+    body > header .admin-front-link,
+    .admin-header-menu > summary,
+    body > header #logout,
+    body > header .admin-mobile-front-link {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      min-height: 42px; margin: 0; padding: 8px 12px !important;
+      border: 0 !important; border-radius: 7px !important;
+      background: transparent !important; color: #665d51 !important;
+      box-shadow: none !important; cursor: pointer; list-style: none;
+      font-size: 13px !important; font-weight: 500; letter-spacing: .015em;
+    }
+    .admin-header-menu > summary::-webkit-details-marker { display: none; }
+    .admin-header-menu > summary svg { width: 18px; height: 18px; stroke-width: 1.6; }
+    .admin-account-menu > summary {
+      width: 38px; min-height: 38px; padding: 0 !important; margin-left: 3px;
+      border: 1px solid #d8cbb7 !important; border-radius: 50% !important;
+      background: #eee5d6 !important; color: #574e43 !important;
+    }
+    @media (hover: hover) {
+      body > header .admin-front-link:hover, .admin-header-menu > summary:hover,
+      body > header #logout:hover, body > header .admin-mobile-front-link:hover {
+        background: #ede4d5 !important; color: #40382f !important;
+      }
+    }
+    .admin-header-menu { position: relative; }
+    .admin-header-menu[open] > summary { background: #e9dfcf !important; color: #40382f !important; }
+    .admin-header-popover {
+      position: absolute; top: calc(100% + 11px); right: 0; width: min(340px, calc(100vw - 28px));
+      padding: 18px; border: 1px solid #dfd4c3; border-radius: 10px;
+      background: #fffdf8; color: #494138;
+      box-shadow: 0 18px 50px rgba(65, 47, 27, .13);
+    }
+    .admin-header-popover::before {
+      content: ""; position: absolute; top: -6px; right: 17px;
+      width: 11px; height: 11px; transform: rotate(45deg);
+      border-left: 1px solid #dfd4c3; border-top: 1px solid #dfd4c3; background: #fffdf8;
+    }
+    .admin-header-popover h2 { font-family: var(--admin-serif); font-size: 17px; font-weight: 600; letter-spacing: .08em; }
+    .admin-help-list { margin: 13px 0 0; padding: 0; list-style: none; }
+    .admin-help-list li { position: relative; padding: 9px 0 9px 18px; color: #71675a; font-size: 13px; line-height: 1.65; }
+    .admin-help-list li + li { border-top: 1px solid #eee6da; }
+    .admin-help-list li::before { content: ""; position: absolute; left: 1px; top: 18px; width: 5px; height: 5px; border-radius: 50%; background: #a7834d; }
+    .admin-account-popover { width: 250px; }
+    .admin-account-eyebrow { color: #968875; font-size: 11px; letter-spacing: .12em; }
+    #header-account-label { margin-top: 5px; color: #40382f; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+    .admin-account-divider { height: 1px; margin: 15px 0 9px; background: #e9e0d3; }
+    body > header #logout { width: 100%; justify-content: flex-start; color: #8d3e34 !important; }
+    body > header #logout.hidden { display: none !important; }
+    .admin-mobile-front-link { display: none !important; }
+    @media (max-width: 640px) {
+      body > .admin-topbar {
+        top: 10px; width: calc(100% - 20px); margin: 10px 10px 18px;
+        border: 1px solid #ded3c1; border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(69, 51, 31, .10) !important;
+      }
+      .admin-topbar-inner { min-height: 58px; padding: 0 11px 0 17px !important; }
+      body > header .admin-brand-name { font-size: 18px !important; letter-spacing: .09em; }
+      .admin-brand-context, .admin-front-link, .admin-help-label { display: none !important; }
+      .admin-topbar-actions { gap: 1px; }
+      .admin-header-menu > summary { width: 38px; padding: 0 !important; }
+      .admin-account-menu > summary { margin-left: 0; }
+      .admin-header-popover { position: fixed; top: 79px; right: 14px; width: calc(100vw - 28px); max-height: calc(100vh - 96px); overflow: auto; }
+      .admin-header-popover::before { right: 54px; }
+      .admin-account-popover::before { right: 12px; }
+      .admin-mobile-front-link { display: flex !important; width: 100%; justify-content: flex-start !important; }
+    }
+    /* Navigation reads as a paper directory, with one bookmark for the current section. */
+    .admin-sidebar {
+      --nav-ink: #494137;
+      --nav-muted: #827563;
+      --nav-hover: #eee7da;
+      --nav-selected: #e9dfce;
+      --nav-bookmark: #977344;
+    }
+    #admin-panel > .admin-sidebar {
+      top: 88px; max-height: calc(100dvh - 108px);
+      background: transparent !important; border-radius: 0;
+      border-right: 0 !important; padding: 0 10px 12px 0 !important;
+      scrollbar-width: thin; scrollbar-color: #d3c5af transparent;
+    }
+    .admin-sidebar #identity { padding: 0 16px 16px; font-size: 11px !important; color: var(--nav-muted); }
+    #admin-navigation { margin-top: 0; }
+    #admin-navigation .admin-nav-group { margin: 0 0 24px; min-width: 0; }
+    #admin-navigation .admin-nav-label {
+      margin: 0; padding: 0 16px 7px;
+      font: 500 11px/1.6 system-ui, sans-serif; letter-spacing: .1em;
+      color: var(--nav-muted);
+    }
+    #admin-navigation button {
+      position: relative; box-sizing: border-box; min-height: 44px;
+      margin: 0; padding: 11px 16px; border-radius: 5px;
+      background: transparent !important; color: var(--nav-ink) !important;
+      box-shadow: none !important; transform: none !important;
+      font: 400 14px/1.6 system-ui, sans-serif !important;
+      transition: background-color 140ms ease, color 140ms ease;
+    }
+    #admin-navigation button:hover { background: var(--nav-hover) !important; }
+    #admin-navigation button[aria-current="page"] {
+      background: var(--nav-selected) !important; color: #4e3c26 !important;
+      font-weight: 600 !important; box-shadow: none !important;
+    }
+    #admin-navigation button[aria-current="page"]::before {
+      content: ""; position: absolute; left: 0; top: 14px; bottom: 14px;
+      width: 2px; border-radius: 2px; background: var(--nav-bookmark);
+    }
+    #admin-navigation button:focus-visible { outline: 2px solid var(--nav-bookmark) !important; outline-offset: -2px; }
+    @media (max-width: 900px) {
+      #admin-panel > .admin-sidebar { position: static; max-height: none; padding: 0 !important; }
+      .admin-sidebar #identity { padding: 0 0 8px; }
+      #admin-navigation { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 16px; overflow: visible; padding: 12px 0; }
+      #admin-navigation .admin-nav-group { margin: 0; }
+    }
+    @media (max-width: 640px) {
+      #admin-navigation { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 8px; }
+      #admin-panel .admin-menu-toggle {
+        display: flex; align-items: center; justify-content: space-between;
+        width: 100%; margin: 0; padding: 10px 0; border: 0;
+        border-radius: 0; background: transparent !important;
+        color: var(--nav-ink) !important; box-shadow: none !important;
+        font-size: 14px;
+      }
+      .admin-menu-toggle::after { content: ""; width: 7px; height: 7px; margin-right: 5px; border-right: 1.5px solid; border-bottom: 1.5px solid; transform: rotate(45deg); }
+      .admin-menu-toggle[aria-expanded="true"]::after { transform: rotate(225deg); }
+      #admin-navigation button { padding-left: 12px; padding-right: 8px; }
+      #admin-navigation .admin-nav-label { padding-left: 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) { #admin-navigation button { transition: none; } }
+    /* Progressive disclosure shared by the management workspaces. */
+    #list > article.admin-compact-shell, #list > section.admin-compact-shell, #list .admin-compact-shell {
+      padding: 0 !important; background: var(--admin-surface) !important;
+      background-image: none !important; border: 0 !important;
+      box-shadow: 0 3px 16px #60482506 !important; border-radius: 8px !important;
+    }
+    .admin-compact { grid-column: 1 / -1; min-width: 0; }
+    #admin-panel #admin-navigation button { background: transparent !important; }
+    #admin-panel #admin-navigation button:hover { background: var(--nav-hover) !important; }
+    #admin-panel #admin-navigation button[aria-current="page"] { background: var(--nav-selected) !important; }
+    .admin-compact > summary {
+      display: flex; align-items: center; gap: 16px; min-height: 76px;
+      padding: 18px 22px; cursor: pointer; list-style: none;
+    }
+    .admin-compact > summary::-webkit-details-marker { display: none; }
+    .admin-compact > summary::after { content: '+'; margin-left: auto; flex-shrink: 0; color: #8a7658; font-size: 22px; font-weight: 300; }
+    .admin-compact[open] > summary::after { content: '−'; }
+    .admin-compact-copy { min-width: 0; flex: 1; }
+    .admin-compact-copy strong { display: block; color: var(--admin-ink); font-size: 15px; font-weight: 600; line-height: 1.6; }
+    .admin-compact-copy small { display: block; margin-top: 4px; color: var(--admin-muted); font-size: 12px; line-height: 1.6; }
+    .admin-compact-state { color: #79613f; background: #f1eadf; padding: 4px 9px; border-radius: 4px; font-size: 12px; white-space: nowrap; }
+    .admin-compact[open] > summary { background: #f5efe4; border-radius: 8px 8px 0 0; }
+    .admin-compact-body { padding: 22px; min-width: 0; }
+    .admin-material-card > .admin-compact > .admin-compact-body { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; }
+    #list .admin-story-actions { position: static; margin-top: 20px; padding: 16px 0 0; box-shadow: none; }
+    #list .admin-story-filter, #admin-panel #comment-filters, .admin-triage-tools { border: 0 !important; background: transparent !important; box-shadow: none !important; padding: 0 !important; }
+    .admin-filter-disclosure > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: #75634d; font-size: 13px; }
+    .admin-filter-disclosure > summary::after { content: '⌄'; margin-left: 10px; }
+    .admin-filter-disclosure[open] > summary::after { content: '⌃'; }
+    .admin-filter-body { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 8px 0 16px; }
+    #view-title { font-size: 25px !important; letter-spacing: .03em; }
+    #message:not(:empty) { background: transparent; padding: 4px 0; border: 0; font-size: 12px; }
+    @media(max-width:640px) {
+      .admin-compact > summary { padding: 16px; gap: 10px; }
+      .admin-compact-body { padding: 16px; }
+      .admin-material-card > .admin-compact > .admin-compact-body { grid-template-columns: minmax(0, 1fr); }
+      .admin-compact-state { max-width: 95px; white-space: normal; }
+    }
   </style>
 </head>
 <body class="min-h-screen">
-  <header class="bg-[#123c3a] text-white shadow-lg">
-    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-      <div>
-        <h1 class="text-xl font-bold text-[#d9ad52]">楚韵链迹 · 内容管理</h1>
-<p class="mt-1 text-xs text-stone-300">投稿审核、互动与评论管理、内容举报、用户反馈与兑换码核销</p>
+  <header class="admin-topbar">
+    <div class="admin-topbar-inner">
+      <div class="admin-brand" aria-label="楚韵链迹管理工作台">
+        <h1 class="admin-brand-name">楚韵链迹</h1>
+        <span class="admin-brand-context">管理工作台</span>
       </div>
-      <div class="flex gap-2">
-        <a href="./index.html" class="rounded-lg border border-white/20 px-3 py-2 text-xs font-bold">返回前台</a>
-        <button id="logout" class="hidden rounded-lg bg-white/10 px-3 py-2 text-xs font-bold">退出登录</button>
-      </div>
+      <nav class="admin-topbar-actions" aria-label="页面与账号">
+        <a href="./index.html" class="admin-front-link">返回前台</a>
+        <details class="admin-header-menu admin-help-menu">
+          <summary aria-label="打开使用帮助">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"></circle><path d="M9.7 9a2.5 2.5 0 0 1 4.8 1c0 2-2.5 2.2-2.5 4"></path><path d="M12 17.4h.01"></path></svg>
+            <span class="admin-help-label">帮助</span>
+          </summary>
+          <section class="admin-header-popover admin-help-popover">
+            <h2>使用帮助</h2>
+            <ul class="admin-help-list">
+              <li>从左侧目录选择需要处理的管理模块。</li>
+              <li>审核意见只有在正式提交后才会保存。</li>
+              <li>AI 与材料识别结果必须经过人工确认。</li>
+              <li>原图无法显示时，刷新当前列表后再试。</li>
+            </ul>
+          </section>
+        </details>
+        <details class="admin-header-menu admin-account-menu">
+          <summary aria-label="打开管理员账号菜单">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.5 19c.8-3.5 3-5.3 6.5-5.3s5.7 1.8 6.5 5.3"></path></svg>
+          </summary>
+          <section class="admin-header-popover admin-account-popover">
+            <p class="admin-account-eyebrow">当前账号</p>
+            <p id="header-account-label">管理员账号</p>
+            <div class="admin-account-divider"></div>
+            <a href="./index.html" class="admin-mobile-front-link">返回前台</a>
+            <button id="logout" class="hidden" type="button">退出登录</button>
+          </section>
+        </details>
+      </nav>
     </div>
   </header>
 
@@ -349,11 +854,13 @@
     }
 
     function setActiveView(view, title) {
+      document.getElementById("admin-panel").dataset.view = view;
       viewTitle.textContent = title;
       const commentFilters = document.getElementById("comment-filters");
       if (commentFilters) commentFilters.classList.toggle("hidden", view !== "comments");
       document.querySelectorAll("[data-admin-view]").forEach((button) => {
         const selected = button.dataset.adminView === view;
+        button.setAttribute("aria-current", selected ? "page" : "false");
         button.className = selected
           ? "rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]"
           : "rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600";
@@ -1164,10 +1671,10 @@
             <p class="mt-2 break-all text-[9px] text-stone-400">资料来源：${escapeHtml((chapter.sourceLinkIds || []).join('、'))}</p>
           </section>`).join("");
         return `
-          <article data-story-draft-id="${escapeHtml(draft.id)}" class="rounded-2xl border ${isDraft ? "border-amber-200" : isPublished ? "border-emerald-200" : "border-stone-200"} bg-white p-5 shadow-sm">
+          <article data-story-draft-id="${escapeHtml(draft.id)}" data-story-state="${escapeHtml(draft.status)}" class="rounded-2xl border ${isDraft ? "border-amber-200" : isPublished ? "border-emerald-200" : "border-stone-200"} bg-white p-5 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-3">
-              <div><p class="text-[10px] font-bold uppercase tracking-[0.18em] ${isDraft ? "text-amber-700" : "text-emerald-700"}">${escapeHtml(draft.status)}</p><h3 class="mt-1 font-bold text-stone-900">${escapeHtml(draft.resourceTitle || draft.resourceId)}</h3></div>
-              <span class="rounded-full bg-stone-50 px-3 py-1 text-[10px] text-stone-500">${Number((draft.sourceLinkIds || []).length)} 份来源</span>
+              <div><p class="text-[10px] font-bold uppercase tracking-[0.18em] ${isDraft ? "text-amber-700" : "text-emerald-700"}">${escapeHtml({draft:'待校读草稿',published:'已发布',superseded:'历史版本',archived:'已归档'}[draft.status] || draft.status)}</p><h3 class="mt-1 font-bold text-stone-900">${escapeHtml(draft.resourceTitle || draft.resourceId)}</h3></div>
+              <span class="rounded-full bg-stone-50 px-3 py-1 text-[10px] text-stone-500">第 ${Math.max(1, Number(draft.version) || 1)} 版 · ${Number((draft.sourceLinkIds || []).length)} 份来源</span>
             </div>
             ${isDraft ? `
               <label class="mt-4 block text-[10px] font-bold text-stone-600">故事标题<input data-story-title value="${escapeHtml(draft.title)}" class="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm font-bold outline-none focus:border-[#123c3a]"></label>
@@ -1179,6 +1686,7 @@
               <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-4"><p class="text-[10px] text-stone-500">发布前请逐章核对文字和来源；AI 草稿不会自动公开。</p><button type="button" data-story-draft-publish class="rounded-xl bg-emerald-700 px-5 py-3 text-xs font-bold text-white">审核无误并发布</button></div>
             ` : `
               <h4 class="mt-4 text-lg font-bold text-stone-900">${escapeHtml(draft.title)}</h4><p class="mt-2 text-xs leading-relaxed text-stone-600">${escapeHtml(draft.introduction)}</p>
+              <div class="admin-story-reading">${(draft.chapters || []).map(chapter => `<section><h4>${escapeHtml(chapter.title)}</h4><p>${escapeHtml(chapter.body)}</p><details class="admin-technical"><summary>查看章节来源</summary><p>${escapeHtml((chapter.sourceLinkIds || []).join('、') || '未记录来源')}</p></details></section>`).join('')}<p>${escapeHtml(draft.closing || '')}</p></div>
               ${qualitySlip}
               ${isPublished ? `<div class="mt-4 flex gap-2"><input data-story-archive-reason class="min-w-0 flex-1 rounded-lg border border-stone-200 px-3 py-2 text-xs" placeholder="归档原因"><button type="button" data-story-draft-archive class="rounded-lg border border-red-200 px-4 py-2 text-xs font-bold text-red-700">归档故事</button></div>` : '<p class="mt-3 text-[10px] text-stone-400">这是历史版本，仅保留用于追溯。</p>'}
             `}
@@ -1313,6 +1821,7 @@
             <button type="button" data-ai-candidate-reject class="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-bold text-red-700">驳回候选</button>
             <button type="button" data-ai-candidate-confirm class="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white">确认并发布链迹</button>
           </div>
+          <p data-ai-candidate-result role="status" class="mt-2 min-h-4 text-xs text-stone-500"></p>
         </article>
       `).join("") : '<div class="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-5 text-xs text-stone-500">当前没有等待管理员处理的 AI 候选关系。</div>';
       list.innerHTML = `
@@ -1467,9 +1976,19 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
     }
 
     async function rejectAiCandidate(card) {
-      const decisionNote = card.querySelector("[data-ai-candidate-note]").value.trim();
+      const input = card.querySelector("[data-ai-candidate-note]");
+      const resultLine = card.querySelector("[data-ai-candidate-result]");
+      const decisionNote = input.value.trim();
+      if (decisionNote.length < 4) {
+        resultLine.className = "mt-2 min-h-4 text-xs text-red-700";
+        resultLine.textContent = "请先填写至少 4 个字的驳回原因。";
+        input.focus();
+        return;
+      }
       const buttons = card.querySelectorAll("button");
       buttons.forEach((button) => { button.disabled = true; });
+      resultLine.className = "mt-2 min-h-4 text-xs text-stone-500";
+      resultLine.textContent = "正在驳回候选…";
       try {
         await callAdmin({
           action: "rejectAiStoryCandidate",
@@ -1481,6 +2000,8 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
         message.textContent = "AI 候选已驳回并留下审核记录，没有发布任何链迹。";
       } catch (error) {
         buttons.forEach((button) => { button.disabled = false; });
+        resultLine.className = "mt-2 min-h-4 text-xs text-red-700";
+        resultLine.textContent = `${error.code || "ERROR"}：${error.message}`;
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
       }
@@ -1514,7 +2035,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       }[analysis.status] || analysis.status || "未知状态";
       if (analysis.status === "needs_review") {
         return `
-          <div data-material-analysis-id="${escapeHtml(analysis.id)}" data-material-simulated="${analysis.simulated ? "true" : "false"}" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div data-material-analysis-id="${escapeHtml(analysis.id)}" data-material-simulated="${analysis.simulated ? "true" : "false"}" class="admin-material-editor mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <strong class="text-xs text-amber-800">${escapeHtml(statusLabel)}</strong>
               <span class="text-[10px] text-amber-700">${escapeHtml(analysis.provider)} · ${escapeHtml(analysis.pipelineVersion)}</span>
@@ -1522,6 +2043,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
             <p class="mt-2 text-[10px] leading-relaxed text-amber-800">${analysis.simulated
               ? "当前是流程模拟结果，不是图片真实文字。即使确认，也不会进入正式链迹故事。"
               : `这是腾讯云 OCR 返回并自动脱敏后的文字。请对照原图校对；确认后只会成为可用材料，不会自动发布。${analysis.privacy && analysis.privacy.redacted ? " 已检测并隐藏敏感字段。" : ""}`}</p>
+            <details class="admin-technical"><summary>识别原文（已脱敏，只读）</summary><p class="admin-extracted-text">${escapeHtml(analysis.extractedText || '没有可显示的识别原文')}</p></details>
             <label class="mt-3 block text-xs font-bold text-stone-700">校对后的文字
               <textarea data-material-reviewed-text rows="5" class="mt-1 w-full rounded-xl border border-amber-200 bg-white p-3 text-xs leading-relaxed outline-none focus:border-[#123c3a]">${escapeHtml(analysis.reviewedText || analysis.extractedText || "")}</textarea>
             </label>
@@ -1546,10 +2068,10 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       const synthetic = result.synthetic || {};
       const realReady = result.realOcrReady === true;
       const realCards = items.length ? items.map((item) => `
-        <article class="grid gap-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm md:grid-cols-[220px_1fr]">
-          <div class="overflow-hidden rounded-xl bg-stone-100">
+        <article class="admin-material-card grid gap-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm md:grid-cols-[220px_1fr]">
+          <div class="admin-material-original overflow-hidden rounded-xl bg-stone-100">
             ${item.fileUrl
-              ? `<img src="${escapeHtml(item.fileUrl)}" alt="待识别图片" class="h-48 w-full object-cover">`
+              ? `<img src="${escapeHtml(item.fileUrl)}" alt="${escapeHtml(item.title || '待识别图片')}原图" class="h-48 w-full object-cover">`
               : '<div class="flex h-48 items-center justify-center px-4 text-center text-xs text-stone-400">图片预览暂不可用</div>'}
           </div>
           <div>
@@ -1560,7 +2082,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
                 <p class="mt-1 text-xs leading-relaxed text-stone-500">${escapeHtml(item.description || "未填写材料说明")}</p>
               </div>
               ${item.analysis
-                ? `<span class="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-bold text-stone-600">${escapeHtml(item.analysis.status)}</span>`
+                ? `<span class="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-bold text-stone-600">${escapeHtml({needs_review:'等待校对',approved:'已确认',rejected:'已退回'}[item.analysis.status] || item.analysis.status)}</span>`
                 : realReady && item.realOcrEligible
                   ? `<button type="button" data-material-real-start="${escapeHtml(item.submissionId)}" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">运行真实 OCR</button>`
                   : `<button type="button" disabled class="cursor-not-allowed rounded-lg bg-stone-200 px-4 py-2 text-xs font-bold text-stone-500">${realReady ? "暂不可识别" : "等待 OCR 配置"}</button>`}
@@ -1852,6 +2374,421 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       location.reload();
     });
     checkCurrentSession();
+  </script>
+  <script>
+    // Presentation-only enhancement: original cards, inputs and delegated actions remain intact.
+    (() => {
+      const panel = document.getElementById('admin-panel');
+      const navigation = document.getElementById('admin-navigation');
+      const content = document.getElementById('list');
+      const headerMenus = [...document.querySelectorAll('.admin-header-menu')];
+      const accountLabel = document.getElementById('header-account-label');
+      const identityLabel = document.getElementById('identity');
+      function syncHeaderAccount() {
+        const identityText = identityLabel.textContent.trim();
+        accountLabel.textContent = identityText.includes('虚构数据预览')
+          ? '本地预览账号'
+          : identityText.replace(/^管理员：/, '').replace(/ · 账号 .+$/, '') || '管理员账号';
+      }
+      new MutationObserver(syncHeaderAccount).observe(identityLabel, { childList: true, characterData: true, subtree: true });
+      syncHeaderAccount();
+      headerMenus.forEach(menu => menu.addEventListener('toggle', () => {
+        if (menu.open) headerMenus.filter(other => other !== menu).forEach(other => { other.open = false; });
+      }));
+      document.addEventListener('click', event => {
+        if (!event.target.closest('.admin-header-menu')) headerMenus.forEach(menu => { menu.open = false; });
+      });
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') headerMenus.forEach(menu => { menu.open = false; });
+      });
+      const sidebar = panel.firstElementChild;
+      sidebar.classList.add('admin-sidebar');
+      navigation.setAttribute('aria-label', '后台功能导航');
+      const menuToggle = document.createElement('button');
+      menuToggle.type = 'button';
+      menuToggle.className = 'admin-menu-toggle';
+      menuToggle.textContent = '展开功能菜单';
+      menuToggle.setAttribute('aria-expanded', 'false');
+      menuToggle.setAttribute('aria-controls', 'admin-navigation');
+      navigation.before(menuToggle);
+      menuToggle.addEventListener('click', () => {
+        const open = sidebar.toggleAttribute('data-menu-open');
+        menuToggle.setAttribute('aria-expanded', String(open));
+        menuToggle.textContent = open ? '收起功能菜单' : '展开功能菜单';
+      });
+      const groups = [
+        ['审核中心', ['submissions', 'supplements']],
+        ['内容整理', ['resource-bindings', 'story-links', 'story-drafts']],
+        ['社区管理', ['comments', 'reports', 'feedback']],
+        ['权益管理', ['redemptions']],
+        ['系统工具', ['ai-status', 'material-analysis', 'resource-preview']]
+      ];
+      groups.forEach(([label, views]) => {
+        const group = document.createElement('div');
+        group.className = 'admin-nav-group';
+        const heading = document.createElement('p');
+        heading.className = 'admin-nav-label';
+        heading.textContent = label;
+        group.append(heading);
+        views.forEach(view => {
+          const button = navigation.querySelector('[data-admin-view="' + view + '"]');
+          if (button) group.append(button);
+        });
+        navigation.append(group);
+      });
+      const feedback = document.getElementById('message');
+      feedback.setAttribute('role', 'status');
+      feedback.setAttribute('aria-live', 'polite');
+      panel.insertBefore(feedback, sidebar.nextSibling);
+      let selectedId = '';
+      let layout = null;
+      let queue = null;
+      let query = '';
+      let cards = [];
+      let selectedPosition = 0;
+      const imageDialog = document.createElement('dialog');
+      imageDialog.className = 'admin-image-dialog';
+      const closeImage = document.createElement('button');
+      closeImage.type = 'button';
+      closeImage.textContent = '关闭预览';
+      const fullImage = document.createElement('img');
+      fullImage.alt = '投稿原图预览';
+      imageDialog.append(closeImage, fullImage);
+      document.body.append(imageDialog);
+      closeImage.addEventListener('click', () => imageDialog.close());
+      imageDialog.addEventListener('close', () => fullImage.removeAttribute('src'));
+      function selectCard(card) {
+        selectedId = card.dataset.id;
+        selectedPosition = cards.indexOf(card);
+        cards.forEach(item => { item.hidden = item !== card; });
+        queue.querySelectorAll('[data-queue-id]').forEach(button => {
+          button.setAttribute('aria-pressed', String(button.dataset.queueId === selectedId));
+        });
+      }
+      function renderQueue() {
+        const rows = queue.querySelector('.admin-queue-items');
+        rows.replaceChildren();
+        const matches = cards.filter(card => (card.querySelector('h3')?.textContent || '').toLowerCase().includes(query.toLowerCase()));
+        queue.querySelector('[data-queue-count]').textContent = '已加载 ' + cards.length + ' 条 · 匹配 ' + matches.length + ' 条';
+        matches.forEach(card => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'admin-queue-item';
+          button.dataset.queueId = card.dataset.id;
+          button.setAttribute('aria-pressed', String(card.dataset.id === selectedId));
+          button.setAttribute('aria-controls', 'list');
+          const source = card.querySelector('img');
+          if (source) {
+            const thumb = document.createElement('img');
+            thumb.src = source.src;
+            thumb.alt = '';
+            thumb.loading = 'lazy';
+            button.append(thumb);
+          }
+          const copy = document.createElement('span');
+          copy.className = 'admin-queue-copy';
+          const title = document.createElement('strong');
+          title.textContent = card.querySelector('h3')?.textContent || '未命名投稿';
+          const state = document.createElement('small');
+          state.textContent = '待审核 · 点击查看资料';
+          copy.append(title, state);
+          button.append(copy);
+          button.addEventListener('click', () => selectCard(card));
+          rows.append(button);
+        });
+        if (!matches.length) {
+          const empty = document.createElement('p');
+          empty.className = 'admin-empty-search';
+          empty.textContent = '当前已加载投稿中没有匹配标题。';
+          rows.append(empty);
+        }
+      }
+      function enhance() {
+        cards = [...content.children].filter(item => item.matches('article[data-id]'));
+        if (!cards.length) {
+          if (layout) {
+            layout.before(content);
+            layout.remove();
+            layout = null; queue = null;
+          }
+          content.classList.remove('admin-details');
+          return;
+        }
+        if (!layout) {
+          layout = document.createElement('div');
+          layout.className = 'admin-review-layout';
+          queue = document.createElement('aside');
+          queue.className = 'admin-queue';
+          queue.setAttribute('aria-label', '待审投稿队列');
+          queue.innerHTML = '<div class="admin-queue-head"><h3>审核队列</h3><p data-queue-count></p><input type="search" aria-label="搜索已加载投稿标题" placeholder="搜索已加载投稿标题"></div><div class="admin-queue-items"></div>';
+          queue.querySelector('input').value = query;
+          queue.querySelector('input').addEventListener('input', event => {
+            query = event.target.value;
+            renderQueue();
+          });
+          content.before(layout);
+          layout.append(queue, content);
+        }
+        content.classList.add('admin-details');
+        cards.forEach(card => {
+          if (card.dataset.workbenchReady) return;
+          card.dataset.workbenchReady = 'true';
+          const metadata = card.querySelector('p.break-all');
+          if (metadata) {
+            const details = document.createElement('details');
+            details.className = 'admin-technical';
+            const summary = document.createElement('summary');
+            summary.textContent = '投稿信息、初审提示与奖励';
+            details.append(summary);
+            metadata.before(details);
+            details.append(metadata);
+          }
+          const actions = card.querySelector('[data-status]')?.parentElement;
+          if (actions) actions.classList.add('admin-review-actions');
+          const note = card.querySelector('textarea');
+          if (note) note.setAttribute('aria-label', '审核意见，拒绝或要求修改时必填');
+          const media = card.querySelector('img');
+          if (media) {
+            media.tabIndex = 0;
+            media.setAttribute('role', 'button');
+            media.setAttribute('aria-label', '放大查看投稿图片');
+            const showImage = () => { fullImage.src = media.src; imageDialog.showModal(); };
+            media.addEventListener('click', showImage);
+            media.addEventListener('keydown', event => {
+              if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showImage(); }
+            });
+          }
+        });
+        const selected = cards.find(card => card.dataset.id === selectedId) || cards[Math.min(selectedPosition, cards.length - 1)];
+        renderQueue();
+        selectCard(selected);
+      }
+      // Keep existing moderation nodes and handlers; filtering never rerenders a draft.
+      const triageTools = document.createElement('section');
+      triageTools.className = 'admin-triage-tools';
+      triageTools.hidden = true;
+      triageTools.setAttribute('aria-label', '当前记录筛选');
+      triageTools.innerHTML = '<div class="admin-triage-fields"><label>搜索已加载内容<input type="search" placeholder="输入标题或正文关键词"></label><label>当前记录类别<select aria-label="当前记录类别"><option value="">全部类别</option></select></label></div><p role="status" aria-live="polite"></p>';
+      content.before(triageTools);
+      const triageEmpty = document.createElement('p');
+      triageEmpty.className = 'admin-triage-empty';
+      triageEmpty.hidden = true;
+      triageEmpty.textContent = '当前已加载记录中没有匹配内容，请调整关键词或类别。';
+      content.after(triageEmpty);
+      const triageSearch = triageTools.querySelector('input');
+      const triageCategory = triageTools.querySelector('select');
+      let triageKind = '';
+      let triageCards = [];
+      function filterTriage() {
+        const term = triageSearch.value.trim().toLocaleLowerCase();
+        let visible = 0;
+        triageCards.forEach(card => {
+          const match = (!triageCategory.value || card.dataset.triageCategory === triageCategory.value) && card.dataset.triageSearch.includes(term);
+          card.hidden = !match;
+          if (match) visible++;
+        });
+        triageTools.querySelector('p').textContent = '已加载 ' + triageCards.length + ' 条 · 匹配 ' + visible + ' 条。仅筛选当前记录；展开或收起保留输入，刷新或切换模块不保存。';
+        triageEmpty.hidden = !triageCards.length || visible > 0;
+      }
+      triageSearch.addEventListener('input', filterTriage);
+      triageCategory.addEventListener('change', filterTriage);
+      let activeTriageCard = null;
+      content.addEventListener('click', event => {
+        const action = event.target.closest('[data-comment-status], [data-resolution], [data-feedback-resolution]');
+        if (action) activeTriageCard = action.closest('article');
+      }, true);
+      navigation.addEventListener('click', () => { activeTriageCard = null; }, true);
+      new MutationObserver(() => {
+        if (!activeTriageCard?.isConnected) return;
+        const result = activeTriageCard.querySelector('.admin-triage-result');
+        if (result) result.textContent = feedback.textContent;
+      }).observe(feedback, { childList: true, characterData: true, subtree: true });
+      function enhanceTriage() {
+        triageCards = [...content.children].filter(card => card.matches('article[data-comment-id], article[data-report-id], article[data-feedback-id]'));
+        const kind = triageCards[0] ? (triageCards[0].hasAttribute('data-comment-id') ? 'comments' : triageCards[0].hasAttribute('data-report-id') ? 'reports' : 'feedback') : '';
+        triageTools.hidden = !kind;
+        content.classList.toggle('admin-triage-list', !!kind);
+        if (!kind) { triageEmpty.hidden = true; triageKind = ''; return; }
+        if (kind !== triageKind) { triageSearch.value = ''; triageCategory.value = ''; triageKind = kind; }
+        triageCards.forEach(card => {
+          if (card.dataset.triageReady) return;
+          const body = card.firstElementChild;
+          const badges = body.querySelectorAll('div:first-child > div:first-child > span');
+          const category = (kind === 'comments' ? badges[1] : kind === 'reports' ? badges[1] : badges[0])?.textContent || '其他';
+          const title = body.querySelector('h3')?.textContent || body.querySelector('p.font-bold')?.textContent || (kind === 'feedback' ? '用户反馈 · ' + category : '内容讨论');
+          const paragraphs = [...body.querySelectorAll('p')].filter(p => !p.classList.contains('break-all') && !p.classList.contains('text-stone-400'));
+          const excerpt = paragraphs.map(p => p.textContent).join(' ').trim();
+          card.dataset.triageCategory = category;
+          card.dataset.triageSearch = (title + ' ' + excerpt).toLocaleLowerCase();
+          const details = document.createElement('details');
+          details.className = 'admin-triage-row';
+          const summary = document.createElement('summary');
+          const categoryLabel = document.createElement('span');
+          categoryLabel.className = 'admin-triage-category'; categoryLabel.textContent = category;
+          const copy = document.createElement('span'); copy.className = 'admin-triage-copy';
+          const heading = document.createElement('strong'); heading.textContent = title;
+          const snippet = document.createElement('small'); snippet.textContent = excerpt;
+          copy.append(heading, snippet);
+          const state = document.createElement('span'); state.className = 'admin-triage-state';
+          state.textContent = kind === 'comments' ? (badges[0]?.textContent || '查看详情') : '待处理';
+          summary.append(categoryLabel, copy, state);
+          details.append(summary, body); card.append(details);
+          body.classList.add('admin-triage-body');
+          const action = body.querySelector('[data-comment-status], [data-resolution], [data-feedback-resolution]')?.parentElement;
+          if (action) {
+            action.classList.add('admin-triage-actions');
+            const result = document.createElement('p'); result.className = 'admin-triage-result';
+            result.setAttribute('role', 'status'); result.setAttribute('aria-live', 'polite'); action.after(result);
+          }
+          const note = body.querySelector('textarea');
+          if (note) note.setAttribute('aria-label', note.placeholder);
+          const metadata = body.querySelector('p.break-all');
+          if (metadata) {
+            const technical = document.createElement('details'); technical.className = 'admin-technical';
+            const label = document.createElement('summary'); label.textContent = '查看来源与记录编号';
+            metadata.before(technical); technical.append(label, metadata);
+          }
+          card.dataset.triageReady = 'true';
+        });
+        const previousCategory = triageCategory.value;
+        triageCategory.replaceChildren(new Option('全部类别', ''));
+        [...new Set(triageCards.map(card => card.dataset.triageCategory))].forEach(category => triageCategory.add(new Option(category, category)));
+        triageCategory.value = [...triageCategory.options].some(option => option.value === previousCategory) ? previousCategory : '';
+        filterTriage();
+      }
+      let activeEditorialResult = null;
+      content.addEventListener('click', event => {
+        const action = event.target.closest('[data-story-draft-publish], [data-story-draft-archive], [data-material-review], [data-material-real-start], [data-material-synthetic-test]');
+        if (!action) return;
+        const scope = action.closest('[data-material-analysis-id], [data-story-draft-id], .admin-material-card, section');
+        let result = scope.querySelector('.admin-editor-result');
+        if (!result) { result = document.createElement('p'); result.className = 'admin-editor-result admin-triage-result'; result.setAttribute('role', 'status'); scope.append(result); }
+        activeEditorialResult = result;
+      }, true);
+      navigation.addEventListener('click', () => { activeEditorialResult = null; }, true);
+      new MutationObserver(() => {
+        if (activeEditorialResult?.isConnected) activeEditorialResult.textContent = feedback.textContent;
+      }).observe(feedback, { childList: true, characterData: true, subtree: true });
+      function enhanceEditorial() {
+        const storyCards = [...content.querySelectorAll(':scope > [data-story-draft-id]')];
+        if (storyCards.length && !content.querySelector('.admin-story-filter')) {
+          const filter = document.createElement('div'); filter.className = 'admin-story-filter';
+          filter.innerHTML = '<label>故事版本<select aria-label="筛选故事版本"><option value="all">全部版本</option><option value="draft">待校读草稿</option><option value="published">已发布</option><option value="history">历史与归档</option></select></label><p role="status"></p>';
+          storyCards[0].before(filter);
+          const update = () => {
+            const state = filter.querySelector('select').value;
+            let visible = 0;
+            storyCards.forEach(card => { card.hidden = !(state === 'all' || card.dataset.storyState === state || state === 'history' && !['draft', 'published'].includes(card.dataset.storyState)); if (!card.hidden) visible++; });
+            filter.querySelector('p').textContent = '已加载 ' + storyCards.length + ' 份 · 显示 ' + visible + ' 份' + (visible ? '' : '，当前没有此类版本');
+          };
+          filter.querySelector('select').addEventListener('change', update); update();
+        }
+        storyCards.forEach(card => {
+          if (card.dataset.editorReady) return;
+          card.dataset.editorReady = 'true';
+          card.querySelector('[data-story-archive-reason]')?.setAttribute('aria-label', '归档原因');
+          if (!card.querySelector('[data-story-title]')) return;
+          const header = card.firstElementChild;
+          const actions = card.querySelector('[data-story-draft-publish]').parentElement;
+          const fields = document.createElement('div'); fields.className = 'admin-editor-fields';
+          [...card.children].filter(node => node !== header && node !== actions).forEach(node => fields.append(node));
+          const preview = document.createElement('details'); preview.className = 'admin-story-preview'; preview.open = window.matchMedia('(min-width: 1151px)').matches;
+          preview.innerHTML = '<summary>文字阅读预览</summary><small>只预览当前输入，不代表已保存或已发布；页面刷新或切换模块会丢失未提交修改。</small><div class="admin-preview-copy"></div>';
+          const layout = document.createElement('div'); layout.className = 'admin-editor-layout'; layout.append(fields, preview); actions.before(layout);
+          actions.classList.add('admin-story-actions');
+          function renderPreview() {
+            const target = preview.querySelector('.admin-preview-copy'); target.replaceChildren();
+            const add = (tag, text) => { const node = document.createElement(tag); node.textContent = text; target.append(node); };
+            add('h4', card.querySelector('[data-story-title]').value || '未填写标题');
+            add('p', card.querySelector('[data-story-introduction]').value);
+            card.querySelectorAll('[data-story-chapter]').forEach(chapter => { add('h5', chapter.querySelector('[data-story-chapter-title]').value); add('p', chapter.querySelector('[data-story-chapter-body]').value); });
+            add('p', card.querySelector('[data-story-closing]').value);
+          }
+          fields.addEventListener('input', renderPreview); renderPreview();
+          fields.querySelectorAll('[data-story-chapter]').forEach(chapter => {
+            const source = chapter.querySelector('p.break-all');
+            if (!source) return;
+            const details = document.createElement('details'); details.className = 'admin-technical';
+            const summary = document.createElement('summary'); summary.textContent = '核对本章来源编号'; source.before(details); details.append(summary, source);
+          });
+          const notice = document.createElement('p'); notice.className = 'admin-editor-notice'; notice.textContent = '编辑修改尚未保存；请逐章核对来源。右侧或下方可展开文字预览。'; header.after(notice);
+        });
+        content.querySelectorAll('.admin-material-card').forEach(card => {
+          if (card.dataset.editorReady) return;
+          card.dataset.editorReady = 'true';
+          const original = card.querySelector('.admin-material-original');
+          const img = original.querySelector('img');
+          const caption = document.createElement('p'); caption.textContent = '原始材料 · 完整显示，不裁切'; original.prepend(caption);
+          if (img) {
+            const zoom = document.createElement('button'); zoom.type = 'button'; zoom.textContent = '放大查看原图'; original.append(zoom);
+            const open = () => { fullImage.src = img.src; imageDialog.showModal(); };
+            zoom.addEventListener('click', open); img.addEventListener('click', open);
+            img.addEventListener('error', () => { caption.textContent = '原图加载失败或链接已过期，请刷新材料列表重试。'; zoom.disabled = true; });
+            if (img.complete && !img.naturalWidth) { caption.textContent = '原图暂不可用，请刷新材料列表重试。'; zoom.disabled = true; }
+          }
+          const metadata = card.querySelector('p.break-all');
+          if (metadata) { const details = document.createElement('details'); details.className = 'admin-technical'; const summary = document.createElement('summary'); summary.textContent = '查看投稿来源'; metadata.before(details); details.append(summary, metadata); }
+        });
+        const synthetic = content.querySelector('[data-material-synthetic-test]')?.closest('section');
+        if (synthetic && !synthetic.parentElement.classList.contains('admin-workspace-settings')) {
+          const details = document.createElement('details'); details.className = 'admin-workspace-settings';
+          const summary = document.createElement('summary'); summary.textContent = '开发测试区 · 虚构数据，不是用户材料'; synthetic.before(details); details.append(summary, synthetic);
+        }
+        content.querySelector('#story-draft-generate-form select')?.setAttribute('aria-label', '选择已有确认链迹的资源');
+      }
+      // Move existing nodes so delegated actions, form values and review gates remain intact.
+      function disclose(node, title, hint, state = '') {
+        if (node.dataset.compactReady) return;
+        node.dataset.compactReady = 'true';
+        const details = document.createElement('details'); details.className = 'admin-compact';
+        const summary = document.createElement('summary');
+        const copy = document.createElement('span'); copy.className = 'admin-compact-copy';
+        const heading = document.createElement('strong'); heading.textContent = title;
+        const description = document.createElement('small'); description.textContent = hint;
+        copy.append(heading, description); summary.append(copy);
+        if (state) { const badge = document.createElement('span'); badge.className = 'admin-compact-state'; badge.textContent = state; summary.append(badge); }
+        const body = document.createElement('div'); body.className = 'admin-compact-body';
+        body.append(...node.childNodes); details.append(summary, body); node.append(details);
+        node.classList.add('admin-compact-shell');
+        node.querySelector('[data-story-title]')?.addEventListener('input', event => { heading.textContent = event.target.value.trim() || title; });
+      }
+      function foldFilters(node, title) {
+        if (!node || node.dataset.filterReady) return;
+        node.dataset.filterReady = 'true';
+        const details = document.createElement('details'); details.className = 'admin-filter-disclosure';
+        const summary = document.createElement('summary'); summary.textContent = title;
+        const body = document.createElement('div'); body.className = 'admin-filter-body';
+        body.append(...node.childNodes); details.append(summary, body); node.append(details);
+      }
+      function simplifyWorkspace() {
+        content.querySelectorAll(':scope > article:not([data-id]):not([data-comment-id]):not([data-report-id]):not([data-feedback-id]), .admin-material-card').forEach(card => {
+          const title = card.querySelector('[data-story-title]')?.value || card.querySelector('h4')?.textContent.trim() || card.querySelector('h3')?.textContent.trim();
+          if (!title) return;
+          const state = card.dataset.storyState;
+          disclose(card, title, state ? '展开阅读、核对来源与处理版本' : '展开查看资料与处理操作', ({draft:'待校读',published:'已发布',superseded:'历史版本',archived:'已归档'})[state] || '');
+        });
+        content.querySelectorAll(':scope > section').forEach(section => {
+          if (section.querySelector('article, .admin-material-card') || panel.dataset.view === 'redemptions') return;
+          const heading = section.querySelector('h3');
+          if (!heading) return;
+          const title = section.querySelector('#story-draft-generate-form') ? '新建故事草稿' : heading.textContent.trim();
+          disclose(section, title, section.querySelector('form') ? '展开填写资料；提交前可核对说明' : '展开查看状态、说明与操作');
+        });
+        foldFilters(content.querySelector('.admin-story-filter'), '筛选故事版本');
+        foldFilters(document.getElementById('comment-filters'), '评论状态与类型');
+        foldFilters(triageTools, '搜索与筛选已加载记录');
+      }
+      // Browser validation must reveal a required field even when its section is folded.
+      panel.addEventListener('invalid', event => {
+        let parent = event.target.parentElement;
+        while (parent && parent !== panel) { if (parent.tagName === 'DETAILS') parent.open = true; parent = parent.parentElement; }
+      }, true);
+      new MutationObserver(() => { enhance(); enhanceTriage(); enhanceEditorial(); simplifyWorkspace(); }).observe(content, { childList: true });
+      enhance();
+      enhanceTriage();
+      enhanceEditorial();
+      simplifyWorkspace();
+    })();
   </script>
 </body>
 </html>
