@@ -8,6 +8,12 @@ const { createAdminStoryChainService } = require('./domains/story-chains');
 const { createAdminStoryClaimService } = require('./domains/story-claims');
 const { createStoryRevisionImpactService } = require('./domains/story-revision-impact');
 const { createStoryGapTaskService } = require('./domains/story-gap-tasks');
+const {
+  createAdminStoryGraphService,
+  ENTITY_COLLECTION: STORY_ENTITY_COLLECTION,
+  RELATION_COLLECTION: STORY_RELATION_COLLECTION,
+  GRAPH_LOG_COLLECTION: STORY_GRAPH_LOG_COLLECTION
+} = require('./domains/story-graph');
 const { buildResourceBindingCandidates, resourceBindingOption } = require('./domains/resource-binding');
 
 const app = cloudbase.init({
@@ -40,12 +46,15 @@ const storyChainService = createAdminStoryChainService({ db });
 const storyClaimService = createAdminStoryClaimService({ db });
 const storyRevisionImpactService = createStoryRevisionImpactService({ db });
 const storyGapTaskService = createStoryGapTaskService({ db });
+const storyGraphService = createAdminStoryGraphService({ db });
+const storyAgentReviewService = require('./domains/story-agent-reviews').createStoryAgentReviewService({ db });
+const storyAgentGapService = require('./domains/story-agent-gaps').createStoryAgentGapService({ db });
 let interactionCollectionsReady = null;
 
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION, STORY_LINK_COLLECTION, STORY_LOG_COLLECTION, STORY_CHAIN_COLLECTION, STORY_CHAIN_LOG_COLLECTION, STORY_CLAIM_COLLECTION, STORY_CLAIM_LOG_COLLECTION, STORY_GAP_TASK_COLLECTION, STORY_GAP_TASK_LOG_COLLECTION, STORY_CONTRIBUTION_COLLECTION].map(async (name) => {
+      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION, STORY_LINK_COLLECTION, STORY_LOG_COLLECTION, STORY_CHAIN_COLLECTION, STORY_CHAIN_LOG_COLLECTION, STORY_CLAIM_COLLECTION, STORY_CLAIM_LOG_COLLECTION, STORY_GAP_TASK_COLLECTION, STORY_GAP_TASK_LOG_COLLECTION, STORY_CONTRIBUTION_COLLECTION, STORY_ENTITY_COLLECTION, STORY_RELATION_COLLECTION, STORY_GRAPH_LOG_COLLECTION].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {
@@ -1333,6 +1342,10 @@ exports.main = async (event = {}) => {
     }
 
     await ensureInteractionCollections();
+    if (action === 'getAgentReviewWorkspace') return await storyAgentReviewService.workspace(event);
+    if (action === 'reviewAgentCandidates') return await storyAgentReviewService.review(event, callerUid);
+    if (action === 'saveAgentGapDraft') return await storyAgentGapService.save(event, callerUid);
+    if (action === 'publishAgentGapDraft') return await storyAgentGapService.save(event, callerUid, true);
     if (action === 'list') return await listSubmissions(event);
     if (action === 'review') return await reviewSubmission(event, callerUid);
     if (action === 'bindSubmissionResource') return await bindSubmissionResource(event, callerUid);
@@ -1353,6 +1366,11 @@ exports.main = async (event = {}) => {
     if (action === 'saveStoryEvidenceLink') return await storyEvidenceService.save(event, callerUid);
     if (action === 'rejectAiStoryCandidate') return await storyEvidenceService.rejectCandidate(event, callerUid);
     if (action === 'archiveStoryEvidenceLink') return await storyEvidenceService.archive(event, callerUid);
+    if (action === 'getStoryGraphWorkspace') return await storyGraphService.workspace();
+    if (action === 'saveStoryEntity') return await storyGraphService.saveEntity(event, callerUid);
+    if (action === 'archiveStoryEntity') return await storyGraphService.archiveEntity(event, callerUid);
+    if (action === 'saveStoryRelation') return await storyGraphService.saveRelation(event, callerUid);
+    if (action === 'archiveStoryRelation') return await storyGraphService.archiveRelation(event, callerUid);
     if (action === 'publishStoryDraft') return await storyChainService.publish(event, callerUid);
     if (action === 'createStoryRevisionDraft') return await storyChainService.createRevisionDraft(event, callerUid);
     if (action === 'archiveStoryChain') return await storyChainService.archive(event, callerUid);

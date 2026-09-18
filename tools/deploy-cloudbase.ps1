@@ -162,6 +162,10 @@ try {
   }
 
   if (-not $FunctionsOnly) {
+    $visualBaselineAsset = Join-Path (Join-Path $staticDirectory 'assets') 'community-hero-pagoda-v2.webp'
+    if (-not (Test-Path -LiteralPath $visualBaselineAsset)) {
+      throw 'Static deployment blocked: this worktree does not contain the latest visual-design baseline. Deploy static files from ui/visual-redesign or integrate that branch first.'
+    }
     $temporaryParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $hostingDirectory = Join-Path $temporaryParent ("chulink-cloudbase-" + [guid]::NewGuid().ToString('N'))
     $hostingStaticDirectory = Join-Path $hostingDirectory 'static'
@@ -175,6 +179,7 @@ try {
       )
       $hostingStaticFiles = @(
         (Join-Path $staticDirectory 'cloudbase-app.js'),
+        (Join-Path $staticDirectory 'admin-agent-review.js'),
         (Join-Path $staticDirectory 'logo.png'),
         (Join-Path $staticDirectory 'map-config.js')
       )

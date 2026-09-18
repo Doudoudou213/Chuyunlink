@@ -48,7 +48,7 @@ function publicTask(item) {
     storyId: item.storyId || '',
     storyVersion: Number(item.storyVersion) || 1,
     resourceId: item.resourceId || '',
-    chapterIndex: Number.isInteger(Number(item.chapterIndex)) ? Number(item.chapterIndex) : null,
+    chapterIndex: item.chapterIndex != null && Number.isInteger(Number(item.chapterIndex)) ? Number(item.chapterIndex) : null,
     title: item.title || '',
     description: item.description || '',
     requestedAssetType: item.requestedAssetType || 'any',

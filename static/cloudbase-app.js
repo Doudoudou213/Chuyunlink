@@ -494,6 +494,24 @@ feedback_closed: '反馈处理',
       activeSubmissionFilter = button.dataset.cloudFilter || 'all';
       renderCloudSubmissionRecords();
     });
+    document.getElementById('cloud-my-submissions').addEventListener('click', async (event) => {
+      const button = event.target.closest('button[data-withdraw-ai-consent]');
+      if (!button || button.disabled) return;
+      const submissionId = button.dataset.withdrawAiConsent;
+      if (!window.confirm('将停止此投稿后续 AI 分析。依赖这份材料的故事和链迹会暂时进入复核，原投稿不会删除。继续吗？')) return;
+      button.disabled = true;
+      const originalText = button.textContent;
+      button.textContent = '处理中…';
+      try {
+        await callCore({ action: 'withdrawAiAnalysisConsent', submissionId });
+        if (typeof showToast === 'function') showToast('已停止后续 AI 分析', 'privacy');
+        await refreshCloudProfile();
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = originalText;
+        if (typeof showToast === 'function') showToast(error.message || '操作失败，请稍后重试', 'error');
+      }
+    });
     document.querySelectorAll('[data-profile-feature]').forEach((button) => {
       button.addEventListener('click', () => toggleProfileFeature(button.dataset.profileFeature));
     });
@@ -1939,6 +1957,8 @@ feedback_closed: '反馈处理',
         </div>
         ${item.reviewNote ? `<p class="mt-2 rounded-lg bg-stone-50 p-2 text-[10px] text-stone-600">审核意见：${safeText(item.reviewNote)}</p>` : ''}
         ${item.status === 'approved' ? `<p class="mt-2 text-[10px] font-bold text-emerald-600">已发放 +${Number(item.rewardPoints || 100)} 流光积分</p>` : ''}
+        ${item.aiAnalysisConsent === true ? `<div class="mt-2 border-t border-stone-100 pt-2"><button type="button" data-withdraw-ai-consent="${safeText(item.id)}" class="min-h-10 rounded-lg border border-stone-200 px-3 text-[10px] font-bold text-stone-500 hover:border-[#9e2f24] hover:text-[#9e2f24] disabled:opacity-50">停止后续 AI 分析</button></div>` : ''}
+        ${item.aiAnalysisStatus === 'consent_revoked' ? '<p class="mt-2 text-[10px] text-stone-400">已停止后续 AI 分析，原投稿仍保留。</p>' : ''}
       </article>
     `).join('') : `<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">${
       allItems.length ? '当前筛选条件下没有投稿。' : '还没有云端上传记录。'

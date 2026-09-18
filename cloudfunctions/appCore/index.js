@@ -12,6 +12,7 @@ const app = cloudbase.init({
 const db = app.database();
 const resourceService = createResourceService({ db });
 const storyEvidenceService = createStoryEvidenceService({ db, app });
+const aiConsentService = require('./domains/ai-consent').createAiConsentService({ db });
 
 const PROFILE_COLLECTION = 'user_profiles';
 const SUBMISSION_COLLECTION = 'submissions';
@@ -1946,6 +1947,7 @@ exports.main = async (event = {}) => {
     if (action === 'markNotificationRead') return await markNotificationRead(uid, userInfo, event);
     if (action === 'planRoute') return await planRoute(uid, event);
     if (action === 'updateProfile') return await updateProfile(uid, userInfo, event);
+    if (action === 'withdrawAiAnalysisConsent') return await aiConsentService.withdraw(event, uid);
     if (action === 'getRewards') {
       return { ok: true, action, items: await listRewards() };
     }

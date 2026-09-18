@@ -550,7 +550,7 @@ async function buildConfirmedStoryInput(resourceId) {
     const linkId = cleanText(link._id || link.id, 128);
     if (!linkId) continue;
     const submission = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get());
-    if (!submission || submission.status !== 'approved') continue;
+    if (!submission || submission.status !== 'approved' || submission.aiAnalysisConsent !== true) continue;
     sources.push({
       linkId,
       relationType: cleanText(link.relationType || 'supports_story', 40),
@@ -580,7 +580,8 @@ async function buildConfirmedStoryInput(resourceId) {
       type: cleanText(resource.type || 'article', 40),
       summary: cleanText(resource.summary || resource.description, 800)
     },
-    sources
+    sources,
+    graphContext: await require('./lib/graph-context').loadGraphContext(db, resourceId, sources)
   };
 }
 
@@ -635,6 +636,10 @@ async function runStoryDraft(config, adminUid, event) {
     const storyInput = acquired.job.input || input;
     const result = await client.draftStory(storyInput, {
       beforeAttempt: async () => {
+        const latestInput = await buildConfirmedStoryInput(resourceId);
+        if (storyDraftJobId(config, resourceId, latestInput) !== storyDraftJobId(config, resourceId, storyInput)) {
+          throw Object.assign(new Error('资料或授权已变化，请重新生成'), { code: 'STORY_SOURCE_CHANGED' });
+        }
         dayId = await reserveDailyCall(config, jobId);
       }
     });
@@ -654,6 +659,28 @@ async function runStoryDraft(config, adminUid, event) {
       if (currentLinks.some(({ record }) => !record || record.status !== 'confirmed' || record.resourceId !== resourceId)) {
         throw Object.assign(new Error('链迹来源状态已变化，已停止保存故事草稿'), { code: 'STORY_SOURCE_CHANGED' });
       }
+      for (const { record } of currentLinks) {
+        const origin = firstDocument(await transaction.collection(SUBMISSION_COLLECTION).doc(record.submissionId).get());
+        if (!origin || origin.status !== 'approved' || origin.aiAnalysisConsent !== true) {
+          throw Object.assign(new Error('来源投稿授权或审核状态已变化'), { code: 'STORY_SOURCE_CHANGED' });
+        }
+      }
+      const graphRows = [];
+      for (const relation of storyInput.graphContext || []) {
+        const row = firstDocument(await transaction.collection('story_relations').doc(relation.relationId).get());
+        if (row) graphRows.push({ ...row, _id: relation.relationId });
+        for (const key of relation.evidenceLinkIds) {
+          const evidence = firstDocument(await transaction.collection(LINK_COLLECTION).doc(key).get());
+          const origin = evidence && firstDocument(await transaction.collection(SUBMISSION_COLLECTION).doc(evidence.submissionId).get());
+          if (!evidence || evidence.status !== 'confirmed' || evidence.resourceId !== resourceId || !origin || origin.status !== 'approved' || origin.aiAnalysisConsent !== true) {
+            throw Object.assign(new Error('链迹依据已失效或授权已撤回'), { code: 'STORY_SOURCE_CHANGED' });
+          }
+        }
+      }
+      const freshGraph = await require('./lib/graph-context').loadGraphContext(transaction, resourceId, storyInput.sources, graphRows);
+      if (JSON.stringify(freshGraph) !== JSON.stringify(storyInput.graphContext || [])) {
+        throw Object.assign(new Error('链迹关系已变化，请刷新后重新生成'), { code: 'STORY_GRAPH_CHANGED' });
+      }
       const now = db.serverDate();
       await transaction.collection(STORY_COLLECTION).doc(draftId).set({
         resourceId,
@@ -663,6 +690,7 @@ async function runStoryDraft(config, adminUid, event) {
         chapters: result.output.chapters,
         closing: result.output.closing,
         sourceLinkIds,
+        graphContext: storyInput.graphContext || [],
         status: 'draft',
         version: 1,
         provider: config.provider,

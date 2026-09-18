@@ -1,5 +1,7 @@
 'use strict';
 
+const { loadPublicStoryGraph } = require('./story-graph');
+
 const LINK_COLLECTION = 'story_evidence_links';
 const SUBMISSION_COLLECTION = 'submissions';
 const RESOURCE_COLLECTION = 'resources';
@@ -134,6 +136,7 @@ function createStoryEvidenceService({ db, app }) {
       }))
       .sort((left, right) => String(left.submission.createdAt || '').localeCompare(String(right.submission.createdAt || '')));
     const contributors = new Set(items.map((item) => item.submission.contributorName).filter(Boolean));
+    const graph = await loadPublicStoryGraph(db, resourceId);
     let story = null;
     let claims = [];
     let claimsReady = true;
@@ -142,7 +145,7 @@ function createStoryEvidenceService({ db, app }) {
     try {
       const storyResult = await db.collection(STORY_COLLECTION).where({ resourceId }).limit(20).get();
       const published = (storyResult.data || [])
-        .filter((item) => item.status === 'published')
+        .filter((item) => item.status === 'published' && item.needsSourceReview !== true)
         .sort((left, right) => String(timeValue(right.publishedAt) || '').localeCompare(String(timeValue(left.publishedAt) || '')));
       const selected = published[0];
       if (selected) {
@@ -227,7 +230,8 @@ function createStoryEvidenceService({ db, app }) {
       claimsReady,
       gapTasks,
       gapTasksReady,
-      trail: buildPublicTrail({ id: resourceId, title: resource.title, summary: resource.summary }, items)
+      trail: buildPublicTrail({ id: resourceId, title: resource.title, summary: resource.summary }, items),
+      graph
     };
   }
 

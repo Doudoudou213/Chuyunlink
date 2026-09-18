@@ -169,7 +169,9 @@ function createTokenHubClient({ config, transport = requestJson }) {
           content: JSON.stringify({
             task: '把已确认的文化资料编排成可追溯来源的故事草稿',
             resource: input.resource,
-            sources
+            sources,
+            graphContext: input.graphContext || [],
+            graphConstraint: 'graphContext 只是组织资料的关联提示，不是新的事实来源。不得将外观相似写成同源或传承。每章仍引用原始 linkId，不能引用 relationId 代替来源。'
           })
         }
       ],

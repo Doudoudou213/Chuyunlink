@@ -76,6 +76,9 @@ function suggestImpactedChapter({ chapters, link, linkById, submission }) {
     };
   }).sort((left, right) => right.score - left.score || left.chapterIndex - right.chapterIndex);
   const best = scored[0];
+  if (scored.length > 1 && best.score > 0 && best.score === scored[1].score) {
+    return { chapterIndex: null, confidence: 'none', reason: '多个章节同样相关，请管理员选择修订位置。' };
+  }
   if (best.score <= 0 && safeChapters.length === 1) {
     return { chapterIndex: 0, confidence: 'low', reason: '当前故事只有一个章节，建议从该章开始人工核对。' };
   }
@@ -134,6 +137,31 @@ function createStoryRevisionImpactService({ db }) {
           confidence: suggestion.confidence,
           reason: suggestion.reason
         });
+      }
+      const graphResult = await db.collection('story_relations').where({ resourceId: story.resourceId, status: 'confirmed' }).limit(60).get();
+      for (const relation of graphResult.data || []) {
+        if (dateMs(relation.updatedAt || relation.reviewedAt || relation.createdAt) <= dateMs(story.publishedAt)) continue;
+        const evidenceIds = [...new Set(relation.evidenceLinkIds || [])];
+        if (!evidenceIds.length) continue;
+        let valid = true;
+        for (const key of evidenceIds) {
+          const link = linkById.get(key);
+          const origin = link && await submissionFor(link.submissionId);
+          if (!link || link.resourceId !== story.resourceId || !origin || origin.status !== 'approved') { valid = false; break; }
+        }
+        if (!valid || !relation.fromEntityId || !relation.toEntityId) continue;
+        const from = firstDocument(await db.collection('story_entities').doc(relation.fromEntityId).get());
+        const to = firstDocument(await db.collection('story_entities').doc(relation.toEntityId).get());
+        if (!from || !to || from.status !== 'confirmed' || to.status !== 'confirmed' || from.resourceId !== story.resourceId || to.resourceId !== story.resourceId) continue;
+        const matches = (story.chapters || []).map((chapter, index) => ({ index, count: (chapter.sourceLinkIds || []).filter(key => evidenceIds.includes(key)).length }))
+          .filter(item => item.count > 0);
+        const chapterIndex = matches.length === 1 ? matches[0].index : null;
+        candidates.push({ relationId: relation._id, linkId: evidenceIds[0], evidenceLinkIds: evidenceIds,
+          submissionTitle: `${cleanText(from.name, 80)} → ${cleanText(to.name, 80)}`, relationType: relation.relationType,
+          relationLabel: '已确认链迹', evidenceSummary: cleanText(relation.why, 300), freshness: 'updated_relation',
+          suggestedChapterIndex: chapterIndex, suggestedChapterTitle: chapterIndex == null ? '' : cleanText(story.chapters[chapterIndex].title, 80),
+          confidence: chapterIndex == null ? 'none' : 'medium',
+          reason: `${chapterIndex == null ? '关系涉及多个章节或尚无对应章节，请人工选择。' : `这条关系的依据已被第 ${chapterIndex + 1} 章引用，建议核对该章。`}${relation.relationType === 'visually_similar_to' ? '外观相似不代表同源或传承。' : ''}` });
       }
       if (candidates.length) {
         stories.push({
