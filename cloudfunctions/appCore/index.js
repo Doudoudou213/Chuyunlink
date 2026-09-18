@@ -664,8 +664,15 @@ async function attachSubmissionStoryCards(items) {
     ]);
     const publicSubmissionIds = new Set(items.map((item) => item.id));
     const allConfirmedLinks = (linkResult.data || []).filter((item) => item.status === 'confirmed');
-    const confirmedLinks = allConfirmedLinks.filter((item) => publicSubmissionIds.has(item.submissionId));
-    const confirmedLinkIds = new Set(allConfirmedLinks.map((item) => item._id || item.id));
+    const checkedLinks = await Promise.all(allConfirmedLinks.map(async (link) => {
+      if (!link.submissionId || link.needsSourceReview === true) return '';
+      const origin = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(link.submissionId).get());
+      return origin && origin.status === 'approved' && !origin.aiConsentRevokedAt
+        && origin.aiAnalysisStatus !== 'consent_revoked' ? link._id || link.id || '' : '';
+    }));
+    const confirmedLinkIds = new Set(checkedLinks.filter(Boolean));
+    const confirmedLinks = allConfirmedLinks.filter((item) => publicSubmissionIds.has(item.submissionId)
+      && confirmedLinkIds.has(item._id || item.id));
     const linksBySubmission = new Map();
     confirmedLinks.forEach((link) => {
       if (!linksBySubmission.has(link.submissionId)) linksBySubmission.set(link.submissionId, []);
@@ -678,7 +685,13 @@ async function attachSubmissionStoryCards(items) {
       return Number.isFinite(parsed) ? parsed : 0;
     };
     const publishedStories = (storyResult.data || [])
-      .filter((item) => item.status === 'published')
+      .filter((item) => {
+        const sourceIds = Array.isArray(item.sourceLinkIds) && item.sourceLinkIds.length
+          ? item.sourceLinkIds
+          : (Array.isArray(item.chapters) ? item.chapters : []).flatMap((chapter) => chapter.sourceLinkIds || []);
+        return item.status === 'published' && item.needsSourceReview !== true
+          && sourceIds.length > 0 && sourceIds.every((id) => confirmedLinkIds.has(id));
+      })
       .sort((left, right) => storyTime(right.publishedAt) - storyTime(left.publishedAt));
     return items.map((item) => {
       const links = linksBySubmission.get(item.id) || [];

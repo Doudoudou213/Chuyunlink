@@ -34,9 +34,13 @@ function graphRecords() {
       { _id: 'edge3', resourceId: 'r1', status: 'draft', fromEntityId: 'e1', toEntityId: 'private', relationType: 'associated_with_person', why: '未确认关系', evidenceLinkIds: ['source3'] }
     ],
     story_evidence_links: [
-      { _id: 'source1', resourceId: 'r1', status: 'confirmed' },
-      { _id: 'source2', resourceId: 'r1', status: 'confirmed' },
+      { _id: 'source1', resourceId: 'r1', submissionId: 's1', status: 'confirmed' },
+      { _id: 'source2', resourceId: 'r1', submissionId: 's2', status: 'confirmed' },
       { _id: 'source3', resourceId: 'r1', status: 'archived' }
+    ],
+    submissions: [
+      { _id: 's1', status: 'approved' },
+      { _id: 's2', status: 'approved' }
     ]
   };
 }
@@ -45,6 +49,9 @@ function mockDb(records) {
   return {
     collection(name) {
       return {
+        doc(id) {
+          return { async get() { return { data: (records[name] || []).filter((item) => item._id === id) }; } };
+        },
         where(filter) {
           return {
             limit() {
@@ -88,6 +95,9 @@ async function main() {
   assert.equal(graph.edges.length, 2, '只公开已确认且有来源的关系');
   assert.deepEqual(graph.lightweight.nodes.map((item) => item.id), ['e1', 'e2', 'e3']);
   assert.equal(JSON.stringify(graph).includes('must-not-leak'), false, '公开链迹不得泄露管理员信息');
+  records.submissions[0].aiConsentRevokedAt = '2026-09-07';
+  const afterWithdrawal = await loadPublicStoryGraph(mockDb(records), 'r1');
+  assert.equal(afterWithdrawal.edges.some((item) => item.id === 'edge1'), false, '撤回来源不能继续支撑公开图谱关系');
 
   const adminSource = fs.readFileSync(path.join(root, 'cloudfunctions/adminSubmissions/domains/story-graph.js'), 'utf8');
   const adminIndex = fs.readFileSync(path.join(root, 'cloudfunctions/adminSubmissions/index.js'), 'utf8');

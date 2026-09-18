@@ -151,7 +151,7 @@ function createAdminStoryEvidenceService({ db, app }) {
     const linkId = linkIdFor(submissionId, resourceId);
     return db.runTransaction(async (transaction) => {
       const submission = firstDocument(await transaction.collection(SUBMISSION_COLLECTION).doc(submissionId).get());
-      if (!submission || submission.status !== 'approved') {
+      if (!submission || submission.status !== 'approved' || submission.aiConsentRevokedAt) {
         const error = new Error('投稿不存在或尚未审核通过');
         error.code = 'APPROVED_SUBMISSION_REQUIRED';
         throw error;
@@ -169,6 +169,14 @@ function createAdminStoryEvidenceService({ db, app }) {
         : null;
       const candidate = candidateRef ? firstDocument(await candidateRef.get()) : null;
       if (candidateId) {
+        if (submission.aiAnalysisConsent !== true
+          || submission.aiConsentVersion !== 'ai-analysis-consent-v1'
+          || submission.aiConsentScope !== 'approved_public_submission_text'
+          || submission.aiAnalysisStatus === 'consent_revoked') {
+          const error = new Error('投稿 AI 授权已失效，不能确认候选');
+          error.code = 'AI_CONSENT_CHANGED';
+          throw error;
+        }
         if (!candidate || candidate.status !== 'pending_admin') {
           const error = new Error('AI 候选不存在或已处理，请刷新后重试');
           error.code = 'AI_CANDIDATE_NOT_PENDING';

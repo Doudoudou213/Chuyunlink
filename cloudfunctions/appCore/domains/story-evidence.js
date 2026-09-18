@@ -136,6 +136,9 @@ function createStoryEvidenceService({ db, app }) {
       }))
       .sort((left, right) => String(left.submission.createdAt || '').localeCompare(String(right.submission.createdAt || '')));
     const contributors = new Set(items.map((item) => item.submission.contributorName).filter(Boolean));
+    const validNarrativeLinkIds = new Set(evidence
+      .filter(({ submission }) => !submission.aiConsentRevokedAt && submission.aiAnalysisStatus !== 'consent_revoked')
+      .map(({ link }) => link._id || link.id || ''));
     const graph = await loadPublicStoryGraph(db, resourceId);
     let story = null;
     let claims = [];
@@ -145,11 +148,17 @@ function createStoryEvidenceService({ db, app }) {
     try {
       const storyResult = await db.collection(STORY_COLLECTION).where({ resourceId }).limit(20).get();
       const published = (storyResult.data || [])
-        .filter((item) => item.status === 'published' && item.needsSourceReview !== true)
+        .filter((item) => {
+          const sourceIds = Array.isArray(item.sourceLinkIds) && item.sourceLinkIds.length
+            ? item.sourceLinkIds
+            : (Array.isArray(item.chapters) ? item.chapters : []).flatMap((chapter) => chapter.sourceLinkIds || []);
+          return item.status === 'published' && item.needsSourceReview !== true
+            && sourceIds.length > 0 && sourceIds.every((id) => validNarrativeLinkIds.has(id));
+        })
         .sort((left, right) => String(timeValue(right.publishedAt) || '').localeCompare(String(timeValue(left.publishedAt) || '')));
       const selected = published[0];
       if (selected) {
-        const validLinkIds = new Set(items.map((item) => item.id));
+        const validLinkIds = validNarrativeLinkIds;
         const chapters = (Array.isArray(selected.chapters) ? selected.chapters : []).map((chapter) => ({
           title: cleanText(chapter && chapter.title, 100),
           body: cleanText(chapter && chapter.body, 1800),
@@ -191,7 +200,7 @@ function createStoryEvidenceService({ db, app }) {
           }
           try {
             const claimResult = await db.collection(CLAIM_COLLECTION).where({ storyId: story.id }).limit(100).get();
-            const validLinkIds = new Set(items.map((item) => item.id));
+            const validLinkIds = validNarrativeLinkIds;
             claims = (claimResult.data || [])
               .filter((item) => item.status === 'supported'
                 && Number(item.storyVersion || 1) === story.version

@@ -42,13 +42,28 @@ function createAiConsentService({ db }) {
     }
 
     const now = db.serverDate();
-    const [links, candidates, agentJobs, aiJobs, analyses] = await Promise.all([
+    const [links, candidates, dependentCandidates, agentJobs, otherAgentJobs, aiJobs, analyses, oldCandidates] = await Promise.all([
       query('story_evidence_links', { submissionId }), query('story_agent_candidates', { submissionId }),
-      query('story_agent_jobs', { submissionId }), query('ai_jobs', { submissionId }), query('ai_analyses', { submissionId })
+      query('story_agent_candidates', { status: 'pending_review' }),
+      query('story_agent_jobs', { submissionId }), query('story_agent_jobs', {}),
+      query('ai_jobs', { submissionId }),
+      query('ai_analyses', { submissionId }), query('ai_link_candidates', { submissionId })
     ]);
     const evidenceIds = new Set(links.map(item => item._id || item.id).filter(Boolean));
+    const dependentJobIds = new Set(otherAgentJobs
+      .filter(item => (item.input && item.input.evidenceLinks || []).some(source => evidenceIds.has(source.id)))
+      .map(item => item._id || item.id));
     const impacted = [];
     for (const item of candidates) if (item.status === 'pending_review') await mark('story_agent_candidates', item, { status: 'consent_revoked', invalidatedAt: now });
+    for (const item of dependentCandidates) {
+      if (dependentJobIds.has(item.jobId)
+        || (item.payload && item.payload.evidenceLinkIds || []).some(id => evidenceIds.has(id))) {
+        await mark('story_agent_candidates', item, { status: 'consent_revoked', invalidatedAt: now });
+      }
+    }
+    for (const item of oldCandidates) {
+      if (item.status === 'pending_admin') await mark('ai_link_candidates', item, { status: 'consent_revoked', invalidatedAt: now });
+    }
     for (const item of candidates) if (item.formalEntityId) {
       const entities = await query('story_entities', { _id: item.formalEntityId }, 1);
       for (const entity of entities) {
@@ -57,6 +72,10 @@ function createAiConsentService({ db }) {
       }
     }
     for (const item of agentJobs) if (!['consent_revoked', 'failed'].includes(item.status)) await mark('story_agent_jobs', item, { status: 'consent_revoked', lockedAt: null, updatedAt: now });
+    for (const item of otherAgentJobs) if (dependentJobIds.has(item._id || item.id)
+      && !['consent_revoked', 'failed'].includes(item.status)) {
+      await mark('story_agent_jobs', item, { status: 'consent_revoked', lockedAt: null, updatedAt: now });
+    }
     for (const item of aiJobs) if (!['consent_revoked', 'failed'].includes(item.status)) await mark('ai_jobs', item, { status: 'consent_revoked', lockedAt: null, updatedAt: now });
     for (const item of analyses) await mark('ai_analyses', item, { sourceConsentStatus: 'revoked', updatedAt: now });
 

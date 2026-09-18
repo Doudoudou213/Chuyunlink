@@ -9,6 +9,10 @@ const first = r => Array.isArray(r && r.data) ? r.data[0] : r && r.data;
 const fail = (code, message) => { throw Object.assign(new Error(message), { code }); };
 const id = v => { const result = text(v, 128); if (!/^[\w-]+$/.test(result)) fail('INVALID_ID', '记录编号无效'); return result; };
 const regionOf = r => Object.fromEntries(['country', 'province', 'city', 'district'].map(k => [k, text(r && r[k], 40)]));
+const hasCurrentAiConsent = item => Boolean(item && item.status === 'approved' && item.aiAnalysisConsent === true
+  && item.aiConsentVersion === 'ai-analysis-consent-v1'
+  && item.aiConsentScope === 'approved_public_submission_text'
+  && !item.aiConsentRevokedAt && item.aiAnalysisStatus !== 'consent_revoked');
 const candidateId = (jobId, key) => 'agent_candidate_' + crypto.createHash('sha256')
   .update(JSON.stringify({ candidateKey: key, candidateType: 'entity', jobId })).digest('hex').slice(0, 40);
 
@@ -36,7 +40,8 @@ function createStoryAgentReviewService({ db }) {
       const evidence = await Promise.all((payload.evidenceLinkIds || []).slice(0, 8).map(async key => {
         const source = await get('story_evidence_links', key);
         const origin = source && source.submissionId ? await get('submissions', source.submissionId) : null;
-        return { id: key, valid: Boolean(source && source.status === 'confirmed' && source.resourceId === resourceId && origin && origin.status === 'approved'),
+        return { id: key, valid: Boolean(source && source.status === 'confirmed' && source.needsSourceReview !== true
+          && source.resourceId === resourceId && hasCurrentAiConsent(origin)),
           title: text(source && source.submissionTitle, 120), summary: text(source && source.evidenceSummary, 1000),
           originalText: text(origin && origin.description, 2400) };
       }));
@@ -46,7 +51,7 @@ function createStoryAgentReviewService({ db }) {
         payload, resourceId, resourceTitle: text(resource && resource.title, 120),
         gapDraft: gap ? { ...require('./story-gap-tasks').publicTask(gap), draftVersion: gap.draftVersion } : null,
         submissionTitle: text(submission && submission.title, 120), submissionText: text(submission && submission.description, 2400),
-        eligible: Boolean(job && ['awaiting_review', 'completed'].includes(job.status) && submission && submission.status === 'approved' && submission.aiAnalysisConsent === true),
+        eligible: Boolean(job && ['awaiting_review', 'completed'].includes(job.status) && hasCurrentAiConsent(submission)),
         evidence, sourceName: text(sourceCandidate && sourceCandidate.payload && sourceCandidate.payload.name, 100),
         sourceReady: Boolean(sourceCandidate && sourceCandidate.status === 'approved'),
         formalEntityId: c.formalEntityId || '', formalRelationId: c.formalRelationId || '' };
@@ -84,7 +89,15 @@ function createStoryAgentReviewService({ db }) {
       let formalRelationId = '';
       if (request.decision === 'approve') {
         const submission = await get('submissions', c.submissionId);
-        if (!submission || submission.status !== 'approved' || submission.aiAnalysisConsent !== true) fail('CONSENT_CHANGED', '投稿审核状态或 AI 授权已变化');
+        if (!hasCurrentAiConsent(submission)) fail('CONSENT_CHANGED', '投稿审核状态或 AI 授权已变化');
+        for (const source of job.input && job.input.evidenceLinks || []) {
+          const link = await get('story_evidence_links', source.id);
+          const origin = link && link.submissionId ? await get('submissions', link.submissionId) : null;
+          if (!link || link.status !== 'confirmed' || link.needsSourceReview === true
+            || link.resourceId !== source.resourceId || !hasCurrentAiConsent(origin)) {
+            fail('SOURCE_UNAVAILABLE', '任务引用的来源已失效，不能确认建议');
+          }
+        }
         if (c.candidateType === 'gap') fail('GAP_NOT_PUBLISHABLE', '资料缺口保留待补充，不能确认成正式关系');
         const resourceId = id(edits.resourceId || p.toResourceId || job.input && job.input.submission && job.input.submission.boundResourceId);
         const resource = await get('resources', resourceId);
@@ -115,9 +128,10 @@ function createStoryAgentReviewService({ db }) {
           if (!evidenceLinkIds.length || !Number.isFinite(Number(p.confidence)) || Number(p.confidence) < 0.6 || c.risk === 'insufficient' || c.risk === 'blocked') fail('INSUFFICIENT_EVIDENCE', '证据不足，请补充材料后重新分析');
           for (const evidenceId of evidenceLinkIds) {
             const evidence = await get('story_evidence_links', evidenceId);
-            if (!evidence || evidence.status !== 'confirmed' || evidence.resourceId !== resourceId) fail('EVIDENCE_CHANGED', '来源已失效或不属于当前资源');
+            if (!evidence || evidence.status !== 'confirmed' || evidence.needsSourceReview === true
+              || evidence.resourceId !== resourceId) fail('EVIDENCE_CHANGED', '来源已失效或不属于当前资源');
             const origin = evidence.submissionId ? await get('submissions', evidence.submissionId) : null;
-            if (!origin || origin.status !== 'approved') fail('SOURCE_UNAVAILABLE', '来源投稿已不可用');
+            if (!hasCurrentAiConsent(origin)) fail('SOURCE_UNAVAILABLE', '来源投稿已不可用于 AI 建议');
           }
           const dependency = await get('story_agent_candidates', candidateId(c.jobId, p.fromTemporaryId));
           if (!dependency || dependency.status !== 'approved' || !dependency.formalEntityId) fail('ENTITY_REVIEW_REQUIRED', '请先确认这条关系涉及的实体');

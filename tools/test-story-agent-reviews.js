@@ -35,7 +35,9 @@ const entityKey = candidateId('job1', 'entity_1');
 function fixture() {
   return {
     story_agent_jobs: { job1: { status: 'awaiting_review', model: 'mock', promptVersion: 'v1', input: { submission: { boundResourceId: 'r1' } } } },
-    submissions: { s1: { status: 'approved', aiAnalysisConsent: true, title: '花窗', description: '文字描述凤鸟形花窗' } },
+    submissions: { s1: { status: 'approved', aiAnalysisConsent: true,
+      aiConsentVersion: 'ai-analysis-consent-v1', aiConsentScope: 'approved_public_submission_text',
+      title: '花窗', description: '文字描述凤鸟形花窗' } },
     resources: { r1: { status: 'published', title: '旧宅花窗', type: 'landmark', summary: '有来源的木雕花窗', region: { province: '湖北', city: '随州' } } },
     story_evidence_links: { ev1: { status: 'confirmed', resourceId: 'r1', submissionId: 's1', evidenceSummary: '投稿明确记录窗上凤鸟纹' } },
     story_entities: {}, story_relations: {}, story_graph_logs: {}, story_agent_reviews: {},
@@ -63,6 +65,8 @@ async function main() {
 
   for (const [mutate, expected] of [
     [s => { s.submissions.s1.aiAnalysisConsent = false; }, 'CONSENT_CHANGED'],
+    [s => { s.submissions.s1.aiConsentVersion = 'old-version'; }, 'CONSENT_CHANGED'],
+    [s => { s.submissions.s1.aiConsentRevokedAt = '2026-09-07'; }, 'CONSENT_CHANGED'],
     [s => { s.resources.r1.status = 'archived'; }, 'RESOURCE_UNAVAILABLE'],
     [s => { s.story_agent_jobs.job1.status = 'processing'; }, 'JOB_NOT_READY']
   ]) {
@@ -72,6 +76,7 @@ async function main() {
   }
   for (const [mutate, extra, expected] of [
     [s => { s.story_evidence_links.ev1.status = 'archived'; }, {}, 'EVIDENCE_CHANGED'],
+    [s => { s.submissions.s1.aiConsentRevokedAt = '2026-09-07'; }, {}, 'CONSENT_CHANGED'],
     [s => { s.story_evidence_links.ev1.resourceId = 'other'; }, {}, 'EVIDENCE_CHANGED'],
     [s => { s.story_agent_candidates.relation1.payload.evidenceLinkIds = []; }, {}, 'INSUFFICIENT_EVIDENCE'],
     [s => { s.story_agent_candidates.relation1.payload.relationType = 'same_origin'; }, {}, 'INVALID_RELATION'],
@@ -83,6 +88,23 @@ async function main() {
     const result = await svc.review({ candidateId: 'relation1', decision: 'approve', ...extra }, 'admin');
     assert.equal(result.results[0].code, expected); assert.equal(Object.keys(d.data().story_relations).length, 0);
   }
+  const otherSource = fixture();
+  otherSource.submissions.s2 = { ...otherSource.submissions.s1, title: '另一位用户的记录' };
+  otherSource.story_evidence_links.ev1.submissionId = 's2';
+  otherSource.story_agent_jobs.job1.input.evidenceLinks = [{ id: 'ev1', resourceId: 'r1' }];
+  const otherDb = fakeDb(otherSource), otherReview = createStoryAgentReviewService({ db: otherDb });
+  await otherReview.review({ candidateId: entityKey, decision: 'approve' }, 'admin');
+  otherDb.data().submissions.s2.aiConsentRevokedAt = '2026-09-07';
+  const stoppedRelation = await otherReview.review({ candidateId: 'relation1', decision: 'approve' }, 'admin');
+  assert.equal(stoppedRelation.results[0].code, 'SOURCE_UNAVAILABLE',
+    '另一投稿撤回授权后，引用它的候选不得确认');
+  assert.equal(Object.keys(otherDb.data().story_relations).length, 0);
+  const revokedBeforeReview = fakeDb(otherSource);
+  revokedBeforeReview.data().submissions.s2.aiConsentRevokedAt = '2026-09-07';
+  const blockedEntity = await createStoryAgentReviewService({ db: revokedBeforeReview })
+    .review({ candidateId: entityKey, decision: 'approve' }, 'admin');
+  assert.equal(blockedEntity.results[0].code, 'SOURCE_UNAVAILABLE',
+    '任务输入来源撤回后，实体候选也不得确认');
   const rollbackDb = fakeDb(fixture()), rollback = createStoryAgentReviewService({ db: rollbackDb });
   rollbackDb.failOn('story_agent_reviews');
   assert.equal((await rollback.review({ candidateId: entityKey, decision: 'approve' }, 'admin')).results[0].ok, false);

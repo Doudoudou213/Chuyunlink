@@ -132,16 +132,21 @@ async function loadPublicStoryGraph(db, resourceId) {
       .map(publicNode)
       .filter((item) => item.id && item.label);
     const validNodeIds = new Set(nodes.map((item) => item.id));
-    const validEvidenceIds = new Set((evidenceResult.data || [])
-      .filter((item) => item.status === 'confirmed')
-      .map((item) => item._id || item.id || '')
-      .filter(Boolean));
+    const checkedEvidence = await Promise.all((evidenceResult.data || []).map(async (item) => {
+      if (item.status !== 'confirmed' || item.needsSourceReview === true || !item.submissionId) return '';
+      const result = await db.collection('submissions').doc(item.submissionId).get();
+      const origin = Array.isArray(result && result.data) ? result.data[0] : result && result.data;
+      return origin && origin.status === 'approved' && !origin.aiConsentRevokedAt
+        && origin.aiAnalysisStatus !== 'consent_revoked' ? item._id || item.id || '' : '';
+    }));
+    const validEvidenceIds = new Set(checkedEvidence.filter(Boolean));
     const edges = (relationResult.data || [])
       .filter((item) => item.status === 'confirmed' && item.needsSourceReview !== true)
       .map((item) => publicEdge(item, validNodeIds))
       .map((item) => item ? {
         ...item,
-        evidenceLinkIds: item.evidenceLinkIds.filter((id) => validEvidenceIds.has(id))
+        evidenceLinkIds: item.evidenceLinkIds.every((id) => validEvidenceIds.has(id))
+          ? item.evidenceLinkIds : []
       } : null)
       .map((item) => item ? { ...item, evidenceCount: item.evidenceLinkIds.length } : null)
       .filter((item) => item && item.id && item.why && item.evidenceCount > 0);

@@ -53,6 +53,13 @@ function cleanId(value, label = '记录') {
   return id;
 }
 
+function hasCurrentAiConsent(item) {
+  return Boolean(item && item.status === 'approved' && item.aiAnalysisConsent === true
+    && item.aiConsentVersion === 'ai-analysis-consent-v1'
+    && item.aiConsentScope === 'approved_public_submission_text'
+    && !item.aiConsentRevokedAt && item.aiAnalysisStatus !== 'consent_revoked');
+}
+
 function getAdminUids() {
   return new Set(String(process.env.ADMIN_UIDS || '').split(/[\s,;]+/).map((item) => item.trim()).filter(Boolean));
 }
@@ -112,11 +119,8 @@ async function recordStep(jobId, sequence, name, status, metadata = {}) {
 async function eligibleSubmission(submissionId, config) {
   const item = firstDocument(await db.collection(SUBMISSIONS).doc(submissionId).get());
   if (!item) throw Object.assign(new Error('没有找到这条投稿'), { code: 'SUBMISSION_NOT_FOUND' });
-  if (item.status !== 'approved') {
-    throw Object.assign(new Error('只有审核通过的投稿可以进入研究智能体'), { code: 'APPROVED_SUBMISSION_REQUIRED' });
-  }
-  if (item.aiAnalysisConsent !== true) {
-    throw Object.assign(new Error('投稿人没有授权 AI 分析'), { code: 'AI_CONSENT_REQUIRED' });
+  if (!hasCurrentAiConsent(item)) {
+    throw Object.assign(new Error('投稿审核状态或 AI 授权已失效'), { code: 'AI_CONSENT_REQUIRED' });
   }
   const submission = sanitizeSubmission(item);
   const textLength = `${submission.title}${submission.description}`.replace(/\s+/g, '').length;
@@ -135,21 +139,27 @@ async function loadContext(submission, config) {
   ]);
   const allowedResources = selectRelevantResources(submission, resourceResult.data || [], config.topResourceLimit);
   const resourceIds = new Set(allowedResources.map((item) => item.id));
-  const evidenceLinks = (evidenceResult.data || [])
-    .filter((item) => resourceIds.has(cleanText(item.resourceId, 128)) && ['confirmed', 'published'].includes(item.status))
-    .map((item) => ({
+  const possibleEvidence = (evidenceResult.data || [])
+    .filter((item) => resourceIds.has(cleanText(item.resourceId, 128))
+      && item.status === 'confirmed' && item.needsSourceReview !== true);
+  const checkedEvidence = await Promise.all(possibleEvidence.map(async (item) => {
+    if (!item.submissionId) return null;
+    const origin = firstDocument(await db.collection(SUBMISSIONS).doc(item.submissionId).get());
+    if (!hasCurrentAiConsent(origin)) return null;
+    return {
       id: cleanText(item._id || item.id, 128),
       resourceId: cleanText(item.resourceId, 128),
       summary: cleanText(item.evidenceSummary || item.summary || item.evidence || item.note, 300),
       sourceType: cleanText(item.sourceType || item.materialType || 'submission', 40)
-    }))
-    .filter((item) => item.id && item.summary)
-    .slice(0, 60);
+    };
+  }));
+  const evidenceLinks = checkedEvidence.filter((item) => item && item.id && item.summary).slice(0, 60);
   const knownEntities = (entityResult.data || [])
     .filter((item) => {
       const linkedResources = [item.resourceId, ...(Array.isArray(item.resourceIds) ? item.resourceIds : [])]
         .map((id) => cleanText(id, 128)).filter(Boolean);
-      return item.status === 'confirmed' && linkedResources.some((id) => resourceIds.has(id));
+      return item.status === 'confirmed' && item.needsSourceReview !== true
+        && linkedResources.some((id) => resourceIds.has(id));
     })
     .map((item) => ({
       id: cleanText(item._id || item.id, 128),
@@ -160,6 +170,26 @@ async function loadContext(submission, config) {
     .filter((item) => item.id && item.name)
     .slice(0, 80);
   return { allowedResources, evidenceLinks, knownEntities };
+}
+
+async function assertCurrentSources(reader, submissionId, input, jobId) {
+  const primary = firstDocument(await reader.collection(SUBMISSIONS).doc(submissionId).get());
+  if (!hasCurrentAiConsent(primary)) {
+    throw Object.assign(new Error('投稿 AI 授权已变化，停止分析'), { code: 'AGENT_CONSENT_CHANGED' });
+  }
+  const job = firstDocument(await reader.collection(JOBS).doc(jobId).get());
+  if (!job || job.status !== 'processing') {
+    throw Object.assign(new Error('任务已停止，不能继续分析'), { code: 'AGENT_JOB_STOPPED' });
+  }
+  for (const source of input.evidenceLinks || []) {
+    const link = firstDocument(await reader.collection(EVIDENCE).doc(source.id).get());
+    const origin = link && link.submissionId
+      ? firstDocument(await reader.collection(SUBMISSIONS).doc(link.submissionId).get()) : null;
+    if (!link || link.status !== 'confirmed' || link.needsSourceReview === true
+      || link.resourceId !== source.resourceId || !hasCurrentAiConsent(origin)) {
+      throw Object.assign(new Error('关联来源授权或状态已变化，停止分析'), { code: 'AGENT_SOURCE_CHANGED' });
+    }
+  }
 }
 
 async function ensureJob(config, adminUid, submissionId, input) {
@@ -281,32 +311,42 @@ async function completeReservation(reservation, jobId, usage, config) {
   reservation.released = true;
 }
 
-async function persistCandidates({ jobId, submissionId, output, knownEntities }) {
+async function persistCandidates({ jobId, submissionId, input, output, knownEntities, usage, providerAttempts }) {
   const entities = resolveEntityMatches(output.entities, knownEntities);
   const writes = [];
   entities.forEach((entity) => {
     const id = candidateIdFor(jobId, 'entity', entity.temporaryId);
-    writes.push(db.collection(CANDIDATES).doc(id).set({
+    writes.push([id, {
       jobId, submissionId, candidateType: 'entity', status: 'pending_review', risk: 'medium', shadowMode: true,
       payload: entity, createdAt: db.serverDate(), updatedAt: db.serverDate()
-    }));
+    }]);
   });
   output.relations.forEach((relation, index) => {
     const id = candidateIdFor(jobId, 'relation', `${relation.fromTemporaryId}:${relation.toResourceId}:${relation.relationType}:${index}`);
-    writes.push(db.collection(CANDIDATES).doc(id).set({
+    writes.push([id, {
       jobId, submissionId, candidateType: 'relation', status: 'pending_review', risk: classifyRelationRisk(relation), shadowMode: true,
       payload: relation, createdAt: db.serverDate(), updatedAt: db.serverDate()
-    }));
+    }]);
   });
   output.missingEvidence.forEach((gap, index) => {
     const id = candidateIdFor(jobId, 'gap', `${gap.gapType}:${index}`);
-    writes.push(db.collection(CANDIDATES).doc(id).set({
+    writes.push([id, {
       jobId, submissionId, candidateType: 'gap', status: 'pending_review', risk: 'insufficient', shadowMode: true,
       payload: gap, createdAt: db.serverDate(), updatedAt: db.serverDate()
-    }));
+    }]);
   });
-  await Promise.all(writes);
-  return { entities: entities.length, relations: output.relations.length, gaps: output.missingEvidence.length };
+  const candidateCounts = { entities: entities.length, relations: output.relations.length, gaps: output.missingEvidence.length };
+  await db.runTransaction(async (transaction) => {
+    await assertCurrentSources(transaction, submissionId, input, jobId);
+    for (const [id, record] of writes) {
+      await transaction.collection(CANDIDATES).doc(id).set(record);
+    }
+    await transaction.collection(JOBS).doc(jobId).update({
+      status: 'awaiting_review', summary: output.summary, candidateCounts,
+      providerAttempts, usage, lockedAt: null, updatedAt: db.serverDate()
+    });
+  });
+  return candidateCounts;
 }
 
 async function publicWorkspace(config) {
@@ -371,6 +411,7 @@ async function analyzeSubmission(event, adminUid, config) {
     const estimatedInputTokens = estimateTokens(input);
     const result = await client.analyze(input, {
       beforeAttempt: async (attempt) => {
+        await assertCurrentSources(db, submissionId, input, jobId);
         const reservation = await reserveAttempt(config, jobId, estimatedInputTokens, attempt);
         reservations.set(attempt, reservation);
       },
@@ -389,17 +430,21 @@ async function analyzeSubmission(event, adminUid, config) {
     await recordStep(jobId, 4, 'server_validation', 'completed', {
       entities: validOutput.entities.length, relations: validOutput.relations.length, gaps: validOutput.missingEvidence.length
     });
-    const candidateCounts = await persistCandidates({ jobId, submissionId, output: validOutput, knownEntities: context.knownEntities });
-    await db.collection(JOBS).doc(jobId).update({
-      status: 'awaiting_review', summary: validOutput.summary, candidateCounts,
-      providerAttempts: result.providerAttempts, usage: result.usage,
-      lockedAt: null, updatedAt: db.serverDate()
+    const candidateCounts = await persistCandidates({
+      jobId, submissionId, input, output: validOutput, knownEntities: context.knownEntities,
+      usage: result.usage, providerAttempts: result.providerAttempts
     });
     await recordStep(jobId, 5, 'shadow_candidate_persistence', 'completed', { candidateCounts, formalGraphWrites: 0 });
     return { ok: true, cached: false, jobId, candidateCounts, workspace: await publicWorkspace(config) };
   } catch (error) {
     await Promise.all([...reservations.values()].map(releaseReservation));
-    await db.collection(JOBS).doc(jobId).update({ status: 'failed', lastError: safeError(error), lockedAt: null, updatedAt: db.serverDate() });
+    await db.runTransaction(async (transaction) => {
+      const ref = transaction.collection(JOBS).doc(jobId);
+      const currentJob = firstDocument(await ref.get());
+      if (currentJob && currentJob.status === 'processing') {
+        await ref.update({ status: 'failed', lastError: safeError(error), lockedAt: null, updatedAt: db.serverDate() });
+      }
+    });
     await recordStep(jobId, 99, 'failed', 'failed', { error: safeError(error) });
     throw error;
   }

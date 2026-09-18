@@ -42,6 +42,12 @@ async function main() {
   await assert.rejects(svc.save(publish, 'admin', true), /injected failure/);
   assert.equal(d.data().story_gap_tasks[taskIdFor('gap1')].status, 'draft');
   assert.equal(d.data().story_agent_candidates.gap1.status, 'pending_review');
+  const revokedSource = seed();
+  revokedSource.submissions.s2 = { ...revokedSource.submissions.s1, aiConsentRevokedAt: '2026-09-07' };
+  revokedSource.story_evidence_links.ev1.submissionId = 's2';
+  revokedSource.story_agent_jobs.job1.input.evidenceLinks = [{ id: 'ev1', resourceId: 'r1' }];
+  await assert.rejects(createStoryAgentGapService({ db: fakeDb(revokedSource) }).save(request, 'admin'),
+    { code: 'SOURCE_UNAVAILABLE' });
   console.log('Agent gaps passed: private drafts, version gates, consent, resource/story status, atomic publish, deduplication, no rewards.');
 }
 main().catch(e => { console.error(e); process.exitCode = 1; });

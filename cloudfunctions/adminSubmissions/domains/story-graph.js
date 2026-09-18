@@ -288,7 +288,8 @@ function createAdminStoryGraphService({ db }) {
         error.code = 'PUBLISHED_RESOURCE_REQUIRED';
         throw error;
       }
-      if (!fromEntity || fromEntity.status !== 'confirmed' || !toEntity || toEntity.status !== 'confirmed') {
+      if (!fromEntity || fromEntity.status !== 'confirmed' || fromEntity.needsSourceReview === true
+        || !toEntity || toEntity.status !== 'confirmed' || toEntity.needsSourceReview === true) {
         const error = new Error('关系两端必须是已确认实体');
         error.code = 'CONFIRMED_ENTITIES_REQUIRED';
         throw error;
@@ -296,10 +297,21 @@ function createAdminStoryGraphService({ db }) {
       const evidenceRecords = await Promise.all(evidenceLinkIds.map((id) =>
         transaction.collection(EVIDENCE_COLLECTION).doc(id).get().then(firstDocument)
       ));
-      if (evidenceRecords.some((item) => !item || item.status !== 'confirmed' || item.resourceId !== resourceId)) {
+      if (evidenceRecords.some((item) => !item || item.status !== 'confirmed'
+        || item.needsSourceReview === true || item.resourceId !== resourceId)) {
         const error = new Error('来源必须是该资源下已确认、仍有效的投稿关系');
         error.code = 'CONFIRMED_RELATION_EVIDENCE_REQUIRED';
         throw error;
+      }
+      for (const evidence of evidenceRecords) {
+        const origin = evidence.submissionId
+          ? firstDocument(await transaction.collection('submissions').doc(evidence.submissionId).get()) : null;
+        if (!origin || origin.status !== 'approved' || origin.aiConsentRevokedAt
+          || origin.aiAnalysisStatus === 'consent_revoked') {
+          const error = new Error('来源投稿已不可用');
+          error.code = 'GRAPH_SOURCE_UNAVAILABLE';
+          throw error;
+        }
       }
       const ref = transaction.collection(RELATION_COLLECTION).doc(relationId);
       const current = firstDocument(await ref.get());

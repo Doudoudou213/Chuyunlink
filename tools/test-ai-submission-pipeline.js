@@ -25,9 +25,11 @@ function main() {
 
   // Real analysis is admin-only and re-checks approval + consent immediately before saving.
   assert.match(worker, /const adminUid = requireAdmin\(\)/);
-  assert.match(worker, /submission\.status !== 'approved'/);
-  assert.match(worker, /submission\.aiAnalysisConsent !== true/);
-  assert.match(worker, /latestSubmission\.status !== 'approved' \|\| latestSubmission\.aiAnalysisConsent !== true/);
+  assert.match(worker, /function hasCurrentAiConsent\(item\)/);
+  assert.match(worker, /item\.status === 'approved' && item\.aiAnalysisConsent === true/);
+  assert.match(worker, /item\.aiConsentVersion === 'ai-analysis-consent-v1'/);
+  assert.match(worker, /if \(!hasCurrentAiConsent\(latestSubmission\)\)/);
+  assert.match(worker, /beforeAttempt: async \(\) => \{\s*await eligibleSubmission\(submissionId\)/);
   assert.match(worker, /function sanitizedSubmission\(item\)[\s\S]*title:[\s\S]*description:[\s\S]*assetType:[\s\S]*regionName:/);
   assert.doesNotMatch(worker.match(/function sanitizedSubmission\(item\)[\s\S]*?\n}\n/)[0], /userId|email|fileID|cloudPath|longitude|latitude/);
 

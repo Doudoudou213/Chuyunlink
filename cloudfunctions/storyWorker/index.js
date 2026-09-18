@@ -26,6 +26,13 @@ function cleanText(value, maxLength) {
   return String(value == null ? '' : value).trim().slice(0, maxLength);
 }
 
+function hasCurrentAiConsent(item) {
+  return Boolean(item && item.status === 'approved' && item.aiAnalysisConsent === true
+    && item.aiConsentVersion === 'ai-analysis-consent-v1'
+    && item.aiConsentScope === 'approved_public_submission_text'
+    && !item.aiConsentRevokedAt && item.aiAnalysisStatus !== 'consent_revoked');
+}
+
 function cleanId(value, label = '记录') {
   const id = cleanText(value, 128);
   if (!/^[A-Za-z0-9_-]+$/.test(id)) {
@@ -313,11 +320,8 @@ async function eligibleSubmission(submissionId) {
   if (!submission) {
     throw Object.assign(new Error('没有找到这条投稿'), { code: 'SUBMISSION_NOT_FOUND' });
   }
-  if (submission.status !== 'approved') {
-    throw Object.assign(new Error('只有审核通过的投稿可以进行 AI 链迹分析'), { code: 'APPROVED_SUBMISSION_REQUIRED' });
-  }
-  if (submission.aiAnalysisConsent !== true) {
-    throw Object.assign(new Error('投稿人没有授权 AI 分析，不能创建任务'), { code: 'AI_CONSENT_REQUIRED' });
+  if (!hasCurrentAiConsent(submission)) {
+    throw Object.assign(new Error('投稿审核状态或 AI 授权已失效'), { code: 'AI_CONSENT_REQUIRED' });
   }
   return submission;
 }
@@ -328,7 +332,7 @@ async function realWorkspace() {
     db.collection(CANDIDATE_COLLECTION).limit(100).get()
   ]);
   const submissions = (submissionResult.data || [])
-    .filter((item) => item.aiAnalysisConsent === true)
+    .filter(hasCurrentAiConsent)
     .map((item) => ({
       id: item._id || item.id || '',
       title: cleanText(item.title || item.description || '社区投稿', 120),
@@ -412,7 +416,7 @@ async function persistRealAnalysis({ config, adminUid, submissionId, submission,
   await db.runTransaction(async (transaction) => {
     const submissionRef = transaction.collection(SUBMISSION_COLLECTION).doc(submissionId);
     const latestSubmission = firstDocument(await submissionRef.get());
-    if (!latestSubmission || latestSubmission.status !== 'approved' || latestSubmission.aiAnalysisConsent !== true) {
+    if (!hasCurrentAiConsent(latestSubmission)) {
       throw Object.assign(new Error('投稿状态或 AI 授权已变化，已停止保存结果'), { code: 'AI_ELIGIBILITY_CHANGED' });
     }
     const candidateStates = await Promise.all(validCandidates.map(async (candidate) => {
@@ -504,6 +508,7 @@ async function runSubmissionAnalysis(config, adminUid, event) {
     const client = createTokenHubClient({ config });
     const result = await client.analyze(acquired.job.input || input, {
       beforeAttempt: async () => {
+        await eligibleSubmission(submissionId);
         dayId = await reserveDailyCall(config, jobId);
       }
     });
@@ -517,22 +522,24 @@ async function runSubmissionAnalysis(config, adminUid, event) {
       retryable: error && error.retryable === true
     };
     try {
-      await Promise.all([
-        db.collection(JOB_COLLECTION).doc(jobId).update({
-          status: 'failed',
-          lastError: safeError,
-          lockedAt: null,
-          lockedBy: '',
-          finishedAt: db.serverDate(),
-          updatedAt: db.serverDate()
-        }),
-        db.collection(SUBMISSION_COLLECTION).doc(submissionId).update({
-          aiAnalysisStatus: 'failed',
-          aiAnalysisLastError: safeError,
-          aiAnalysisUpdatedAt: db.serverDate(),
-          updatedAt: db.serverDate()
-        })
-      ]);
+      await db.runTransaction(async (transaction) => {
+        const jobRef = transaction.collection(JOB_COLLECTION).doc(jobId);
+        const submissionRef = transaction.collection(SUBMISSION_COLLECTION).doc(submissionId);
+        const latestJob = firstDocument(await jobRef.get());
+        const latestSubmission = firstDocument(await submissionRef.get());
+        if (latestJob && latestJob.status !== 'consent_revoked') {
+          await jobRef.update({
+            status: 'failed', lastError: safeError, lockedAt: null, lockedBy: '',
+            finishedAt: db.serverDate(), updatedAt: db.serverDate()
+          });
+        }
+        if (latestSubmission && !latestSubmission.aiConsentRevokedAt) {
+          await submissionRef.update({
+            aiAnalysisStatus: 'failed', aiAnalysisLastError: safeError,
+            aiAnalysisUpdatedAt: db.serverDate(), updatedAt: db.serverDate()
+          });
+        }
+      });
     } catch (_) {}
     throw Object.assign(new Error(safeError.message), { code: safeError.code });
   }
@@ -550,7 +557,7 @@ async function buildConfirmedStoryInput(resourceId) {
     const linkId = cleanText(link._id || link.id, 128);
     if (!linkId) continue;
     const submission = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get());
-    if (!submission || submission.status !== 'approved' || submission.aiAnalysisConsent !== true) continue;
+    if (!hasCurrentAiConsent(submission)) continue;
     sources.push({
       linkId,
       relationType: cleanText(link.relationType || 'supports_story', 40),
@@ -661,7 +668,7 @@ async function runStoryDraft(config, adminUid, event) {
       }
       for (const { record } of currentLinks) {
         const origin = firstDocument(await transaction.collection(SUBMISSION_COLLECTION).doc(record.submissionId).get());
-        if (!origin || origin.status !== 'approved' || origin.aiAnalysisConsent !== true) {
+        if (!hasCurrentAiConsent(origin)) {
           throw Object.assign(new Error('来源投稿授权或审核状态已变化'), { code: 'STORY_SOURCE_CHANGED' });
         }
       }
@@ -672,7 +679,7 @@ async function runStoryDraft(config, adminUid, event) {
         for (const key of relation.evidenceLinkIds) {
           const evidence = firstDocument(await transaction.collection(LINK_COLLECTION).doc(key).get());
           const origin = evidence && firstDocument(await transaction.collection(SUBMISSION_COLLECTION).doc(evidence.submissionId).get());
-          if (!evidence || evidence.status !== 'confirmed' || evidence.resourceId !== resourceId || !origin || origin.status !== 'approved' || origin.aiAnalysisConsent !== true) {
+          if (!evidence || evidence.status !== 'confirmed' || evidence.resourceId !== resourceId || !hasCurrentAiConsent(origin)) {
             throw Object.assign(new Error('链迹依据已失效或授权已撤回'), { code: 'STORY_SOURCE_CHANGED' });
           }
         }

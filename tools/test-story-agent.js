@@ -3,6 +3,8 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
+const { fakeDb } = require('./test-story-agent-reviews');
 const { loadConfig, publicConfig } = require('../cloudfunctions/storyAgentWorker/lib/config');
 const { validateAgentOutput, classifyRelationRisk } = require('../cloudfunctions/storyAgentWorker/lib/contract');
 const { sanitizeSubmission, selectRelevantResources, resolveEntityMatches } = require('../cloudfunctions/storyAgentWorker/lib/retrieval');
@@ -101,6 +103,69 @@ async function main() {
   assert.equal(functionConfig.envVariables.AGENT_ENABLED, 'false');
   assert.equal(functionConfig.envVariables.AGENT_SHADOW_MODE, 'true');
   assert.equal(Object.hasOwn(functionConfig.envVariables, 'TOKENHUB_API_KEY'), false, '密钥不能进入部署配置');
+
+  async function runWithWithdrawal(moment) {
+    const consent = { status: 'approved', aiAnalysisConsent: true,
+      aiConsentVersion: 'ai-analysis-consent-v1', aiConsentScope: 'approved_public_submission_text' };
+    const db = fakeDb({
+      submissions: {
+        s1: { ...consent, title: '随州花窗', description: '记录一处具有凤鸟纹样的木雕花窗', resourceId: 'r1' },
+        s2: { ...consent, title: '另一份记录', description: '有来源的花窗记录' }
+      },
+      resources: { r1: { status: 'published', title: '随州木雕花窗', summary: '花窗与凤鸟纹样' } },
+      story_evidence_links: { ev1: { status: 'confirmed', resourceId: 'r1', submissionId: 's2', evidenceSummary: '另一份已授权的花窗记录' } }
+    });
+    const worker = {};
+    let modelInput = null;
+    if (moment === 'initial') db.data().submissions.s2.aiAnalysisConsent = false;
+    const workerEnv = {
+      ADMIN_UIDS: 'admin', AGENT_ENABLED: 'true', AGENT_SHADOW_MODE: 'true', TOKENHUB_API_KEY: 'test-key'
+    };
+    vm.runInNewContext(workerSource, {
+      exports: worker, console: { error() {} }, process: { env: workerEnv },
+      require(id) {
+        if (id === './lib/config') return { loadConfig: () => loadConfig(workerEnv), publicConfig };
+        if (id === '@cloudbase/node-sdk') return { SYMBOL_CURRENT_ENV: 'test', init: () => ({
+          database: () => db, auth: () => ({ getUserInfo: () => ({ uid: 'admin' }) })
+        }) };
+        if (id === './lib/tokenhub-client') return { createTokenHubClient: () => ({
+          async analyze(input, hooks) {
+            modelInput = input;
+            if (moment === 'before') db.data().submissions.s2.aiAnalysisConsent = false;
+            await hooks.beforeAttempt(1);
+            if (moment === 'during') db.data().submissions.s2.aiAnalysisConsent = false;
+            if (moment === 'primary') {
+              db.data().submissions.s1.aiAnalysisConsent = false;
+              db.data().story_agent_jobs[Object.keys(db.data().story_agent_jobs)[0]].status = 'consent_revoked';
+            }
+            return { output: {
+              summary: '候选关联仍须管理员核对',
+              entities: [{ temporaryId: 'entity_1', name: '凤鸟纹', entityType: 'detail_or_motif',
+                summary: '投稿文字描述的凤鸟形纹样', aliases: [] }],
+              relations: [], missingEvidence: []
+            }, providerAttempts: 1, usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 } };
+          }
+        }) };
+        return require(path.join(root, 'cloudfunctions/storyAgentWorker', id));
+      }
+    }, { filename: 'storyAgentWorker/index.js' });
+    return { response: await worker.main({ action: 'analyzeSubmission', submissionId: 's1' }), db, modelInput: () => modelInput };
+  }
+  const normal = await runWithWithdrawal('');
+  assert.equal(normal.response.ok, true);
+  assert.equal(Object.keys(normal.db.data().story_agent_candidates).length, 1);
+  const initiallyRevoked = await runWithWithdrawal('initial');
+  assert.equal(initiallyRevoked.response.ok, true);
+  assert.equal(initiallyRevoked.modelInput().evidenceLinks.length, 0, '未授权的其他投稿不能进入模型输入');
+  for (const moment of ['before', 'during', 'primary']) {
+    const stopped = await runWithWithdrawal(moment);
+    assert.equal(stopped.response.ok, false, `${moment}: 撤回后不得完成分析`);
+    assert.equal(Object.keys(stopped.db.data().story_agent_candidates || {}).length, 0,
+      `${moment}: 撤回后不得保存候选`);
+    if (moment === 'primary') {
+      assert.equal(Object.values(stopped.db.data().story_agent_jobs)[0].status, 'consent_revoked');
+    }
+  }
   console.log('Cultural research agent shadow-mode tests passed.');
 }
 

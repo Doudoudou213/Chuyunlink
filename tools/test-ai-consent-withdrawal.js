@@ -17,9 +17,16 @@ function fixture() {
     },
     story_agent_candidates: {
       entityCandidate: { submissionId: 's1', status: 'approved', formalEntityId: 'entity1' },
-      pendingRelation: { submissionId: 's1', status: 'pending_review' }
+      pendingRelation: { submissionId: 's1', status: 'pending_review' },
+      otherPending: { jobId: 'otherJob', submissionId: 'other', status: 'pending_review', payload: {} }
     },
-    story_agent_jobs: { agent1: { submissionId: 's1', status: 'awaiting_review' } },
+    ai_link_candidates: { oldPending: { submissionId: 's1', status: 'pending_admin' } },
+    story_agent_jobs: {
+      agent1: { submissionId: 's1', status: 'awaiting_review' },
+      otherJob: { submissionId: 'other', status: 'awaiting_review', input: {
+        evidenceLinks: [{ id: 'ev1', resourceId: 'r1' }]
+      } }
+    },
     ai_jobs: { ai1: { submissionId: 's1', status: 'queued' } },
     ai_analyses: { analysis1: { submissionId: 's1', status: 'completed' } },
     story_entities: {
@@ -61,7 +68,10 @@ async function main() {
   assert.equal(state.submissions.s1.aiAnalysisConsent, false);
   assert.equal(state.submissions.s1.aiAnalysisStatus, 'consent_revoked');
   assert.equal(state.story_agent_candidates.pendingRelation.status, 'consent_revoked');
+  assert.equal(state.story_agent_candidates.otherPending.status, 'consent_revoked');
+  assert.equal(state.ai_link_candidates.oldPending.status, 'consent_revoked');
   assert.equal(state.story_agent_jobs.agent1.status, 'consent_revoked');
+  assert.equal(state.story_agent_jobs.otherJob.status, 'consent_revoked');
   assert.equal(state.ai_jobs.ai1.status, 'consent_revoked');
   assert.equal(state.ai_analyses.analysis1.sourceConsentStatus, 'revoked');
   assert.equal(state.story_entities.entity1.needsSourceReview, true);

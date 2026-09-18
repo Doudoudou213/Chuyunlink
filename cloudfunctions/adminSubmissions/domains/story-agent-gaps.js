@@ -24,7 +24,23 @@ function createStoryAgentGapService({ db }) {
       const job = await get('story_agent_jobs', candidate.jobId);
       const submission = await get('submissions', candidate.submissionId);
       if (!job || !['awaiting_review', 'completed'].includes(job.status)) fail('JOB_NOT_READY', '分析尚未完成');
-      if (!submission || submission.status !== 'approved' || submission.aiAnalysisConsent !== true) fail('CONSENT_CHANGED', '投稿审核状态或授权已变化');
+      if (!submission || submission.status !== 'approved' || submission.aiAnalysisConsent !== true
+        || submission.aiConsentVersion !== 'ai-analysis-consent-v1'
+        || submission.aiConsentScope !== 'approved_public_submission_text'
+        || submission.aiConsentRevokedAt || submission.aiAnalysisStatus === 'consent_revoked') {
+        fail('CONSENT_CHANGED', '投稿审核状态或授权已变化');
+      }
+      for (const source of job.input && job.input.evidenceLinks || []) {
+        const link = await get('story_evidence_links', source.id);
+        const origin = link && link.submissionId ? await get('submissions', link.submissionId) : null;
+        if (!link || link.status !== 'confirmed' || link.needsSourceReview === true
+          || link.resourceId !== source.resourceId || !origin || origin.status !== 'approved'
+          || origin.aiAnalysisConsent !== true || origin.aiConsentVersion !== 'ai-analysis-consent-v1'
+          || origin.aiConsentScope !== 'approved_public_submission_text'
+          || origin.aiConsentRevokedAt || origin.aiAnalysisStatus === 'consent_revoked') {
+          fail('SOURCE_UNAVAILABLE', '任务引用的来源已失效，不能发布征集');
+        }
+      }
       const resourceId = id(submission.resourceId || submission.boundResourceId || job.input && job.input.submission && job.input.submission.boundResourceId);
       const resource = await get('resources', resourceId);
       if (!resource || resource.status !== 'published') fail('RESOURCE_UNAVAILABLE', '资源已下架或不存在');
