@@ -976,6 +976,17 @@ async function storyDraftWorkspace() {
         }
       };
     });
+  const aiRevisionSources = links
+    .filter((link) => link.needsSourceReview !== true && hasCurrentAiConsent(submissions.get(link.submissionId)))
+    .map((link) => {
+      const submission = submissions.get(link.submissionId) || {};
+      return {
+        id: link._id || link.id || '',
+        resourceId: link.resourceId || '',
+        label: cleanText(submission.title || submission.description || link.submissionTitle || '社区投稿', 120),
+        evidenceSummary: cleanText(link.evidenceSummary, 300)
+      };
+    });
   const drafts = (storyResult.data || []).map((item) => ({
     id: item._id || item.id || '',
     resourceId: item.resourceId || '',
@@ -1006,6 +1017,7 @@ async function storyDraftWorkspace() {
     ok: true,
     action: 'getStoryDraftWorkspace',
     resources,
+    aiRevisionSources,
     drafts,
     counts: {
       sourceReadyResources: resources.length,

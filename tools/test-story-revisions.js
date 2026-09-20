@@ -80,11 +80,16 @@ const publicSource = fs.readFileSync(path.join(root, 'static', 'cloudbase-app.js
 const appCoreSource = fs.readFileSync(path.join(root, 'cloudfunctions', 'appCore', 'domains', 'story-evidence.js'), 'utf8');
 const storyWorkerSource = fs.readFileSync(path.join(root, 'cloudfunctions', 'storyWorker', 'index.js'), 'utf8');
 assert.match(adminSource, /createStoryRevisionDraft/);
+assert.match(adminSource, /data-story-ai-section-form/);
+assert.match(adminSource, /generateSectionRevisionDraft/);
+assert.match(adminSource, /sourceLinkIds:\s*\[form\.elements\.sourceLinkId\.value\]/);
+assert.match(adminSource, /AI 单章节草稿 · 待人工审核/);
+assert.match(adminSource, /当前授权有效/);
 assert.match(adminSource, /本次保持不变/);
 assert.match(adminSource, /查看修改前正文/);
 assert.match(adminSource, /给读者看的修订说明/);
 assert.match(adminSource, /getStoryRevisionImpactWorkspace/);
-assert.match(adminSource, /没有调用 AI，也没有修改正文/);
+assert.match(adminSource, /以下建议由确定性规则生成，没有修改正文/);
 assert.match(publicSource, /本版修订/);
 assert.match(appCoreSource, /revisionSummary/);
 assert.match(storyWorkerSource, /revisionDiff/);

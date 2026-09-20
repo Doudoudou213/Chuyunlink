@@ -1142,6 +1142,7 @@
       const drafts = result.drafts || [];
       const claims = result.claimWorkspace && result.claimWorkspace.claims || [];
       const claimSources = new Map((result.claimWorkspace && result.claimWorkspace.sources || []).map((source) => [source.id, source]));
+      const aiRevisionSources = new Map((result.aiRevisionSources || []).map((source) => [source.id, source]));
       const revisionImpacts = new Map((result.impactWorkspace && result.impactWorkspace.stories || []).map((item) => [item.storyId, item]));
       const gapTasks = result.gapTaskWorkspace && result.gapTaskWorkspace.tasks || [];
       const claimStatusLabels = { supported: "已有依据", needs_evidence: "待补依据", disputed: "存在争议" };
@@ -1198,10 +1199,13 @@
         const candidates = impact && impact.candidates || [];
         if (!candidates.length) return "";
         const freshnessLabels = { new_source: "新确认来源", updated_material: "原资料有新补充", updated_relation: "关系说明已更新" };
-        return `<details class="mt-4 rounded-xl border border-[#496a61]/25 bg-[#496a61]/5 p-4"><summary class="cursor-pointer text-xs font-bold text-[#35534c]">发现 ${candidates.length} 份可能影响故事的新材料</summary><p class="mt-2 text-[10px] leading-relaxed text-stone-500">以下建议由确定性规则生成，没有调用 AI，也没有修改正文。请先看理由，再决定是否创建局部修订。</p><div class="mt-3 space-y-2">${candidates.map((candidate) => {
+        return `<details class="mt-4 rounded-xl border border-[#496a61]/25 bg-[#496a61]/5 p-4"><summary class="cursor-pointer text-xs font-bold text-[#35534c]">发现 ${candidates.length} 份可能影响故事的新材料</summary><p class="mt-2 text-[10px] leading-relaxed text-stone-500">以下建议由确定性规则生成，没有修改正文。带“AI 生成”按钮的新来源已通过当前授权检查；生成后仍只会进入管理员草稿。</p><div class="mt-3 space-y-2">${candidates.map((candidate) => {
           const hasSuggestion = candidate.suggestedChapterIndex != null;
           const revisionReason = `核对新材料：${candidate.submissionTitle}`;
-          return `<article class="rounded-xl border border-stone-200 bg-white p-3"><div class="flex flex-wrap items-start justify-between gap-2"><div class="min-w-0 flex-1"><div class="flex flex-wrap gap-2"><span class="rounded-full bg-[#496a61]/10 px-2 py-1 text-[9px] font-bold text-[#35534c]">${escapeHtml(freshnessLabels[candidate.freshness] || "新材料")}</span><span class="rounded-full bg-stone-100 px-2 py-1 text-[9px] text-stone-500">${escapeHtml(candidate.relationLabel || "故事线索")}</span></div><h4 class="mt-2 text-xs font-bold text-stone-800">${escapeHtml(candidate.submissionTitle)}</h4><p class="mt-1 text-[10px] leading-5 text-stone-500">${escapeHtml(candidate.evidenceSummary || "这份资料已通过审核并关联到当前资源。")}</p><p class="mt-2 text-[10px] font-medium leading-5 ${hasSuggestion ? "text-[#7d2b23]" : "text-amber-700"}">${escapeHtml(candidate.reason)}</p></div>${hasSuggestion ? `<form data-story-impact-form data-story-id="${escapeHtml(draft.id)}" class="shrink-0"><input type="hidden" name="targetChapterIndex" value="${Number(candidate.suggestedChapterIndex)}"><input type="hidden" name="revisionReason" value="${escapeHtml(revisionReason)}"><button type="submit" class="rounded-lg border border-[#9e2f24]/20 bg-[#9e2f24]/5 px-3 py-2 text-[10px] font-bold text-[#7d2b23]">修订第 ${Number(candidate.suggestedChapterIndex) + 1} 章</button></form>` : `<span class="shrink-0 text-[9px] text-stone-400">请人工选择章节</span>`}</div></article>`;
+          const aiSource = candidate.freshness === "new_source" && aiRevisionSources.get(candidate.linkId);
+          const chapterOptions = (draft.chapters || []).map((chapter, index) => `<option value="${index}" ${Number(candidate.suggestedChapterIndex) === index ? "selected" : ""}>第 ${index + 1} 章 · ${escapeHtml(chapter.title)}</option>`).join("");
+          const action = aiSource ? `<form data-story-ai-section-form data-story-id="${escapeHtml(draft.id)}" class="grid shrink-0 gap-2"><input type="hidden" name="sourceLinkId" value="${escapeHtml(candidate.linkId)}"><input type="hidden" name="revisionReason" value="${escapeHtml(revisionReason)}"><select name="targetChapterIndex" class="rounded-lg border border-stone-200 bg-white px-3 py-2 text-[10px]">${chapterOptions}</select><button type="submit" class="rounded-lg bg-[#9e2f24] px-3 py-2 text-[10px] font-bold text-white">AI 生成单章节草稿</button></form>` : hasSuggestion ? `<form data-story-impact-form data-story-id="${escapeHtml(draft.id)}" class="shrink-0"><input type="hidden" name="targetChapterIndex" value="${Number(candidate.suggestedChapterIndex)}"><input type="hidden" name="revisionReason" value="${escapeHtml(revisionReason)}"><button type="submit" class="rounded-lg border border-[#9e2f24]/20 bg-[#9e2f24]/5 px-3 py-2 text-[10px] font-bold text-[#7d2b23]">人工修订第 ${Number(candidate.suggestedChapterIndex) + 1} 章</button></form>` : `<span class="shrink-0 text-[9px] text-stone-400">请在“只修订一个章节”中人工选择</span>`;
+          return `<article class="rounded-xl border border-stone-200 bg-white p-3"><div class="flex flex-wrap items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="flex flex-wrap gap-2"><span class="rounded-full bg-[#496a61]/10 px-2 py-1 text-[9px] font-bold text-[#35534c]">${escapeHtml(freshnessLabels[candidate.freshness] || "新材料")}</span><span class="rounded-full bg-stone-100 px-2 py-1 text-[9px] text-stone-500">${escapeHtml(candidate.relationLabel || "故事线索")}</span>${aiSource ? '<span class="rounded-full bg-[#9e2f24]/5 px-2 py-1 text-[9px] font-bold text-[#7d2b23]">当前授权有效</span>' : ''}</div><h4 class="mt-2 text-xs font-bold text-stone-800">${escapeHtml(candidate.submissionTitle)}</h4><p class="mt-1 text-[10px] leading-5 text-stone-500">${escapeHtml(candidate.evidenceSummary || "这份资料已通过审核并关联到当前资源。")}</p><p class="mt-2 text-[10px] font-medium leading-5 ${hasSuggestion ? "text-[#7d2b23]" : "text-amber-700"}">${escapeHtml(candidate.reason)}</p></div>${action}</div></article>`;
         }).join("")}</div></details>`;
       };
       const resourceOptions = resources.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.title)} · ${Number(item.confirmedSourceCount || 0)} 份来源${Number(item.approvedSupplementCount || 0) ? ` + ${Number(item.approvedSupplementCount || 0)} 份补充` : ''}${item.hasNewMaterial ? ' · 有新补充待更新' : item.readiness && !item.readiness.ready ? ' · 建议先补充' : ' · 可进行质量检查'}</option>`).join("");
@@ -1245,7 +1249,7 @@
               <span class="rounded-full bg-stone-50 px-3 py-1 text-[10px] text-stone-500">${Number((draft.sourceLinkIds || []).length)} 份来源</span>
             </div>
             ${isDraft ? `
-              ${isRevision ? `<div class="mt-4 rounded-xl border-l-4 border-[#9e2f24] bg-[#9e2f24]/5 p-3"><p class="text-xs font-bold text-[#7d2b23]">局部修订 · 从第 ${Number(draft.previousVersion || 1)} 版创建</p><p class="mt-1 text-[10px] leading-relaxed text-stone-500">原因：${escapeHtml(draft.revisionReason || "补充新资料")}。只有第 ${revisionTarget + 1} 章可以修改。</p></div>` : ""}
+              ${isRevision ? `<div class="mt-4 rounded-xl border-l-4 border-[#9e2f24] bg-[#9e2f24]/5 p-3"><div class="flex flex-wrap items-center gap-2"><p class="text-xs font-bold text-[#7d2b23]">局部修订 · 从第 ${Number(draft.previousVersion || 1)} 版创建</p>${draft.generatedBy === "section_revision_agent" ? '<span class="rounded-full bg-white px-2 py-1 text-[9px] font-bold text-[#7d2b23]">AI 单章节草稿 · 待人工审核</span>' : ''}</div><p class="mt-1 text-[10px] leading-relaxed text-stone-500">原因：${escapeHtml(draft.revisionReason || "补充新资料")}。只有第 ${revisionTarget + 1} 章可以修改。</p>${draft.generatedBy === "section_revision_agent" ? `<p class="mt-1 text-[9px] text-stone-400">${escapeHtml(draft.model || "当前模型")} · ${escapeHtml(draft.promptVersion || "当前提示词版本")}</p>` : ''}</div>` : ""}
               <label class="mt-4 block text-[10px] font-bold text-stone-600">故事标题<input data-story-title value="${escapeHtml(draft.title)}" ${isRevision ? "readonly" : ""} class="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm font-bold outline-none focus:border-[#123c3a] ${isRevision ? "bg-stone-100 text-stone-500" : ""}"></label>
               <label class="mt-3 block text-[10px] font-bold text-stone-600">导语<textarea data-story-introduction rows="3" ${isRevision ? "readonly" : ""} class="mt-1 w-full rounded-lg border border-stone-200 p-3 text-xs leading-relaxed outline-none focus:border-[#123c3a] ${isRevision ? "bg-stone-100 text-stone-500" : ""}">${escapeHtml(draft.introduction)}</textarea></label>
               <div class="mt-3 grid gap-3">${chapterEditors}</div>
@@ -1372,6 +1376,23 @@
         await loadStoryDrafts();
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = result.cached ? "已有一份局部修订草稿，已为你打开工作台。" : "局部修订草稿已创建，未选章节已锁定。";
+      } catch (error) {
+        button.disabled = false;
+        message.className = "mt-2 text-xs text-red-600";
+        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+      }
+    }
+
+    async function generateSectionRevision(event) {
+      event.preventDefault();
+      const form = event.target;
+      const button = form.querySelector('button[type="submit"]');
+      button.disabled = true;
+      try {
+        const result = await callAiWorker({ action: "generateSectionRevisionDraft", storyId: form.dataset.storyId, targetChapterIndex: Number(form.elements.targetChapterIndex.value), sourceLinkIds: [form.elements.sourceLinkId.value], revisionReason: form.elements.revisionReason.value.trim() });
+        await loadStoryDrafts();
+        message.className = "mt-2 text-xs text-emerald-700";
+        message.textContent = result.cached ? "已读取同一故事、章节和来源对应的修订草稿。" : "AI 已只生成所选章节的新草稿，请核对文字和来源后再发布。";
       } catch (error) {
         button.disabled = false;
         message.className = "mt-2 text-xs text-red-600";
@@ -1964,6 +1985,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       if (event.target && event.target.matches("[data-story-claim-form]")) saveStoryClaim(event);
       if (event.target && event.target.matches("[data-story-revision-form]")) createStoryRevision(event);
       if (event.target && event.target.matches("[data-story-impact-form]")) createStoryRevision(event);
+      if (event.target && event.target.matches("[data-story-ai-section-form]")) generateSectionRevision(event);
       if (event.target && event.target.matches("[data-story-gap-task-form]")) publishStoryGapTask(event);
     });
     document.getElementById("list").addEventListener("input", (event) => {
