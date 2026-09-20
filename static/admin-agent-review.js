@@ -8,10 +8,13 @@
   const entityLabels = { detail_or_motif: '纹样与细节', heritage_object: '文物器物', building_or_site: '建筑与遗址',
     person_or_group: '人物与群体', event: '历史事件', text_or_archive: '文献档案', craft_or_practice: '技艺', time_period: '时代', place: '地点' };
   const riskLabels = { medium: '建议核对', high: '需单独判断', insufficient: '证据不足', blocked: '暂不可采用' };
+  const reasonOptions = [['accepted_as_is','原样可用'],['wording_adjusted','文字已调整'],['type_corrected','类型已纠正'],
+    ['duplicate_merged','合并重复项'],['source_insufficient','来源不足'],['unsupported_claim','判断缺少依据'],
+    ['wrong_target','关联对象不对'],['missing_context','缺少上下文'],['other','其他']];
   const button = 'min-h-[44px] rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600 focus-visible:outline focus-visible:outline-2';
   const primary = 'min-h-[44px] rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52] disabled:opacity-40 focus-visible:outline focus-visible:outline-2';
   const field = 'mt-1 min-h-[44px] w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm';
-  let offset = 0, status = 'pending_review', workspace, busy = false, generation = 0;
+  let offset = 0, status = 'pending_review', workspace, evaluation, evaluationSetId = '', busy = false, generation = 0;
   const esc = value => escapeHtml(value);
   const options = (pairs, selected) => pairs.map(([value, label]) => `<option value="${esc(value)}" ${value === selected ? 'selected' : ''}>${esc(label)}</option>`).join('');
   function gapForm(c) {
@@ -81,17 +84,19 @@
       <label class="text-xs">重复实体<select data-field="mergeEntityId" class="${field}">${merge}</select></label>
       <label class="text-xs sm:col-span-2">实体说明<textarea data-field="summary" class="${field}" rows="2">${esc(p.summary)}</textarea></label></div>` : c.candidateType === 'relation' ? `<label class="block text-xs">关系类型<select data-field="relationType" class="${field}">${options(Object.entries(relationLabels), p.relationType)}</select></label>
       <label class="mt-3 block text-xs">为什么有关<textarea data-field="why" class="${field}" rows="2">${esc(p.reason)}</textarea></label>` : '<p class="text-xs text-stone-500">资料不足，保留到后续征集任务。</p>'}</details>
+      <label class="mt-3 block text-xs text-stone-600">反馈原因<select data-reason-category class="${field}">${options(reasonOptions, 'accepted_as_is')}</select></label>
       <label class="mt-3 block text-xs text-stone-600">审核说明（驳回或高风险确认时必填）<textarea data-note class="${field}" rows="2" maxlength="500"></textarea></label>
       ${c.candidateType === 'relation' ? '<label class="mt-2 flex min-h-[44px] items-center gap-2 text-xs"><input data-risk-ack type="checkbox">已逐条核对来源和历史判断</label>' : ''}
       ${!c.eligible ? '<p class="mt-2 text-xs text-red-700">任务未完成或投稿授权已变化，请刷新核对。</p>' : ''}
       ${c.candidateType === 'gap' ? gapForm(c) : ''}
-      <div class="mt-3 flex flex-wrap gap-2">${c.candidateType !== 'gap' ? `<button data-approve class="${primary}" ${blocked ? 'disabled' : ''}>确认建议</button>` : ''}<button data-reject class="${button}">驳回建议</button></div>` : ''}
+      <div class="mt-3 flex flex-wrap gap-2">${c.candidateType !== 'gap' ? `<button data-approve class="${primary}" ${blocked ? 'disabled' : ''}>确认建议</button>` : ''}<button data-reject class="${button}">驳回建议</button></div>` : `<div class="mt-3 flex flex-wrap gap-2">${evaluation && !evaluation.selectedReviewIds.includes(c.id) ? `<button data-add-eval="debug" class="${button}">加入调试集</button><button data-add-eval="fixed" class="${primary}">加入固定验收集</button>` : '<span class="text-xs text-stone-500">已加入当前评测集</span>'}</div>`}
       <p data-result role="status" class="mt-2 break-words text-xs text-stone-600"></p></article>`;
   }
   function requestFor(element, decision) {
     return { candidateId: element.dataset.candidate, decision,
       edits: Object.fromEntries([...element.querySelectorAll('[data-field]')].map(el => [el.dataset.field, el.value.trim()])),
-      note: element.querySelector('[data-note]').value.trim(), highRiskAcknowledged: Boolean(element.querySelector('[data-risk-ack]:checked')) };
+      note: element.querySelector('[data-note]').value.trim(), reasonCategory: element.querySelector('[data-reason-category]').value,
+      highRiskAcknowledged: Boolean(element.querySelector('[data-risk-ack]:checked')) };
   }
   async function review(elements, decision) {
     if (busy || !elements.length) return;
@@ -121,17 +126,81 @@
       }
     }
   }
+  const rateText = value => ({ correct: '正确', partial: '部分正确', incorrect: '错误' }[value] || '未判断');
+  const splitText = value => value === 'fixed' ? '固定验收集' : '调试集';
+  function evaluationPanel() {
+    if (!evaluation || !evaluation.selectedSet) return '';
+    const m = evaluation.metrics;
+    const metric = (label, value) => `<div class="rounded-xl bg-stone-50 p-3"><p class="text-xs text-stone-500">${label}</p><p class="mt-1 text-lg font-bold text-[#123c3a]">${value}%</p></div>`;
+    const comparisons = evaluation.comparisons.map(row => `<tr class="border-t border-stone-100"><td class="px-2 py-2">${esc(row.model)}</td><td class="px-2 py-2">${esc(row.promptVersion)}</td><td class="px-2 py-2">${esc(row.codeVersion)}</td><td class="px-2 py-2">${row.metrics.total}</td><td class="px-2 py-2">${row.metrics.directApprovalRate}%</td><td class="px-2 py-2">${row.metrics.modificationRate}%</td><td class="px-2 py-2">${row.metrics.rejectionRate}%</td><td class="px-2 py-2">${row.metrics.sourceValidityRate}%</td><td class="px-2 py-2">${row.metrics.relationTypeConsistencyRate}%</td></tr>`).join('');
+    const samples = evaluation.samples.map(sample => `<div data-evaluation-sample="${esc(sample.id)}" class="mt-3 rounded-xl border border-stone-200 p-3">
+      <div class="flex flex-wrap items-center justify-between gap-2"><p class="text-xs font-bold">${esc(labels[sample.candidateType] || '智能体建议')} · ${splitText(sample.split)}</p><span class="text-xs ${sample.active ? 'text-stone-500' : 'text-red-700'}">${sample.active ? '来源有效' : esc(sample.disabledReason || '已停用')}</span></div>
+      <p class="mt-1 break-words text-xs text-stone-500">${esc(sample.model || '未知模型')} · ${esc(sample.promptVersion || '未知提示词')} · ${esc(sample.codeVersion || '旧版本')}</p>
+      <div class="mt-2 grid gap-2 sm:grid-cols-[180px_1fr_auto]"><select data-human-rating class="${field}" ${sample.active ? '' : 'disabled'}>${options([['','人工判断'],['correct','正确'],['partial','部分正确'],['incorrect','错误']], sample.humanRating)}</select><input data-rating-note maxlength="500" class="${field}" placeholder="可填写判断说明" value="${esc(sample.ratingNote)}" ${sample.active ? '' : 'disabled'}><button data-save-rating class="${button}" ${sample.active ? '' : 'disabled'}>保存判断</button></div>
+      <p data-eval-result class="mt-2 text-xs text-stone-500">当前：${rateText(sample.humanRating)}</p></div>`).join('');
+    return `<section class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"><div class="flex flex-wrap items-end gap-3">
+      <label class="text-xs">评测集版本<select data-evaluation-set class="${field}">${options(evaluation.sets.map(item => [item.id, `${item.title}（${item.version}）`]), evaluation.selectedSet.id)}</select></label>
+      <label class="text-xs">新版本号<input data-new-version class="${field}" placeholder="例如 feedback-v2"></label><button data-create-set class="${button}">新建版本</button></div>
+      <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">${metric('直接通过率',m.directApprovalRate)}${metric('修改率',m.modificationRate)}${metric('驳回率',m.rejectionRate)}${metric('来源有效率',m.sourceValidityRate)}${metric('关系类型一致率',m.relationTypeConsistencyRate)}</div>
+      <p class="mt-3 text-xs text-stone-500">共 ${m.total} 条，当前有效 ${m.activeTotal} 条。固定验收集只会由管理员手动加入。</p>
+      ${comparisons ? `<details class="mt-3"><summary class="min-h-[44px] cursor-pointer text-xs font-bold">按模型、提示词和代码版本比较</summary><div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead><tr><th class="px-2 py-2">模型</th><th class="px-2 py-2">提示词</th><th class="px-2 py-2">代码</th><th class="px-2 py-2">样本</th><th class="px-2 py-2">直接通过</th><th class="px-2 py-2">修改</th><th class="px-2 py-2">驳回</th><th class="px-2 py-2">来源有效</th><th class="px-2 py-2">关系类型一致</th></tr></thead><tbody>${comparisons}</tbody></table></div></details>` : ''}
+      <details class="mt-3"><summary class="min-h-[44px] cursor-pointer text-xs font-bold">样本人工判断（${evaluation.samples.length}）</summary>${samples || '<p class="text-xs text-stone-500">当前版本还没有样本。请从已确认或已驳回建议中手动挑选。</p>'}</details></section>`;
+  }
+  async function selectEvaluationSample(candidateId, split) {
+    if (busy) return;
+    busy = true;
+    try {
+      await callAdmin({ action: 'selectAgentEvaluationSample', setId: evaluation.selectedSet.id, reviewId: candidateId, split });
+      message.textContent = `已加入${splitText(split)}。`;
+      await load();
+    } catch (error) { message.textContent = error.message; }
+    finally { busy = false; }
+  }
+  function bindEvaluationActions() {
+    list.querySelector('[data-evaluation-set]')?.addEventListener('change', event => { evaluationSetId = event.target.value; load(); });
+    list.querySelector('[data-create-set]')?.addEventListener('click', async () => {
+      const version = list.querySelector('[data-new-version]').value.trim();
+      if (!version || busy) return;
+      busy = true;
+      try {
+        const result = await callAdmin({ action: 'createAgentEvaluationSet', version });
+        evaluationSetId = result.set.id;
+        message.textContent = '新评测版本已创建。';
+        await load();
+      } catch (error) { message.textContent = error.message; }
+      finally { busy = false; }
+    });
+    list.querySelectorAll('[data-evaluation-sample]').forEach(element => {
+      element.querySelector('[data-save-rating]')?.addEventListener('click', async () => {
+        const rating = element.querySelector('[data-human-rating]').value;
+        if (!rating || busy) return;
+        busy = true;
+        try {
+          await callAdmin({ action: 'rateAgentEvaluationSample', evaluationId: element.dataset.evaluationSample,
+            rating, ratingNote: element.querySelector('[data-rating-note]').value.trim() });
+          element.querySelector('[data-eval-result]').textContent = `当前：${rateText(rating)}`;
+          message.textContent = '人工判断已保存。';
+        } catch (error) { message.textContent = error.message; }
+        finally { busy = false; }
+      });
+    });
+  }
   async function load() {
     const token = ++generation;
     setActiveView('agent-review', '研究建议');
     viewCount.textContent = '';
     list.innerHTML = '<p class="text-sm text-stone-500">正在整理建议和来源…</p>';
     try {
-      const result = await callAdmin({ action: 'getAgentReviewWorkspace', offset, status });
+      const [result, evaluationResult] = await Promise.all([
+        callAdmin({ action: 'getAgentReviewWorkspace', offset, status }),
+        callAdmin({ action: 'getAgentEvaluationWorkspace', setId: evaluationSetId })
+      ]);
       if (token !== generation) return;
       workspace = result;
+      evaluation = evaluationResult;
+      evaluationSetId = evaluation.selectedSet?.id || '';
       viewCount.textContent = `本页 ${workspace.candidates.length} 条`;
-      list.innerHTML = `<section class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"><div class="flex flex-wrap items-center gap-3">
+      list.innerHTML = `${evaluationPanel()}<section class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"><div class="flex flex-wrap items-center gap-3">
       <label class="text-xs">查看 <select data-status class="${field}">${options([['pending_review','待核对'],['approved','已确认'],['rejected','已驳回']], status)}</select></label>
       <button data-refresh class="${button}">刷新建议</button>${status === 'pending_review' ? `<button data-batch-approve class="${primary}">确认选中项</button><button data-batch-reject class="${button}">驳回选中项</button>` : ''}</div>
       <p class="mt-3 text-xs text-stone-500">先核对实体，再确认关联。高风险判断需逐条处理；每次最多选择 20 条。</p></section>
@@ -141,6 +210,7 @@
       list.querySelector('[data-refresh]').onclick = load;
       list.querySelector('[data-prev]').onclick = () => { offset = Math.max(0, offset - 30); load(); };
       list.querySelector('[data-next]').onclick = () => { offset = workspace.nextOffset; load(); };
+      bindEvaluationActions();
       list.querySelectorAll('[data-candidate]').forEach(el => {
         el.querySelector('[data-gap-save]')?.addEventListener('click', () => saveGap(el, false));
         el.querySelector('[data-gap-publish]')?.addEventListener('click', () => saveGap(el, true));
@@ -157,6 +227,7 @@
         };
         el.querySelector('[data-field="resourceId"]')?.addEventListener('change', refreshMergeOptions);
         el.querySelector('[data-field="entityType"]')?.addEventListener('change', refreshMergeOptions);
+        el.querySelectorAll('[data-add-eval]').forEach(button => button.addEventListener('click', () => selectEvaluationSample(el.dataset.candidate, button.dataset.addEval)));
       });
       for (const decision of ['approve','reject']) {
         list.querySelector(`[data-batch-${decision}]`)?.addEventListener('click', () => review([...list.querySelectorAll('[data-select]:checked')].map(e => e.closest('[data-candidate]')), decision));

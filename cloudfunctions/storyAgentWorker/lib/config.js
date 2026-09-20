@@ -51,7 +51,8 @@ function loadConfig(env = process.env) {
     minTextChars: boundedInteger(env.AGENT_MIN_TEXT_CHARS, 16, 8, 200),
     inputPricePerMillion: boundedNumber(env.AGENT_INPUT_PRICE_PER_MILLION, 1, 0, 1000),
     outputPricePerMillion: boundedNumber(env.AGENT_OUTPUT_PRICE_PER_MILLION, 4, 0, 1000),
-    promptVersion: 'cultural-research-agent-shadow-v1'
+    promptVersion: 'cultural-research-agent-shadow-v1',
+    codeVersion: String(env.AGENT_CODE_VERSION || 'story-agent-code-v1').trim().slice(0, 100)
   };
 }
 
@@ -70,7 +71,8 @@ function publicConfig(config) {
     maxCallsPerJob: config.maxCallsPerJob,
     maxOutputTokens: config.maxOutputTokens,
     topResourceLimit: config.topResourceLimit,
-    promptVersion: config.promptVersion
+    promptVersion: config.promptVersion,
+    codeVersion: config.codeVersion
   };
 }
 

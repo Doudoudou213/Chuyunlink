@@ -49,6 +49,7 @@ const storyGapTaskService = createStoryGapTaskService({ db });
 const storyGraphService = createAdminStoryGraphService({ db });
 const storyAgentReviewService = require('./domains/story-agent-reviews').createStoryAgentReviewService({ db });
 const storyAgentGapService = require('./domains/story-agent-gaps').createStoryAgentGapService({ db });
+const storyAgentEvaluationService = require('./domains/story-agent-evaluations').createStoryAgentEvaluationService({ db });
 let interactionCollectionsReady = null;
 
 async function ensureInteractionCollections() {
@@ -1346,6 +1347,10 @@ exports.main = async (event = {}) => {
     if (action === 'reviewAgentCandidates') return await storyAgentReviewService.review(event, callerUid);
     if (action === 'saveAgentGapDraft') return await storyAgentGapService.save(event, callerUid);
     if (action === 'publishAgentGapDraft') return await storyAgentGapService.save(event, callerUid, true);
+    if (action === 'getAgentEvaluationWorkspace') return await storyAgentEvaluationService.workspace(event);
+    if (action === 'createAgentEvaluationSet') return await storyAgentEvaluationService.createSet(event, callerUid);
+    if (action === 'selectAgentEvaluationSample') return await storyAgentEvaluationService.selectSample(event, callerUid);
+    if (action === 'rateAgentEvaluationSample') return await storyAgentEvaluationService.rateSample(event, callerUid);
     if (action === 'list') return await listSubmissions(event);
     if (action === 'review') return await reviewSubmission(event, callerUid);
     if (action === 'bindSubmissionResource') return await bindSubmissionResource(event, callerUid);

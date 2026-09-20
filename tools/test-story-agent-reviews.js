@@ -58,6 +58,10 @@ async function main() {
   assert.equal(Object.keys(db.data().story_relations).length, 1);
   assert.equal(Object.keys(db.data().story_agent_reviews).length, 2);
   assert.equal(db.data().story_agent_reviews.relation1.original.reason, fixture().story_agent_candidates.relation1.payload.reason);
+  assert.equal(db.data().story_agent_reviews.relation1.reasonCategory, 'accepted_as_is');
+  assert.deepEqual(db.data().story_agent_reviews.relation1.changedFields, []);
+  assert.equal(db.data().story_agent_reviews.relation1.candidateType, 'relation');
+  assert.equal(db.data().story_agent_reviews.relation1.codeVersion, 'legacy');
   const workspace = await service.workspace({ status: 'approved' });
   assert.equal(workspace.candidates.length, 2);
   assert.equal(JSON.stringify(workspace).includes('reviewerId'), false);
@@ -132,6 +136,7 @@ async function main() {
   assert.equal(mixed.results[1].code, 'REVIEW_REASON_REQUIRED');
   assert.equal(Object.keys(rejectedDb.data().story_entities).length, 0);
   assert.equal(rejectedDb.data().story_agent_reviews[entityKey].note, '材料中无法辨认该纹样');
+  assert.equal(rejectedDb.data().story_agent_reviews[entityKey].reasonCategory, 'other');
   const manySeed = fixture();
   manySeed.story_agent_candidates = Object.fromEntries(Array.from({length:35},(_,i)=>[`candidate_${String(i).padStart(2,'0')}`, manySeed.story_agent_candidates[entityKey]]));
   const many = createStoryAgentReviewService({ db: fakeDb(manySeed) });

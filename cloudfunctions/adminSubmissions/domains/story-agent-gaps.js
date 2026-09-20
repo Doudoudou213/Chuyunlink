@@ -69,7 +69,10 @@ function createStoryAgentGapService({ db }) {
       if (publish) {
         await tx.collection('story_agent_candidates').doc(key).update({ status: 'approved', gapTaskId: taskId, reviewedAt: db.serverDate() });
         await tx.collection('story_agent_reviews').doc(key).set({ candidateId: key, jobId: candidate.jobId, decision: 'publish_gap_task', original: candidate.payload,
-          final: content, taskId, reviewerId, model: job.model || '', promptVersion: job.promptVersion || '', createdAt: db.serverDate() });
+          final: content, taskId, submissionId: candidate.submissionId, candidateType: 'gap', risk: candidate.risk || '',
+          reasonCategory: 'published_gap_task', changedFields: Object.keys(content), evidenceLinkIds: [], reviewerId,
+          model: job.model || '', promptVersion: job.promptVersion || '', codeVersion: job.codeVersion || 'legacy',
+          inputFingerprint: job.idempotencyKey || '', createdAt: db.serverDate() });
       }
       return { ok: true, task: { ...publicTask({ ...record, _id: taskId }), draftVersion: record.draftVersion } };
     });

@@ -22,6 +22,7 @@ function inputFingerprint(config, submissionId, input) {
     provider: config.provider,
     model: config.textModel,
     promptVersion: config.promptVersion,
+    codeVersion: config.codeVersion,
     submissionId,
     input
   }, 48);

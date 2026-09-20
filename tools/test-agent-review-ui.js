@@ -39,6 +39,11 @@ async function main() {
       window.calls = [];
       callAdmin = async request => {
         calls.push(request);
+        if (request.action === 'getAgentEvaluationWorkspace') return { ok:true,
+          sets:[{id:'agent_feedback_v1',version:'feedback-v1',title:'管理员反馈评测集 V1',status:'active'}],
+          selectedSet:{id:'agent_feedback_v1',version:'feedback-v1',title:'管理员反馈评测集 V1',status:'active'},
+          metrics:{total:0,activeTotal:0,directApprovalRate:0,modificationRate:0,rejectionRate:0,sourceValidityRate:0,relationTypeConsistencyRate:0,ratingCounts:{correct:0,partial:0,incorrect:0,unrated:0}},
+          comparisons:[],samples:[],selectedReviewIds:[] };
         if (request.action === 'getAgentReviewWorkspace') return { ok:true, candidates:mockRows.filter(c=>c.status===request.status),
           nextOffset:null, resources:[{id:'r1',title:'随州木雕花窗'}], entities:[], stories:[{id:'story1',resourceId:'r1',title:'花窗故事',chapters:[{index:0,title:'花窗构造'}]}] };
         if (request.action === 'saveAgentGapDraft' || request.action === 'publishAgentGapDraft') return { ok:true, task:{...request, draftVersion:1, status:request.action === 'saveAgentGapDraft' ? 'draft':'published'} };

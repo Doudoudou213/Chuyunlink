@@ -210,6 +210,7 @@ async function ensureJob(config, adminUid, submissionId, input) {
       provider: config.provider,
       model: config.textModel,
       promptVersion: config.promptVersion,
+      codeVersion: config.codeVersion,
       input,
       createdBy: adminUid,
       createdAt: db.serverDate(),

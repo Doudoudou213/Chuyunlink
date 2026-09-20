@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const { ENTITY_TYPES, RELATION_TYPES, entityIdFor, relationIdFor } = require('./story-graph');
 const COLLECTIONS = ['story_agent_candidates', 'story_agent_jobs', 'story_agent_reviews', 'story_gap_tasks', 'story_gap_task_logs'];
 const HIGH_RISK = new Set(['associated_with_person', 'associated_with_event', 'changed_over_time', 'influenced_or_transmitted_to']);
+const REASON_CATEGORIES = new Set(['accepted_as_is', 'wording_adjusted', 'type_corrected', 'duplicate_merged',
+  'source_insufficient', 'unsupported_claim', 'wrong_target', 'missing_context', 'other']);
 const text = (v, n = 500) => String(v == null ? '' : v).trim().slice(0, n);
 const first = r => Array.isArray(r && r.data) ? r.data[0] : r && r.data;
 const fail = (code, message) => { throw Object.assign(new Error(message), { code }); };
@@ -15,6 +17,17 @@ const hasCurrentAiConsent = item => Boolean(item && item.status === 'approved' &
   && !item.aiConsentRevokedAt && item.aiAnalysisStatus !== 'consent_revoked');
 const candidateId = (jobId, key) => 'agent_candidate_' + crypto.createHash('sha256')
   .update(JSON.stringify({ candidateKey: key, candidateType: 'entity', jobId })).digest('hex').slice(0, 40);
+
+function changedFields(candidateType, payload, final, edits, originalResourceId = '') {
+  if (!final) return [];
+  const pairs = candidateType === 'relation'
+    ? [['relationType', payload.relationType, final.relationType], ['why', payload.reason, final.why]]
+    : [['name', payload.name, final.name], ['entityType', payload.entityType, final.entityType],
+      ['summary', payload.summary, final.summary], ['resourceId', originalResourceId || payload.toResourceId || '', final.resourceId || ''],
+      ['mergeEntityId', '', final.mergedInto || '']];
+  return pairs.filter(([key, before, after]) => Object.prototype.hasOwnProperty.call(edits || {}, key)
+    && String(before == null ? '' : before).trim() !== String(after == null ? '' : after).trim()).map(([key]) => key);
+}
 
 function createStoryAgentReviewService({ db }) {
   let ready;
@@ -156,8 +169,16 @@ function createStoryAgentReviewService({ db }) {
       }
       // All validation reads finish before any transaction write. Review and formal data commit together.
       for (const [collection, recordId, record] of writes) await tx.collection(collection).doc(recordId).set(record);
+      const originalResourceId = p.toResourceId || job.input && job.input.submission && job.input.submission.boundResourceId || '';
+      const changes = changedFields(c.candidateType, p, final, edits, originalResourceId);
+      const defaultReason = request.decision === 'reject' ? 'other' : changes.length ? 'wording_adjusted' : 'accepted_as_is';
+      let reasonCategory = REASON_CATEGORIES.has(request.reasonCategory) ? request.reasonCategory : defaultReason;
+      if (request.decision === 'reject' && reasonCategory === 'accepted_as_is') reasonCategory = 'other';
+      if (request.decision === 'approve' && changes.length && reasonCategory === 'accepted_as_is') reasonCategory = 'wording_adjusted';
       await tx.collection('story_agent_reviews').doc(key).set({ candidateId: key, jobId: c.jobId, decision: request.decision,
-        original: p, final, note, model: job.model || '', promptVersion: job.promptVersion || '', inputFingerprint: job.idempotencyKey || '',
+        submissionId: c.submissionId, candidateType: c.candidateType, risk: c.risk || '', original: p, final, note,
+        reasonCategory, changedFields: changes, evidenceLinkIds: p.evidenceLinkIds || [],
+        model: job.model || '', promptVersion: job.promptVersion || '', codeVersion: job.codeVersion || 'legacy', inputFingerprint: job.idempotencyKey || '',
         reviewerId, createdAt: db.serverDate() });
       await tx.collection('story_agent_candidates').doc(key).update({ status: finalStatus, formalEntityId, formalRelationId, reviewedAt: db.serverDate() });
       await tx.collection('story_graph_logs').doc(`agent_${key}`).set({ action: `agent_${request.decision}`, candidateId: key,
@@ -178,4 +199,4 @@ function createStoryAgentReviewService({ db }) {
   }
   return { workspace, review };
 }
-module.exports = { createStoryAgentReviewService, candidateId, HIGH_RISK };
+module.exports = { createStoryAgentReviewService, candidateId, HIGH_RISK, changedFields };
