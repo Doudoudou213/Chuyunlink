@@ -9,6 +9,7 @@ const {
   evidenceContextFromInput,
   assessStoryQuality
 } = require('./lib/story-quality');
+const { assembleSectionRevision } = require('./lib/story-contract');
 
 const app = cloudbase.init({ env: process.env.TCB_ENV || cloudbase.SYMBOL_CURRENT_ENV });
 const db = app.database();
@@ -175,6 +176,17 @@ function storyDraftJobId(config, resourceId, input) {
 
 function storyDraftIdFor(jobId) {
   return `story_${jobId.slice('ai_draft_'.length)}`;
+}
+
+function sectionRevisionJobId(config, storyId, targetChapterIndex, input) {
+  const fingerprint = crypto.createHash('sha256').update(JSON.stringify({ provider: config.provider,
+    model: config.textModel, promptVersion: config.sectionRevisionPromptVersion,
+    storyId, targetChapterIndex, input })).digest('hex').slice(0, 32);
+  return `ai_section_${fingerprint}`;
+}
+
+function sectionRevisionDraftIdFor(jobId) {
+  return `revision_${jobId.slice('ai_section_'.length)}`;
 }
 
 function storyReadiness(input) {
@@ -742,6 +754,167 @@ async function runStoryDraft(config, adminUid, event) {
   }
 }
 
+async function loadSectionSources(reader, resourceId, sourceLinkIds) {
+  const sources = [];
+  for (const sourceLinkId of sourceLinkIds) {
+    const link = firstDocument(await reader.collection(LINK_COLLECTION).doc(sourceLinkId).get());
+    if (!link || link.status !== 'confirmed' || link.needsSourceReview === true || link.resourceId !== resourceId) {
+      throw Object.assign(new Error('所选章节来源已失效或不属于当前资源'), { code: 'STORY_SOURCE_CHANGED' });
+    }
+    const submission = firstDocument(await reader.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get());
+    if (!hasCurrentAiConsent(submission)) {
+      throw Object.assign(new Error('所选章节来源未授权、已撤回或不可用'), { code: 'STORY_SOURCE_CHANGED' });
+    }
+    sources.push({
+      linkId: sourceLinkId,
+      relationType: cleanText(link.relationType || 'supports_story', 40),
+      evidenceSummary: cleanText(link.evidenceSummary, 500),
+      submission: {
+        title: cleanText(submission.title || submission.description || '社区投稿', 120),
+        description: cleanText(submission.description, 900),
+        assetType: cleanText(submission.assetType || 'text', 20),
+        regionName: cleanText(submission.regionName || '湖北', 80)
+      }
+    });
+  }
+  return sources;
+}
+
+async function buildSectionRevisionInput(storyId, targetChapterIndex, requestedSourceLinkIds, reader = db) {
+  const story = firstDocument(await reader.collection(STORY_COLLECTION).doc(storyId).get());
+  if (!story || story.status !== 'published' || story.needsSourceReview === true) {
+    throw Object.assign(new Error('只能修订当前有效的已发布故事'), { code: 'PUBLISHED_STORY_REQUIRED' });
+  }
+  const chapters = Array.isArray(story.chapters) ? story.chapters : [];
+  const targetChapter = chapters[targetChapterIndex];
+  if (!targetChapter) throw Object.assign(new Error('目标章节不存在'), { code: 'INVALID_REVISION_TARGET' });
+  const requiredSourceLinkIds = [...new Set(requestedSourceLinkIds)];
+  const existingSourceIds = [...new Set((Array.isArray(targetChapter.sourceLinkIds) ? targetChapter.sourceLinkIds : [])
+    .map((sourceId) => cleanId(sourceId, '来源')))];
+  const newSourceIds = requiredSourceLinkIds.filter((sourceId) => !existingSourceIds.includes(sourceId));
+  if (!newSourceIds.length) {
+    throw Object.assign(new Error('请至少选择一条尚未用于该章节的新来源'), { code: 'NEW_SECTION_SOURCE_REQUIRED' });
+  }
+  const sourceLinkIds = [...new Set([...existingSourceIds, ...requiredSourceLinkIds])];
+  const sources = await loadSectionSources(reader, story.resourceId, sourceLinkIds);
+  const resource = firstDocument(await reader.collection(RESOURCE_COLLECTION).doc(story.resourceId || '').get());
+  if (!resource || resource.status !== 'published') {
+    throw Object.assign(new Error('故事对应资源已不可用'), { code: 'PUBLISHED_RESOURCE_REQUIRED' });
+  }
+  return {
+    storyContext: {
+      storyId,
+      version: Math.max(1, Number(story.version) || 1),
+      resourceId: story.resourceId,
+      resourceTitle: cleanText(story.resourceTitle || resource.title, 120),
+      storyTitle: cleanText(story.title, 24),
+      introduction: cleanText(story.introduction, 150),
+      closing: cleanText(story.closing, 120),
+      targetChapterIndex
+    },
+    targetChapter: {
+      title: cleanText(targetChapter.title, 24),
+      body: cleanText(targetChapter.body, 1200),
+      sourceLinkIds: existingSourceIds
+    },
+    sources,
+    requiredSourceLinkIds: newSourceIds
+  };
+}
+
+async function ensureSectionRevisionJob(config, adminUid, storyId, targetChapterIndex, input) {
+  const jobId = sectionRevisionJobId(config, storyId, targetChapterIndex, input);
+  const ref = db.collection(JOB_COLLECTION).doc(jobId);
+  let current = firstDocument(await ref.get());
+  if (!current) {
+    await ref.set({ type: 'sourced_section_revision_draft', schemaVersion: 1, idempotencyKey: jobId,
+      storyId, resourceId: input.storyContext.resourceId, targetChapterIndex, status: 'pending', attempts: 0,
+      maxAttempts: config.maxAttempts, provider: config.provider, model: config.textModel,
+      promptVersion: config.sectionRevisionPromptVersion, input, synthetic: false, createdBy: adminUid,
+      createdAt: db.serverDate(), updatedAt: db.serverDate() });
+    current = firstDocument(await ref.get());
+  }
+  return { jobId, job: current };
+}
+
+async function runSectionRevisionDraft(config, adminUid, event) {
+  if (!config.enabled) throw Object.assign(new Error('AI_ENABLED 仍为 false'), { code: 'AI_DISABLED' });
+  if (!config.apiKey) throw Object.assign(new Error('尚未配置 TOKENHUB_API_KEY'), { code: 'AI_KEY_NOT_CONFIGURED' });
+  const storyId = cleanId(event.storyId, '故事');
+  const targetChapterIndex = Number(event.targetChapterIndex);
+  if (!Number.isInteger(targetChapterIndex) || targetChapterIndex < 0 || targetChapterIndex > 20) {
+    throw Object.assign(new Error('请选择需要修订的章节'), { code: 'INVALID_REVISION_TARGET' });
+  }
+  const requestedSourceLinkIds = [...new Set((Array.isArray(event.sourceLinkIds) ? event.sourceLinkIds : [])
+    .slice(0, 8).map((sourceId) => cleanId(sourceId, '来源')))];
+  if (!requestedSourceLinkIds.length) {
+    throw Object.assign(new Error('请至少选择一条新增来源'), { code: 'NEW_SECTION_SOURCE_REQUIRED' });
+  }
+  const input = await buildSectionRevisionInput(storyId, targetChapterIndex, requestedSourceLinkIds);
+  const { jobId } = await ensureSectionRevisionJob(config, adminUid, storyId, targetChapterIndex, input);
+  const acquired = await acquireJob(jobId, config);
+  const draftId = sectionRevisionDraftIdFor(jobId);
+  if (acquired.cached) return { ok: true, action: 'generateSectionRevisionDraft', cached: true, storyId, draftId };
+  let dayId = '';
+  try {
+    const client = createTokenHubClient({ config });
+    const revisionInput = acquired.job.input || input;
+    const result = await client.draftSectionRevision(revisionInput, { beforeAttempt: async () => {
+      const latestInput = await buildSectionRevisionInput(storyId, targetChapterIndex, requestedSourceLinkIds);
+      if (sectionRevisionJobId(config, storyId, targetChapterIndex, latestInput) !== jobId) {
+        throw Object.assign(new Error('故事或来源状态已变化，请重新生成'), { code: 'STORY_SOURCE_CHANGED' });
+      }
+      dayId = await reserveDailyCall(config, jobId);
+    } });
+    const qualityStory = { title: revisionInput.storyContext.storyTitle,
+      introduction: revisionInput.storyContext.introduction, chapters: [result.output.chapter],
+      closing: revisionInput.storyContext.closing };
+    const qualityAssessment = assessStoryQuality(qualityStory, evidenceContextFromInput({
+      resource: { title: revisionInput.storyContext.resourceTitle }, sources: revisionInput.sources
+    }));
+    if (qualityAssessment.hardFailures.length) {
+      await recordCompletedUsage(dayId, jobId, result.usage);
+      throw Object.assign(new Error('章节修订未通过来源、结构或隐私检查，未保存草稿'), { code: 'AI_SECTION_QUALITY_BLOCKED' });
+    }
+    await db.runTransaction(async (transaction) => {
+      const latestInput = await buildSectionRevisionInput(storyId, targetChapterIndex, requestedSourceLinkIds, transaction);
+      if (sectionRevisionJobId(config, storyId, targetChapterIndex, latestInput) !== jobId) {
+        throw Object.assign(new Error('故事或来源状态已变化，已停止保存草稿'), { code: 'STORY_SOURCE_CHANGED' });
+      }
+      const parentStory = firstDocument(await transaction.collection(STORY_COLLECTION).doc(storyId).get());
+      const assembled = assembleSectionRevision(parentStory, targetChapterIndex, result.output);
+      if (JSON.stringify(assembled.chapters[targetChapterIndex]) === JSON.stringify(latestInput.targetChapter)) {
+        throw Object.assign(new Error('模型没有形成实际章节修改'), { code: 'AI_SECTION_UNCHANGED' });
+      }
+      const now = db.serverDate();
+      await transaction.collection(STORY_COLLECTION).doc(draftId).set({
+        resourceId: parentStory.resourceId, resourceTitle: parentStory.resourceTitle || latestInput.storyContext.resourceTitle,
+        ...assembled, sourceLinkIds: [...new Set(assembled.chapters.flatMap((chapter) => chapter.sourceLinkIds))],
+        status: 'draft', version: Math.max(1, Number(parentStory.version) || 1) + 1,
+        revisionMode: 'section_patch', parentStoryId: storyId,
+        previousVersion: Math.max(1, Number(parentStory.version) || 1), targetChapterIndex,
+        revisionReason: cleanText(event.revisionReason || '根据新增来源生成单章节修订草稿', 300),
+        revisionSummary: result.output.revisionSummary, generatedBy: 'section_revision_agent',
+        aiInputSourceLinkIds: latestInput.sources.map((source) => source.linkId),
+        requiredSourceLinkIds: latestInput.requiredSourceLinkIds, provider: config.provider,
+        model: config.textModel, promptVersion: config.sectionRevisionPromptVersion, jobId, usage: result.usage,
+        qualityAssessment, publicationEligible: qualityAssessment.publicationEligible,
+        createdBy: adminUid, createdAt: now, updatedAt: now
+      });
+      await transaction.collection(JOB_COLLECTION).doc(jobId).update({ status: 'completed', storyDraftId: draftId,
+        finishedAt: now, lockedAt: null, lockedBy: '', updatedAt: now });
+    });
+    await recordCompletedUsage(dayId, jobId, result.usage);
+    return { ok: true, action: 'generateSectionRevisionDraft', cached: false, storyId, draftId };
+  } catch (error) {
+    const safeError = { code: cleanText(error && error.code || 'AI_SECTION_REVISION_FAILED', 80),
+      message: cleanText(error && error.message || 'AI 章节修订失败', 500), retryable: error && error.retryable === true };
+    try { await db.collection(JOB_COLLECTION).doc(jobId).update({ status: 'failed', lastError: safeError,
+      lockedAt: null, lockedBy: '', finishedAt: db.serverDate(), updatedAt: db.serverDate() }); } catch (_) {}
+    throw Object.assign(new Error(safeError.message), { code: safeError.code });
+  }
+}
+
 async function storyDraftWorkspace() {
   const [linkResult, resourceResult, storyResult] = await Promise.all([
     db.collection(LINK_COLLECTION).limit(100).get(),
@@ -822,7 +995,12 @@ async function storyDraftWorkspace() {
     targetChapterIndex: item.targetChapterIndex != null && Number.isInteger(Number(item.targetChapterIndex)) ? Number(item.targetChapterIndex) : null,
     revisionReason: cleanText(item.revisionReason, 300),
     revisionSummary: cleanText(item.revisionSummary, 180),
-    revisionDiff: item.revisionDiff || null
+    revisionDiff: item.revisionDiff || null,
+    generatedBy: item.generatedBy || '',
+    aiInputSourceLinkIds: Array.isArray(item.aiInputSourceLinkIds) ? item.aiInputSourceLinkIds : [],
+    requiredSourceLinkIds: Array.isArray(item.requiredSourceLinkIds) ? item.requiredSourceLinkIds : [],
+    model: item.model || '',
+    promptVersion: item.promptVersion || ''
   }));
   return {
     ok: true,
@@ -934,6 +1112,7 @@ exports.main = async (event = {}) => {
     if (action === 'analyzeSubmission') return await runSubmissionAnalysis(config, adminUid, event);
     if (action === 'getStoryDraftWorkspace') return await storyDraftWorkspace();
     if (action === 'generateStoryDraft') return await runStoryDraft(config, adminUid, event);
+    if (action === 'generateSectionRevisionDraft') return await runSectionRevisionDraft(config, adminUid, event);
     if (action === 'runSyntheticTest') return await runSyntheticTest(config, adminUid);
     return { ok: false, error: { code: 'INVALID_ACTION', message: '不支持的 AI 操作' } };
   } catch (error) {

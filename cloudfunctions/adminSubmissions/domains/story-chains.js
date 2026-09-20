@@ -29,6 +29,13 @@ function firstDocument(result) {
   return result.data || null;
 }
 
+function hasCurrentAiConsent(item) {
+  return Boolean(item && item.status === 'approved' && item.aiAnalysisConsent === true
+    && item.aiConsentVersion === 'ai-analysis-consent-v1'
+    && item.aiConsentScope === 'approved_public_submission_text'
+    && !item.aiConsentRevokedAt && item.aiAnalysisStatus !== 'consent_revoked');
+}
+
 function normalizeChapters(value) {
   const chapters = (Array.isArray(value) ? value : []).slice(0, 2).map((item) => ({
     title: cleanText(item && item.title, 24),
@@ -137,7 +144,7 @@ function createAdminStoryChainService({ db }) {
         linkId,
         link: firstDocument(await transaction.collection(LINK_COLLECTION).doc(linkId).get())
       })));
-      if (linkStates.some(({ link }) => !link || link.status !== 'confirmed' || link.resourceId !== draft.resourceId)) {
+      if (linkStates.some(({ link }) => !link || link.status !== 'confirmed' || link.needsSourceReview === true || link.resourceId !== draft.resourceId)) {
         throw Object.assign(new Error('故事引用了失效或不属于该资源的链迹'), { code: 'INVALID_STORY_SOURCE' });
       }
       const submissionStates = await Promise.all(linkStates.map(async ({ link }) => (
@@ -145,6 +152,23 @@ function createAdminStoryChainService({ db }) {
       )));
       if (submissionStates.some((submission) => !submission || submission.status !== 'approved')) {
         throw Object.assign(new Error('故事引用的投稿已不再公开'), { code: 'INVALID_STORY_SUBMISSION' });
+      }
+      if (draft.generatedBy === 'section_revision_agent') {
+        const aiInputSourceLinkIds = [...new Set((Array.isArray(draft.aiInputSourceLinkIds) ? draft.aiInputSourceLinkIds : [])
+          .map((sourceId) => cleanId(sourceId, 'AI 来源')))];
+        const requiredSourceLinkIds = [...new Set((Array.isArray(draft.requiredSourceLinkIds) ? draft.requiredSourceLinkIds : [])
+          .map((sourceId) => cleanId(sourceId, '新增来源')))];
+        if (!aiInputSourceLinkIds.length || requiredSourceLinkIds.some((sourceId) => !chapters[Number(draft.targetChapterIndex)].sourceLinkIds.includes(sourceId))) {
+          throw Object.assign(new Error('AI 章节修订缺少生成时使用的新增来源'), { code: 'AI_REVISION_SOURCE_MISSING' });
+        }
+        for (const sourceId of aiInputSourceLinkIds) {
+          const link = firstDocument(await transaction.collection(LINK_COLLECTION).doc(sourceId).get());
+          const submission = link && firstDocument(await transaction.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get());
+          if (!link || link.status !== 'confirmed' || link.needsSourceReview === true
+            || link.resourceId !== draft.resourceId || !hasCurrentAiConsent(submission)) {
+            throw Object.assign(new Error('AI 章节修订使用的来源授权或状态已变化'), { code: 'AI_REVISION_SOURCE_CHANGED' });
+          }
+        }
       }
       const sourceTextById = {};
       linkStates.forEach(({ linkId, link }, index) => {

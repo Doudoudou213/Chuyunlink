@@ -52,6 +52,7 @@ const requiredFiles = [
   'tools/test-ai-consent-withdrawal.js',
   'tools/test-story-agent-evaluation.js',
   'tools/test-story-agent-feedback-evaluation.js',
+  'tools/test-story-section-agent.js',
   'tools/test-map-personalization.js',
   'tools/initialize-story-worker.ps1',
   '.github/workflows/initialize-story-worker.yml',

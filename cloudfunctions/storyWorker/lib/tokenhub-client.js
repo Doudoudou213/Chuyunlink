@@ -2,7 +2,7 @@
 
 const https = require('https');
 const { ANALYSIS_SCHEMA, RELATION_TYPE_VALUES, validateAnalysis } = require('./contract');
-const { STORY_DRAFT_SCHEMA, validateStoryDraft } = require('./story-contract');
+const { STORY_DRAFT_SCHEMA, SECTION_REVISION_SCHEMA, validateStoryDraft, validateSectionRevisionOutput } = require('./story-contract');
 
 function retryAfterMs(value) {
   const raw = String(value || '').trim();
@@ -222,7 +222,68 @@ function createTokenHubClient({ config, transport = requestJson }) {
     }
     throw Object.assign(new Error('模型接口未返回可用故事草稿'), { code: 'AI_NO_VALID_STORY' });
   }
-  return { analyze, draftStory };
+
+  async function draftSectionRevision(input, hooks = {}) {
+    const sources = Array.isArray(input.sources) ? input.sources : [];
+    const allowedSourceIds = sources.map((item) => item.linkId);
+    const requiredSourceIds = Array.isArray(input.requiredSourceLinkIds) ? input.requiredSourceLinkIds : [];
+    const body = {
+      model: config.textModel,
+      stream: false,
+      temperature: 0.1,
+      max_tokens: Math.min(config.maxOutputTokens, 1200),
+      thinking: { type: 'disabled' },
+      reasoning_effort: 'low',
+      messages: [
+        {
+          role: 'system',
+          content: '你是楚韵链迹的章节修订助手。只修改输入中的目标章节，不重写整篇故事。只能依据给定来源，不得补写来源没有支持的年代、人物、因果或传承结论。必须保留每段判断对应的 sourceLinkIds，并使用全部 requiredSourceLinkIds。只返回一个 chapter 和 revisionSummary；不得返回故事标题、导语、其他章节或结语。严格按照 JSON Schema 输出。'
+        },
+        {
+          role: 'user',
+          content: JSON.stringify({
+            task: '根据新增且已确认的来源，生成单个目标章节的修订草稿',
+            storyContext: input.storyContext,
+            targetChapter: input.targetChapter,
+            sources,
+            requiredSourceLinkIds: requiredSourceIds,
+            constraints: ['只输出目标章节', '保留来源编号', '证据不足时不要生成']
+          })
+        }
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: { name: 'chulink_section_revision_draft', strict: true, schema: SECTION_REVISION_SCHEMA }
+      }
+    };
+    const maxAttempts = Math.max(1, Number(config.providerMaxAttempts) || 1);
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      if (typeof hooks.beforeAttempt === 'function') await hooks.beforeAttempt(attempt);
+      try {
+        const response = await transport(`${config.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${config.apiKey}`, 'Content-Type': 'application/json', 'User-Agent': 'ChuLink-StoryWorker/1.3' }
+        }, JSON.stringify(body), config.requestTimeoutMs);
+        const output = validateSectionRevisionOutput(parseModelContent(response), allowedSourceIds, requiredSourceIds);
+        const usage = response.usage || {};
+        return { output, providerAttempts: attempt, providerRequestId: String(response.id || '').slice(0, 160), usage: {
+          inputTokens: Math.max(0, Number(usage.prompt_tokens || usage.input_tokens) || 0),
+          outputTokens: Math.max(0, Number(usage.completion_tokens || usage.output_tokens) || 0),
+          totalTokens: Math.max(0, Number(usage.total_tokens) || 0)
+        } };
+      } catch (error) {
+        if (/^AI_(?:INVALID|EMPTY|UNKNOWN|REQUIRED)_?/.test(String(error && error.code || ''))) error.retryable = true;
+        error.providerAttempts = attempt;
+        if (!error.retryable || attempt >= maxAttempts) throw error;
+        const delayMs = Math.max(Number(error.retryAfterMs) || 0,
+          Math.min(5000, (Number(config.retryBaseDelayMs) || 1200) * (2 ** (attempt - 1))));
+        if (typeof hooks.onRetry === 'function') await hooks.onRetry({ attempt, delayMs, error });
+        await wait(delayMs);
+      }
+    }
+    throw Object.assign(new Error('模型接口未返回可用章节修订'), { code: 'AI_NO_VALID_SECTION_REVISION' });
+  }
+  return { analyze, draftStory, draftSectionRevision };
 }
 
 module.exports = { createTokenHubClient, parseModelContent, requestJson, retryAfterMs };

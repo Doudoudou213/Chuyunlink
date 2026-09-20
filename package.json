@@ -21,6 +21,7 @@
     "test:ai-consent": "node tools/test-ai-consent-withdrawal.js",
     "test:story-agent-evaluation": "node tools/test-story-agent-evaluation.js",
     "test:story-agent-feedback-evaluation": "node tools/test-story-agent-feedback-evaluation.js",
+    "test:story-section-agent": "node tools/test-story-section-agent.js",
     "test:routes": "node tools/test-map-personalization.js",
     "test:rewards": "node tools/test-reward-security.js",
     "test:miniprogram": "node tools/test-miniprogram-scaffold.js",
