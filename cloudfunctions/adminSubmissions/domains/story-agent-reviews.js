@@ -18,6 +18,80 @@ const hasCurrentAiConsent = item => Boolean(item && item.status === 'approved' &
 const candidateId = (jobId, key) => 'agent_candidate_' + crypto.createHash('sha256')
   .update(JSON.stringify({ candidateKey: key, candidateType: 'entity', jobId })).digest('hex').slice(0, 40);
 
+const normalizedName = value => text(value, 500).normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');
+const normalizedRegion = value => normalizedName(typeof value === 'object'
+  ? [value && value.country, value && value.province, value && value.city, value && value.district].filter(Boolean).join('')
+  : value).replace(/特别行政区|自治区|自治州|地区|省|市|盟|区|县/gu, '');
+const charOverlap = (left, right) => {
+  const a = new Set(normalizedName(left));
+  const b = new Set(normalizedName(right));
+  if (!a.size || !b.size) return 0;
+  let shared = 0;
+  a.forEach(value => { if (b.has(value)) shared += 1; });
+  return shared / Math.max(a.size, b.size);
+};
+
+function bestNameMatch(candidate, entity) {
+  const leftValues = [candidate && candidate.name, ...(Array.isArray(candidate && candidate.aliases) ? candidate.aliases : [])];
+  const rightValues = [entity && entity.name, ...(Array.isArray(entity && entity.aliases) ? entity.aliases : [])];
+  let best = { kind: '', score: 0, reason: '' };
+  leftValues.forEach((leftValue) => rightValues.forEach((rightValue) => {
+    const left = normalizedName(leftValue);
+    const right = normalizedName(rightValue);
+    if (!left || !right) return;
+    let current = { kind: '', score: 0, reason: '' };
+    if (left === right) current = { kind: 'exact', score: 100, reason: '名称或别名完全一致' };
+    else if (Math.min(left.length, right.length) >= 2 && (left.includes(right) || right.includes(left))) {
+      current = { kind: 'contained', score: 62, reason: '一个名称包含另一个名称' };
+    } else {
+      const overlap = charOverlap(left, right);
+      if (overlap >= 0.66) current = { kind: 'similar', score: Math.round(overlap * 70), reason: '名称中的主要文字高度重合' };
+    }
+    if (current.score > best.score) best = current;
+  }));
+  return best;
+}
+
+function rankEntityMatches(candidate, entities, context = {}) {
+  return (Array.isArray(entities) ? entities : []).map((entity) => {
+    if (candidate.entityType && entity.entityType && candidate.entityType !== entity.entityType) return null;
+    const match = bestNameMatch(candidate, entity);
+    if (!match.score) return null;
+    const sameResource = Boolean(context.resourceId && entity.resourceId === context.resourceId);
+    const relationAligned = Boolean(context.resourceId && Array.isArray(entity.relationResourceIds)
+      && entity.relationResourceIds.includes(context.resourceId));
+    const candidateRegion = normalizedRegion(context.region);
+    const entityRegion = normalizedRegion(entity.region);
+    const regionMatches = Boolean(candidateRegion && entityRegion
+      && (candidateRegion.includes(entityRegion) || entityRegion.includes(candidateRegion)));
+    if (candidateRegion && entityRegion && !regionMatches && !sameResource) return null;
+    const reasons = [match.reason];
+    let score = match.score;
+    if (sameResource) { score += 25; reasons.push('关联同一文化资源'); }
+    if (regionMatches) { score += 10; reasons.push('地区信息一致'); }
+    if (relationAligned) { score += 8; reasons.push('已有关系指向同一资源'); }
+    const level = match.kind === 'exact' && (sameResource || regionMatches || relationAligned || (!context.resourceId && !candidateRegion))
+      ? 'strong' : 'review';
+    return { entityId: entity.id || entity._id, name: entity.name, entityType: entity.entityType,
+      resourceId: entity.resourceId || '', level, score, reasons: [...new Set(reasons)] };
+  }).filter(item => item && item.entityId && item.score >= 45)
+    .sort((left, right) => (left.level === right.level ? 0 : left.level === 'strong' ? -1 : 1)
+      || right.score - left.score || String(left.entityId).localeCompare(String(right.entityId)))
+    .slice(0, 5);
+}
+
+function mergedAliases(existing, candidate, editedName) {
+  const canonical = normalizedName(existing && existing.name);
+  const seen = new Set();
+  return [existing && existing.aliases || [], [candidate && candidate.name, editedName], candidate && candidate.aliases || []]
+    .flat().map(value => text(value, 80)).filter(Boolean).filter((value) => {
+      const key = normalizedName(value);
+      if (!key || key === canonical || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 10);
+}
+
 function changedFields(candidateType, payload, final, edits, originalResourceId = '') {
   if (!final) return [];
   const pairs = candidateType === 'relation'
@@ -43,6 +117,19 @@ function createStoryAgentReviewService({ db }) {
     const status = ['pending_review', 'approved', 'rejected'].includes(event.status) ? event.status : 'pending_review';
     const result = await db.collection('story_agent_candidates').where({ status }).orderBy('_id', 'asc').skip(offset).limit(31).get();
     const page = (result.data || []).slice(0, 30);
+    const [entityResult, relationResult] = await Promise.all([
+      db.collection('story_entities').where({ status: 'confirmed' }).limit(200).get(),
+      db.collection('story_relations').where({ status: 'confirmed' }).limit(200).get()
+    ]);
+    const relationResources = new Map();
+    (relationResult.data || []).forEach((relation) => [relation.fromEntityId, relation.toEntityId].filter(Boolean)
+      .forEach((entityId) => {
+        if (!relationResources.has(entityId)) relationResources.set(entityId, new Set());
+        if (relation.resourceId) relationResources.get(entityId).add(relation.resourceId);
+      }));
+    const confirmedEntities = (entityResult.data || []).map(e => ({ id: e._id || e.id, name: e.name,
+      aliases: Array.isArray(e.aliases) ? e.aliases : [], entityType: e.entityType, resourceId: e.resourceId,
+      region: e.region || {}, relationResourceIds: [...(relationResources.get(e._id || e.id) || new Set())], status: e.status }));
     const get = async (collection, key) => first(await db.collection(collection).doc(id(key)).get());
     const candidates = await Promise.all(page.map(async c => {
       const job = await get('story_agent_jobs', c.jobId);
@@ -60,8 +147,10 @@ function createStoryAgentReviewService({ db }) {
       }));
       const sourceCandidate = c.candidateType === 'relation' ? await get('story_agent_candidates', candidateId(c.jobId, payload.fromTemporaryId)) : null;
       const gap = c.candidateType === 'gap' ? await get('story_gap_tasks', require('./story-agent-gaps').taskIdFor(c._id)) : null;
+      const duplicateMatches = c.candidateType === 'entity'
+        ? rankEntityMatches(payload, confirmedEntities, { resourceId, region: resource && resource.region || {} }) : [];
       return { id: c._id, jobId: c.jobId, candidateType: c.candidateType, status: c.status, risk: c.risk,
-        payload, resourceId, resourceTitle: text(resource && resource.title, 120),
+        payload, duplicateMatches, resourceId, resourceTitle: text(resource && resource.title, 120),
         gapDraft: gap ? { ...require('./story-gap-tasks').publicTask(gap), draftVersion: gap.draftVersion } : null,
         submissionTitle: text(submission && submission.title, 120), submissionText: text(submission && submission.description, 2400),
         eligible: Boolean(job && ['awaiting_review', 'completed'].includes(job.status) && hasCurrentAiConsent(submission)),
@@ -69,11 +158,10 @@ function createStoryAgentReviewService({ db }) {
         sourceReady: Boolean(sourceCandidate && sourceCandidate.status === 'approved'),
         formalEntityId: c.formalEntityId || '', formalRelationId: c.formalRelationId || '' };
     }));
-    const entities = await db.collection('story_entities').where({ status: 'confirmed' }).limit(100).get();
     const resources = await db.collection('resources').where({ status: 'published' }).limit(100).get();
     const stories = await db.collection('story_chains').where({ status: 'published' }).limit(100).get();
     return { ok: true, candidates, nextOffset: (result.data || []).length > 30 ? offset + 30 : null,
-      entities: (entities.data || []).map(e => ({ id: e._id, name: e.name, entityType: e.entityType, resourceId: e.resourceId })),
+      entities: confirmedEntities,
       resources: (resources.data || []).map(r => ({ id: r._id, title: r.title })),
       stories: (stories.data || []).map(s => ({ id: s._id, title: text(s.title, 100), resourceId: s.resourceId,
         chapters: (s.chapters || []).map((c, index) => ({ index, title: text(c.title, 100) })) })) };
@@ -97,6 +185,7 @@ function createStoryAgentReviewService({ db }) {
       const p = c.payload || {};
       const edits = request.edits || {};
       const writes = [];
+      const updates = [];
       let final = null;
       let formalEntityId = '';
       let formalRelationId = '';
@@ -129,7 +218,14 @@ function createStoryAgentReviewService({ db }) {
           if (edits.mergeEntityId && !existing) fail('MERGE_TARGET_MISSING', '合并目标不存在');
           if (existing && (existing.status !== 'confirmed' || existing.entityType !== entityType || existing.resourceId !== resourceId)) fail('MERGE_TARGET_MISMATCH', '只能合并到同资源、同类型的已确认实体');
           final = existing ? { name: existing.name, entityType, resourceId, mergedInto: formalEntityId } : entityRecord(entityType, name, summary);
-          if (!existing) writes.push(['story_entities', formalEntityId, { ...final, aliases: (p.aliases || []).slice(0, 6) }]);
+          if (!existing) writes.push(['story_entities', formalEntityId, { ...final, aliases: mergedAliases({ name, aliases: [] }, p, name) }]);
+          else {
+            const aliases = mergedAliases(existing, p, name);
+            if (JSON.stringify(aliases) !== JSON.stringify(Array.isArray(existing.aliases) ? existing.aliases : [])) {
+              updates.push(['story_entities', formalEntityId, { aliases, updatedAt: db.serverDate(),
+                version: Math.max(1, Number(existing.version) || 1) + 1 }]);
+            }
+          }
         } else if (c.candidateType === 'relation') {
           if (resourceId !== p.toResourceId) fail('RELATION_RESOURCE_CHANGED', '关系必须使用原候选资源，请重新分析其他资源');
           const relationType = text(edits.relationType || p.relationType, 60);
@@ -169,9 +265,11 @@ function createStoryAgentReviewService({ db }) {
       }
       // All validation reads finish before any transaction write. Review and formal data commit together.
       for (const [collection, recordId, record] of writes) await tx.collection(collection).doc(recordId).set(record);
+      for (const [collection, recordId, record] of updates) await tx.collection(collection).doc(recordId).update(record);
       const originalResourceId = p.toResourceId || job.input && job.input.submission && job.input.submission.boundResourceId || '';
       const changes = changedFields(c.candidateType, p, final, edits, originalResourceId);
-      const defaultReason = request.decision === 'reject' ? 'other' : changes.length ? 'wording_adjusted' : 'accepted_as_is';
+      const defaultReason = request.decision === 'reject' ? 'other'
+        : final && final.mergedInto ? 'duplicate_merged' : changes.length ? 'wording_adjusted' : 'accepted_as_is';
       let reasonCategory = REASON_CATEGORIES.has(request.reasonCategory) ? request.reasonCategory : defaultReason;
       if (request.decision === 'reject' && reasonCategory === 'accepted_as_is') reasonCategory = 'other';
       if (request.decision === 'approve' && changes.length && reasonCategory === 'accepted_as_is') reasonCategory = 'wording_adjusted';
@@ -181,7 +279,7 @@ function createStoryAgentReviewService({ db }) {
         model: job.model || '', promptVersion: job.promptVersion || '', codeVersion: job.codeVersion || 'legacy', inputFingerprint: job.idempotencyKey || '',
         reviewerId, createdAt: db.serverDate() });
       await tx.collection('story_agent_candidates').doc(key).update({ status: finalStatus, formalEntityId, formalRelationId, reviewedAt: db.serverDate() });
-      await tx.collection('story_graph_logs').doc(`agent_${key}`).set({ action: `agent_${request.decision}`, candidateId: key,
+      await tx.collection('story_graph_logs').doc(`agent_${key}`).set({ action: final && final.mergedInto ? 'agent_merge_entity' : `agent_${request.decision}`, candidateId: key,
         entityId: formalEntityId, relationId: formalRelationId, reviewerId, createdAt: db.serverDate() });
       return { ok: true, candidateId: key, status: finalStatus, formalEntityId, formalRelationId };
     });
@@ -199,4 +297,5 @@ function createStoryAgentReviewService({ db }) {
   }
   return { workspace, review };
 }
-module.exports = { createStoryAgentReviewService, candidateId, HIGH_RISK, changedFields };
+module.exports = { createStoryAgentReviewService, candidateId, HIGH_RISK, changedFields,
+  normalizedName, rankEntityMatches, mergedAliases };

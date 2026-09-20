@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const { fakeDb } = require('./test-story-agent-reviews');
 const { loadConfig, publicConfig } = require('../cloudfunctions/storyAgentWorker/lib/config');
 const { validateAgentOutput, classifyRelationRisk } = require('../cloudfunctions/storyAgentWorker/lib/contract');
-const { sanitizeSubmission, selectRelevantResources, resolveEntityMatches } = require('../cloudfunctions/storyAgentWorker/lib/retrieval');
+const { sanitizeSubmission, selectRelevantResources, resolveEntityMatches, rankEntityMatches } = require('../cloudfunctions/storyAgentWorker/lib/retrieval');
 const { inputFingerprint, jobIdFor, candidateIdFor, estimateCostYuan } = require('../cloudfunctions/storyAgentWorker/lib/job-contract');
 const { createTokenHubClient } = require('../cloudfunctions/storyAgentWorker/lib/tokenhub-client');
 
@@ -34,6 +34,7 @@ async function main() {
   assert.equal(config.enabled, false, '智能体必须默认关闭');
   assert.equal(config.shadowMode, true, '第一阶段必须默认影子模式');
   assert.equal(config.providerMaxAttempts, 2);
+  assert.equal(config.codeVersion, 'story-agent-code-v2-entity-resolution');
   const safeConfig = publicConfig({ ...config, apiKey: 'must-not-leak' });
   assert.equal(safeConfig.apiKeyConfigured, true);
   assert.equal(JSON.stringify(safeConfig).includes('must-not-leak'), false, '公开配置不得泄漏密钥');
@@ -63,6 +64,22 @@ async function main() {
 
   const resolved = resolveEntityMatches(validated.entities, [{ _id: 'confirmed_entity', name: '凤鸟纹', aliases: [] }]);
   assert.equal(resolved[0].matchedEntityId, 'confirmed_entity');
+  const knownEntities = [{ _id: 'feng', name: '凤鸟纹', aliases: ['凤纹'], entityType: 'detail_or_motif',
+    resourceId: 'r1', region: { province: '湖北省', city: '随州市' } }];
+  assert.equal(rankEntityMatches({ name: '凤纹', aliases: [], entityType: 'detail_or_motif' }, knownEntities,
+    { resourceId: 'r1', region: { province: '湖北', city: '随州' } })[0].level, 'strong');
+  assert.equal(rankEntityMatches({ name: '楚凤纹', aliases: [], entityType: 'detail_or_motif' }, knownEntities,
+    { resourceId: 'r1', region: '湖北随州' })[0].level, 'review');
+  assert.equal(rankEntityMatches({ name: '武汉黄鹤楼', aliases: [], entityType: 'building_or_site' },
+    [{ _id: 'tower', name: '黄鹤楼', entityType: 'building_or_site', resourceId: 'tower-resource', region: '湖北武汉' }],
+    { resourceId: 'tower-resource', region: '湖北省武汉市' })[0].level, 'review');
+  assert.equal(rankEntityMatches({ name: '编钟', aliases: [], entityType: 'heritage_object' },
+    [{ _id: 'bells', name: '曾侯乙编钟', entityType: 'heritage_object', resourceId: 'bells-resource', region: '湖北随州' }],
+    { resourceId: 'bells-resource', region: '湖北随州' })[0].level, 'review', '泛称和具体文物不得直接判定相同');
+  assert.equal(rankEntityMatches({ name: '凤鸟纹', aliases: [], entityType: 'heritage_object' }, knownEntities,
+    { resourceId: 'r1' }).length, 0, '实体类型冲突时不得建议合并');
+  assert.equal(rankEntityMatches({ name: '凤鸟纹', aliases: [], entityType: 'detail_or_motif' }, knownEntities,
+    { resourceId: 'other', region: '湖南长沙' }).length, 0, '地区冲突且资源不同时不得建议合并');
 
   const fingerprintA = inputFingerprint(config, 'submission_1', { submission, resources: selected });
   const fingerprintB = inputFingerprint(config, 'submission_1', { resources: selected, submission });

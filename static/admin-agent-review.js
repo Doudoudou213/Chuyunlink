@@ -65,13 +65,24 @@
     const blocked = !c.eligible || ['gap'].includes(c.candidateType) || ['insufficient', 'blocked'].includes(c.risk);
     const resources = options(workspace.resources.map(r => [r.id, r.title]), c.resourceId);
     const sameEntities = workspace.entities.filter(e => e.entityType === p.entityType && e.resourceId === c.resourceId);
-    const merge = options([['', '按名称查重或新建'], ...sameEntities.map(e => [e.id, `合并到：${e.name}`])], '');
+    const matches = Array.isArray(c.duplicateMatches) ? c.duplicateMatches : [];
+    const suggestedIds = new Set(matches.filter(match => match.resourceId === c.resourceId).map(match => match.entityId));
+    const orderedEntities = [...sameEntities].sort((left, right) => Number(suggestedIds.has(right.id)) - Number(suggestedIds.has(left.id))
+      || String(left.name).localeCompare(String(right.name)));
+    const merge = options([['', '保留为新实体'], ...orderedEntities.map(e => [e.id,
+      `${suggestedIds.has(e.id) ? '建议核对' : '可选'}：${e.name}`])], '');
+    const matchNotice = c.candidateType === 'entity' && matches.length ? `<aside class="mt-3 rounded-xl border border-[#b68a4a]/30 bg-[#fffaf1] p-3">
+      <p class="text-xs font-bold text-[#7d2b23]">确定性查重建议</p>
+      <p class="mt-1 text-[10px] leading-5 text-stone-500">系统不会自动合并。请核对类型、地区和具体对象后，再在下方手动选择。</p>
+      <ul class="mt-2 space-y-1">${matches.map(match => `<li class="text-[10px] leading-5 text-stone-600"><strong>${esc(match.level === 'strong' ? '高度可能重复' : '需要人工判断')}：${esc(match.name)}</strong> · ${esc((match.reasons || []).join('、'))}${match.resourceId !== c.resourceId ? ' · 其他资源，仅供对照' : ''}</li>`).join('')}</ul>
+    </aside>` : '';
     return `<article data-candidate="${esc(c.id)}" class="min-w-0 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3"><label class="flex min-h-[44px] items-center gap-2 text-xs text-stone-500">
       ${pending ? `<input type="checkbox" data-select aria-label="选择${esc(p.name || c.sourceName || '建议')}" ${c.risk === 'high' || blocked ? 'disabled' : ''}>` : ''}${esc(labels[c.candidateType])}</label>
       <span class="text-xs ${c.risk === 'high' ? 'text-red-700' : 'text-stone-500'}">${esc(pending ? riskLabels[c.risk] : c.status === 'approved' ? '已确认' : '已驳回')}</span></div>
       <h3 class="break-words text-base font-bold">${esc(p.name || (c.candidateType === 'relation' ? `${c.sourceName || '待确认实体'} → ${c.resourceTitle}` : p.request))}</h3>
       <p class="mt-2 break-words text-sm text-stone-600">${esc(p.summary || p.reason)}</p>
+      ${matchNotice}
       ${c.candidateType === 'relation' ? `<p class="mt-2 text-xs text-stone-500">${esc(relationLabels[p.relationType])} · ${c.sourceReady ? '起点实体已确认' : '先确认对应实体，再确认关系'}</p>` : ''}
       <details class="mt-3 rounded-lg bg-stone-50 p-3"><summary class="min-h-[44px] cursor-pointer text-sm font-bold">核对投稿与依据</summary>
         <p class="break-words text-sm font-bold">${esc(c.submissionTitle || '来源投稿')}</p><p class="mt-2 whitespace-pre-wrap break-words text-sm text-stone-600">${esc(c.submissionText)}</p>
@@ -81,7 +92,7 @@
       ${c.candidateType === 'entity' ? `<div class="grid gap-3 sm:grid-cols-2"><label class="text-xs">名称<input data-field="name" class="${field}" value="${esc(p.name)}"></label>
       <label class="text-xs">资源<select data-field="resourceId" class="${field}"><option value="">请选择资源</option>${resources}</select></label>
       <label class="text-xs">类型<select data-field="entityType" class="${field}">${options(Object.entries(entityLabels), p.entityType)}</select></label>
-      <label class="text-xs">重复实体<select data-field="mergeEntityId" class="${field}">${merge}</select></label>
+      <label class="text-xs">重复实体<select data-field="mergeEntityId" class="${field}">${merge}</select><span class="mt-1 block text-[10px] leading-4 text-stone-400">默认保留为新实体；只有人工选择后才会合并。</span></label>
       <label class="text-xs sm:col-span-2">实体说明<textarea data-field="summary" class="${field}" rows="2">${esc(p.summary)}</textarea></label></div>` : c.candidateType === 'relation' ? `<label class="block text-xs">关系类型<select data-field="relationType" class="${field}">${options(Object.entries(relationLabels), p.relationType)}</select></label>
       <label class="mt-3 block text-xs">为什么有关<textarea data-field="why" class="${field}" rows="2">${esc(p.reason)}</textarea></label>` : '<p class="text-xs text-stone-500">资料不足，保留到后续征集任务。</p>'}</details>
       <label class="mt-3 block text-xs text-stone-600">反馈原因<select data-reason-category class="${field}">${options(reasonOptions, 'accepted_as_is')}</select></label>
@@ -223,7 +234,13 @@
           if (!select) return;
           const resource = el.querySelector('[data-field="resourceId"]').value;
           const type = el.querySelector('[data-field="entityType"]').value;
-          select.innerHTML = options([['', '按名称查重或新建'], ...workspace.entities.filter(e => e.resourceId === resource && e.entityType === type).map(e => [e.id, `合并到：${e.name}`])], '');
+          const suggested = new Set((c.duplicateMatches || []).filter(match => match.resourceId === resource
+            && match.entityType === type).map(match => match.entityId));
+          const choices = workspace.entities.filter(e => e.resourceId === resource && e.entityType === type)
+            .sort((left, right) => Number(suggested.has(right.id)) - Number(suggested.has(left.id))
+              || String(left.name).localeCompare(String(right.name)));
+          select.innerHTML = options([['', '保留为新实体'], ...choices.map(e => [e.id,
+            `${suggested.has(e.id) ? '建议核对' : '可选'}：${e.name}`])], '');
         };
         el.querySelector('[data-field="resourceId"]')?.addEventListener('change', refreshMergeOptions);
         el.querySelector('[data-field="entityType"]')?.addEventListener('change', refreshMergeOptions);

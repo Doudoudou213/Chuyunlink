@@ -1,6 +1,8 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { createStoryAgentReviewService, candidateId } = require('../cloudfunctions/adminSubmissions/domains/story-agent-reviews');
+const fs = require('node:fs');
+const path = require('node:path');
+const { createStoryAgentReviewService, candidateId, rankEntityMatches } = require('../cloudfunctions/adminSubmissions/domains/story-agent-reviews');
 const { candidateIdFor } = require('../cloudfunctions/storyAgentWorker/lib/job-contract');
 
 function fakeDb(seed) {
@@ -49,6 +51,15 @@ function fixture() {
 }
 async function main() {
   assert.equal(entityKey, candidateIdFor('job1', 'entity', 'entity_1'));
+  assert.equal(rankEntityMatches({ name: '凤纹', aliases: [], entityType: 'detail_or_motif' },
+    [{ id: 'known', name: '凤鸟纹', aliases: ['凤纹'], entityType: 'detail_or_motif', resourceId: 'r1', region: { city: '随州' } }],
+    { resourceId: 'r1', region: { city: '随州市' } })[0].level, 'strong');
+  const workspaceSeed = fixture();
+  workspaceSeed.story_agent_candidates[entityKey].payload.name = '楚凤纹';
+  workspaceSeed.story_entities.known = { name: '凤鸟纹', aliases: ['凤纹'], entityType: 'detail_or_motif',
+    resourceId: 'r1', region: { province: '湖北', city: '随州' }, status: 'confirmed' };
+  const duplicateWorkspace = await createStoryAgentReviewService({ db: fakeDb(workspaceSeed) }).workspace({ status: 'pending_review' });
+  assert.equal(duplicateWorkspace.candidates.find(item => item.id === entityKey).duplicateMatches[0].entityId, 'known');
   const db = fakeDb(fixture()), service = createStoryAgentReviewService({ db });
   const approve = (key, extra = {}) => service.review({ candidateId: key, decision: 'approve', ...extra }, 'admin');
   assert.equal((await approve('relation1')).results[0].code, 'ENTITY_REVIEW_REQUIRED');
@@ -122,10 +133,15 @@ async function main() {
   assert.equal((await high.review({ items: [highRequest, highRequest] }, 'admin')).results[0].code, 'HIGH_RISK_REVIEW_REQUIRED');
   assert.equal((await high.review(highRequest, 'admin')).results[0].ok, true);
 
-  const mergeSeed = fixture(); mergeSeed.story_entities.existing = { name: '已确认凤纹', entityType: 'detail_or_motif', resourceId: 'r1', status: 'confirmed', summary: '已有说明保持不变' };
+  const mergeSeed = fixture(); mergeSeed.story_agent_candidates[entityKey].payload.aliases = ['凤纹'];
+  mergeSeed.story_entities.existing = { name: '已确认凤纹', aliases: [], entityType: 'detail_or_motif', resourceId: 'r1', status: 'confirmed', summary: '已有说明保持不变', version: 2 };
   const mergeDb = fakeDb(mergeSeed), merge = createStoryAgentReviewService({ db: mergeDb });
   assert.equal((await merge.review({ candidateId: entityKey, decision: 'approve', edits: { mergeEntityId: 'existing' } }, 'admin')).results[0].formalEntityId, 'existing');
   assert.equal(mergeDb.data().story_entities.existing.summary, '已有说明保持不变');
+  assert.deepEqual(mergeDb.data().story_entities.existing.aliases, ['凤鸟纹', '凤纹']);
+  assert.equal(mergeDb.data().story_entities.existing.version, 3);
+  assert.equal(mergeDb.data().story_agent_reviews[entityKey].reasonCategory, 'duplicate_merged');
+  assert.equal(mergeDb.data().story_graph_logs[`agent_${entityKey}`].action, 'agent_merge_entity');
   assert.equal(Object.keys(mergeDb.data().story_entities).length, 1);
   const rejectedDb = fakeDb(fixture()), rejected = createStoryAgentReviewService({ db: rejectedDb });
   const mixed = await rejected.review({ items: [
@@ -137,6 +153,10 @@ async function main() {
   assert.equal(Object.keys(rejectedDb.data().story_entities).length, 0);
   assert.equal(rejectedDb.data().story_agent_reviews[entityKey].note, '材料中无法辨认该纹样');
   assert.equal(rejectedDb.data().story_agent_reviews[entityKey].reasonCategory, 'other');
+  const uiSource = fs.readFileSync(path.resolve(__dirname, '..', 'static', 'admin-agent-review.js'), 'utf8');
+  assert.match(uiSource, /确定性查重建议/);
+  assert.match(uiSource, /系统不会自动合并/);
+  assert.match(uiSource, /默认保留为新实体/);
   const manySeed = fixture();
   manySeed.story_agent_candidates = Object.fromEntries(Array.from({length:35},(_,i)=>[`candidate_${String(i).padStart(2,'0')}`, manySeed.story_agent_candidates[entityKey]]));
   const many = createStoryAgentReviewService({ db: fakeDb(manySeed) });

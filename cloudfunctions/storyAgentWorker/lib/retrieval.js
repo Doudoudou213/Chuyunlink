@@ -36,7 +36,99 @@ function sanitizeResource(item) {
 }
 
 function normalizeSearchText(value) {
-  return cleanText(value, 5000).toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');
+  return cleanText(value, 5000).normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');
+}
+
+function normalizeRegionText(value) {
+  return normalizeSearchText(regionText(value)).replace(/特别行政区|自治区|自治州|地区|省|市|盟|区|县/gu, '');
+}
+
+function regionCompatibility(left, right) {
+  const a = normalizeRegionText(left);
+  const b = normalizeRegionText(right);
+  if (!a || !b) return 'unknown';
+  return a.includes(b) || b.includes(a) ? 'match' : 'conflict';
+}
+
+function characterOverlap(left, right) {
+  const a = new Set(normalizeSearchText(left));
+  const b = new Set(normalizeSearchText(right));
+  if (!a.size || !b.size) return 0;
+  let shared = 0;
+  a.forEach((value) => { if (b.has(value)) shared += 1; });
+  return shared / Math.max(a.size, b.size);
+}
+
+function nameMatch(leftValues, rightValues) {
+  let best = { kind: '', score: 0, reason: '' };
+  for (const leftValue of leftValues) {
+    const left = normalizeSearchText(leftValue);
+    if (!left) continue;
+    for (const rightValue of rightValues) {
+      const right = normalizeSearchText(rightValue);
+      if (!right) continue;
+      let current = { kind: '', score: 0, reason: '' };
+      if (left === right) current = { kind: 'exact', score: 100, reason: '名称或别名完全一致' };
+      else if (Math.min(left.length, right.length) >= 2 && (left.includes(right) || right.includes(left))) {
+        current = { kind: 'contained', score: 62, reason: '一个名称包含另一个名称' };
+      } else {
+        const overlap = characterOverlap(left, right);
+        if (overlap >= 0.66) current = { kind: 'similar', score: Math.round(overlap * 70), reason: '名称中的主要文字高度重合' };
+      }
+      if (current.score > best.score) best = current;
+    }
+  }
+  return best;
+}
+
+function entityResourceIds(entity) {
+  return [...new Set([entity && entity.resourceId,
+    ...(Array.isArray(entity && entity.resourceIds) ? entity.resourceIds : []),
+    ...(Array.isArray(entity && entity.relationResourceIds) ? entity.relationResourceIds : [])]
+    .map((value) => cleanText(value, 128)).filter(Boolean))];
+}
+
+function rankEntityMatches(candidate, entities, context = {}) {
+  const candidateType = cleanText(candidate && candidate.entityType, 40);
+  const candidateValues = [candidate && candidate.name,
+    ...(Array.isArray(candidate && candidate.aliases) ? candidate.aliases : [])].filter(Boolean);
+  const candidateResourceIds = [...new Set([context.resourceId,
+    ...(Array.isArray(context.resourceIds) ? context.resourceIds : []),
+    ...(Array.isArray(context.relationResourceIds) ? context.relationResourceIds : [])]
+    .map((value) => cleanText(value, 128)).filter(Boolean))];
+  return (Array.isArray(entities) ? entities : []).map((entity) => {
+    const entityType = cleanText(entity && entity.entityType, 40);
+    if (candidateType && entityType && candidateType !== entityType) return null;
+    const match = nameMatch(candidateValues, [entity && entity.name,
+      ...(Array.isArray(entity && entity.aliases) ? entity.aliases : [])].filter(Boolean));
+    if (!match.score) return null;
+    const resources = entityResourceIds(entity);
+    const sameResource = candidateResourceIds.some((resourceId) => resources.includes(resourceId));
+    const regionState = regionCompatibility(context.region, entity && entity.region);
+    if (regionState === 'conflict' && !sameResource) return null;
+    const reasons = [match.reason];
+    let score = match.score;
+    if (sameResource) { score += 25; reasons.push('关联同一文化资源'); }
+    if (regionState === 'match') { score += 10; reasons.push('地区信息一致'); }
+    const relationAligned = (Array.isArray(entity && entity.relationResourceIds) ? entity.relationResourceIds : [])
+      .some((resourceId) => candidateResourceIds.includes(resourceId));
+    if (relationAligned) { score += 8; reasons.push('已有关系指向同一资源'); }
+    const contextKnown = Boolean(candidateResourceIds.length || normalizeRegionText(context.region));
+    const level = match.kind === 'exact' && (sameResource || regionState === 'match' || !contextKnown)
+      ? 'strong' : 'review';
+    return {
+      entityId: cleanText(entity && (entity._id || entity.id), 128),
+      name: cleanText(entity && entity.name, 100),
+      entityType,
+      resourceId: cleanText(entity && entity.resourceId, 128),
+      level,
+      score,
+      reasons: [...new Set(reasons)]
+    };
+  }).filter((item) => item && item.entityId && item.score >= 45)
+    .sort((left, right) => (left.level === right.level ? 0 : left.level === 'strong' ? -1 : 1)
+      || right.score - left.score || left.entityId.localeCompare(right.entityId))
+    .slice(0, 5);
 }
 
 function grams(value) {
@@ -83,19 +175,13 @@ function selectRelevantResources(submissionInput, resources, limit = 12) {
     .map(({ item }) => item);
 }
 
-function resolveEntityMatches(candidates, entities) {
-  const index = new Map();
-  (Array.isArray(entities) ? entities : []).forEach((entity) => {
-    const values = [entity.name, ...(Array.isArray(entity.aliases) ? entity.aliases : [])];
-    values.forEach((value) => {
-      const key = normalizeSearchText(value);
-      if (key && !index.has(key)) index.set(key, cleanText(entity._id || entity.id, 128));
-    });
-  });
+function resolveEntityMatches(candidates, entities, contexts = {}) {
   return (Array.isArray(candidates) ? candidates : []).map((candidate) => {
-    const values = [candidate.name, ...(Array.isArray(candidate.aliases) ? candidate.aliases : [])];
-    const matchedEntityId = values.map(normalizeSearchText).map((key) => index.get(key)).find(Boolean) || '';
-    return { ...candidate, matchedEntityId, matchReason: matchedEntityId ? 'exact_name_or_alias' : '' };
+    const context = contexts[candidate.temporaryId] || {};
+    const duplicateMatches = rankEntityMatches(candidate, entities, context);
+    const strongest = duplicateMatches.find((item) => item.level === 'strong');
+    return { ...candidate, matchedEntityId: strongest && strongest.entityId || '',
+      matchReason: strongest ? strongest.reasons.join('；') : '', duplicateMatches };
   });
 }
 
@@ -105,6 +191,8 @@ module.exports = {
   sanitizeSubmission,
   sanitizeResource,
   normalizeSearchText,
+  normalizeRegionText,
+  rankEntityMatches,
   overlapScore,
   selectRelevantResources,
   resolveEntityMatches

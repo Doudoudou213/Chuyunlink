@@ -52,7 +52,7 @@ function loadConfig(env = process.env) {
     inputPricePerMillion: boundedNumber(env.AGENT_INPUT_PRICE_PER_MILLION, 1, 0, 1000),
     outputPricePerMillion: boundedNumber(env.AGENT_OUTPUT_PRICE_PER_MILLION, 4, 0, 1000),
     promptVersion: 'cultural-research-agent-shadow-v1',
-    codeVersion: String(env.AGENT_CODE_VERSION || 'story-agent-code-v1').trim().slice(0, 100)
+    codeVersion: String(env.AGENT_CODE_VERSION || 'story-agent-code-v2-entity-resolution').trim().slice(0, 100)
   };
 }
 

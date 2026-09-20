@@ -29,6 +29,7 @@ const SUBMISSIONS = 'submissions';
 const RESOURCES = 'resources';
 const EVIDENCE = 'story_evidence_links';
 const ENTITIES = 'story_entities';
+const RELATIONS = 'story_relations';
 let collectionsReady = null;
 
 function firstDocument(result) {
@@ -132,10 +133,11 @@ async function eligibleSubmission(submissionId, config) {
 }
 
 async function loadContext(submission, config) {
-  const [resourceResult, evidenceResult, entityResult] = await Promise.all([
+  const [resourceResult, evidenceResult, entityResult, relationResult] = await Promise.all([
     db.collection(RESOURCES).where({ status: 'published' }).limit(100).get(),
     db.collection(EVIDENCE).limit(200).get(),
-    db.collection(ENTITIES).limit(200).get()
+    db.collection(ENTITIES).limit(200).get(),
+    db.collection(RELATIONS).limit(200).get()
   ]);
   const allowedResources = selectRelevantResources(submission, resourceResult.data || [], config.topResourceLimit);
   const resourceIds = new Set(allowedResources.map((item) => item.id));
@@ -154,6 +156,14 @@ async function loadContext(submission, config) {
     };
   }));
   const evidenceLinks = checkedEvidence.filter((item) => item && item.id && item.summary).slice(0, 60);
+  const relationResourcesByEntity = new Map();
+  (relationResult.data || []).filter((item) => item.status === 'confirmed' && item.needsSourceReview !== true)
+    .forEach((relation) => {
+      [relation.fromEntityId, relation.toEntityId].filter(Boolean).forEach((entityId) => {
+        if (!relationResourcesByEntity.has(entityId)) relationResourcesByEntity.set(entityId, new Set());
+        if (relation.resourceId) relationResourcesByEntity.get(entityId).add(cleanText(relation.resourceId, 128));
+      });
+    });
   const knownEntities = (entityResult.data || [])
     .filter((item) => {
       const linkedResources = [item.resourceId, ...(Array.isArray(item.resourceIds) ? item.resourceIds : [])]
@@ -165,7 +175,11 @@ async function loadContext(submission, config) {
       id: cleanText(item._id || item.id, 128),
       name: cleanText(item.name, 100),
       entityType: cleanText(item.entityType, 40),
-      aliases: (Array.isArray(item.aliases) ? item.aliases : []).map((value) => cleanText(value, 80)).filter(Boolean).slice(0, 6)
+      aliases: (Array.isArray(item.aliases) ? item.aliases : []).map((value) => cleanText(value, 80)).filter(Boolean).slice(0, 6),
+      resourceId: cleanText(item.resourceId, 128),
+      resourceIds: (Array.isArray(item.resourceIds) ? item.resourceIds : []).map((value) => cleanText(value, 128)).filter(Boolean),
+      region: item.region || {},
+      relationResourceIds: [...(relationResourcesByEntity.get(item._id || item.id) || new Set())]
     }))
     .filter((item) => item.id && item.name)
     .slice(0, 80);
@@ -313,7 +327,17 @@ async function completeReservation(reservation, jobId, usage, config) {
 }
 
 async function persistCandidates({ jobId, submissionId, input, output, knownEntities, usage, providerAttempts }) {
-  const entities = resolveEntityMatches(output.entities, knownEntities);
+  const resourceById = new Map((input.allowedResources || []).map((resource) => [resource.id, resource]));
+  const contexts = Object.fromEntries(output.entities.map((entity) => {
+    const relationResourceIds = [...new Set(output.relations
+      .filter((relation) => relation.fromTemporaryId === entity.temporaryId)
+      .map((relation) => relation.toResourceId).filter(Boolean))];
+    const resourceId = relationResourceIds[0] || input.submission && input.submission.boundResourceId || '';
+    const resource = resourceById.get(resourceId) || {};
+    return [entity.temporaryId, { resourceId, resourceIds: relationResourceIds,
+      relationResourceIds, region: resource.region || input.submission && input.submission.regionName || '' }];
+  }));
+  const entities = resolveEntityMatches(output.entities, knownEntities, contexts);
   const writes = [];
   entities.forEach((entity) => {
     const id = candidateIdFor(jobId, 'entity', entity.temporaryId);
