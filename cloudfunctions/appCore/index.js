@@ -1,4 +1,5 @@
 'use strict';
+const {materialLinkValid,isMaterialLink,referenceFor}=require('./lib/material-evidence');
 
 const cloudbase = require('@cloudbase/node-sdk');
 const crypto = require('crypto');
@@ -670,6 +671,7 @@ async function attachSubmissionStoryCards(items) {
     const checkedLinks = await Promise.all(allConfirmedLinks.map(async (link) => {
       if (!link.submissionId || link.needsSourceReview === true) return '';
       const origin = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(link.submissionId).get());
+      if (!await materialLinkValid(db,link,origin,true)) return '';
       return origin && origin.status === 'approved' && !origin.aiConsentRevokedAt
         && origin.aiAnalysisStatus !== 'consent_revoked' ? link._id || link.id || '' : '';
     }));

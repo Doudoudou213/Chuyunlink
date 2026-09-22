@@ -128,6 +128,10 @@ function publicAnalysis(record) {
     usableForStory: record.usableForStory === true,
     extractedText: record.extractedText || '',
     reviewedText: record.reviewedText || '',
+    reviewVersion: record.reviewVersion || 0,
+    kind: record.kind || 'image_ocr',
+    blocks: require('./lib/review-evidence').blocksFor(record),
+    reviewedFragments: record.reviewedFragments || [],
     reviewDecision: record.reviewDecision || '',
     quality: record.quality || null,
     privacy: record.privacy || null,
@@ -526,7 +530,7 @@ async function reviewAnalysis(event, adminUid) {
   const ref = db.collection(ANALYSIS_COLLECTION).doc(analysisId);
   const current = firstDocument(await ref.get());
   if (!current) throw Object.assign(new Error('没有找到识别结果'), { code: 'ANALYSIS_NOT_FOUND' });
-  if (current.status !== 'needs_review') {
+  if (current.reviewVersion || current.status !== 'needs_review') {
     throw Object.assign(new Error('这条识别结果已经处理，请刷新页面'), { code: 'ANALYSIS_ALREADY_REVIEWED' });
   }
   if (current.submissionId) {
@@ -604,6 +608,7 @@ exports.main = async (event = {}) => {
     if (action === 'startMockImageAnalysis') return await startMockImageAnalysis(event, adminUid);
     if (action === 'runRealImageAnalysis') return await runRealImageAnalysis(config, event, adminUid);
     if (action === 'runSyntheticTest') return await runSyntheticTest(adminUid);
+    if (action === 'reviewMaterialEvidence') return await require('./lib/review-evidence').createReviewService({db}).review(event, adminUid);
     if (action === 'reviewAnalysis') return await reviewAnalysis(event, adminUid);
     return { ok: false, error: { code: 'INVALID_ACTION', message: '不支持的材料识别操作' } };
   } catch (error) {

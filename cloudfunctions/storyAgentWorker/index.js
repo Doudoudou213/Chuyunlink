@@ -1,5 +1,6 @@
 'use strict';
 
+const {materialLinkValid,referenceFor} = require('./lib/material-evidence');
 const cloudbase = require('@cloudbase/node-sdk');
 const { loadConfig, publicConfig } = require('./lib/config');
 const { validateAgentOutput, classifyRelationRisk } = require('./lib/contract');
@@ -124,8 +125,13 @@ async function eligibleSubmission(submissionId, config) {
     throw Object.assign(new Error('投稿审核状态或 AI 授权已失效'), { code: 'AI_CONSENT_REQUIRED' });
   }
   const submission = sanitizeSubmission(item);
+  const ownLinks=(await db.collection(EVIDENCE).where({submissionId}).limit(40).get()).data||[];
+  const materialTexts=[];
+  for(const link of ownLinks) if(link.materialAnalysisId && await materialLinkValid(db,link,item)) materialTexts.push(link.evidenceSummary);
+  // Used for readiness only; model receives material text with source IDs in evidenceLinks.
+  const confirmedMaterialLength=materialTexts.join('').length;
   const textLength = `${submission.title}${submission.description}`.replace(/\s+/g, '').length;
-  if (textLength < config.minTextChars) {
+  if (textLength + confirmedMaterialLength < config.minTextChars) {
     throw Object.assign(new Error('投稿文字过少，暂不进入智能体分析'), { code: 'AGENT_TEXT_TOO_SHORT' });
   }
   submission.description = submission.description.slice(0, Math.max(100, config.maxInputChars - submission.title.length - 300));
@@ -147,11 +153,12 @@ async function loadContext(submission, config) {
   const checkedEvidence = await Promise.all(possibleEvidence.map(async (item) => {
     if (!item.submissionId) return null;
     const origin = firstDocument(await db.collection(SUBMISSIONS).doc(item.submissionId).get());
-    if (!hasCurrentAiConsent(origin)) return null;
+    if (!hasCurrentAiConsent(origin) || !await materialLinkValid(db,item,origin)) return null;
     return {
       id: cleanText(item._id || item.id, 128),
       resourceId: cleanText(item.resourceId, 128),
       summary: cleanText(item.evidenceSummary || item.summary || item.evidence || item.note, 300),
+      materialReference: referenceFor(item),
       sourceType: cleanText(item.sourceType || item.materialType || 'submission', 40)
     };
   }));
@@ -200,7 +207,7 @@ async function assertCurrentSources(reader, submissionId, input, jobId) {
     const origin = link && link.submissionId
       ? firstDocument(await reader.collection(SUBMISSIONS).doc(link.submissionId).get()) : null;
     if (!link || link.status !== 'confirmed' || link.needsSourceReview === true
-      || link.resourceId !== source.resourceId || !hasCurrentAiConsent(origin)) {
+      || link.resourceId !== source.resourceId || !hasCurrentAiConsent(origin) || !await materialLinkValid(reader,link,origin)) {
       throw Object.assign(new Error('关联来源授权或状态已变化，停止分析'), { code: 'AGENT_SOURCE_CHANGED' });
     }
   }

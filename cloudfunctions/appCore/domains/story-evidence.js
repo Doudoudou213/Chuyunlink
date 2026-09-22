@@ -1,4 +1,5 @@
 'use strict';
+const {materialLinkValid,isMaterialLink,referenceFor}=require('../lib/material-evidence');
 
 const { loadPublicStoryGraph } = require('./story-graph');
 
@@ -96,12 +97,13 @@ function createStoryEvidenceService({ db, app }) {
         const submission = firstDocument(
           await db.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get()
         );
-        if (!submission || submission.status !== 'approved') continue;
+        if (!submission || submission.status !== 'approved' || !await materialLinkValid(db,link,submission,true)) continue;
         evidence.push({ link, submission });
       } catch (_) {}
     }
 
     const fileList = evidence
+      .filter(({link}) => !isMaterialLink(link))
       .map(({ submission }) => submission.imageFileID || submission.fileID || '')
       .filter(Boolean);
     let fileUrls = new Map();
@@ -122,6 +124,7 @@ function createStoryEvidenceService({ db, app }) {
         id: link._id || link.id || '',
         relationType: link.relationType || 'supports_story',
         evidenceSummary: link.evidenceSummary || '',
+        materialReference: referenceFor(link),
         reviewedAt: timeValue(link.reviewedAt),
         submission: {
           id: submission._id || submission.id || '',
@@ -131,7 +134,7 @@ function createStoryEvidenceService({ db, app }) {
           contributorName: submission.contributorName || '社区守护者',
           regionName: submission.regionName || '',
           createdAt: timeValue(submission.createdAt),
-          fileUrl: fileUrls.get(submission.imageFileID || submission.fileID || '') || ''
+          fileUrl: isMaterialLink(link) ? '' : fileUrls.get(submission.imageFileID || submission.fileID || '') || ''
         }
       }))
       .sort((left, right) => String(left.submission.createdAt || '').localeCompare(String(right.submission.createdAt || '')));

@@ -1,4 +1,5 @@
 'use strict';
+const {materialLinkValid,referenceFor}=require('../lib/material-evidence');
 
 const crypto = require('crypto');
 const { publicTask } = require('./story-gap-tasks');
@@ -23,6 +24,11 @@ function createStoryAgentGapService({ db }) {
       if (candidate.status !== 'pending_review' || (previous && previous.status !== 'draft')) fail('GAP_ALREADY_PROCESSED', '建议或任务已处理，请刷新');
       const job = await get('story_agent_jobs', candidate.jobId);
       const submission = await get('submissions', candidate.submissionId);
+      for(const source of job && job.input && job.input.evidenceLinks || []) {
+        const link=await get('story_evidence_links',source.id);
+        const origin=link && await get('submissions',link.submissionId);
+        if(link && !await materialLinkValid(tx,link,origin)) fail('SOURCE_UNAVAILABLE','材料来源已失效');
+      }
       if (!job || !['awaiting_review', 'completed'].includes(job.status)) fail('JOB_NOT_READY', '分析尚未完成');
       if (!submission || submission.status !== 'approved' || submission.aiAnalysisConsent !== true
         || submission.aiConsentVersion !== 'ai-analysis-consent-v1'

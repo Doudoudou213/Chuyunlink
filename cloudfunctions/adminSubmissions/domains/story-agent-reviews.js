@@ -1,4 +1,5 @@
 'use strict';
+const {materialLinkValid,referenceFor}=require('../lib/material-evidence');
 
 const crypto = require('crypto');
 const { ENTITY_TYPES, RELATION_TYPES, entityIdFor, relationIdFor } = require('./story-graph');
@@ -141,7 +142,7 @@ function createStoryAgentReviewService({ db }) {
         const source = await get('story_evidence_links', key);
         const origin = source && source.submissionId ? await get('submissions', source.submissionId) : null;
         return { id: key, valid: Boolean(source && source.status === 'confirmed' && source.needsSourceReview !== true
-          && source.resourceId === resourceId && hasCurrentAiConsent(origin)),
+          && source.resourceId === resourceId && hasCurrentAiConsent(origin) && await materialLinkValid(db,source,origin)),
           title: text(source && source.submissionTitle, 120), summary: text(source && source.evidenceSummary, 1000),
           originalText: text(origin && origin.description, 2400) };
       }));
@@ -196,7 +197,7 @@ function createStoryAgentReviewService({ db }) {
           const link = await get('story_evidence_links', source.id);
           const origin = link && link.submissionId ? await get('submissions', link.submissionId) : null;
           if (!link || link.status !== 'confirmed' || link.needsSourceReview === true
-            || link.resourceId !== source.resourceId || !hasCurrentAiConsent(origin)) {
+            || link.resourceId !== source.resourceId || !hasCurrentAiConsent(origin) || !await materialLinkValid(tx,link,origin)) {
             fail('SOURCE_UNAVAILABLE', '任务引用的来源已失效，不能确认建议');
           }
         }
@@ -240,7 +241,7 @@ function createStoryAgentReviewService({ db }) {
             if (!evidence || evidence.status !== 'confirmed' || evidence.needsSourceReview === true
               || evidence.resourceId !== resourceId) fail('EVIDENCE_CHANGED', '来源已失效或不属于当前资源');
             const origin = evidence.submissionId ? await get('submissions', evidence.submissionId) : null;
-            if (!hasCurrentAiConsent(origin)) fail('SOURCE_UNAVAILABLE', '来源投稿已不可用于 AI 建议');
+            if (!hasCurrentAiConsent(origin) || !await materialLinkValid(tx,evidence,origin)) fail('SOURCE_UNAVAILABLE', '来源投稿已不可用于 AI 建议');
           }
           const dependency = await get('story_agent_candidates', candidateId(c.jobId, p.fromTemporaryId));
           if (!dependency || dependency.status !== 'approved' || !dependency.formalEntityId) fail('ENTITY_REVIEW_REQUIRED', '请先确认这条关系涉及的实体');

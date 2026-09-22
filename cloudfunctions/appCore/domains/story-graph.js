@@ -1,4 +1,5 @@
 'use strict';
+const {materialLinkValid,isMaterialLink,referenceFor}=require('../lib/material-evidence');
 
 const ENTITY_COLLECTION = 'story_entities';
 const RELATION_COLLECTION = 'story_relations';
@@ -136,6 +137,7 @@ async function loadPublicStoryGraph(db, resourceId) {
       if (item.status !== 'confirmed' || item.needsSourceReview === true || !item.submissionId) return '';
       const result = await db.collection('submissions').doc(item.submissionId).get();
       const origin = Array.isArray(result && result.data) ? result.data[0] : result && result.data;
+      if (!await materialLinkValid(db,item,origin,true)) return '';
       return origin && origin.status === 'approved' && !origin.aiConsentRevokedAt
         && origin.aiAnalysisStatus !== 'consent_revoked' ? item._id || item.id || '' : '';
     }));

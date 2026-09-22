@@ -144,7 +144,7 @@ async function main() {
     } }
   });
   const attachCards = vm.runInNewContext(`${cardFunction}\nattachSubmissionStoryCards`, {
-    db: cardDb, STORY_LINK_COLLECTION: 'story_evidence_links', STORY_CHAIN_COLLECTION: 'story_chains',
+    materialLinkValid: require('./lib/material-evidence').materialLinkValid, db: cardDb, STORY_LINK_COLLECTION: 'story_evidence_links', STORY_CHAIN_COLLECTION: 'story_chains',
     SUBMISSION_COLLECTION: 'submissions', console,
     firstDocument: result => result.data[0] || null,
     cleanText: (value, limit) => String(value || '').trim().slice(0, limit)
@@ -181,3 +181,5 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
+

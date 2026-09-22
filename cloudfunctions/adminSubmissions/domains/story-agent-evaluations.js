@@ -1,4 +1,5 @@
 'use strict';
+const {materialLinkValid,referenceFor}=require('../lib/material-evidence');
 
 const crypto = require('crypto');
 
@@ -101,7 +102,7 @@ function createStoryAgentEvaluationService({ db }) {
       const link = first(await db.collection('story_evidence_links').doc(source.id).get());
       const origin = link && link.submissionId ? first(await db.collection('submissions').doc(link.submissionId).get()) : null;
       if (!link || link.status !== 'confirmed' || link.needsSourceReview === true
-        || (source.resourceId && link.resourceId !== source.resourceId) || !hasCurrentAiConsent(origin)) {
+        || (source.resourceId && link.resourceId !== source.resourceId) || !hasCurrentAiConsent(origin) || !await materialLinkValid(db,link,origin)) {
         return { valid: false, reason: '关联证据已失效或撤回 AI 授权' };
       }
     }
