@@ -1,0 +1,23 @@
+'use strict';
+const assert=require('node:assert/strict'),{fakeDb}=require('./lib/fake-material-db');
+const {createProcessingService,normalizeResult}=require('../cloudfunctions/materialWorker/lib/processing');
+const seed=()=>({submissions:{s:{_id:'s',status:'approved',assetType:'audio',fileID:'cloud://private',size:100,mimeType:'audio/wav',materialAnalysisConsent:true,materialConsentVersion:'multimodal-material-consent-v1',materialConsentScope:'approved_original_file_extraction'}}});
+async function main(){
+ const db=fakeDb(seed()),service=createProcessingService({db});
+ const event={submissionId:'s',kind:'audio_transcript'};
+ const r=await service.run(event,'admin');assert.equal(r.simulated,true);assert.equal((await service.run(event,'admin')).cached,true);
+ assert.equal(db.data().material_analyses[r.analysisId].usableForStory,false);
+ await assert.rejects(service.run({...event,real:true},'admin'),/配置/);
+ assert.throws(()=>normalizeResult('audio_transcript',{blocks:[{text:'test',startSeconds:2,endSeconds:1}]},5),/时间/);
+ const realDb=fakeDb(seed());let calls=0;
+ const adapter={simulated:false,provider:'in_memory_test',version:'test-v1',process:async()=>{calls++;return {blocks:[{text:'固定响应：村民讲述修缮经过',startSeconds:0,endSeconds:2}]};}};
+ const opts={db:realDb,config:{allowPaid:true,budgets:{audio_transcript:10}},readAsset:async()=>({durationSeconds:3,size:100,bytes:Buffer.alloc(100)}),adapters:{audio_transcript:adapter}};
+ const real=createProcessingService(opts);const result=await real.run({...event,real:true},'admin');assert.equal(result.simulated,false);assert.equal(calls,1);
+ await real.run({...event,real:true},'admin');assert.equal(calls,1);
+ const revokedDb=fakeDb(seed());opts.db=revokedDb;opts.adapters.audio_transcript={...adapter,process:async()=>{revokedDb.data().submissions.s.materialAnalysisConsent=false;return {blocks:[{text:'不得保存',startSeconds:0,endSeconds:1}]};}};
+ await assert.rejects(createProcessingService(opts).run({...event,real:true},'admin'),/授权/);
+ assert.equal(Object.keys(revokedDb.data().material_analyses).length,0);
+ const budget=createProcessingService({...opts,db:fakeDb(seed()),config:{allowPaid:true,budgets:{audio_transcript:1}}});
+ await assert.rejects(budget.run({...event,real:true},'admin'),/预算/);
+ console.log('Audio material pipeline: timestamps, mock exclusion, fixed adapter, cache, independent budget, withdrawal during call passed.');
+}main().catch(e=>{console.error(e);process.exitCode=1;});

@@ -169,7 +169,7 @@ async function getWorkspace(config) {
     .limit(100)
     .get();
   const sources = (result.data || [])
-    .filter(isEligibleImageSubmission)
+    .filter(item=>hasMaterialConsent(item) && ['image','audio'].includes(item.assetType || 'image') && String(item.imageFileID || item.fileID || '').startsWith('cloud://'))
     .map(submissionSource)
     .slice(0, 50);
   const urls = await temporaryUrls(sources);
@@ -179,7 +179,8 @@ async function getWorkspace(config) {
   const items = await Promise.all(sources.map(async (source) => ({
     ...source,
     fileUrl: urls.get(source.fileID) || '',
-    realOcrEligible: source.size > 0 && source.size <= config.maxImageBytes,
+    analyses: ((await db.collection(ANALYSIS_COLLECTION).where({submissionId:source.submissionId}).limit(20).get()).data||[]).map(publicAnalysis),
+    realOcrEligible: source.assetType === 'image' && source.size > 0 && source.size <= config.maxImageBytes,
     realOcrBlockedReason: source.size <= 0
       ? '文件大小信息缺失，不能安全计费调用'
       : source.size > config.maxImageBytes
@@ -608,6 +609,7 @@ exports.main = async (event = {}) => {
     if (action === 'startMockImageAnalysis') return await startMockImageAnalysis(event, adminUid);
     if (action === 'runRealImageAnalysis') return await runRealImageAnalysis(config, event, adminUid);
     if (action === 'runSyntheticTest') return await runSyntheticTest(adminUid);
+    if (action === 'runMaterialProcessing') return await require('./lib/processing').createProcessingService({db}).run(event,adminUid);
     if (action === 'reviewMaterialEvidence') return await require('./lib/review-evidence').createReviewService({db}).review(event, adminUid);
     if (action === 'reviewAnalysis') return await reviewAnalysis(event, adminUid);
     return { ok: false, error: { code: 'INVALID_ACTION', message: '不支持的材料识别操作' } };
