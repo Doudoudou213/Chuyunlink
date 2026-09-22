@@ -99,7 +99,7 @@ function createTokenHubClient({ config, transport = requestJson }) {
             'User-Agent': 'ChuLink-ResearchAgent/1.0'
           }
         }, JSON.stringify(body), config.requestTimeoutMs);
-        const output = validateAgentOutput(parseModelContent(response), { allowedResourceIds, allowedEvidenceIds });
+        const output = validateAgentOutput(parseModelContent(response), { allowedResourceIds, allowedEvidenceIds, observationEvidenceIds: input.evidenceLinks.filter(e=>e.materialReference && e.materialReference.kind==='image_observation').map(e=>e.id) });
         const usage = response.usage || {};
         return {
           output,

@@ -4,7 +4,7 @@ const {redactSensitiveText}=require('./privacy');
 const fail=(code,message)=>{throw Object.assign(new Error(message),{code});};
 function blocksFor(a) {
   return (a.blocks && a.blocks.length ? a.blocks : [{text:a.extractedText||'',boundingBox:null}]).slice(0,40).map((b,i)=>({
-    id:'fragment_'+i,text:String(b.text||''),kind:a.kind||'image_ocr',
+    id:'fragment_'+i,text:String(b.text||''),kind:a.kind||'image_ocr',uncertainty:String(b.uncertainty||''),
     locator:b.locator || {type:'image_region',blockIndex:i,boundingBox:b.boundingBox||null}}));
 }
 function createReviewService({db}) {

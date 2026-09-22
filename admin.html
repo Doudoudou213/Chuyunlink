@@ -2239,7 +2239,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       const fragments=analysis.reviewedFragments && analysis.reviewedFragments.length ? analysis.reviewedFragments : analysis.blocks;
       return '<div class="admin-material-editor mt-4 rounded-xl border border-stone-200 p-4" data-material-fragments="'+escapeHtml(analysis.id)+'" data-review-version="'+Number(analysis.reviewVersion||0)+'">'
         +'<p class="text-xs">'+(analysis.simulated?'模拟材料，确认后仍不可用于正式故事。':'逐段校对：确认内容不代表确认历史结论。')+'</p>'
-        +fragments.map(f=>'<label class="mt-3 block text-xs" data-fragment="'+escapeHtml(f.id)+'"><strong>'+escapeHtml(f.kind||analysis.kind)+' · '+escapeHtml(JSON.stringify(f.locator))+'</strong><textarea class="mt-2 w-full rounded border border-stone-200 p-3" rows="3">'+escapeHtml(f.text)+'</textarea><span class="block py-2"><input type="checkbox" data-fragment-usable '+(f.usable?'checked':'')+'> 确认这段内容可用于研究</span><span class="block py-2"><input type="checkbox" data-fragment-public '+(f.publicExcerpt?'checked':'')+'> 允许作为公开节选（仍需用户授权）</span></label>').join('')
+        +fragments.map(f=>'<label class="mt-3 block text-xs" data-fragment="'+escapeHtml(f.id)+'"><strong>'+escapeHtml(({image_ocr:'图片原文（OCR）',image_observation:'画面观察（不确认历史结论）',audio_transcript:'录音转写'})[f.kind||analysis.kind]||f.kind||analysis.kind)+' · '+escapeHtml(JSON.stringify(f.locator))+'</strong><p>'+escapeHtml(f.uncertainty||'')+'</p><textarea class="mt-2 w-full rounded border border-stone-200 p-3" rows="3">'+escapeHtml(f.text)+'</textarea><span class="block py-2"><input type="checkbox" data-fragment-usable '+(f.usable?'checked':'')+'> 确认这段内容可用于研究</span><span class="block py-2"><input type="checkbox" data-fragment-public '+(f.publicExcerpt?'checked':'')+'> 允许作为公开节选（仍需用户授权）</span></label>').join('')
         +'<button type="button" data-review-fragments="approved" class="min-h-11 rounded-lg border border-stone-200 px-4">保存校对版本</button> <button type="button" data-review-fragments="rejected" class="min-h-11 rounded-lg border border-stone-200 px-4">退回材料</button><p role="status" data-fragment-message class="mt-2 text-xs"></p></div>';
     }
     document.addEventListener('click', async event=>{
@@ -2320,6 +2320,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
             </div>
             <p class="mt-3 break-all text-[10px] text-stone-400">投稿 ID：${escapeHtml(item.submissionId)} · 投稿人：${escapeHtml(item.contributorName)}</p>
             ${!item.analysis && item.realOcrBlockedReason ? `<p class="mt-2 text-xs text-amber-700">${escapeHtml(item.realOcrBlockedReason)}</p>` : ""}
+            ${item.assetType === 'image' ? '<button type="button" data-material-process="image_observation" data-submission="'+escapeHtml(item.submissionId)+'" class="min-h-11 rounded-lg border border-stone-200 px-4">模拟图片观察流程</button>' : ''}
             ${item.assetType === 'audio' ? '<button type="button" data-material-process="audio_transcript" data-submission="'+escapeHtml(item.submissionId)+'" class="min-h-11 rounded-lg border border-stone-200 px-4">模拟分段转写流程</button>' : ''}
             ${item.analyses && item.analyses.length ? item.analyses.map(materialAnalysisPanel).join('') : materialAnalysisPanel(item.analysis)}
           </div>

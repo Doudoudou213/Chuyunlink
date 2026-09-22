@@ -2,7 +2,7 @@
 const {first,hash,hasMaterialConsent,fileFingerprint}=require('./material-evidence');
 const {redactSensitiveText}=require('./privacy');
 const fail=(code,message)=>{throw Object.assign(new Error(message),{code});};
-const POLICIES={audio_transcript:{asset:'audio',unit:'seconds',limit:1800,max:600,bytes:30*1024*1024}};
+const POLICIES={image_observation:{asset:'image',unit:'images',limit:20,max:1,bytes:5*1024*1024},audio_transcript:{asset:'audio',unit:'seconds',limit:1800,max:600,bytes:30*1024*1024}};
 function normalizeResult(kind,result,duration) {
   if(!result||!Array.isArray(result.blocks)||!result.blocks.length||result.blocks.length>40) fail('INVALID_MATERIAL_OUTPUT','识别结果没有有效片段或片段过多');
   let previousEnd=0;
@@ -15,11 +15,17 @@ function normalizeResult(kind,result,duration) {
       previousEnd=end;
       return {text,locator:{type:'audio_time',startSeconds:start,endSeconds:end},index:i};
     }
+    if(kind==='image_observation') {
+      const box=b.region;
+      if(!box||!['x','y','width','height'].every(k=>Number.isFinite(box[k]))||box.x<0||box.y<0||box.width<=0||box.height<=0||box.x+box.width>1||box.y+box.height>1) fail('INVALID_IMAGE_REGION','图片观察区域无效');
+      return {text,locator:{type:'image_region',boundingBox:{x:box.x,y:box.y,width:box.width,height:box.height}},index:i,
+        uncertainty:redactSensitiveText(String(b.uncertainty||'尚需人工核对')).text.slice(0,300)};
+    }
     fail('UNSUPPORTED_MATERIAL_KIND','暂不支持这种材料处理');
   });
 }
 const mockAdapter={simulated:true,provider:'local_mock',version:'fixed-v1',
-  async process({kind,duration}){return {blocks:[{text:'[模拟转写] 讲述者介绍了当地修缮活动；本段仅用于流程演示。',startSeconds:0,endSeconds:Math.min(5,duration)}]};}};
+  async process({kind,duration}){if(kind==='image_observation')return {blocks:[{text:'[模拟观察] 画面中有对称展开的轮廓，不确认纹样名称、年代或来源。',region:{x:0,y:0,width:1,height:1},uncertainty:'流程演示，未读取原图'}]};return {blocks:[{text:'[模拟转写] 讲述者介绍了当地修缮活动；本段仅用于流程演示。',startSeconds:0,endSeconds:Math.min(5,duration)}]};}};
 function createProcessingService({db,adapters={},readAsset,config={}}) {
   async function run(event,uid) {
     const kind=event.kind,policy=POLICIES[kind];
@@ -52,7 +58,7 @@ function createProcessingService({db,adapters={},readAsset,config={}}) {
     if(cached)return {ok:true,cached:true,analysisId,simulated:cached.simulated};
     try {
       let asset=null,duration=10;
-      if(real){await fresh(db);asset=await readAsset(origin,policy);duration=Number(asset.durationSeconds);
+      if(real){await fresh(db);asset=await readAsset(origin,policy);duration=policy.unit==='seconds'?Number(asset.durationSeconds):1;
         if(!Number.isFinite(duration)||duration<=0||duration>policy.max||!Number.isFinite(asset.size)||asset.size<=0||asset.size>policy.bytes)fail('MATERIAL_LIMIT','材料时长或大小超限');}
       await db.runTransaction(async tx=>{
         await fresh(tx);

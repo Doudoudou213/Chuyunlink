@@ -236,13 +236,16 @@ function createStoryAgentReviewService({ db }) {
           if (high && (batch || request.highRiskAcknowledged !== true || note.length < 8)) fail('HIGH_RISK_REVIEW_REQUIRED', '高风险建议须逐条核对，并填写至少八个字的判断依据');
           const evidenceLinkIds = [...new Set((p.evidenceLinkIds || []).map(id))];
           if (!evidenceLinkIds.length || !Number.isFinite(Number(p.confidence)) || Number(p.confidence) < 0.6 || c.risk === 'insufficient' || c.risk === 'blocked') fail('INSUFFICIENT_EVIDENCE', '证据不足，请补充材料后重新分析');
+          let onlyObservations=true;
           for (const evidenceId of evidenceLinkIds) {
             const evidence = await get('story_evidence_links', evidenceId);
             if (!evidence || evidence.status !== 'confirmed' || evidence.needsSourceReview === true
               || evidence.resourceId !== resourceId) fail('EVIDENCE_CHANGED', '来源已失效或不属于当前资源');
+            if(evidence.materialKind!=='image_observation') onlyObservations=false;
             const origin = evidence.submissionId ? await get('submissions', evidence.submissionId) : null;
             if (!hasCurrentAiConsent(origin) || !await materialLinkValid(tx,evidence,origin)) fail('SOURCE_UNAVAILABLE', '来源投稿已不可用于 AI 建议');
           }
+          if(onlyObservations && !['depicts','visually_similar_to'].includes(relationType)) fail('OBSERVATION_SCOPE','画面观察不能独立支持历史关系');
           const dependency = await get('story_agent_candidates', candidateId(c.jobId, p.fromTemporaryId));
           if (!dependency || dependency.status !== 'approved' || !dependency.formalEntityId) fail('ENTITY_REVIEW_REQUIRED', '请先确认这条关系涉及的实体');
           const fromEntityId = dependency.formalEntityId;

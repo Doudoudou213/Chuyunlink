@@ -183,6 +183,10 @@ function validateAgentOutput(value, context = {}) {
     if (evidenceLinkIds.some((id) => !allowedEvidenceIds.has(id))) {
       throw contractError('AGENT_UNKNOWN_EVIDENCE_REFERENCE', '关系引用了不存在或未确认的来源');
     }
+    const observationIds=new Set(context.observationEvidenceIds||[]);
+    if(evidenceLinkIds.length && evidenceLinkIds.every(id=>observationIds.has(id)) && !['depicts','visually_similar_to'].includes(relationType)) {
+      throw contractError('AGENT_OBSERVATION_SCOPE','画面观察不能独立支持历史关系，请补充文字或口述来源');
+    }
     return { fromTemporaryId, toResourceId, relationType, reason, evidenceLinkIds, confidence };
   });
 
