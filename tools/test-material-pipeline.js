@@ -136,7 +136,7 @@ async function main() {
   assert.match(workerSource, /isEligibleImageSubmission/);
   assert.match(workerSource, /runRealImageAnalysis/);
   assert.match(workerSource, /reserveDailyCall/);
-  assert.match(workerSource, /beforeAttempt:\s*\(\)\s*=>\s*reserveDailyCall/);
+  assert.match(workerSource, /beforeAttempt:\s*async\s*\(\)\s*=>\s*\{\s*await assertMaterialSource\(source\);\s*return reserveDailyCall/);
   assert.match(workerSource, /maxAge:\s*600/);
   assert.doesNotMatch(workerSource, /TOKENHUB_API_KEY|OCR_API_KEY|SECRET_KEY/);
   const contractSource = read('cloudfunctions/materialWorker/lib/material-contract.js');

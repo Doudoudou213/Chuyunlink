@@ -16,6 +16,7 @@ const {
   normalizeReviewText
 } = require('./lib/material-contract');
 const { loadConfig, isRealOcrReady, publicConfig } = require('./lib/config');
+const { fileFingerprint,hasMaterialConsent } = require('./lib/material-evidence');
 const { createTencentOcrClient } = require('./lib/tencent-ocr-client');
 
 const app = cloudbase.init({
@@ -359,7 +360,14 @@ async function shortImageUrl(fileID) {
   return url;
 }
 
+async function assertMaterialSource(source) {
+  const latest = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(source.submissionId).get());
+  if (!hasMaterialConsent(latest) || fileFingerprint(latest) !== sourceFingerprint(source)) {
+    throw Object.assign(new Error('材料授权、原文件或审核状态已变化'), {code:'MATERIAL_SOURCE_CHANGED'});
+  }
+}
 async function persistRealAnalysis({ source, adminUid, jobId, analysisId, extraction, providerAttempts }) {
+  await assertMaterialSource(source);
   const now = db.serverDate();
   const record = {
     jobId,
@@ -443,7 +451,7 @@ async function runRealImageAnalysis(config, event, adminUid) {
     const client = createTencentOcrClient({ config });
     const imageUrl = await shortImageUrl(source.fileID);
     const result = await client.recognizeImage(imageUrl, {
-      beforeAttempt: () => reserveDailyCall(config, acquired.jobId)
+      beforeAttempt: async () => { await assertMaterialSource(source); return reserveDailyCall(config, acquired.jobId); }
     });
     const analysis = await persistRealAnalysis({
       source,
@@ -520,6 +528,10 @@ async function reviewAnalysis(event, adminUid) {
   if (!current) throw Object.assign(new Error('没有找到识别结果'), { code: 'ANALYSIS_NOT_FOUND' });
   if (current.status !== 'needs_review') {
     throw Object.assign(new Error('这条识别结果已经处理，请刷新页面'), { code: 'ANALYSIS_ALREADY_REVIEWED' });
+  }
+  if (current.submissionId) {
+    const origin = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(current.submissionId).get());
+    if (!hasMaterialConsent(origin) || fileFingerprint(origin) !== current.sourceFingerprint) throw Object.assign(new Error('材料来源已变化，不能确认'), {code:'MATERIAL_SOURCE_CHANGED'});
   }
   const reviewedText = decision === 'approved'
     ? normalizeReviewText(event.reviewedText)

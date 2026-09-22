@@ -12,6 +12,7 @@ const app = cloudbase.init({
 const db = app.database();
 const resourceService = createResourceService({ db });
 const storyEvidenceService = createStoryEvidenceService({ db, app });
+const materialConsentService = require('./domains/material-consent').createMaterialConsentService({ db });
 const aiConsentService = require('./domains/ai-consent').createAiConsentService({ db });
 
 const PROFILE_COLLECTION = 'user_profiles';
@@ -600,6 +601,8 @@ function submissionView(item, includeOwnerDetails = false) {
     aiAnalysisConsent: item.aiAnalysisConsent === true,
     aiAnalysisStatus: item.aiAnalysisStatus || 'not_requested',
     materialAnalysisConsent: item.materialAnalysisConsent === true,
+    materialResearchConsent: item.materialResearchConsent === true,
+    materialExcerptConsent: item.materialExcerptConsent === true,
     materialAnalysisStatus: item.materialAnalysisStatus || 'not_requested',
     resourceId: item.resourceId || '',
     resourceBindingStatus: item.resourceBindingStatus || (item.resourceId ? 'confirmed' : 'unbound'),
@@ -1897,6 +1900,11 @@ async function createSubmission(uid, userInfo, event) {
     aiConsentScope: aiAnalysisConsent ? 'approved_public_submission_text' : '',
     aiConsentAt: aiAnalysisConsent ? db.serverDate() : null,
     aiAnalysisStatus: aiAnalysisConsent ? 'waiting_for_approval' : 'not_requested',
+    materialResearchConsent: materialAnalysisConsent && aiAnalysisConsent && event.materialResearchConsent === true,
+    materialResearchConsentVersion: event.materialResearchConsent === true ? 'confirmed-material-use-v1' : '',
+    materialResearchConsentScope: event.materialResearchConsent === true ? 'reviewed_material_research_and_public_excerpt' : '',
+    materialExcerptConsent: materialAnalysisConsent && event.materialResearchConsent === true && event.materialExcerptConsent === true,
+    materialResearchConsentAt: event.materialResearchConsent === true ? db.serverDate() : null,
     materialAnalysisConsent,
     materialConsentVersion: materialAnalysisConsent ? 'multimodal-material-consent-v1' : '',
     materialConsentScope: materialAnalysisConsent ? 'approved_original_file_extraction' : '',
@@ -1960,6 +1968,7 @@ exports.main = async (event = {}) => {
     if (action === 'markNotificationRead') return await markNotificationRead(uid, userInfo, event);
     if (action === 'planRoute') return await planRoute(uid, event);
     if (action === 'updateProfile') return await updateProfile(uid, userInfo, event);
+    if (['withdrawMaterialConsent','grantMaterialResearchConsent'].includes(action)) return await materialConsentService.change(event, uid);
     if (action === 'withdrawAiAnalysisConsent') return await aiConsentService.withdraw(event, uid);
     if (action === 'getRewards') {
       return { ok: true, action, items: await listRewards() };
