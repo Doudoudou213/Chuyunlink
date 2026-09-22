@@ -1,4 +1,5 @@
 'use strict';
+const {materialLinkValid,referenceFor}=require('../lib/material-evidence');
 
 const crypto = require('crypto');
 
@@ -82,7 +83,7 @@ function createAdminStoryClaimService({ db }) {
       try {
         submission = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get());
       } catch (_) {}
-      if (!submission || submission.status !== 'approved') continue;
+      if (!submission || submission.status !== 'approved' || !await materialLinkValid(db,link,submission,true)) continue;
       sources.push({
         id: link._id || link.id || '',
         resourceId: link.resourceId || '',

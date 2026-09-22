@@ -1,4 +1,5 @@
 'use strict';
+const {materialLinkValid,isMaterialLink,referenceFor}=require('../lib/material-evidence');
 
 const crypto = require('crypto');
 const STORY_COLLECTION = 'story_chains';
@@ -150,6 +151,11 @@ function createAdminStoryChainService({ db }) {
       const submissionStates = await Promise.all(linkStates.map(async ({ link }) => (
         firstDocument(await transaction.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get())
       )));
+      for(let i=0;i<linkStates.length;i++) {
+        if(!await materialLinkValid(transaction,linkStates[i].link,submissionStates[i],true)) {
+          throw Object.assign(new Error('材料版本、授权或公开范围已变化，请复核来源'),{code:'MATERIAL_SOURCE_CHANGED'});
+        }
+      }
       if (submissionStates.some((submission) => !submission || submission.status !== 'approved')) {
         throw Object.assign(new Error('故事引用的投稿已不再公开'), { code: 'INVALID_STORY_SUBMISSION' });
       }
@@ -165,7 +171,7 @@ function createAdminStoryChainService({ db }) {
           const link = firstDocument(await transaction.collection(LINK_COLLECTION).doc(sourceId).get());
           const submission = link && firstDocument(await transaction.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get());
           if (!link || link.status !== 'confirmed' || link.needsSourceReview === true
-            || link.resourceId !== draft.resourceId || !hasCurrentAiConsent(submission)) {
+            || link.resourceId !== draft.resourceId || !hasCurrentAiConsent(submission) || !await materialLinkValid(transaction,link,submission,true)) {
             throw Object.assign(new Error('AI 章节修订使用的来源授权或状态已变化'), { code: 'AI_REVISION_SOURCE_CHANGED' });
           }
         }
@@ -209,6 +215,7 @@ function createAdminStoryChainService({ db }) {
         chapters,
         closing,
         sourceLinkIds,
+        materialReferences: linkStates.filter(({link})=>isMaterialLink(link)).map(({linkId,link})=>({linkId,...referenceFor(link)})),
         status: 'published',
         version: nextVersion,
         qualityAssessment,

@@ -1,4 +1,5 @@
 'use strict';
+const {materialLinkValid,isMaterialLink,referenceFor}=require('./lib/material-evidence');
 
 const cloudbase = require('@cloudbase/node-sdk');
 const crypto = require('crypto');
@@ -569,14 +570,15 @@ async function buildConfirmedStoryInput(resourceId) {
     const linkId = cleanText(link._id || link.id, 128);
     if (!linkId) continue;
     const submission = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get());
-    if (!hasCurrentAiConsent(submission)) continue;
+    if (!hasCurrentAiConsent(submission) || !await materialLinkValid(db,link,submission)) continue;
     sources.push({
       linkId,
       relationType: cleanText(link.relationType || 'supports_story', 40),
-      evidenceSummary: cleanText(link.evidenceSummary, 500),
+      evidenceSummary: cleanText(link.evidenceSummary, isMaterialLink(link) ? 1600 : 500),
+      materialReference: referenceFor(link),
       submission: {
         title: cleanText(submission.title || submission.description || '社区投稿', 120),
-        description: cleanText(submission.description, 900),
+        description: cleanText(isMaterialLink(link) ? link.evidenceSummary : submission.description, isMaterialLink(link) ? 1600 : 900),
         assetType: cleanText(submission.assetType || 'image', 20),
         regionName: cleanText(submission.regionName || '湖北', 80),
         recordedAt: dateMs(submission.createdAt) ? new Date(dateMs(submission.createdAt)).toISOString() : '',
@@ -680,7 +682,7 @@ async function runStoryDraft(config, adminUid, event) {
       }
       for (const { record } of currentLinks) {
         const origin = firstDocument(await transaction.collection(SUBMISSION_COLLECTION).doc(record.submissionId).get());
-        if (!hasCurrentAiConsent(origin)) {
+        if (!hasCurrentAiConsent(origin) || !await materialLinkValid(transaction,record,origin)) {
           throw Object.assign(new Error('来源投稿授权或审核状态已变化'), { code: 'STORY_SOURCE_CHANGED' });
         }
       }
@@ -691,7 +693,7 @@ async function runStoryDraft(config, adminUid, event) {
         for (const key of relation.evidenceLinkIds) {
           const evidence = firstDocument(await transaction.collection(LINK_COLLECTION).doc(key).get());
           const origin = evidence && firstDocument(await transaction.collection(SUBMISSION_COLLECTION).doc(evidence.submissionId).get());
-          if (!evidence || evidence.status !== 'confirmed' || evidence.resourceId !== resourceId || !hasCurrentAiConsent(origin)) {
+          if (!evidence || evidence.status !== 'confirmed' || evidence.resourceId !== resourceId || !hasCurrentAiConsent(origin) || !await materialLinkValid(transaction,evidence,origin)) {
             throw Object.assign(new Error('链迹依据已失效或授权已撤回'), { code: 'STORY_SOURCE_CHANGED' });
           }
         }
@@ -762,16 +764,17 @@ async function loadSectionSources(reader, resourceId, sourceLinkIds) {
       throw Object.assign(new Error('所选章节来源已失效或不属于当前资源'), { code: 'STORY_SOURCE_CHANGED' });
     }
     const submission = firstDocument(await reader.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get());
-    if (!hasCurrentAiConsent(submission)) {
+    if (!hasCurrentAiConsent(submission) || !await materialLinkValid(reader,link,submission)) {
       throw Object.assign(new Error('所选章节来源未授权、已撤回或不可用'), { code: 'STORY_SOURCE_CHANGED' });
     }
     sources.push({
       linkId: sourceLinkId,
       relationType: cleanText(link.relationType || 'supports_story', 40),
-      evidenceSummary: cleanText(link.evidenceSummary, 500),
+      evidenceSummary: cleanText(link.evidenceSummary, isMaterialLink(link) ? 1600 : 500),
+      materialReference: referenceFor(link),
       submission: {
         title: cleanText(submission.title || submission.description || '社区投稿', 120),
-        description: cleanText(submission.description, 900),
+        description: cleanText(isMaterialLink(link) ? link.evidenceSummary : submission.description, isMaterialLink(link) ? 1600 : 900),
         assetType: cleanText(submission.assetType || 'text', 20),
         regionName: cleanText(submission.regionName || '湖北', 80)
       }

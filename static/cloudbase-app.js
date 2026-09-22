@@ -847,7 +847,7 @@ feedback_closed: '反馈处理',
         ${sources.map((source, index) => {
           const submission = source.submission || {};
           return `<article class="rounded-2xl border border-[#d8c6a7] bg-white p-4">
-            <div class="flex items-start gap-3"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#241a17] text-[10px] font-black text-[#e3bd69]">${index + 1}</span><div><h4 class="text-xs font-black text-stone-900">${safeText(submission.title || '社区文化记录')}</h4><p class="mt-1 text-[10px] leading-5 text-stone-500">${safeText(source.evidenceSummary || submission.description)}</p></div></div>
+            <div class="flex items-start gap-3"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#241a17] text-[10px] font-black text-[#e3bd69]">${index + 1}</span><div><h4 class="text-xs font-black text-stone-900">${safeText(submission.title || '社区文化记录')}</h4><p class="mt-1 text-[10px] leading-5 text-stone-500">${safeText(source.evidenceSummary || submission.description)}</p>${source.materialReference ? `<p class="mt-1 text-[10px] text-stone-500">材料类型：${safeText(source.materialReference.kind)} · 校对版本 ${Number(source.materialReference.reviewVersion)} · 位置：${safeText(JSON.stringify(source.materialReference.locator))}</p>` : ''}</div></div>
             ${storyEvidenceMedia(submission)}
             <p class="mt-3 border-t border-stone-100 pt-3 text-[9px] text-stone-400">贡献者：${safeText(submission.contributorName || '社区守护者')}${submission.regionName ? ` · ${safeText(submission.regionName)}` : ''}</p>
           </article>`;
