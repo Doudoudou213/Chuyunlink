@@ -10,6 +10,7 @@ function fakeDb(seed) {
         async set(record) { if (name === failCollection) throw new Error('injected failure'); data[name][key] = structuredClone(record); },
         async update(record) { if (name === failCollection) throw new Error('injected failure'); data[name][key] = { ...data[name][key], ...structuredClone(record) }; }
       }; },
+      async add(record) { const key='local_'+Object.keys(data[name]).length; if(name===failCollection)throw Error('injected failure'); data[name][key]=structuredClone(record);return {id:key}; },
       where(value) { filter = value; return query; }, orderBy() { return query; },
       skip(value) { offset = value; return query; }, limit(value) { limit = value; return query; },
       async get() { return { data: Object.entries(data[name]).sort().map(([key,v]) => ({ ...v, _id: key }))

@@ -5,10 +5,15 @@ function createMaterialConsentService({db}) {
     const submissionId=String(event.submissionId||'');
     if(!/^[\w-]+$/.test(submissionId)) throw Error('投稿编号无效');
     const revoke=event.action==='withdrawMaterialConsent';
+    try { await db.createCollection('material_consent_logs'); } catch(e) { if(!/exist/i.test(e.message+' '+e.code)) throw e; }
     await db.runTransaction(async tx=>{
       const ref=tx.collection('submissions').doc(submissionId), s=first(await ref.get());
       if(!s||s.userId!==uid) throw Error('只能管理自己的材料授权');
+      if(!revoke && (!s.materialAnalysisConsent || !s.aiAnalysisConsent || s.materialConsentRevokedAt || s.aiConsentRevokedAt)) throw Error('请先授予材料识别和 AI 分析权限');
       if(!revoke && (event.consentVersion!==VERSION || event.researchConsent!==true)) throw Error('请阅读并确认材料用途');
+      const revision=Number(s.materialConsentRevision||0)+1;
+      await tx.collection('material_consent_logs').doc(submissionId+'_'+revision).set({submissionId,revision,action:revoke?'withdraw':'grant_research',consentVersion:VERSION,publicExcerpt:!revoke&&event.publicExcerptConsent===true,createdAt:db.serverDate()});
+      await ref.update({materialConsentRevision:revision});
       await ref.update(revoke ? {materialAnalysisConsent:false,materialResearchConsent:false,materialExcerptConsent:false,
         materialConsentRevokedAt:db.serverDate(),materialResearchConsentRevokedAt:db.serverDate(),updatedAt:db.serverDate()}
         : {materialResearchConsent:true,materialResearchConsentVersion:VERSION,materialResearchConsentScope:SCOPE,
@@ -32,6 +37,7 @@ function createMaterialConsentService({db}) {
         }
       }
     }
+    if(revoke) await require('../lib/material-impacts').propagateMaterialImpacts(db,submissionId,'material_consent_revoked');
     return {ok:true,submissionId,revoked:revoke};
   }
   return {change};

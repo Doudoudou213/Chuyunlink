@@ -1,12 +1,15 @@
 'use strict';
 const assert=require('node:assert/strict'),{fakeDb}=require('./lib/fake-material-db');
 const {createProcessingService,normalizeResult}=require('../cloudfunctions/materialWorker/lib/processing');
-const seed=()=>({submissions:{s:{_id:'s',status:'approved',assetType:'audio',fileID:'cloud://private',size:100,mimeType:'audio/wav',materialAnalysisConsent:true,materialConsentVersion:'multimodal-material-consent-v1',materialConsentScope:'approved_original_file_extraction'}}});
+const seed=()=>({submissions:{s:{_id:'s',status:'approved',assetType:'audio',fileID:'cloud://private',size:100,mimeType:'audio/wav',aiAnalysisConsent:true,aiConsentVersion:'ai-analysis-consent-v1',aiConsentScope:'approved_public_submission_text',materialResearchConsent:true,materialResearchConsentVersion:'confirmed-material-use-v1',materialResearchConsentScope:'reviewed_material_research_and_public_excerpt',materialAnalysisConsent:true,materialConsentVersion:'multimodal-material-consent-v1',materialConsentScope:'approved_original_file_extraction'}}});
 async function main(){
  const db=fakeDb(seed()),service=createProcessingService({db});
  const event={submissionId:'s',kind:'audio_transcript'};
  const r=await service.run(event,'admin');assert.equal(r.simulated,true);assert.equal((await service.run(event,'admin')).cached,true);
  assert.equal(db.data().material_analyses[r.analysisId].usableForStory,false);
+ db.data().material_analyses[r.analysisId].status='rejected';db.data().material_analyses[r.analysisId].reviewVersion=2;
+ assert.equal((await service.run(event,'admin')).cached,true);assert.equal(db.data().material_analyses[r.analysisId].reviewVersion,2);
+ db.data().material_analyses[r.analysisId].invalidatedAt='now';await assert.rejects(service.run(event,'admin'),/停用/);
  await assert.rejects(service.run({...event,real:true},'admin'),/配置/);
  assert.throws(()=>normalizeResult('audio_transcript',{blocks:[{text:'test',startSeconds:2,endSeconds:1}]},5),/时间/);
  const realDb=fakeDb(seed());let calls=0;

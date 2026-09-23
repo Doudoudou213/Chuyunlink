@@ -117,4 +117,4 @@ MATERIAL_OCR_MAX_ATTEMPTS=2
 - 管理员确认后才将派生文字标记为可用于故事；
 - 处理版本变化时生成新结果，不覆盖旧审核记录。
 
-当前 `storyWorker` 还不会读取 `material_analyses`。这项整合属于后续阶段，避免真实 OCR 一上线就改变现有故事。
+本地已通过经校对的材料片段证据关系接通研究智能体、故事与单章节修订。只有授权仍有效、版本一致且非模拟的确认片段可读。详细实现、六阶段 checkpoint 和真实服务缺口见 `MULTIMODAL_STAGE_PROGRESS.md`；尚未部署或真实云端验收。

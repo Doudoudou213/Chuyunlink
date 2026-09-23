@@ -931,6 +931,7 @@ async function storyDraftWorkspace() {
     record: firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(submissionId).get())
   })));
   const submissions = new Map(submissionPairs.map((item) => [item.submissionId, item.record]));
+  for(let i=links.length-1;i>=0;i--) if(!await materialLinkValid(db,links[i],submissions.get(links[i].submissionId))) links.splice(i,1);
   const counts = new Map();
   links.forEach((item) => counts.set(item.resourceId, (counts.get(item.resourceId) || 0) + 1));
   const supplementIdsByResource = new Map();
@@ -944,6 +945,7 @@ async function storyDraftWorkspace() {
     });
     const materialTime = Math.max(
       dateMs(submission.storyMaterialUpdatedAt),
+      dateMs(link.reviewedAt),
       ...(Array.isArray(submission.approvedSupplements) ? submission.approvedSupplements : []).map((item) => dateMs(item && item.approvedAt))
     );
     latestMaterialByResource.set(link.resourceId, Math.max(latestMaterialByResource.get(link.resourceId) || 0, materialTime));

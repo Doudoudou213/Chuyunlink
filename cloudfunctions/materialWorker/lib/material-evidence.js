@@ -7,11 +7,12 @@ const hash = x => crypto.createHash('sha256').update(JSON.stringify(x)).digest('
 function hasMaterialConsent(s) {
   return Boolean(s && s.status === 'approved' && s.materialAnalysisConsent === true
     && s.materialConsentVersion === 'multimodal-material-consent-v1'
-    && s.materialConsentScope === 'approved_original_file_extraction' && !s.materialConsentRevokedAt);
+    && s.materialConsentScope === 'approved_original_file_extraction' && !s.materialConsentRevokedAt
+    && !s.withdrawnAt && !s.disabledAt && s.sourceUnavailable !== true);
 }
 function hasResearchConsent(s) {
   return hasMaterialConsent(s) && s.aiAnalysisConsent === true && !s.aiConsentRevokedAt
-    && s.aiConsentVersion === 'ai-analysis-consent-v1' && s.aiConsentScope === 'approved_public_submission_text'
+    && s.aiAnalysisStatus !== 'consent_revoked' && s.aiConsentVersion === 'ai-analysis-consent-v1' && s.aiConsentScope === 'approved_public_submission_text'
     && s.materialResearchConsent === true && s.materialResearchConsentVersion === VERSION
     && s.materialResearchConsentScope === SCOPE && !s.materialResearchConsentRevokedAt;
 }
@@ -24,6 +25,10 @@ async function materialLinkValid(db, link, submission, publicRead = false) {
   if (!isMaterialLink(link)) return true;
   if (!hasResearchConsent(submission) || link.status !== 'confirmed' || link.needsSourceReview === true) return false;
   if (publicRead && submission.materialExcerptConsent !== true) return false;
+  if(link.parentEvidenceLinkId) {
+    const parent=first(await db.collection('story_evidence_links').doc(link.parentEvidenceLinkId).get());
+    if(!parent||parent.status!=='confirmed'||parent.needsSourceReview||parent.submissionId!==link.submissionId||parent.resourceId!==link.resourceId)return false;
+  }
   const a = first(await db.collection('material_analyses').doc(link.materialAnalysisId || '').get());
   if (!a || a.status !== 'approved' || a.simulated !== false || a.usableForStory !== true
     || a.submissionId !== link.submissionId || a.sourceFingerprint !== fileFingerprint(submission)

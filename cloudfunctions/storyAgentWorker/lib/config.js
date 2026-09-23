@@ -51,8 +51,8 @@ function loadConfig(env = process.env) {
     minTextChars: boundedInteger(env.AGENT_MIN_TEXT_CHARS, 16, 8, 200),
     inputPricePerMillion: boundedNumber(env.AGENT_INPUT_PRICE_PER_MILLION, 1, 0, 1000),
     outputPricePerMillion: boundedNumber(env.AGENT_OUTPUT_PRICE_PER_MILLION, 4, 0, 1000),
-    promptVersion: 'cultural-research-agent-shadow-v1',
-    codeVersion: String(env.AGENT_CODE_VERSION || 'story-agent-code-v2-entity-resolution').trim().slice(0, 100)
+    promptVersion: 'cultural-research-agent-material-v2',
+    codeVersion: String(env.AGENT_CODE_VERSION || 'story-agent-code-v3-material-evidence').trim().slice(0, 100)
   };
 }
 

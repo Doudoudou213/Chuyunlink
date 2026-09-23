@@ -495,6 +495,15 @@ feedback_closed: '反馈处理',
       renderCloudSubmissionRecords();
     });
     document.getElementById('cloud-my-submissions').addEventListener('click', async (event) => {
+      const grantButton=event.target.closest('[data-material-grant]');
+      if(grantButton){
+        if(!window.confirm('允许 AI 使用管理员校对后的材料文字与画面观察，用于文化研究及故事草拟？历史判断仍需审核，可随时撤回。'))return;
+        const publicExcerptConsent=window.confirm('是否另行允许公开经校对、脱敏并单独确认的材料节选及其故事引用？原始高清图片和完整录音不会因此公开。取消表示仅用于研究。');
+        grantButton.disabled=true;
+        try{await callCore({action:'grantMaterialResearchConsent',submissionId:grantButton.dataset.materialGrant,consentVersion:'confirmed-material-use-v1',researchConsent:true,publicExcerptConsent});await refreshCloudProfile();}
+        catch(error){grantButton.disabled=false;if(typeof showToast==='function')showToast(error.message||'授权设置失败','error');}
+        return;
+      }
       const button = event.target.closest('button[data-withdraw-ai-consent],button[data-withdraw-material-consent]');
       if (!button || button.disabled) return;
       const submissionId = button.dataset.withdrawAiConsent || button.dataset.withdrawMaterialConsent;
@@ -1957,6 +1966,7 @@ feedback_closed: '反馈处理',
         </div>
         ${item.reviewNote ? `<p class="mt-2 rounded-lg bg-stone-50 p-2 text-[10px] text-stone-600">审核意见：${safeText(item.reviewNote)}</p>` : ''}
         ${item.status === 'approved' ? `<p class="mt-2 text-[10px] font-bold text-emerald-600">已发放 +${Number(item.rewardPoints || 100)} 流光积分</p>` : ''}
+        ${item.materialAnalysisConsent === true && item.aiAnalysisConsent === true ? `<button type="button" data-material-grant="${safeText(item.id)}" class="min-h-11 rounded-lg border border-stone-200 px-3 text-xs">设置材料研究与节选授权</button>` : ''}
         ${item.materialAnalysisConsent === true ? `<div class="mt-2"><button type="button" data-withdraw-material-consent="${safeText(item.id)}" class="min-h-11 rounded-lg border border-stone-200 px-3 text-xs text-stone-500">停止材料处理与后续使用</button></div>` : ''}
         ${item.aiAnalysisConsent === true ? `<div class="mt-2 border-t border-stone-100 pt-2"><button type="button" data-withdraw-ai-consent="${safeText(item.id)}" class="min-h-10 rounded-lg border border-stone-200 px-3 text-[10px] font-bold text-stone-500 hover:border-[#9e2f24] hover:text-[#9e2f24] disabled:opacity-50">停止后续 AI 分析</button></div>` : ''}
         ${item.aiAnalysisStatus === 'consent_revoked' ? '<p class="mt-2 text-[10px] text-stone-400">已停止后续 AI 分析，原投稿仍保留。</p>' : ''}

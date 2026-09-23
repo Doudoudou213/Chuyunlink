@@ -144,7 +144,8 @@ function createStoryAgentReviewService({ db }) {
         return { id: key, valid: Boolean(source && source.status === 'confirmed' && source.needsSourceReview !== true
           && source.resourceId === resourceId && hasCurrentAiConsent(origin) && await materialLinkValid(db,source,origin)),
           title: text(source && source.submissionTitle, 120), summary: text(source && source.evidenceSummary, 1000),
-          originalText: text(origin && origin.description, 2400) };
+          materialReference: referenceFor(source),
+          originalText: text(source && source.materialAnalysisId ? source.evidenceSummary : origin && origin.description, 2400) };
       }));
       const sourceCandidate = c.candidateType === 'relation' ? await get('story_agent_candidates', candidateId(c.jobId, payload.fromTemporaryId)) : null;
       const gap = c.candidateType === 'gap' ? await get('story_gap_tasks', require('./story-agent-gaps').taskIdFor(c._id)) : null;
@@ -241,7 +242,7 @@ function createStoryAgentReviewService({ db }) {
             const evidence = await get('story_evidence_links', evidenceId);
             if (!evidence || evidence.status !== 'confirmed' || evidence.needsSourceReview === true
               || evidence.resourceId !== resourceId) fail('EVIDENCE_CHANGED', '来源已失效或不属于当前资源');
-            if(evidence.materialKind!=='image_observation') onlyObservations=false;
+            if(!['image_observation','video_frames'].includes(evidence.materialKind)) onlyObservations=false;
             const origin = evidence.submissionId ? await get('submissions', evidence.submissionId) : null;
             if (!hasCurrentAiConsent(origin) || !await materialLinkValid(tx,evidence,origin)) fail('SOURCE_UNAVAILABLE', '来源投稿已不可用于 AI 建议');
           }

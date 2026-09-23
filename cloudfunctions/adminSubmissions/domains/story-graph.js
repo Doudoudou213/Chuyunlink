@@ -1,4 +1,5 @@
 'use strict';
+const {materialLinkValid}=require('../lib/material-evidence');
 
 const crypto = require('crypto');
 
@@ -307,12 +308,13 @@ function createAdminStoryGraphService({ db }) {
         const origin = evidence.submissionId
           ? firstDocument(await transaction.collection('submissions').doc(evidence.submissionId).get()) : null;
         if (!origin || origin.status !== 'approved' || origin.aiConsentRevokedAt
-          || origin.aiAnalysisStatus === 'consent_revoked') {
+          || origin.aiAnalysisStatus === 'consent_revoked' || !await materialLinkValid(transaction,evidence,origin,true)) {
           const error = new Error('来源投稿已不可用');
           error.code = 'GRAPH_SOURCE_UNAVAILABLE';
           throw error;
         }
       }
+      if(evidenceRecords.length && evidenceRecords.every(e=>['image_observation','video_frames'].includes(e.materialKind)) && !['depicts','visually_similar_to'].includes(relationType)) throw Object.assign(new Error('画面观察不足以确认历史关系'),{code:'OBSERVATION_SCOPE'});
       const ref = transaction.collection(RELATION_COLLECTION).doc(relationId);
       const current = firstDocument(await ref.get());
       const now = db.serverDate();

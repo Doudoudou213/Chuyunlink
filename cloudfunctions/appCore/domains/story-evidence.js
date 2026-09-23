@@ -102,8 +102,9 @@ function createStoryEvidenceService({ db, app }) {
       } catch (_) {}
     }
 
+    const materialSubmissionIds=new Set(links.filter(isMaterialLink).map(l=>l.submissionId));
     const fileList = evidence
-      .filter(({link}) => !isMaterialLink(link))
+      .filter(({link}) => !isMaterialLink(link) && !materialSubmissionIds.has(link.submissionId))
       .map(({ submission }) => submission.imageFileID || submission.fileID || '')
       .filter(Boolean);
     let fileUrls = new Map();
@@ -134,7 +135,7 @@ function createStoryEvidenceService({ db, app }) {
           contributorName: submission.contributorName || '社区守护者',
           regionName: submission.regionName || '',
           createdAt: timeValue(submission.createdAt),
-          fileUrl: isMaterialLink(link) ? '' : fileUrls.get(submission.imageFileID || submission.fileID || '') || ''
+          fileUrl: isMaterialLink(link) || materialSubmissionIds.has(link.submissionId) ? '' : fileUrls.get(submission.imageFileID || submission.fileID || '') || ''
         }
       }))
       .sort((left, right) => String(left.submission.createdAt || '').localeCompare(String(right.submission.createdAt || '')));

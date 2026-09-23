@@ -129,6 +129,7 @@ function publicAnalysis(record) {
     extractedText: record.extractedText || '',
     reviewedText: record.reviewedText || '',
     reviewVersion: record.reviewVersion || 0,
+    durationSeconds: record.durationSeconds || 0,
     kind: record.kind || 'image_ocr',
     blocks: require('./lib/review-evidence').blocksFor(record),
     reviewedFragments: record.reviewedFragments || [],
@@ -169,7 +170,7 @@ async function getWorkspace(config) {
     .limit(100)
     .get();
   const sources = (result.data || [])
-    .filter(item=>hasMaterialConsent(item) && ['image','audio'].includes(item.assetType || 'image') && String(item.imageFileID || item.fileID || '').startsWith('cloud://'))
+    .filter(item=>hasMaterialConsent(item) && ['image','audio','video'].includes(item.assetType || 'image') && String(item.imageFileID || item.fileID || '').startsWith('cloud://'))
     .map(submissionSource)
     .slice(0, 50);
   const urls = await temporaryUrls(sources);
@@ -196,8 +197,8 @@ async function getWorkspace(config) {
     pipelineVersion: activePipelineVersion,
     consentVersion: CONSENT_VERSION,
     eligibleCount: items.length,
-    needsReviewCount: items.filter((item) => item.analysis && item.analysis.status === 'needs_review').length,
-    confirmedCount: items.filter((item) => item.analysis && item.analysis.status === 'approved').length,
+    needsReviewCount: items.flatMap(item=>item.analyses).filter(a=>a.status==='needs_review').length,
+    confirmedCount: items.flatMap(item=>item.analyses).filter(a=>a.status==='approved').length,
     synthetic: { ...synthetic, analysis: await analysisForSource(synthetic, MOCK_PIPELINE_VERSION) },
     items
   };
@@ -314,7 +315,8 @@ async function acquireRealJob(source, adminUid) {
   const jobId = jobIdFor(source, REAL_OCR_PIPELINE_VERSION);
   const analysisId = analysisIdFor(jobId);
   const existingAnalysis = firstDocument(await db.collection(ANALYSIS_COLLECTION).doc(analysisId).get());
-  if (existingAnalysis && ['needs_review', 'approved'].includes(existingAnalysis.status)) {
+  if (existingAnalysis && existingAnalysis.invalidatedAt) throw Object.assign(new Error('此材料版本已停用，不能覆盖旧记录'),{code:'MATERIAL_NEW_VERSION_REQUIRED'});
+  if (existingAnalysis && ['needs_review', 'approved', 'rejected'].includes(existingAnalysis.status)) {
     return { acquired: false, cached: true, jobId, analysisId, analysis: publicAnalysis(existingAnalysis) };
   }
   return db.runTransaction(async (transaction) => {
@@ -365,8 +367,8 @@ async function shortImageUrl(fileID) {
   return url;
 }
 
-async function assertMaterialSource(source) {
-  const latest = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(source.submissionId).get());
+async function assertMaterialSource(source, reader = db) {
+  const latest = firstDocument(await reader.collection(SUBMISSION_COLLECTION).doc(source.submissionId).get());
   if (!hasMaterialConsent(latest) || fileFingerprint(latest) !== sourceFingerprint(source)) {
     throw Object.assign(new Error('材料授权、原文件或审核状态已变化'), {code:'MATERIAL_SOURCE_CHANGED'});
   }
@@ -402,16 +404,18 @@ async function persistRealAnalysis({ source, adminUid, jobId, analysisId, extrac
     reviewedAt: null,
     reviewedBy: ''
   };
+  await db.runTransaction(async transaction => {
+    await assertMaterialSource(source,transaction);
   await Promise.all([
-    db.collection(ANALYSIS_COLLECTION).doc(analysisId).set(record),
-    db.collection(JOB_COLLECTION).doc(jobId).update({
+    transaction.collection(ANALYSIS_COLLECTION).doc(analysisId).set(record),
+    transaction.collection(JOB_COLLECTION).doc(jobId).update({
       status: 'completed',
       providerAttempts,
       requestId: extraction.requestId,
       finishedAt: now,
       updatedAt: now
     }),
-    db.collection(LOG_COLLECTION).add({
+    transaction.collection(LOG_COLLECTION).add({
       action: 'real_ocr_completed',
       analysisId,
       jobId,
@@ -425,11 +429,12 @@ async function persistRealAnalysis({ source, adminUid, jobId, analysisId, extrac
       createdAt: now
     })
   ]);
-  await db.collection(SUBMISSION_COLLECTION).doc(source.submissionId).update({
+  await transaction.collection(SUBMISSION_COLLECTION).doc(source.submissionId).update({
     materialAnalysisStatus: 'needs_review',
     materialAnalysisId: analysisId,
     materialAnalysisUpdatedAt: now,
     updatedAt: now
+  });
   });
   return publicAnalysis({ _id: analysisId, ...record });
 }
@@ -450,6 +455,7 @@ async function runRealImageAnalysis(config, event, adminUid) {
   }
   const acquired = await acquireRealJob(source, adminUid);
   if (acquired.cached) {
+    await assertMaterialSource(source);
     return { ok: true, action: 'runRealImageAnalysis', submissionId, cached: true, analysis: acquired.analysis };
   }
   try {
@@ -609,6 +615,15 @@ exports.main = async (event = {}) => {
     if (action === 'startMockImageAnalysis') return await startMockImageAnalysis(event, adminUid);
     if (action === 'runRealImageAnalysis') return await runRealImageAnalysis(config, event, adminUid);
     if (action === 'runSyntheticTest') return await runSyntheticTest(adminUid);
+    if (action === 'runVideoPreparation') {
+      const processor=require('./lib/processing').createProcessingService({db});
+      const results=[];
+      for(const kind of ['video_frames','video_audio']) {
+        try { results.push({kind,...await processor.run({...event,kind},adminUid)}); }
+        catch(error){ results.push({kind,ok:false,error:{code:error.code||'MATERIAL_PROCESSING_FAILED',message:'子任务未完成，可独立重试'}}); }
+      }
+      return {ok:true,results};
+    }
     if (action === 'runMaterialProcessing') return await require('./lib/processing').createProcessingService({db}).run(event,adminUid);
     if (action === 'reviewMaterialEvidence') return await require('./lib/review-evidence').createReviewService({db}).review(event, adminUid);
     if (action === 'reviewAnalysis') return await reviewAnalysis(event, adminUid);

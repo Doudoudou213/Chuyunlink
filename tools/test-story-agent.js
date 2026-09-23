@@ -34,7 +34,7 @@ async function main() {
   assert.equal(config.enabled, false, '智能体必须默认关闭');
   assert.equal(config.shadowMode, true, '第一阶段必须默认影子模式');
   assert.equal(config.providerMaxAttempts, 2);
-  assert.equal(config.codeVersion, 'story-agent-code-v2-entity-resolution');
+  assert.equal(config.codeVersion, 'story-agent-code-v3-material-evidence');
   const safeConfig = publicConfig({ ...config, apiKey: 'must-not-leak' });
   assert.equal(safeConfig.apiKeyConfigured, true);
   assert.equal(JSON.stringify(safeConfig).includes('must-not-leak'), false, '公开配置不得泄漏密钥');

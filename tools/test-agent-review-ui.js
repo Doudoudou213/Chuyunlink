@@ -55,6 +55,7 @@ async function main() {
     await page.waitForFunction(() => getComputedStyle(document.getElementById('login-panel')).display === 'none');
     for (const width of [390,768,1440]) {
       await page.setViewportSize({ width, height: 1000 });
+      if(!await page.locator('#agent-review-refresh').isVisible()) await page.locator('.admin-menu-toggle').click();
       await page.click('#agent-review-refresh');
       await page.locator('[data-candidate]').first().waitFor();
       await page.locator('[data-candidate]').first().locator('summary').first().click();
@@ -64,6 +65,7 @@ async function main() {
     assert.equal(await page.locator('[data-candidate="high"] [data-select]').isDisabled(), true);
     assert.equal(await page.locator('[data-candidate="gap"] [data-approve]').count(), 0);
     assert.equal(await page.locator('[data-candidate="gap"] [data-gap-publish]').isDisabled(), true);
+    await page.evaluate(()=>document.querySelectorAll('#list details').forEach(d=>d.open=true));
     await page.locator('[data-candidate="gap"] [data-gap-save]').click();
     await page.locator('[data-candidate="gap"] [data-result]').filter({hasText:'草稿已保存'}).waitFor();
     await page.locator('[data-candidate="gap"] [data-gap-publish]').click();
@@ -74,7 +76,7 @@ async function main() {
     await page.locator('[data-candidate="entity-candidate"] [data-result]').filter({hasText:'处理完成'}).waitFor();
     assert.equal(await page.evaluate(() => calls.filter(c=>c.action==='reviewAgentCandidates').length), 1);
     await page.click('[data-refresh]');
-    await page.locator('[data-candidate="relation-candidate"] details').nth(1).locator('summary').click();
+    await page.evaluate(()=>document.querySelectorAll('#list details').forEach(d=>d.open=true));
     await page.locator('[data-candidate="relation-candidate"] [data-field="why"]').fill('管理员修改后，明确指出只有外观相似。');
     await page.locator('[data-candidate="relation-candidate"] [data-approve]').click();
     await page.waitForFunction(() => calls.filter(c=>c.action==='reviewAgentCandidates').length === 2);

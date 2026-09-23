@@ -782,7 +782,7 @@
       }
       list.innerHTML = items.map((item) => {
         const preview = item.assetType === "image" && item.fileUrl
-          ? item.assetType === 'audio' ? `<audio controls preload="none" src="${escapeHtml(item.fileUrl)}" class="w-full"></audio>` : `<img src="${escapeHtml(item.fileUrl)}" alt="补充资料预览" class="mt-3 max-h-72 w-full rounded-xl bg-stone-100 object-contain">`
+          ? `<img src="${escapeHtml(item.fileUrl)}" alt="补充资料预览" class="mt-3 max-h-72 w-full rounded-xl bg-stone-100 object-contain">`
           : item.assetType === "audio" && item.fileUrl
             ? `<audio src="${escapeHtml(item.fileUrl)}" controls class="mt-3 w-full"></audio>`
             : item.fileUrl
@@ -2235,11 +2235,17 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       try{await callMaterialWorker({action:'runMaterialProcessing',kind:button.dataset.materialProcess,submissionId:button.dataset.submission});await loadMaterialAnalysis();}
       catch(error){button.textContent=error.message||'处理失败，点击重试';}finally{button.disabled=false;}
     });
+    function materialLocationLabel(locator) {
+      if(!locator)return '整份材料';
+      if(['audio_time','video_audio_time'].includes(locator.type))return locator.startSeconds+'–'+locator.endSeconds+' 秒';
+      if(locator.type==='video_frame')return '视频 '+locator.timeSeconds+' 秒关键帧';
+      return locator.blockIndex === undefined ? '图片选定区域' : '图片文字块 '+(locator.blockIndex+1);
+    }
     function renderMaterialFragments(analysis) {
       const fragments=analysis.reviewedFragments && analysis.reviewedFragments.length ? analysis.reviewedFragments : analysis.blocks;
       return '<div class="admin-material-editor mt-4 rounded-xl border border-stone-200 p-4" data-material-fragments="'+escapeHtml(analysis.id)+'" data-review-version="'+Number(analysis.reviewVersion||0)+'">'
-        +'<p class="text-xs">'+(analysis.simulated?'模拟材料，确认后仍不可用于正式故事。':'逐段校对：确认内容不代表确认历史结论。')+'</p>'
-        +fragments.map(f=>'<label class="mt-3 block text-xs" data-fragment="'+escapeHtml(f.id)+'"><strong>'+escapeHtml(({image_ocr:'图片原文（OCR）',image_observation:'画面观察（不确认历史结论）',audio_transcript:'录音转写'})[f.kind||analysis.kind]||f.kind||analysis.kind)+' · '+escapeHtml(JSON.stringify(f.locator))+'</strong><p>'+escapeHtml(f.uncertainty||'')+'</p><textarea class="mt-2 w-full rounded border border-stone-200 p-3" rows="3">'+escapeHtml(f.text)+'</textarea><span class="block py-2"><input type="checkbox" data-fragment-usable '+(f.usable?'checked':'')+'> 确认这段内容可用于研究</span><span class="block py-2"><input type="checkbox" data-fragment-public '+(f.publicExcerpt?'checked':'')+'> 允许作为公开节选（仍需用户授权）</span></label>').join('')
+        +'<p class="text-xs">校对版本 '+Number(analysis.reviewVersion||0)+' · '+(analysis.simulated?'模拟材料，确认后仍不可用于正式故事。':'逐段校对：确认内容不代表确认历史结论。')+'</p>'
+        +fragments.map(f=>'<div class="mt-3 block text-xs" data-fragment="'+escapeHtml(f.id)+'"><strong>'+escapeHtml(({image_ocr:'图片原文（OCR）',image_observation:'画面观察（不确认历史结论）',audio_transcript:'录音转写',video_audio:'视频音频轨转写',video_frames:'视频关键帧观察'})[f.kind||analysis.kind]||f.kind||analysis.kind)+' · '+escapeHtml(materialLocationLabel(f.locator))+'</strong><p>'+escapeHtml(f.uncertainty||'')+'</p><textarea aria-label="校对片段文字" class="mt-2 w-full rounded border border-stone-200 p-3" rows="3">'+escapeHtml(f.text)+'</textarea>'+(['audio_time','video_audio_time'].includes(f.locator.type)?'<span class="block py-2">开始秒数 <input aria-label="开始秒数" type="number" min="0" step="0.1" data-time-start value="'+Number(f.locator.startSeconds)+'" class="w-20 border"> 结束秒数 <input aria-label="结束秒数" type="number" min="0" step="0.1" data-time-end value="'+Number(f.locator.endSeconds)+'" class="w-20 border"></span>':'')+'<span class="block py-2"><input type="checkbox" aria-label="确认此片段可用于研究" data-fragment-usable '+(f.usable?'checked':'')+'> 确认这段内容可用于研究</span><span class="block py-2"><input type="checkbox" aria-label="确认此片段可公开引用" data-fragment-public '+(f.publicExcerpt?'checked':'')+'> 允许作为公开节选（仍需用户授权）</span></div>').join('')
         +'<button type="button" data-review-fragments="approved" class="min-h-11 rounded-lg border border-stone-200 px-4">保存校对版本</button> <button type="button" data-review-fragments="rejected" class="min-h-11 rounded-lg border border-stone-200 px-4">退回材料</button><p role="status" data-fragment-message class="mt-2 text-xs"></p></div>';
     }
     document.addEventListener('click', async event=>{
@@ -2249,6 +2255,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
         await callMaterialWorker({action:'reviewMaterialEvidence',analysisId:card.dataset.materialFragments,
           reviewVersion:Number(card.dataset.reviewVersion),decision:button.dataset.reviewFragments,
           fragments:[...card.querySelectorAll('[data-fragment]')].map(el=>({id:el.dataset.fragment,text:el.querySelector('textarea').value,
+            startSeconds:el.querySelector('[data-time-start]')?.value,endSeconds:el.querySelector('[data-time-end]')?.value,
             usable:el.querySelector('[data-fragment-usable]').checked,publicExcerpt:el.querySelector('[data-fragment-public]').checked}))});
         await loadMaterialAnalysis();
       } catch(error){card.querySelector('[data-fragment-message]').textContent=error.message||'保存失败，请刷新后重试';}
@@ -2302,7 +2309,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
         <article class="admin-material-card grid gap-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm md:grid-cols-[220px_1fr]">
           <div class="admin-material-original overflow-hidden rounded-xl bg-stone-100">
             ${item.fileUrl
-              ? `<img src="${escapeHtml(item.fileUrl)}" alt="${escapeHtml(item.title || '待识别图片')}原图" class="h-48 w-full object-cover">`
+              ? item.assetType === 'video' ? `<video controls preload="metadata" src="${escapeHtml(item.fileUrl)}" class="w-full"></video>` : item.assetType === 'audio' ? `<audio controls preload="none" src="${escapeHtml(item.fileUrl)}" class="w-full"></audio>` : `<img src="${escapeHtml(item.fileUrl)}" alt="${escapeHtml(item.title || '待识别图片')}原图" class="h-48 w-full object-cover">`
               : '<div class="flex h-48 items-center justify-center px-4 text-center text-xs text-stone-400">图片预览暂不可用</div>'}
           </div>
           <div>
@@ -2316,17 +2323,18 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
                 ? `<span class="rounded-full bg-stone-100 px-2 py-1 text-[10px] font-bold text-stone-600">${escapeHtml({needs_review:'等待校对',approved:'已确认',rejected:'已退回'}[item.analysis.status] || item.analysis.status)}</span>`
                 : realReady && item.realOcrEligible
                   ? `<button type="button" data-material-real-start="${escapeHtml(item.submissionId)}" class="rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]">运行真实 OCR</button>`
-                  : `<button type="button" disabled class="cursor-not-allowed rounded-lg bg-stone-200 px-4 py-2 text-xs font-bold text-stone-500">${realReady ? "暂不可识别" : "等待 OCR 配置"}</button>`}
+                  : `<button type="button" disabled class="cursor-not-allowed rounded-lg bg-stone-200 px-4 py-2 text-xs font-bold text-stone-500">${item.assetType !== "image" ? "真实服务尚未接入" : realReady ? "暂不可识别" : "等待 OCR 配置"}</button>`}
             </div>
             <p class="mt-3 break-all text-[10px] text-stone-400">投稿 ID：${escapeHtml(item.submissionId)} · 投稿人：${escapeHtml(item.contributorName)}</p>
             ${!item.analysis && item.realOcrBlockedReason ? `<p class="mt-2 text-xs text-amber-700">${escapeHtml(item.realOcrBlockedReason)}</p>` : ""}
+            ${item.assetType === 'video' ? ['video_frames','video_audio'].map(kind=>'<button type="button" data-material-process="'+kind+'" data-submission="'+escapeHtml(item.submissionId)+'" class="min-h-11 rounded-lg border border-stone-200 px-4">'+(kind==='video_frames'?'模拟关键帧流程':'模拟音频轨转写')+'</button>').join('') : ''}
             ${item.assetType === 'image' ? '<button type="button" data-material-process="image_observation" data-submission="'+escapeHtml(item.submissionId)+'" class="min-h-11 rounded-lg border border-stone-200 px-4">模拟图片观察流程</button>' : ''}
             ${item.assetType === 'audio' ? '<button type="button" data-material-process="audio_transcript" data-submission="'+escapeHtml(item.submissionId)+'" class="min-h-11 rounded-lg border border-stone-200 px-4">模拟分段转写流程</button>' : ''}
             ${item.analyses && item.analyses.length ? item.analyses.map(materialAnalysisPanel).join('') : materialAnalysisPanel(item.analysis)}
           </div>
         </article>`).join("") : `
         <div class="rounded-2xl border border-dashed border-stone-300 bg-white p-6 text-center">
-          <p class="text-sm font-bold text-stone-700">当前没有可识别的真实图片投稿</p>
+          <p class="text-sm font-bold text-stone-700">当前没有取得授权的待处理材料</p>
           <p class="mt-2 text-xs leading-relaxed text-stone-500">这是正常状态。旧投稿没有授权原始文件识别，不会被自动纳入；用户以后上传时主动勾选新授权，审核通过后才会出现在这里。</p>
         </div>`;
 
@@ -2335,7 +2343,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">Multimodal Foundation</p>
-              <h3 class="mt-1 text-lg font-bold text-stone-900">图片材料识别 · ${realReady ? "真实 OCR 已就绪" : "真实适配器待配置"}</h3>
+              <h3 class="mt-1 text-lg font-bold text-stone-900">多模态材料校对 · ${realReady ? "真实 OCR 已就绪" : "真实适配器待配置"}</h3>
               <p class="mt-2 max-w-3xl text-xs leading-relaxed text-stone-600">${realReady
                 ? `已启用腾讯云通用文字识别。每张图片使用 10 分钟短时地址，单图不超过 ${Math.floor(Number(result.maxImageBytes || 0) / 1024 / 1024)}MB，每日最多 ${Number(result.dailyCallLimit || 0)} 次；结果脱敏后仍需人工校对。`
                 : "真实 OCR 代码已经接好，但云端开关或专用密钥尚未配置，因此不会读取原图、不会调用收费接口。下方虚构测试仍可安全使用。"}</p>
@@ -2366,7 +2374,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
         <section>
           <div class="mb-3 flex items-center justify-between px-1">
             <h3 class="text-sm font-bold text-stone-800">真实投稿授权队列</h3>
-            <span class="text-xs text-stone-400">仅显示已通过且单独授权的图片</span>
+            <span class="text-xs text-stone-400">仅显示已通过且单独授权的材料</span>
           </div>
           <div class="grid gap-4">${realCards}</div>
         </section>`;
@@ -2963,7 +2971,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
           card.dataset.editorReady = 'true';
           const original = card.querySelector('.admin-material-original');
           const img = original.querySelector('img');
-          const caption = document.createElement('p'); caption.textContent = '原始材料 · 完整显示，不裁切'; original.prepend(caption);
+          const caption = document.createElement('p'); caption.textContent = original.querySelector('audio,video') ? '原始材料 · 仅供管理员校对' : '原始材料 · 完整显示，不裁切'; original.prepend(caption);
           if (img) {
             const zoom = document.createElement('button'); zoom.type = 'button'; zoom.textContent = '放大查看原图'; original.append(zoom);
             const open = () => { fullImage.src = img.src; imageDialog.showModal(); };

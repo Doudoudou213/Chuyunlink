@@ -119,6 +119,9 @@ function createAdminStoryClaimService({ db }) {
     const submissions = await Promise.all(linkStates.map(({ link }) => (
       db.collection(SUBMISSION_COLLECTION).doc(link.submissionId || '').get().then(firstDocument)
     )));
+    for(let i=0;i<linkStates.length;i++) if(!await materialLinkValid(db,linkStates[i].link,submissions[i],true)) {
+      throw Object.assign(new Error('材料已失效或不允许公开引用'),{code:'MATERIAL_SOURCE_CHANGED'});
+    }
     if (submissions.some((submission) => !submission || submission.status !== 'approved')) {
       throw Object.assign(new Error('事实引用的投稿已不再公开'), { code: 'INVALID_CLAIM_SUBMISSION' });
     }

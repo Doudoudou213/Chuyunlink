@@ -100,7 +100,7 @@ function main() {
   assert.match(worker, /assessStoryReadiness/);
   assert.match(worker, /AI_STORY_QUALITY_BLOCKED/);
   assert.match(worker, /qualityAssessment/);
-  assert.match(storyConfig, /sourced-story-contract-v2/);
+  assert.match(storyConfig, /sourced-story-material-v3/);
   assert.match(tokenHubClient, /年代、数字、人物和地点必须在所引来源中直接出现/);
   assert.match(adminDomain, /STORY_QUALITY_OVERRIDE_REQUIRED/);
   assert.match(adminDomain, /qualityOverrideReason/);
