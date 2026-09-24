@@ -52,7 +52,10 @@ function fixture() {
       { _id: 'l_hn', status: 'confirmed', resourceId: 'r_hn', submissionId: 's_hn', evidenceSummary: '纹样记录' }
     ],
     submissions: [
-      { _id: 's_hb', status: 'approved' }, { _id: 's_hn', status: 'approved' }
+      { _id: 's_hb', status: 'approved', aiAnalysisConsent: true,
+        aiConsentVersion: 'ai-analysis-consent-v1', aiConsentScope: 'approved_public_submission_text' },
+      { _id: 's_hn', status: 'approved', aiAnalysisConsent: true,
+        aiConsentVersion: 'ai-analysis-consent-v1', aiConsentScope: 'approved_public_submission_text' }
     ],
     story_relations: [
       { _id: 'rel1', status: 'confirmed', resourceId: 'r_hb', fromEntityId: 'e_hb',

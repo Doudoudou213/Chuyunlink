@@ -65,22 +65,28 @@ function normalize(input) {
   };
 }
 
-async function validLink(db, linkId, allowedResourceId) {
+async function validLink(db, linkId, allowedResourceId, aiUse = false) {
   const link = await read(db, C.links, linkId);
   if (!link || link.status !== 'confirmed' || link.needsSourceReview === true ||
     allowedResourceId && link.resourceId !== allowedResourceId || !link.submissionId)
     fail('THEME_SOURCE_UNAVAILABLE', '专题引用的来源已失效或不属于所选资源');
   const submission = await read(db, C.submissions, link.submissionId);
   if (!submission || submission.status !== 'approved' || submission.aiConsentRevokedAt ||
-    submission.aiAnalysisStatus === 'consent_revoked' || !await materialLinkValid(db, link, submission, true))
+    submission.aiAnalysisStatus === 'consent_revoked' || submission.withdrawnAt ||
+    submission.disabledAt || submission.sourceUnavailable === true ||
+    !await materialLinkValid(db, link, submission, true))
     fail('THEME_SOURCE_UNAVAILABLE', '专题引用的投稿已失效或撤回授权');
+  if (aiUse && (submission.aiAnalysisConsent !== true ||
+    submission.aiConsentVersion !== 'ai-analysis-consent-v1' ||
+    submission.aiConsentScope !== 'approved_public_submission_text'))
+    fail('THEME_AI_CONSENT_REQUIRED', '专题 AI 只能读取仍有明确授权的来源');
   return {
     id: linkId, resourceId: link.resourceId, submissionId: link.submissionId,
     summary: text(link.evidenceSummary, 400), materialReference: referenceFor(link)
   };
 }
 
-async function validateTheme(db, theme, publish = false) {
+async function validateTheme(db, theme, publish = false, aiUse = false) {
   if (publish && (theme.nodes.length < 2 || theme.chapters.length < 2))
     fail('THEME_CONTENT_INCOMPLETE', '发布专题至少需要两个节点和两个章节');
   const resources = new Map();
@@ -97,14 +103,14 @@ async function validateTheme(db, theme, publish = false) {
     if (!node.sourceLinkIds.length) fail('THEME_NODE_SOURCE', '每个节点至少需要一份当前可用来源');
     resources.set(node.resourceId, resource);
     entities.set(node.entityId, entity);
-    for (const linkId of node.sourceLinkIds) links.set(linkId, await validLink(db, linkId, node.resourceId));
+    for (const linkId of node.sourceLinkIds) links.set(linkId, await validLink(db, linkId, node.resourceId, aiUse));
     if (node.storyId) {
       const story = await read(db, C.stories, node.storyId);
       if (!story || story.status !== 'published' || story.needsSourceReview === true ||
         story.resourceId !== node.resourceId)
         fail('THEME_STORY_UNAVAILABLE', '节点故事已失效');
       const storyLinks = ids(story.sourceLinkIds || [], 50);
-      for (const linkId of storyLinks) await validLink(db, linkId, node.resourceId);
+      for (const linkId of storyLinks) await validLink(db, linkId, node.resourceId, aiUse);
     }
   }
   const relations = [];
@@ -115,7 +121,7 @@ async function validateTheme(db, theme, publish = false) {
       !Array.isArray(relation.evidenceLinkIds) || !relation.evidenceLinkIds.length)
       fail('THEME_RELATION_UNAVAILABLE', '专题关系必须来自已确认的正式链迹');
     for (const linkId of relation.evidenceLinkIds)
-      links.set(linkId, await validLink(db, linkId, relation.resourceId));
+      links.set(linkId, await validLink(db, linkId, relation.resourceId, aiUse));
     if (['influenced_or_transmitted_to', 'changed_over_time'].includes(relation.relationType) &&
       relation.evidenceLinkIds.every(linkId => {
         const source = links.get(linkId);

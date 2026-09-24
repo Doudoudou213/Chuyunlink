@@ -26,6 +26,10 @@ async function main() {
   } });
   await assert.rejects(bad.suggest({ themeId, expectedRevision: 1, useAi: true }, 'admin1'),
     { code: 'THEME_AI_INVALID' });
+  db.data.submissions.get('s_hn').aiAnalysisConsent = false;
+  await assert.rejects(bad.suggest({ themeId, expectedRevision: 1, useAi: true }, 'admin1'),
+    { code: 'THEME_AI_CONSENT_REQUIRED' });
+  db.data.submissions.get('s_hn').aiAnalysisConsent = true;
   const withdrawn = createStoryThemeProposalService({ db, aiAdapter: {
     model: 'fixed', promptVersion: 'test',
     async suggest() {

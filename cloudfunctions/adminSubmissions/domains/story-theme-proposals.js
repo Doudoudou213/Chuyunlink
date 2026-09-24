@@ -47,7 +47,7 @@ function deterministicSuggestions(theme, checked) {
   return { suggestedOrder, relations, gaps, provinces, basis: 'confirmed_entities_relations_only' };
 }
 
-async function discoverRelations(db, theme, checked) {
+async function discoverRelations(db, theme, checked, aiUse = false) {
   const nodeIds = new Set(theme.nodes.map(node => node.entityId));
   const result = await db.collection(C.relations).where({ status: 'confirmed' }).limit(200).get();
   const found = [];
@@ -57,7 +57,7 @@ async function discoverRelations(db, theme, checked) {
       !relation.evidenceLinkIds.length) continue;
     try {
       for (const linkId of relation.evidenceLinkIds)
-        checked.links.set(linkId, await validLink(db, linkId, relation.resourceId));
+        checked.links.set(linkId, await validLink(db, linkId, relation.resourceId, aiUse));
       if (['influenced_or_transmitted_to', 'changed_over_time'].includes(relation.relationType) &&
         relation.evidenceLinkIds.every(linkId => {
           const source = checked.links.get(linkId);
@@ -156,8 +156,9 @@ function createStoryThemeProposalService({ db, aiAdapter = null }) {
     if (!theme || theme.archivedAt || Number(event.expectedRevision) !== Number(theme.revision))
       fail('THEME_EDIT_CONFLICT', '专题已变化，请刷新后重新获取建议');
     const normalized = normalize(theme);
-    const checked = await validateTheme(db, normalized, false);
-    await discoverRelations(db, normalized, checked);
+    const aiUse = event.useAi === true;
+    const checked = await validateTheme(db, normalized, false, aiUse);
+    await discoverRelations(db, normalized, checked, aiUse);
     const sourceFingerprint = fingerprint({
       links: [...checked.links.values()], relations: checked.relations.map(relation => ({
         id: recordId(relation), version: relation.version || 1, evidenceLinkIds: relation.evidenceLinkIds
@@ -179,8 +180,8 @@ function createStoryThemeProposalService({ db, aiAdapter = null }) {
         permittedSourceIds: [...checked.links.keys()]
       };
       const output = await aiAdapter.suggest(input);
-      const after = await validateTheme(db, normalized, false);
-      await discoverRelations(db, normalized, after);
+      const after = await validateTheme(db, normalized, false, true);
+      await discoverRelations(db, normalized, after, true);
       if (fingerprint({ links: [...after.links.values()],
         relations: after.relations.map(relation => ({
           id: recordId(relation), version: relation.version || 1, evidenceLinkIds: relation.evidenceLinkIds
@@ -199,8 +200,8 @@ function createStoryThemeProposalService({ db, aiAdapter = null }) {
       const fresh = first(await ref.get());
       if (!fresh || fresh.archivedAt || Number(fresh.revision) !== Number(theme.revision))
         fail('THEME_EDIT_CONFLICT', '专题已变化，建议未保存');
-      const current = await validateTheme(transaction, normalize(fresh), false);
-      await discoverRelations(transaction, normalize(fresh), current);
+      const current = await validateTheme(transaction, normalize(fresh), false, aiUse);
+      await discoverRelations(transaction, normalize(fresh), current, aiUse);
       if (fingerprint({ links: [...current.links.values()],
         relations: current.relations.map(relation => ({
           id: recordId(relation), version: relation.version || 1, evidenceLinkIds: relation.evidenceLinkIds

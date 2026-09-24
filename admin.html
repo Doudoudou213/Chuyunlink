@@ -474,6 +474,54 @@
     .admin-compact-body { padding: 22px; min-width: 0; }
     .admin-material-card > .admin-compact > .admin-compact-body { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; }
     #list .admin-story-actions { position: static; margin-top: 20px; padding: 16px 0 0; box-shadow: none; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] { width: 100%; max-width: 1100px; display: grid; gap: 20px; }
+    #admin-panel[data-view="story-themes"] [data-theme-editor] { display: grid; gap: 20px; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] > section,
+    #admin-panel[data-view="story-themes"] [data-theme-editor] > section {
+      border: 1px solid var(--admin-line) !important; border-radius: 12px !important;
+      background: var(--admin-surface) !important; padding: clamp(16px, 2.5vw, 28px) !important;
+      box-shadow: 0 8px 28px rgba(42, 29, 18, .035);
+    }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] h3 { font-family: var(--admin-serif); color: var(--admin-ink); margin: 0 0 6px; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] h4 { color: var(--admin-ink); }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] label { display: block; min-width: 0; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] label > span:first-child { display: block; margin-bottom: 5px; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] input:not([type="checkbox"]),
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] textarea,
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] select {
+      display: block; width: 100%; min-height: 44px; border: 1px solid #d8c9af; border-radius: 5px;
+      background: #fff; padding: 10px 12px; color: var(--admin-ink); font: inherit;
+    }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] textarea { line-height: 1.65; resize: vertical; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] input[type="checkbox"] { width: 17px; height: 17px; flex: none; accent-color: #9e2f24; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] fieldset { min-width: 0; border: 0; padding: 0; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] fieldset label,
+    #admin-panel[data-view="story-themes"] [data-theme-reviewed] {
+      display: flex; align-items: center; gap: 10px; border: 1px solid #e2d8c6;
+      border-radius: 6px; padding: 10px 12px; min-height: 44px; line-height: 1.5;
+    }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] [data-theme-node],
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] [data-theme-chapter] {
+      border: 1px solid #e2d3b8; border-radius: 8px; background: #fffdf9; padding: 16px;
+    }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] [data-theme-node] + [data-theme-node],
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] [data-theme-chapter] + [data-theme-chapter] { margin-top: 12px; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] [data-theme-node] fieldset,
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] [data-theme-chapter] fieldset { margin-top: 16px; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] [data-theme-node] fieldset > div,
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] [data-theme-chapter] fieldset > div { display: flex; flex-wrap: wrap; gap: 8px; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] [data-theme-node] fieldset label,
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] [data-theme-chapter] fieldset label { flex: 1 1 235px; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] button { min-height: 44px; white-space: normal; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] button:focus-visible,
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] input:focus-visible,
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] textarea:focus-visible,
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] select:focus-visible { outline: 2px solid #9e2f24; outline-offset: 2px; }
+    #admin-panel[data-view="story-themes"] [data-theme-workspace] [data-theme-proposal] { border: 1px solid #d8c6a7; background: #fff9ec; border-radius: 8px; padding: 16px; }
+    @media (max-width: 640px) {
+      #admin-panel[data-view="story-themes"] [data-theme-workspace] > section,
+      #admin-panel[data-view="story-themes"] [data-theme-editor] > section { padding: 16px !important; }
+    }
     #list .admin-story-filter, #admin-panel #comment-filters, .admin-triage-tools { border: 0 !important; background: transparent !important; box-shadow: none !important; padding: 0 !important; }
     .admin-filter-disclosure > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: #75634d; font-size: 13px; }
     .admin-filter-disclosure > summary::after { content: '⌄'; margin-left: 10px; }
@@ -558,6 +606,7 @@
             <button id="redemption-refresh" data-admin-view="redemptions" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">兑换码核销</button>
             <button id="story-links-refresh" data-admin-view="story-links" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">链迹关联</button>
             <button id="story-drafts-refresh" data-admin-view="story-drafts" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">故事草稿</button>
+            <button id="story-themes-refresh" data-admin-view="story-themes" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">主题专题</button>
             <button id="ai-status-refresh" data-admin-view="ai-status" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">AI 接口</button>
             <button id="agent-review-refresh" data-admin-view="agent-review" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">研究建议</button>
             <button id="material-analysis-refresh" data-admin-view="material-analysis" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600">材料识别</button>
@@ -2671,7 +2720,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       });
       const groups = [
         ['审核中心', ['submissions', 'supplements']],
-        ['内容整理', ['resource-bindings', 'story-links', 'story-drafts', 'agent-review']],
+        ['内容整理', ['resource-bindings', 'story-links', 'story-drafts', 'story-themes', 'agent-review']],
         ['社区管理', ['comments', 'reports', 'feedback']],
         ['权益管理', ['redemptions']],
         ['系统工具', ['ai-status', 'material-analysis', 'resource-preview']]
@@ -3044,5 +3093,6 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
     })();
   </script>
 <script src="./static/admin-agent-review.js"></script>
+<script src="./static/admin-story-themes.js"></script>
 </body>
 </html>
