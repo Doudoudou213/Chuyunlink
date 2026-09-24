@@ -111,4 +111,5 @@ async function main() {
   assert.equal(db.data.story_themes.get(saved.themeId).status, 'published', '失败的编辑不能覆盖旧版');
   console.log('Story theme local lifecycle checks passed.');
 }
-main().catch(error => { console.error(error); process.exitCode = 1; });
+if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });
+module.exports = { memoryDb, fixture, draft };

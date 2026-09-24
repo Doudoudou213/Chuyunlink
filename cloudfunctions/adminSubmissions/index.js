@@ -7,6 +7,7 @@ const { createAdminStoryEvidenceService } = require('./domains/story-evidence');
 const { createAdminStoryChainService } = require('./domains/story-chains');
 const { createAdminStoryClaimService } = require('./domains/story-claims');
 const { createStoryThemeService } = require('./domains/story-themes');
+const { createStoryThemeProposalService, createThemeAiAdapter } = require('./domains/story-theme-proposals');
 const { createStoryRevisionImpactService } = require('./domains/story-revision-impact');
 const { createStoryGapTaskService } = require('./domains/story-gap-tasks');
 const {
@@ -46,6 +47,7 @@ const storyEvidenceService = createAdminStoryEvidenceService({ db, app });
 const storyChainService = createAdminStoryChainService({ db });
 const storyClaimService = createAdminStoryClaimService({ db });
 const storyThemeService = createStoryThemeService({ db });
+const storyThemeProposalService = createStoryThemeProposalService({ db, aiAdapter: createThemeAiAdapter() });
 const storyRevisionImpactService = createStoryRevisionImpactService({ db });
 const storyGapTaskService = createStoryGapTaskService({ db });
 const storyGraphService = createAdminStoryGraphService({ db });
@@ -1378,6 +1380,7 @@ exports.main = async (event = {}) => {
     if (action === 'saveStoryTheme') return await storyThemeService.save(event, callerUid);
     if (action === 'publishStoryTheme') return await storyThemeService.publish(event, callerUid);
     if (action === 'archiveStoryTheme') return await storyThemeService.archive(event, callerUid);
+    if (action === 'suggestStoryTheme') return await storyThemeProposalService.suggest(event, callerUid);
     if (action === 'saveStoryEntity') return await storyGraphService.saveEntity(event, callerUid);
     if (action === 'archiveStoryEntity') return await storyGraphService.archiveEntity(event, callerUid);
     if (action === 'saveStoryRelation') return await storyGraphService.saveRelation(event, callerUid);
