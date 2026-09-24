@@ -6,6 +6,7 @@ const RESOURCE_SEED = require('./data/resources.v1.json');
 const { createAdminStoryEvidenceService } = require('./domains/story-evidence');
 const { createAdminStoryChainService } = require('./domains/story-chains');
 const { createAdminStoryClaimService } = require('./domains/story-claims');
+const { createStoryThemeService } = require('./domains/story-themes');
 const { createStoryRevisionImpactService } = require('./domains/story-revision-impact');
 const { createStoryGapTaskService } = require('./domains/story-gap-tasks');
 const {
@@ -44,6 +45,7 @@ const RESOURCE_SEED_CONFIRM_TOKEN = 'IMPORT_RESOURCES_V1';
 const storyEvidenceService = createAdminStoryEvidenceService({ db, app });
 const storyChainService = createAdminStoryChainService({ db });
 const storyClaimService = createAdminStoryClaimService({ db });
+const storyThemeService = createStoryThemeService({ db });
 const storyRevisionImpactService = createStoryRevisionImpactService({ db });
 const storyGapTaskService = createStoryGapTaskService({ db });
 const storyGraphService = createAdminStoryGraphService({ db });
@@ -55,7 +57,7 @@ let interactionCollectionsReady = null;
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION, STORY_LINK_COLLECTION, STORY_LOG_COLLECTION, STORY_CHAIN_COLLECTION, STORY_CHAIN_LOG_COLLECTION, STORY_CLAIM_COLLECTION, STORY_CLAIM_LOG_COLLECTION, STORY_GAP_TASK_COLLECTION, STORY_GAP_TASK_LOG_COLLECTION, STORY_CONTRIBUTION_COLLECTION, STORY_ENTITY_COLLECTION, STORY_RELATION_COLLECTION, STORY_GRAPH_LOG_COLLECTION].map(async (name) => {
+      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION, STORY_LINK_COLLECTION, STORY_LOG_COLLECTION, STORY_CHAIN_COLLECTION, STORY_CHAIN_LOG_COLLECTION, STORY_CLAIM_COLLECTION, STORY_CLAIM_LOG_COLLECTION, STORY_GAP_TASK_COLLECTION, STORY_GAP_TASK_LOG_COLLECTION, STORY_CONTRIBUTION_COLLECTION, STORY_ENTITY_COLLECTION, STORY_RELATION_COLLECTION, STORY_GRAPH_LOG_COLLECTION, 'story_themes', 'story_theme_versions', 'story_theme_logs'].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {
@@ -1372,6 +1374,10 @@ exports.main = async (event = {}) => {
     if (action === 'rejectAiStoryCandidate') return await storyEvidenceService.rejectCandidate(event, callerUid);
     if (action === 'archiveStoryEvidenceLink') return await storyEvidenceService.archive(event, callerUid);
     if (action === 'getStoryGraphWorkspace') return await storyGraphService.workspace();
+    if (action === 'getStoryThemeWorkspace') return await storyThemeService.workspace(event);
+    if (action === 'saveStoryTheme') return await storyThemeService.save(event, callerUid);
+    if (action === 'publishStoryTheme') return await storyThemeService.publish(event, callerUid);
+    if (action === 'archiveStoryTheme') return await storyThemeService.archive(event, callerUid);
     if (action === 'saveStoryEntity') return await storyGraphService.saveEntity(event, callerUid);
     if (action === 'archiveStoryEntity') return await storyGraphService.archiveEntity(event, callerUid);
     if (action === 'saveStoryRelation') return await storyGraphService.saveRelation(event, callerUid);
