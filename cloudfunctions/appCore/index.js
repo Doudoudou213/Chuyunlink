@@ -13,6 +13,7 @@ const app = cloudbase.init({
 const db = app.database();
 const resourceService = createResourceService({ db });
 const storyEvidenceService = createStoryEvidenceService({ db, app });
+const storyThemeService = require('./domains/story-themes').createPublicStoryThemeService({ db });
 const materialConsentService = require('./domains/material-consent').createMaterialConsentService({ db });
 const aiConsentService = require('./domains/ai-consent').createAiConsentService({ db });
 
@@ -1957,6 +1958,8 @@ exports.main = async (event = {}) => {
     if (action === 'getResourceDetail') return await resourceService.detail(event);
     if (action === 'searchResources') return await resourceService.search(event);
     if (action === 'getStoryEvidence') return await storyEvidenceService.list(event);
+    if (action === 'listStoryThemes') return await storyThemeService.list();
+    if (action === 'getStoryTheme') return await storyThemeService.get(event);
     if (action === 'getPublic') {
       return { ok: true, action, items: await listPublic(event.limit, uid) };
     }

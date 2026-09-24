@@ -165,14 +165,16 @@ function snapshot(theme, checked) {
   const nodes = theme.nodes.map(node => {
     const entity = checked.entities.get(node.entityId);
     const resource = checked.resources.get(node.resourceId);
-    const region = entity.region || {};
+      const region = entity.region || {};
+      const resourceRegion = resource.region || {};
+      const location = resource.location || {};
     return {
       ...node, label: text(entity.name, 100), summary: text(entity.summary, 360),
       resourceTitle: text(resource.title, 120), region: {
-        country: text(region.country || resource.country || '中国', 40),
-        province: text(region.province || resource.province || resource.regionName, 40),
-        city: text(region.city || resource.city, 40),
-        district: text(region.district, 40)
+        country: text(region.country || resourceRegion.country || '中国', 40),
+        province: text(region.province || resourceRegion.province || resource.regionName, 40),
+        city: text(region.city || resourceRegion.city, 40),
+        district: text(region.district || resourceRegion.district, 40)
       },
       timeRange: {
         label: text(entity.timeRange && entity.timeRange.label, 80),
@@ -180,8 +182,8 @@ function snapshot(theme, checked) {
         endYear: year(entity.timeRange && entity.timeRange.endYear)
       },
       location: {
-        latitude: Number.isFinite(Number(resource.latitude)) ? Number(resource.latitude) : null,
-        longitude: Number.isFinite(Number(resource.longitude)) ? Number(resource.longitude) : null
+        latitude: location.latitude != null && Number.isFinite(Number(location.latitude)) ? Number(location.latitude) : null,
+        longitude: location.longitude != null && Number.isFinite(Number(location.longitude)) ? Number(location.longitude) : null
       }
     };
   });

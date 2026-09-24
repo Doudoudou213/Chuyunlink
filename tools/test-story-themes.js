@@ -40,8 +40,10 @@ function memoryDb(seed) {
 function fixture() {
   return memoryDb({
     resources: [
-      { _id: 'r_hb', status: 'published', title: '湖北漆器', regionName: '湖北', latitude: 30.58, longitude: 114.3 },
-      { _id: 'r_hn', status: 'published', title: '河南纹样', regionName: '河南', latitude: 34.75, longitude: 113.66 }
+      { _id: 'r_hb', status: 'published', title: '湖北漆器',
+        region: { province: '湖北' }, location: { latitude: 30.58, longitude: 114.3 } },
+      { _id: 'r_hn', status: 'published', title: '河南纹样',
+        region: { province: '河南' }, location: { latitude: 34.75, longitude: 113.66 } }
     ],
     story_entities: [
       { _id: 'e_hb', status: 'confirmed', resourceId: 'r_hb', name: '凤鸟纹', region: { province: '湖北' }, timeRange: { startYear: -400 } },
@@ -107,6 +109,7 @@ async function main() {
   assert.equal(db.data.story_theme_versions.size, 1);
   const snapshot = db.data.story_theme_versions.get(saved.themeId + '_v1');
   assert.deepEqual(snapshot.nodes.map(node => node.region.province), ['湖北', '河南']);
+  assert.deepEqual(snapshot.nodes.map(node => node.location.latitude), [30.58, 34.75]);
   assert.equal(snapshot.relations[0].relationType, 'visually_similar_to');
   db.data.submissions.get('s_hn').aiConsentRevokedAt = 'now';
   await assert.rejects(service.save({ ...draft(), themeId: saved.themeId, expectedRevision: 1 }, 'admin1'),
