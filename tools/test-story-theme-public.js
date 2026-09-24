@@ -38,6 +38,9 @@ async function main() {
     reviewNote: '新的标题和所有事实来源已经核对' }, 'private_admin_uid');
   assert.equal((await publicService.get({ themeId })).theme.version, 2);
   assert.equal(db.data.story_theme_versions.size, 2, '旧公开版本保留');
+  db.data.story_themes.get(themeId).needsSourceReview = true;
+  assert.equal((await publicService.get({ themeId })).ok, false, '待复核状态保持隐藏');
+  db.data.story_themes.get(themeId).needsSourceReview = false;
 
   db.data.submissions.get('s_hn').aiConsentRevokedAt = 'withdrawn';
   assert.equal((await publicService.get({ themeId })).ok, false);

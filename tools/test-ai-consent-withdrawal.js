@@ -44,6 +44,14 @@ function fixture() {
     story_gap_tasks: {
       task1: { resourceId: 'r1', status: 'published', sourceSubmissionId: 's1' },
       task2: { resourceId: 'r1', status: 'published', sourceSubmissionId: 'other' }
+    },
+    story_themes: {
+      theme1: { status: 'published', publishedVersionId: 'theme1_v1', publishedVersion: 1 },
+      theme2: { status: 'published', publishedVersionId: 'theme2_v1', publishedVersion: 1 }
+    },
+    story_theme_versions: {
+      theme1_v1: { themeId: 'theme1', sources: [{ id: 'ev1', submissionId: 's1' }] },
+      theme2_v1: { themeId: 'theme2', sources: [{ id: 'ev2', submissionId: 'other' }] }
     }
   };
 }
@@ -64,7 +72,7 @@ async function main() {
   const result = await service.withdraw({ submissionId: 's1' }, 'user-1');
   const state = db.data();
   assert.equal(result.cached, false);
-  assert.deepEqual(result.impactCounts, { candidates: 1, entities: 1, relations: 1, stories: 1, gapTasks: 1 });
+  assert.deepEqual(result.impactCounts, { candidates: 1, entities: 1, relations: 1, stories: 1, themes: 1, gapTasks: 1 });
   assert.equal(state.submissions.s1.aiAnalysisConsent, false);
   assert.equal(state.submissions.s1.aiAnalysisStatus, 'consent_revoked');
   assert.equal(state.story_agent_candidates.pendingRelation.status, 'consent_revoked');
@@ -79,10 +87,12 @@ async function main() {
   assert.equal(state.story_relations.relation2.needsSourceReview, undefined);
   assert.equal(state.story_chains.story1.needsSourceReview, true);
   assert.equal(state.story_chains.story2.needsSourceReview, undefined);
+  assert.equal(state.story_themes.theme1.needsSourceReview, true);
+  assert.equal(state.story_themes.theme2.needsSourceReview, undefined);
   assert.equal(state.story_gap_tasks.task1.status, 'paused_source_review');
   assert.equal(state.story_gap_tasks.task2.status, 'published');
   assert.equal(Object.keys(state.ai_consent_logs).length, 1);
-  assert.equal(Object.keys(state.story_source_impacts).length, 4);
+  assert.equal(Object.keys(state.story_source_impacts).length, 5);
 
   const graph = await loadPublicStoryGraph(db, 'r1');
   assert.equal(graph.ready, false, '待来源复核的实体和关系不得继续公开展示');

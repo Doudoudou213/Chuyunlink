@@ -303,6 +303,7 @@ function createStoryThemeService({ db }) {
         publishedAt: now, createdAt: now };
       await transaction.collection(C.versions).doc(versionId).set(published);
       await ref.update({ status: 'published', publishedVersion: version, publishedVersionId: versionId,
+        needsSourceReview: false, sourceReviewReason: '',
         updatedBy: adminUid, updatedAt: now });
       await transaction.collection(C.logs).add({ themeId, version, action: 'publish',
         revision: theme.revision, adminUid, reviewNote: published.reviewNote, createdAt: now });

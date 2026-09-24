@@ -1,14 +1,28 @@
 'use strict';
 const assert = require('node:assert/strict');
 const { fixture, draft } = require('./test-story-themes');
-const { createStoryThemeService } = require('../cloudfunctions/adminSubmissions/domains/story-themes');
+const { createStoryThemeService, validateTheme } = require('../cloudfunctions/adminSubmissions/domains/story-themes');
 const {
-  createStoryThemeProposalService, safeAiOutput, createThemeAiAdapter
+  createStoryThemeProposalService, safeAiOutput, createThemeAiAdapter, reserveAiCall
 } = require('../cloudfunctions/adminSubmissions/domains/story-theme-proposals');
 
 async function main() {
   assert.equal(createThemeAiAdapter({ THEME_AI_ENABLED: 'false' }), null, '付费接口默认关闭');
+  const budgetDb = fixture();
+  const priorBudget = process.env.THEME_AI_DAILY_LIMIT;
+  process.env.THEME_AI_DAILY_LIMIT = '1';
+  try {
+    assert.equal(await reserveAiCall(budgetDb), 1);
+    await assert.rejects(reserveAiCall(budgetDb), { code: 'THEME_AI_DAILY_LIMIT' });
+  } finally {
+    if (priorBudget == null) delete process.env.THEME_AI_DAILY_LIMIT;
+    else process.env.THEME_AI_DAILY_LIMIT = priorBudget;
+  }
   const db = fixture();
+  const checked = await validateTheme(db, draft());
+  assert.throws(() => safeAiOutput({ chapters: [{ title: '错误引用', purpose: '资料与章节不匹配',
+    nodeIds: ['e_hb'], sourceLinkIds: ['l_hn'] }], gaps: [] }, draft(), checked),
+    { code: 'THEME_AI_INVALID' });
   const theme = createStoryThemeService({ db });
   const { themeId } = await theme.save(draft(), 'admin1');
   const service = createStoryThemeProposalService({ db });

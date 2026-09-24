@@ -47,7 +47,7 @@ const storyEvidenceService = createAdminStoryEvidenceService({ db, app });
 const storyChainService = createAdminStoryChainService({ db });
 const storyClaimService = createAdminStoryClaimService({ db });
 const storyThemeService = createStoryThemeService({ db });
-const storyThemeProposalService = createStoryThemeProposalService({ db, aiAdapter: createThemeAiAdapter() });
+const storyThemeProposalService = createStoryThemeProposalService({ db, aiAdapter: () => createThemeAiAdapter() });
 const storyRevisionImpactService = createStoryRevisionImpactService({ db });
 const storyGapTaskService = createStoryGapTaskService({ db });
 const storyGraphService = createAdminStoryGraphService({ db });
@@ -59,7 +59,7 @@ let interactionCollectionsReady = null;
 async function ensureInteractionCollections() {
   if (!interactionCollectionsReady) {
     interactionCollectionsReady = Promise.all(
-      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION, STORY_LINK_COLLECTION, STORY_LOG_COLLECTION, STORY_CHAIN_COLLECTION, STORY_CHAIN_LOG_COLLECTION, STORY_CLAIM_COLLECTION, STORY_CLAIM_LOG_COLLECTION, STORY_GAP_TASK_COLLECTION, STORY_GAP_TASK_LOG_COLLECTION, STORY_CONTRIBUTION_COLLECTION, STORY_ENTITY_COLLECTION, STORY_RELATION_COLLECTION, STORY_GRAPH_LOG_COLLECTION, 'story_themes', 'story_theme_versions', 'story_theme_logs'].map(async (name) => {
+      [REPORT_COLLECTION, COMMENT_COLLECTION, CONTENT_INTERACTION_COLLECTION, NOTIFICATION_COLLECTION, 'submission_likes', FEEDBACK_COLLECTION, SUPPLEMENT_COLLECTION, 'point_ledger', REWARD_COLLECTION, REDEMPTION_COLLECTION, REDEMPTION_LOG_COLLECTION, RESOURCE_COLLECTION, STORY_LINK_COLLECTION, STORY_LOG_COLLECTION, STORY_CHAIN_COLLECTION, STORY_CHAIN_LOG_COLLECTION, STORY_CLAIM_COLLECTION, STORY_CLAIM_LOG_COLLECTION, STORY_GAP_TASK_COLLECTION, STORY_GAP_TASK_LOG_COLLECTION, STORY_CONTRIBUTION_COLLECTION, STORY_ENTITY_COLLECTION, STORY_RELATION_COLLECTION, STORY_GRAPH_LOG_COLLECTION, 'story_themes', 'story_theme_versions', 'story_theme_logs', 'story_theme_ai_usage'].map(async (name) => {
         try {
           await db.createCollection(name);
         } catch (error) {

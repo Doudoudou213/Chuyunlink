@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { rows } = require('../lib/material-impacts');
 const text = (value, max = 128) => String(value == null ? '' : value).trim().slice(0, max);
 const first = result => Array.isArray(result && result.data) ? result.data[0] : result && result.data;
 const validId = value => { const id = text(value); if (!/^[\w-]+$/.test(id)) throw Object.assign(new Error('投稿编号无效'), { code: 'INVALID_SUBMISSION_ID' }); return id; };
@@ -101,6 +102,16 @@ function createAiConsentService({ db }) {
         impacted.push(['gap_task', item._id || item.id]);
       }
     }
+    for (const theme of await rows(db, 'story_themes')) {
+      if (!theme.publishedVersionId || theme.archivedAt) continue;
+      const snapshot = first(await db.collection('story_theme_versions').doc(theme.publishedVersionId).get());
+      if (!snapshot || !(snapshot.sources || []).some(source =>
+        source.submissionId === submissionId || evidenceIds.has(source.id))) continue;
+      await mark('story_themes', theme, {
+        needsSourceReview: true, sourceReviewReason: 'ai_consent_revoked', updatedAt: now
+      });
+      impacted.push(['theme', theme._id || theme.id]);
+    }
     const uniqueImpacts = [...new Map(impacted.map(item => [`${item[0]}:${item[1]}`, item])).values()];
     for (const [type, targetId] of uniqueImpacts) {
       const ref = db.collection('story_source_impacts').doc(impactId(submissionId, type, targetId));
@@ -108,7 +119,7 @@ function createAiConsentService({ db }) {
       await ref.set({ submissionId, resourceIds, targetType: type, targetId, reason: 'ai_consent_revoked', status: 'pending_review', createdAt: existing && existing.createdAt || now, updatedAt: now });
     }
     return { ok: true, action: 'withdrawAiAnalysisConsent', submissionId, cached: alreadyRevoked,
-      impactCounts: { candidates: candidates.filter(i => i.status === 'pending_review').length, entities: uniqueImpacts.filter(i => i[0] === 'entity').length, relations: uniqueImpacts.filter(i => i[0] === 'relation').length, stories: uniqueImpacts.filter(i => i[0] === 'story').length, gapTasks: uniqueImpacts.filter(i => i[0] === 'gap_task').length } };
+      impactCounts: { candidates: candidates.filter(i => i.status === 'pending_review').length, entities: uniqueImpacts.filter(i => i[0] === 'entity').length, relations: uniqueImpacts.filter(i => i[0] === 'relation').length, stories: uniqueImpacts.filter(i => i[0] === 'story').length, themes: uniqueImpacts.filter(i => i[0] === 'theme').length, gapTasks: uniqueImpacts.filter(i => i[0] === 'gap_task').length } };
   }
   return { withdraw };
 }

@@ -21,6 +21,13 @@ async function propagateMaterialImpacts(db,submissionId,reason,analysisId,keepVe
  }
  for(const [name,key] of [['story_relations','evidenceLinkIds'],['story_chains','sourceLinkIds'],['story_claims','sourceLinkIds']])
    for(const row of await rows(db,name))if((row[key]||[]).some(id=>ids.has(id)))await update(name,row,patch);
+ for(const theme of await rows(db,'story_themes')) {
+   if(!theme.publishedVersionId||theme.archivedAt)continue;
+   const result=await db.collection('story_theme_versions').doc(theme.publishedVersionId).get();
+   const version=Array.isArray(result&&result.data)?result.data[0]:result&&result.data;
+   if(version&&(version.sources||[]).some(source=>ids.has(source.id)))
+     await update('story_themes',theme,patch);
+ }
  for(const row of await rows(db,'story_gap_tasks'))if(candidates.some(c=>(c._id||c.id)===row.sourceAgentCandidateId))
    await update('story_gap_tasks',row,{...patch,status:'paused_source_review'});
  return {evidence:ids.size,jobs:jobs.length,candidates:candidates.length};

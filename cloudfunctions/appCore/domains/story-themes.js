@@ -16,7 +16,8 @@ const stableIds = values => Array.isArray(values) ? values.map(value => text(val
 async function loadPublicTheme(db, themeId) {
   if (!/^[A-Za-z0-9_-]{1,128}$/.test(themeId)) return null;
   const theme = await read(db, C.themes, themeId);
-  if (!theme || theme.archivedAt || Number(theme.publishedVersion) < 1 ||
+  if (!theme || theme.archivedAt || theme.needsSourceReview === true ||
+    Number(theme.publishedVersion) < 1 ||
     !theme.publishedVersionId) return null;
   const version = await read(db, C.versions, theme.publishedVersionId);
   if (!version || version.status !== 'published' || version.themeId !== themeId ||
@@ -112,27 +113,35 @@ async function loadPublicTheme(db, themeId) {
     });
   }
   const claims = new Map();
+  const resourceIds = new Set(nodes.map(node => node.resourceId));
   for (const old of version.claims) {
     const claim = await read(db, C.claims, old.id);
     if (!claim || claim.status !== 'supported' || claim.needsSourceReview === true ||
+      !resourceIds.has(claim.resourceId) ||
       claim.claimText !== old.text ||
       stableIds(claim.sourceLinkIds) !== stableIds(old.sourceLinkIds) ||
       !Array.isArray(claim.sourceLinkIds) || !claim.sourceLinkIds.length ||
       claim.sourceLinkIds.some(sourceId => !validSources.has(sourceId))) return null;
     const story = await read(db, C.stories, claim.storyId);
     if (!story || story.status !== 'published' || story.needsSourceReview === true ||
+      story.resourceId !== claim.resourceId ||
       Number(story.version || 1) !== Number(claim.storyVersion || 1)) return null;
-    claims.set(old.id, { id: old.id, text: text(claim.claimText, 360),
+    claims.set(old.id, { id: old.id, resourceId: claim.resourceId, text: text(claim.claimText, 360),
       sourceLinkIds: claim.sourceLinkIds });
   }
   const chapters = [];
   for (const chapter of version.chapters) {
+    const chapterResources = new Set(nodes.filter(node => chapter &&
+      Array.isArray(chapter.nodeIds) && chapter.nodeIds.includes(node.id))
+      .map(node => node.resourceId));
     if (!chapter || !Array.isArray(chapter.nodeIds) || !chapter.nodeIds.length ||
       !Array.isArray(chapter.sourceLinkIds) || !chapter.sourceLinkIds.length ||
       !Array.isArray(chapter.claimIds) || !chapter.claimIds.length ||
       chapter.nodeIds.some(nodeId => !nodeIds.has(nodeId)) ||
-      chapter.sourceLinkIds.some(sourceId => !validSources.has(sourceId)) ||
+      chapter.sourceLinkIds.some(sourceId => !validSources.has(sourceId) ||
+        !chapterResources.has(validSources.get(sourceId).resourceId)) ||
       chapter.claimIds.some(claimId => !claims.has(claimId) ||
+        !chapterResources.has(claims.get(claimId).resourceId) ||
         !text(chapter.body, 2500).includes(claims.get(claimId).text) ||
         claims.get(claimId).sourceLinkIds.some(sourceId => !chapter.sourceLinkIds.includes(sourceId))))
       return null;
@@ -145,7 +154,9 @@ async function loadPublicTheme(db, themeId) {
     id: themeId, version: version.version, title: text(version.title, 100),
     introduction: text(version.introduction, 800), closing: text(version.closing, 800),
     questions: (version.questions || []).map(question => text(question, 180)),
-    chapters, nodes, relations, claims: [...claims.values()], sources: [...validSources.values()],
+    chapters, nodes, relations,
+    claims: [...claims.values()].map(({ resourceId, ...claim }) => claim),
+    sources: [...validSources.values()],
     publishedAt: time(version.publishedAt)
   };
 }

@@ -175,11 +175,14 @@ try {
       $hostingRootFiles = @(
         (Join-Path $projectRoot 'index.html'),
         (Join-Path $projectRoot 'admin.html'),
+        (Join-Path $projectRoot 'themes.html'),
         (Join-Path $projectRoot 'hubei_boundary.geojson')
       )
       $hostingStaticFiles = @(
         (Join-Path $staticDirectory 'cloudbase-app.js'),
         (Join-Path $staticDirectory 'admin-agent-review.js'),
+        (Join-Path $staticDirectory 'admin-story-themes.js'),
+        (Join-Path $staticDirectory 'theme-page.js'),
         (Join-Path $staticDirectory 'logo.png'),
         (Join-Path $staticDirectory 'map-config.js')
       )

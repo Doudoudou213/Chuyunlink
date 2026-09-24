@@ -8,6 +8,21 @@ const first = result => Array.isArray(result && result.data) ? result.data[0] : 
 const fail = (code, message) => { throw Object.assign(new Error(message), { code }); };
 const recordId = item => item && (item._id || item.id) || '';
 const fingerprint = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+const shanghaiDay = () => new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+async function reserveAiCall(db) {
+  const day = shanghaiDay();
+  const max = Math.max(1, Math.min(100, Number(process.env.THEME_AI_DAILY_LIMIT) || 10));
+  return db.runTransaction(async transaction => {
+    const ref = transaction.collection('story_theme_ai_usage').doc(day);
+    const current = first(await ref.get());
+    const attempted = Number(current && current.attempted) || 0;
+    if (attempted >= max) fail('THEME_AI_DAILY_LIMIT', '今日专题 AI 调用预算已用完');
+    if (current) await ref.update({ attempted: attempted + 1, updatedAt: db.serverDate() });
+    else await ref.set({ day, attempted: 1, createdAt: db.serverDate() });
+    return attempted + 1;
+  });
+}
 
 function deterministicSuggestions(theme, checked) {
   const nodes = theme.nodes.map((node, index) => {
@@ -73,6 +88,7 @@ async function discoverRelations(db, theme, checked, aiUse = false) {
 function safeAiOutput(raw, theme, checked) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) fail('THEME_AI_INVALID', 'AI 专题建议格式不正确');
   const nodeIds = new Set(theme.nodes.map(node => node.entityId));
+  const nodeResources = new Map(theme.nodes.map(node => [node.entityId, node.resourceId]));
   const sourceIds = new Set(checked.links.keys());
   const allowedRelationIds = new Set(checked.relations.map(recordId));
   if (!Array.isArray(raw.chapters) || raw.chapters.length > 12 ||
@@ -87,7 +103,8 @@ function safeAiOutput(raw, theme, checked) {
   }));
   if (chapters.some(chapter => chapter.title.length < 2 || !chapter.nodeIds.length ||
     !chapter.sourceLinkIds.length || chapter.nodeIds.some(value => !nodeIds.has(value)) ||
-    chapter.sourceLinkIds.some(value => !sourceIds.has(value))))
+    chapter.sourceLinkIds.some(value => !sourceIds.has(value) ||
+      !chapter.nodeIds.some(nodeId => nodeResources.get(nodeId) === checked.links.get(value).resourceId))))
     fail('THEME_AI_INVALID', 'AI 章节引用了未确认节点或来源');
   const gaps = raw.gaps.map(gap => ({
     request: text(gap.request, 160), reason: text(gap.reason, 300),
@@ -157,6 +174,7 @@ function createStoryThemeProposalService({ db, aiAdapter = null }) {
       fail('THEME_EDIT_CONFLICT', '专题已变化，请刷新后重新获取建议');
     const normalized = normalize(theme);
     const aiUse = event.useAi === true;
+    const activeAdapter = aiUse && typeof aiAdapter === 'function' ? aiAdapter() : aiAdapter;
     const checked = await validateTheme(db, normalized, false, aiUse);
     await discoverRelations(db, normalized, checked, aiUse);
     const sourceFingerprint = fingerprint({
@@ -167,7 +185,7 @@ function createStoryThemeProposalService({ db, aiAdapter = null }) {
     const deterministic = deterministicSuggestions(normalized, checked);
     let ai = null;
     if (event.useAi === true) {
-      if (!aiAdapter) fail('THEME_AI_DISABLED', '专题 AI 尚未启用；确定性建议仍可使用');
+      if (!activeAdapter) fail('THEME_AI_DISABLED', '专题 AI 尚未启用；确定性建议仍可使用');
       const input = {
         title: normalized.title, introduction: normalized.introduction, questions: normalized.questions,
         nodes: normalized.nodes.map(node => ({
@@ -179,7 +197,10 @@ function createStoryThemeProposalService({ db, aiAdapter = null }) {
         confirmedRelations: deterministic.relations,
         permittedSourceIds: [...checked.links.keys()]
       };
-      const output = await aiAdapter.suggest(input);
+      if (JSON.stringify(input).length > 12000)
+        fail('THEME_AI_INPUT_TOO_LARGE', '专题资料过多，请缩小到证据充足的几个节点');
+      await reserveAiCall(db);
+      const output = await activeAdapter.suggest(input);
       const after = await validateTheme(db, normalized, false, true);
       await discoverRelations(db, normalized, after, true);
       if (fingerprint({ links: [...after.links.values()],
@@ -192,8 +213,8 @@ function createStoryThemeProposalService({ db, aiAdapter = null }) {
     const proposal = { deterministic, ai, baseRevision: theme.revision,
       inputFingerprint: fingerprint({ nodes: normalized.nodes, relationIds: normalized.relationIds,
         sources: sourceFingerprint }),
-      model: ai ? text(aiAdapter.model, 100) : '',
-      promptVersion: ai ? text(aiAdapter.promptVersion, 100) : '',
+      model: ai ? text(activeAdapter.model, 100) : '',
+      promptVersion: ai ? text(activeAdapter.promptVersion, 100) : '',
       generatedAt: db.serverDate(), status: 'candidate' };
     return db.runTransaction(async transaction => {
       const ref = transaction.collection(C.themes).doc(themeId);
@@ -216,4 +237,4 @@ function createStoryThemeProposalService({ db, aiAdapter = null }) {
   return { suggest };
 }
 
-module.exports = { deterministicSuggestions, safeAiOutput, createThemeAiAdapter, createStoryThemeProposalService };
+module.exports = { deterministicSuggestions, safeAiOutput, createThemeAiAdapter, createStoryThemeProposalService, reserveAiCall };
