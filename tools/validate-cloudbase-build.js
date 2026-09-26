@@ -146,6 +146,34 @@ const javascriptFiles = [
   'cloudfunctions/materialWorker/lib/privacy.js',
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
+const guideFiles = [
+  "guide.html",
+  "static/cultural-guide.css",
+  "static/admin-guide.css",
+  "static/visit-engine.js",
+  "static/visit-route.js",
+  "static/guide-cloud.js",
+  "static/guide-entry.js",
+  "static/cultural-guide.js",
+  "static/guide-content.js",
+  "static/guide-route.js",
+  "static/guide-record.js",
+  "static/guide-contribution.js",
+  "static/admin-guide.js",
+  "cloudfunctions/appCore/lib/visit-engine.js",
+  "cloudfunctions/appCore/lib/visit-route.js",
+  "cloudfunctions/appCore/lib/guide-evidence.js",
+  "cloudfunctions/adminSubmissions/lib/guide-evidence.js",
+  "cloudfunctions/appCore/domains/visit-sessions.js",
+  "cloudfunctions/appCore/domains/visit-records.js",
+  "cloudfunctions/appCore/domains/cultural-guide.js",
+  "cloudfunctions/appCore/domains/guide-route.js",
+  "cloudfunctions/adminSubmissions/domains/guide-fragments.js"
+];
+for (const file of guideFiles) { if (!requiredFiles.includes(file)) requiredFiles.push(file); if (!productionTextFiles.includes(file)) productionTextFiles.push(file); if (file.endsWith(".js") && !javascriptFiles.includes(file)) javascriptFiles.push(file); }
+for (const file of ["visit-engine.js","visit-route.js"]) { if (fs.readFileSync(path.join(projectRoot,"static",file),"utf8") !== fs.readFileSync(path.join(projectRoot,"cloudfunctions/appCore/lib",file),"utf8")) throw Error("向导规则副本不同步: "+file); }
+if (fs.readFileSync(path.join(projectRoot,"cloudfunctions/appCore/lib/guide-evidence.js"),"utf8") !== fs.readFileSync(path.join(projectRoot,"cloudfunctions/adminSubmissions/lib/guide-evidence.js"),"utf8")) throw Error("讲解来源检查副本不同步");
+for (const file of guideFiles.filter(f=>f.startsWith("static/")||f==="guide.html")) { if (!fs.readFileSync(path.join(projectRoot,"tools/deploy-cloudbase.ps1"),"utf8").includes("'"+path.basename(file)+"'")) throw Error("发布文件清单缺少："+file); }
 const forbiddenPatterns = [
   { label: 'localhost', pattern: /\blocalhost\b/i },
   { label: '127.0.0.1', pattern: /\b127\.0\.0\.1\b/ },

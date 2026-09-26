@@ -179,6 +179,7 @@ try {
         (Join-Path $projectRoot 'index.html'),
         (Join-Path $projectRoot 'admin.html'),
         (Join-Path $projectRoot 'themes.html'),
+        (Join-Path $projectRoot 'guide.html'),
         (Join-Path $projectRoot 'hubei_boundary.geojson')
       )
       $hostingStaticFiles = @(
@@ -186,6 +187,18 @@ try {
         (Join-Path $staticDirectory 'admin-agent-review.js'),
         (Join-Path $staticDirectory 'admin-story-themes.js'),
         (Join-Path $staticDirectory 'theme-page.js'),
+        (Join-Path $staticDirectory 'visit-engine.js'),
+        (Join-Path $staticDirectory 'visit-route.js'),
+        (Join-Path $staticDirectory 'guide-cloud.js'),
+        (Join-Path $staticDirectory 'guide-entry.js'),
+        (Join-Path $staticDirectory 'cultural-guide.js'),
+        (Join-Path $staticDirectory 'guide-content.js'),
+        (Join-Path $staticDirectory 'guide-route.js'),
+        (Join-Path $staticDirectory 'guide-record.js'),
+        (Join-Path $staticDirectory 'guide-contribution.js'),
+        (Join-Path $staticDirectory 'admin-guide.js'),
+        (Join-Path $staticDirectory 'cultural-guide.css'),
+        (Join-Path $staticDirectory 'admin-guide.css'),
         (Join-Path $staticDirectory 'logo.png'),
         (Join-Path $staticDirectory 'map-config.js')
       )

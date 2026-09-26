@@ -25,7 +25,9 @@
     "test:routes": "node tools/test-map-personalization.js",
     "test:rewards": "node tools/test-reward-security.js",
     "test:miniprogram": "node tools/test-miniprogram-scaffold.js",
-    "deploy:cloudbase": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/deploy-cloudbase.ps1"
+    "deploy:cloudbase": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/deploy-cloudbase.ps1",
+    "test:guide": "node tools/test-cultural-guide-all.js",
+    "test:guide:browser": "node tools/test-cultural-guide-all.js --browser"
   },
   "dependencies": {
     "cors": "^2.8.6",

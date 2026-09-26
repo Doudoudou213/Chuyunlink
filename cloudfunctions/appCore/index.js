@@ -409,6 +409,7 @@ function parseStandardRouteLeg(payload, start, end, mode) {
     from: start.title,
     to: end.title,
     distance: Math.max(0, Number(path.distance) || 0),
+    walkingDistance: mode === 'walk' ? Math.max(0, Number(path.distance) || 0) : null,
     duration: Math.max(0, Number(path.duration) || 0),
     polyline,
     steps
@@ -461,6 +462,7 @@ function parseTransitRouteLeg(payload, start, end) {
     from: start.title,
     to: end.title,
     distance: Math.max(calculatedDistance, Number(transit.walking_distance) || 0),
+    walkingDistance: transit.walking_distance != null && Number.isFinite(Number(transit.walking_distance)) ? Math.max(0,Number(transit.walking_distance)) : null,
     duration: Math.max(0, Number(transit.duration) || 0),
     cost: Math.max(0, Number(transit.cost) || 0),
     polyline,
@@ -519,6 +521,7 @@ async function planRoute(uid, event) {
     mode,
     distance: legs.reduce((total, leg) => total + (Number(leg.distance) || 0), 0),
     duration: legs.reduce((total, leg) => total + (Number(leg.duration) || 0), 0),
+    walkingDistance: legs.every(leg=>Number.isFinite(leg.walkingDistance)) ? legs.reduce((n,leg)=>n+leg.walkingDistance,0) : null,
     polyline,
     legs
   };
@@ -1914,6 +1917,7 @@ async function createSubmission(uid, userInfo, event) {
   }
 
   const visitContext = event.visitResourceId ? await require('./domains/visit-records').createVisitRecordService({db}).context(uid,{resourceId:event.visitResourceId,sessionId:event.visitSessionId}) : null;
+  if (visitContext && gapTaskContext && gapTaskContext.targetResourceId !== visitContext.resourceId) throw new Error('站点与征集任务不一致，请取消其中一个关联');
   const useStation = !!visitContext && event.useStationLocation === true;
   if(useStation && !visitContext.location) throw new Error('本站缺少可引用地点，请手动定位');
   const longitude = useStation ? visitContext.location.longitude : Number(event.longitude);

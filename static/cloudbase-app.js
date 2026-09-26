@@ -1319,6 +1319,7 @@ feedback_closed: '反馈处理',
   }
 
   function startStoryGapTask(taskId) {
+    window.GuideContribution?.clear();
     const task = (activeStoryEvidenceResult && activeStoryEvidenceResult.gapTasks || []).find((item) => item.id === taskId);
     if (!task) return;
     activeStoryGapTask = { ...task };
