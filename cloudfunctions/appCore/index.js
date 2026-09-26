@@ -2007,6 +2007,7 @@ exports.main = async (event = {}) => {
       return await require('./domains/visit-sessions').createVisitSessionService({db,routePlanner:planRoute}).handle(uid,event);
     }
     if (action === 'bootstrap') return await bootstrap(uid, userInfo);
+    if (action === 'getGuideRoute') return await require('./domains/guide-route').createGuideRouteService({db}).get(event);
     if (action === 'getGuideStation') return await require('./domains/cultural-guide').createCulturalGuideService({db}).station(event);
     if (action === 'getResources') return await resourceService.list(event);
     if (action === 'getResourceDetail') return await resourceService.detail(event);
