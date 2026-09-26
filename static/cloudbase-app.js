@@ -2116,8 +2116,8 @@ feedback_closed: '反馈处理',
           ${item.materialAnalysisConsent === true || item.aiAnalysisConsent === true || item.aiAnalysisStatus === 'consent_revoked' ? '<details class="profile-review-note profile-source-settings"><summary>材料与 AI 授权</summary><div class="profile-source-controls">' : ''}
         ${item.materialAnalysisConsent === true && item.aiAnalysisConsent === true ? `<button type="button" data-material-grant="${safeText(item.id)}" class="min-h-11 rounded-lg border border-stone-200 px-3 text-xs">设置材料研究与节选授权</button>` : ''}
         ${item.materialAnalysisConsent === true ? `<div class="mt-2"><button type="button" data-withdraw-material-consent="${safeText(item.id)}" class="min-h-11 rounded-lg border border-stone-200 px-3 text-xs text-stone-500">停止材料处理与后续使用</button></div>` : ''}
-        ${item.aiAnalysisConsent === true ? `<div class="mt-2 border-t border-stone-100 pt-2"><button type="button" data-withdraw-ai-consent="${safeText(item.id)}" class="min-h-10 rounded-lg border border-stone-200 px-3 text-[10px] font-bold text-stone-500 hover:border-[#9e2f24] hover:text-[#9e2f24] disabled:opacity-50">停止后续 AI 分析</button></div>` : ''}
-        ${item.aiAnalysisStatus === 'consent_revoked' ? '<p class="mt-2 text-[10px] text-stone-400">已停止后续 AI 分析，原投稿仍保留。</p>' : ''}
+        ${item.aiAnalysisConsent === true ? `<div class="mt-2 border-t border-stone-100 pt-2"><button type="button" data-withdraw-ai-consent="${safeText(item.id)}" class="profile-consent-stop">停止后续 AI 分析</button></div>` : ''}
+        ${item.aiAnalysisStatus === 'consent_revoked' ? '<p class="profile-consent-revoked">已停止后续 AI 分析，原投稿仍保留。</p>' : ''}
           ${item.materialAnalysisConsent === true || item.aiAnalysisConsent === true || item.aiAnalysisStatus === 'consent_revoked' ? '</div></details>' : ''}
         </div>
       </article>
@@ -3352,10 +3352,14 @@ feedback_closed: '反馈处理',
     if (reportClose) reportClose.addEventListener('click', closeCloudReportModal);
     const reportCancel = document.getElementById('cloud-report-cancel');
     if (reportCancel) reportCancel.addEventListener('click', closeCloudReportModal);
-    await refreshCloudProfile();
-    await loadUnifiedResources();
-    await window.GuideContribution?.prepare(callCore);
-    await loadCloudPublicFeed();
-    scheduleCloudPublicFeedRefresh();
+    try {
+      await refreshCloudProfile();
+      await loadUnifiedResources();
+      await window.GuideContribution?.prepare(callCore);
+      await loadCloudPublicFeed();
+      scheduleCloudPublicFeedRefresh();
+    } finally {
+      window.dispatchEvent(new Event('chu:initial-content-ready'));
+    }
   });
 })();

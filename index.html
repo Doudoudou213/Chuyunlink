@@ -5,6 +5,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>楚韵链迹 - 荆楚物质文化遗产众包采集系统</title>
   <link rel="icon" href="data:,">
+  <link rel="preload" as="image" href="./static/assets/loading-gold-weave.webp">
+  <style>
+    #chu-startup {
+      --loading-ink: #79572f; --loading-gold: #9a743f;
+      position: fixed; inset: 0; z-index: 2147483000;
+      height: 100vh; height: 100dvh; overflow: hidden;
+      background: #f7f0e2 url('./static/assets/loading-gold-weave.webp') center / cover no-repeat;
+      color: var(--loading-ink); text-align: center;
+      font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+      opacity: 1; transition: opacity 280ms ease;
+    }
+    #chu-startup.is-leaving { opacity: 0; pointer-events: none; }
+    #chu-startup .chu-startup-title { position: absolute; top: 14%; left: 0; right: 0; margin: 0; font-size: clamp(28px, 5vw, 42px); font-weight: 500; letter-spacing: .18em; padding-left: .18em; }
+    #chu-startup .chu-startup-rule { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 18px auto 0; }
+    #chu-startup .chu-startup-rule::before, #chu-startup .chu-startup-rule::after { content: ''; width: 38px; height: 1px; background: #af8a5266; }
+    #chu-startup .chu-startup-rule span { width: 8px; height: 8px; border: 1px solid #af8a52; transform: rotate(45deg); }
+    #chu-startup-avatar { position: absolute; top: 46%; left: 50%; width: clamp(76px, 19vw, 96px); transform: translate(-50%, -50%); perspective: 700px; }
+    #chu-startup-avatar::after { content: ''; position: absolute; bottom: -5%; left: 30%; width: 40%; height: 5%; border-radius: 50%; background: #99734318; filter: blur(5px); }
+    #chu-startup-avatar svg { display: block; width: 100%; overflow: visible; position: relative; z-index: 1; }
+    .chu-phoenix-fill { transform: translateY(92px); transition: transform 800ms ease; }
+    .chu-phoenix-relief { filter: drop-shadow(0 0 0 #79532300); transition: filter 650ms ease; }
+    #chu-startup[data-stage="background-ready"] .chu-phoenix-fill { transform: translateY(45px); }
+    #chu-startup[data-stage="ready"] .chu-phoenix-fill { transform: translateY(-10px); transition-duration: 240ms; }
+    #chu-startup[data-stage="background-ready"] .chu-phoenix-relief { filter: drop-shadow(0 1px 1px #79532322); }
+    #chu-startup[data-stage="ready"] .chu-phoenix-relief { filter: drop-shadow(-.4px -.6px .2px #fff6df88) drop-shadow(.5px 1px .5px #79532338) drop-shadow(0 2px 2px #79532314); transition-duration: 240ms; }
+    .chu-phoenix-pose { transform: rotateX(7deg) rotateZ(-3deg); transition: transform 500ms ease; }
+    #chu-startup[data-stage="background-ready"] .chu-phoenix-pose { transform: rotateX(2deg) rotateZ(-1deg); }
+    #chu-startup[data-stage="ready"] .chu-phoenix-pose { transform: rotateX(0) rotateZ(0) translateY(-3px); }
+    .chu-phoenix-float { animation: chu-phoenix-float 3.8s ease-in-out infinite; }
+    .chu-phoenix-wing { transform-box: view-box; }
+    .chu-phoenix-wing-left { transform-origin: 46% 48%; animation: chu-wing-left 3.6s ease-in-out infinite; }
+    .chu-phoenix-wing-right { transform-origin: 57% 48%; animation: chu-wing-right 3.6s ease-in-out infinite; }
+    #chu-startup .chu-startup-status { position: absolute; top: calc(46% + clamp(38px, 9.5vw, 48px) + 20px); left: 0; right: 0; }
+    #chu-startup .chu-startup-status p { margin: 22px 0 0; font-size: 15px; letter-spacing: .13em; }
+    #chu-startup-skip { position: absolute; bottom: max(28px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); min-height: 44px; padding: 10px 18px; background: #f7f0e2; color: var(--loading-ink); border: 0; border-radius: 4px; cursor: pointer; font: 13px system-ui, sans-serif; }
+    #chu-startup-skip[hidden] { display: none; }
+    #chu-startup-skip:focus-visible { outline: 2px solid var(--loading-gold); outline-offset: 3px; }
+    @keyframes chu-phoenix-float { 0%, 100% { transform: translateY(1px); } 50% { transform: translateY(-1.5px); } }
+    @keyframes chu-wing-left { 0%, 100% { transform: rotate(1deg); } 50% { transform: rotate(-2deg); } }
+    @keyframes chu-wing-right { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(2deg); } }
+    @media (min-aspect-ratio: 1/1) { #chu-startup { background-size: auto 100%; background-repeat: repeat-x; } }
+    @media (prefers-reduced-motion: reduce) { #chu-startup, .chu-phoenix-pose, #chu-startup .chu-phoenix-fill, #chu-startup .chu-phoenix-relief { transition: none; } .chu-phoenix-float, .chu-phoenix-wing { animation: none; } #chu-startup .chu-phoenix-pose { transform: none; } }
+  </style>
+  <script>
+    // Independent of the UI/CDN libraries so startup failures cannot trap the visitor.
+    (() => {
+      const overlay = document.createElement('div');
+      overlay.id = 'chu-startup';
+      overlay.setAttribute('aria-label', '正在载入楚韵链迹');
+      overlay.innerHTML = `<div class="chu-startup-title">楚韵链迹<div class="chu-startup-rule" aria-hidden="true"><span></span></div></div>
+        <div id="chu-startup-avatar" aria-hidden="true"><div class="chu-phoenix-pose"><div class="chu-phoenix-float">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="chu-bronze" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#ddc38d"/><stop offset=".35" stop-color="#b89559"/><stop offset="1" stop-color="#876135"/></linearGradient>
+              <linearGradient id="chu-fill-feather" x1="0" y1="0" x2="0" y2="1"><stop stop-color="white" stop-opacity="0"/><stop offset=".065" stop-color="white"/><stop offset="1" stop-color="white"/></linearGradient>
+              <mask id="chu-fill-mask" maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120" style="mask-type:alpha"><rect class="chu-phoenix-fill" x="-10" width="120" height="120" fill="url(#chu-fill-feather)"/></mask>
+              <g id="chu-phoenix-mark">
+                <path class="chu-phoenix-wing chu-phoenix-wing-left" d="M49 51C29 49 13 35 8 12C17 26 29 32 39 35C29 27 25 21 24 15C33 30 40 35 49 42Z M40 49C26 48 17 43 12 36C23 43 33 42 42 44Z"/>
+                <path class="chu-phoenix-wing chu-phoenix-wing-right" d="M52 51C72 47 87 32 93 10C81 26 72 30 63 34C74 23 76 17 76 12C68 27 61 35 52 42Z M61 48C75 45 83 41 88 34C77 40 68 41 60 43Z"/>
+                <path d="M45 50C44 40 41 32 45 24C48 19 55 20 59 17L57 12L68 18L61 24C53 23 51 28 54 34C58 42 64 47 59 57C56 64 46 64 45 72C45 79 55 82 62 74C62 89 41 91 37 77C33 63 49 62 49 55Z"/>
+                <path d="M44 57C35 70 17 62 12 72C9 80 21 83 28 73C26 85 7 88 6 77C4 61 32 68 40 55Z"/>
+                <path d="M55 59C62 69 82 67 83 79C84 89 70 94 64 85C72 91 81 85 77 79C73 72 58 77 51 65Z"/>
+              </g>
+            </defs>
+            <use href="#chu-phoenix-mark" fill="#ddceb3" opacity=".65"/>
+            <g class="chu-phoenix-relief"><g mask="url(#chu-fill-mask)"><use href="#chu-phoenix-mark" fill="url(#chu-bronze)" stroke="#f6e3b5" stroke-width=".28" stroke-linejoin="round"/></g></g>
+          </svg>
+        </div></div></div>
+        <div class="chu-startup-status" role="status"><p>正在载入共同图鉴</p></div><button id="chu-startup-skip" type="button" hidden>进入页面</button>`;
+      document.documentElement.append(overlay);
+      const illustration = new Image();
+      illustration.onload = () => { if (!dismissed && overlay.dataset.stage !== 'ready') overlay.dataset.stage = 'background-ready'; };
+      illustration.src = './static/assets/loading-gold-weave.webp';
+      let dismissed = false;
+      const dismiss = () => {
+        if (dismissed) return;
+        dismissed = true;
+        clearTimeout(skipTimer); clearTimeout(exitTimer);
+        overlay.classList.add('is-leaving');
+        setTimeout(() => overlay.remove(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300);
+      };
+      const skip = overlay.querySelector('button');
+      skip.addEventListener('click', dismiss);
+      const skipTimer = setTimeout(() => { skip.hidden = false; }, 6000);
+      const exitTimer = setTimeout(dismiss, 12000);
+      let pageLoaded = false;
+      let contentReady = false;
+      const finishIfReady = () => {
+        if (!pageLoaded || !contentReady || dismissed) return;
+        overlay.dataset.stage = 'ready';
+        requestAnimationFrame(() => requestAnimationFrame(dismiss));
+      };
+      window.addEventListener('load', () => { pageLoaded = true; finishIfReady(); }, { once: true });
+      window.addEventListener('chu:initial-content-ready', () => { contentReady = true; finishIfReady(); }, { once: true });
+    })();
+  </script>
   <!-- Tailwind CSS 引入 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide 图标库引入 -->
@@ -2297,6 +2393,24 @@
       font-size: 0.54rem;
       font-weight: 700;
     }
+    .profile-consent-stop {
+      display: block;
+      width: 100%;
+      min-height: 44px;
+      margin-top: 0.6rem;
+      padding: 0.55rem 0.1rem 0;
+      border: 0;
+      border-top: 1px solid rgba(182, 138, 74, 0.2);
+      background: transparent;
+      color: #8f3c36;
+      font-size: 0.58rem;
+      font-weight: 700;
+      text-align: left;
+    }
+    .profile-consent-stop:hover { color: #6f2824; }
+    .profile-consent-stop:focus-visible { outline: 2px solid var(--chu-gold-muted); outline-offset: 2px; }
+    .profile-consent-stop:disabled { opacity: 0.55; cursor: wait; }
+    .profile-consent-revoked { margin-top: 0.55rem; color: #76685d; font-size: 0.56rem; line-height: 1.5; }
     .profile-gallery-empty {
       grid-column: 1 / -1;
       display: grid;
