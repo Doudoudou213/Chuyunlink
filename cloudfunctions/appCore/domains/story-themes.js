@@ -1,4 +1,5 @@
 'use strict';
+const crypto = require('crypto');
 const { materialLinkValid, referenceFor } = require('../lib/material-evidence');
 const { contributorNameFor } = require('../lib/public-attribution');
 
@@ -13,6 +14,8 @@ const read = async (db, collection, key) => first(await db.collection(collection
 const time = value => value instanceof Date ? value.toISOString() :
   value && typeof value.toDate === 'function' ? value.toDate().toISOString() : value || null;
 const stableIds = values => Array.isArray(values) ? values.map(value => text(value, 128)).sort().join('|') : '';
+const chapterIdFor = (themeId, chapter, index) => chapter && chapter.id ||
+  'chapter_' + crypto.createHash('sha256').update(`${themeId}:${index}`).digest('hex').slice(0, 24);
 
 async function loadPublicTheme(db, themeId) {
   if (!/^[A-Za-z0-9_-]{1,128}$/.test(themeId)) return null;
@@ -28,6 +31,7 @@ async function loadPublicTheme(db, themeId) {
     !Array.isArray(version.sources) || !Array.isArray(version.relations) ||
     !Array.isArray(version.claims)) return null;
   const validSources = new Map();
+  const sourceSubmissions = new Map();
   const profileCache = new Map();
   for (const source of version.sources) {
     const link = await read(db, C.links, source.id);
@@ -49,6 +53,7 @@ async function loadPublicTheme(db, themeId) {
         locator: material.locator || null
       } : null
     });
+    sourceSubmissions.set(source.id, link.submissionId);
   }
   const nodeIds = new Set();
   const nodes = [];
@@ -136,7 +141,17 @@ async function loadPublicTheme(db, themeId) {
       sourceLinkIds: claim.sourceLinkIds });
   }
   const chapters = [];
-  for (const chapter of version.chapters) {
+  let contributionRows = [];
+  try {
+    const result = await db.collection('story_contributions')
+      .where({ themeId, themeVersion: Number(version.version) }).limit(400).get();
+    contributionRows = result.data || [];
+  } catch (error) {
+    if (!/collection.*not.*exist|DATABASE_COLLECTION_NOT_EXIST|ResourceNotFound/i.test(
+      String(error.code || '') + String(error.message || ''))) throw error;
+  }
+  for (const [chapterIndex, chapter] of version.chapters.entries()) {
+    const chapterId = chapterIdFor(themeId, chapter, chapterIndex);
     const chapterResources = new Set(nodes.filter(node => chapter &&
       Array.isArray(chapter.nodeIds) && chapter.nodeIds.includes(node.id))
       .map(node => node.resourceId));
@@ -151,9 +166,17 @@ async function loadPublicTheme(db, themeId) {
         !text(chapter.body, 2500).includes(claims.get(claimId).text) ||
         claims.get(claimId).sourceLinkIds.some(sourceId => !chapter.sourceLinkIds.includes(sourceId))))
       return null;
+    const adoptedSubmissions = new Set(contributionRows.filter(item =>
+      item.type === 'theme_adoption' && item.status === 'adopted' &&
+      Number(item.themeVersion) === Number(version.version) && item.chapterId === chapterId &&
+      chapter.sourceLinkIds.includes(item.sourceLinkId) &&
+      sourceSubmissions.get(item.sourceLinkId) === item.submissionId)
+      .map(item => item.submissionId));
     chapters.push({
-      title: text(chapter.title, 100), body: text(chapter.body, 2500),
-      nodeIds: chapter.nodeIds, sourceLinkIds: chapter.sourceLinkIds, claimIds: chapter.claimIds
+      id: chapterId, title: text(chapter.title, 100), body: text(chapter.body, 2500),
+      nodeIds: chapter.nodeIds, sourceLinkIds: chapter.sourceLinkIds, claimIds: chapter.claimIds,
+      adoptedSourceLinkIds: chapter.sourceLinkIds.filter(sourceId =>
+        adoptedSubmissions.has(sourceSubmissions.get(sourceId)))
     });
   }
   return {

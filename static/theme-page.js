@@ -20,9 +20,10 @@
     video_frames: '视频画面校对'
   });
 
-  function sourceCard(source) {
+  function sourceCard(source, adopted = false) {
     const material = source.material;
     return `<div class="source-row"><strong>用户贡献 · ${esc(source.submissionTitle || '社区文化记录')}</strong>
+      ${adopted ? '<p class="adopted-mark">管理员已确认：本章正式采用</p>' : ''}
       <p>${esc(source.summary || '已确认的来源记录')}</p>
       <p>贡献者：${esc(source.contributorName || '匿名贡献者')}</p>
       ${material ? `<p>${esc(materialLabel[material.kind] || material.kind)} · 校对第 ${Number(material.reviewVersion) || 0} 版
@@ -68,11 +69,12 @@
         <div class="claim-list" aria-label="本章已确认事实">${claims.map((claim, claimIndex) => `
           <details class="claim-item"><summary>事实 ${claimIndex + 1} · ${esc(claim.text)}</summary>
             <div class="claim-sources"><p class="expand-help">以下投稿是这条事实的已确认依据。</p>
-              ${claim.sourceLinkIds.map(id => sourceById.get(id)).filter(Boolean).map(sourceCard).join('')}
+              ${claim.sourceLinkIds.map(id => sourceById.get(id)).filter(Boolean)
+                .map(source => sourceCard(source, (chapter.adoptedSourceLinkIds || []).includes(source.id))).join('')}
               <a class="story-link" href="./index.html?storyResourceId=${encodeURIComponent(claim.resourceId)}">查看完整故事 →</a>
             </div></details>`).join('')}</div>
         <details class="chapter-source"><summary>查看本章来源 · ${sources.length} 份</summary>
-          ${sources.map(sourceCard).join('')}</details>
+          ${sources.map(source => sourceCard(source, (chapter.adoptedSourceLinkIds || []).includes(source.id))).join('')}</details>
       </article>`;
     }).join('');
     const timeline = [...theme.nodes].sort((a, b) => {

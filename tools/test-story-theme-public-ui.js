@@ -17,6 +17,11 @@ async function main() {
   const saved = await admin.save(draft(), 'private_admin_uid');
   await admin.publish({ themeId: saved.themeId, expectedRevision: 1, humanReviewed: true,
     reviewNote: '两个章节的事实和资料已逐条核对' }, 'private_admin_uid');
+  const published = db.data.story_theme_versions.get(saved.themeId + '_v1');
+  db.data.story_contributions = new Map([['theme_adoption_fixture', {
+    type: 'theme_adoption', status: 'adopted', themeId: saved.themeId, themeVersion: 1,
+    chapterId: published.chapters[0].id, sourceLinkId: 'l_hb', submissionId: 's_hb'
+  }]]);
   const theme = await loadPublicTheme(db, saved.themeId);
   fs.mkdirSync(output, { recursive: true });
   const server = http.createServer((req, res) => {
@@ -57,6 +62,7 @@ async function main() {
     await page.locator('.claim-item summary').first().click();
     assert.equal(await page.locator('.claim-item').first().locator('.claim-sources .source-row').count(), 1);
     assert.match(await page.locator('.claim-item').first().innerText(), /匿名贡献者/);
+    assert.match(await page.locator('.claim-item').first().innerText(), /本章正式采用/);
     assert.match(await page.locator('.claim-item').first().locator('.story-link').getAttribute('href'), /storyResourceId=r_hb/);
     assert.equal(await page.locator('.expand > details').count(), 3);
     assert.equal(await page.locator('.chapter > .chapter-source .source-row').count(), 2);

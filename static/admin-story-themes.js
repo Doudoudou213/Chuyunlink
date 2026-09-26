@@ -12,6 +12,7 @@
   let themeId = '';
   let revision = 0;
   let proposal = null;
+  let adoptionWorkspace = null;
   let search = '';
   let savedState = '';
   const empty = () => ({ title: '', introduction: '', closing: '', questions: [],
@@ -40,7 +41,7 @@
     })),
     relationIds: value.relationIds || [],
     chapters: (value.chapters || []).map(chapter => ({
-      title: chapter.title || '', body: chapter.body || '', nodeIds: chapter.nodeIds || [],
+      id: chapter.id || '', title: chapter.title || '', body: chapter.body || '', nodeIds: chapter.nodeIds || [],
       sourceLinkIds: chapter.sourceLinkIds || [], claimIds: chapter.claimIds || []
     }))
   });
@@ -62,6 +63,7 @@
     }));
     draft.relationIds = picked('[data-theme-relation]');
     draft.chapters = [...root.querySelectorAll('[data-theme-chapter]')].map(card => ({
+      id: card.dataset.chapterId || '',
       title: card.querySelector('[data-chapter-title]').value.trim(),
       body: card.querySelector('[data-chapter-body]').value.trim(),
       nodeIds: [...card.querySelectorAll('[data-chapter-node]')].filter(input => input.checked).map(input => input.value),
@@ -94,7 +96,7 @@
     const resourceIds = new Set(draft.nodes.filter(node => nodeIds.includes(node.entityId)).map(node => node.resourceId));
     const links = catalog().links.filter(item => resourceIds.has(item.resourceId));
     const claims = catalog().claims.filter(item => resourceIds.has(item.resourceId));
-    return `<div data-theme-chapter class="rounded-xl border border-[#e2d3b8] bg-[#fffdf9] p-4">
+    return `<div data-theme-chapter data-chapter-id="${esc(chapter.id || '')}" class="rounded-xl border border-[#e2d3b8] bg-[#fffdf9] p-4">
       <div class="flex items-center justify-between gap-2"><h4 class="text-sm font-bold text-[#332a21]">第 ${index + 1} 章</h4>
         <div class="flex gap-2"><button type="button" data-theme-chapter-up="${index}" class="${secondary}" aria-label="上移章节">↑</button>
         <button type="button" data-theme-chapter-down="${index}" class="${secondary}" aria-label="下移章节">↓</button>
@@ -179,6 +181,22 @@
           ${themeId ? `<label class="mt-3 flex items-center gap-2 text-xs"><input data-theme-reviewed type="checkbox"> 我已逐章核对重要判断与来源</label>
             <label class="mt-3 block">${rowLabel('审核说明 · 至少 8 字')}<textarea data-theme-review-note class="${ui} min-h-20" maxlength="300"></textarea></label>` : ''}
         </section>
+        ${adoptionWorkspace ? `<section class="rounded-2xl border border-[#e2d3b8] bg-white p-4 shadow-sm">
+          <h3 class="text-base font-bold text-[#332a21]">已发布专题 · 正式采用</h3>
+          <p class="mt-1 text-xs leading-6 text-stone-600">第 ${Number(adoptionWorkspace.version)} 版。普通引用不会计入采用；确认后会通知投稿者，不自动发积分。</p>
+          ${!adoptionWorkspace.available ? '<p class="mt-2 text-xs text-amber-700">专题来源待复核，暂不能确认采用。</p>' : ''}
+          <div class="mt-3 grid gap-3">${adoptionWorkspace.chapters.map(chapter => `<div class="rounded-xl border border-stone-200 p-3">
+            <h4 class="text-xs font-bold text-stone-800">第 ${chapter.number} 章 · ${esc(chapter.title)}</h4>
+            <div class="mt-2 grid gap-2">${chapter.sources.map(source => `<div data-theme-adoption-source data-chapter-id="${esc(chapter.id)}" data-source-link-id="${esc(source.sourceLinkId)}" class="rounded-lg border border-stone-100 bg-[#fffaf1] p-3 text-xs">
+              <p class="font-bold text-stone-800">${esc(source.title)}</p><p class="mt-1 text-stone-500">${esc(source.summary)}</p>
+              ${source.adopted ? '<p class="mt-2 font-bold text-emerald-700">已正式采用</p>' : `<div class="mt-2 flex flex-wrap items-start gap-2">
+                <button type="button" data-theme-adopt class="${secondary}" ${adoptionWorkspace.available ? '' : 'disabled'}>正式采用</button>
+                <details class="min-w-40 text-stone-600"><summary class="flex min-h-11 cursor-pointer items-center text-[11px]">贡献类型与缺口（可选）</summary>
+                  <div class="mt-1 grid gap-2"><select data-adoption-type class="${ui}"><option value="source_support">资料佐证</option><option value="oral_history">口述记录</option><option value="visual_record">影像记录</option><option value="document_transcription">文献转录</option></select>
+                  <label class="flex min-h-11 items-center gap-2"><input data-adoption-gap type="checkbox"> 解决资料缺口</label>
+                  <input data-adoption-gap-note class="${ui}" maxlength="180" placeholder="勾选缺口时说明是哪项"></div></details>
+              </div>`}</div>`).join('') || '<p class="text-xs text-stone-500">本章暂无可用投稿来源。</p>'}</div></div>`).join('')}</div>
+        </section>` : ''}
       </div></div>`;
   }
 
@@ -192,7 +210,9 @@
         themeId = pickedTheme.id; revision = pickedTheme.revision; proposal = pickedTheme.proposal;
         draft = { ...pickedTheme, nodes: structuredClone(pickedTheme.nodes),
           relationIds: [...pickedTheme.relationIds], chapters: structuredClone(pickedTheme.chapters) };
-      } else { themeId = ''; revision = 0; proposal = null; draft = empty(); }
+        adoptionWorkspace = pickedTheme.publishedVersion ? await callAdmin({
+          action: 'getStoryThemeContributionWorkspace', themeId }) : null;
+      } else { themeId = ''; revision = 0; proposal = null; adoptionWorkspace = null; draft = empty(); }
       savedState = stateKey(draft);
       viewCount.textContent = workspace.themes.length + ' 个专题';
       render();
@@ -212,6 +232,21 @@
     try {
       if (target.hasAttribute('data-theme-open')) return load(target.dataset.themeOpen);
       if (target.hasAttribute('data-theme-new')) return load('');
+      if (target.hasAttribute('data-theme-adopt')) {
+        const row = target.closest('[data-theme-adoption-source]');
+        const resolvesGap = row.querySelector('[data-adoption-gap]').checked;
+        const gapNote = row.querySelector('[data-adoption-gap-note]').value.trim();
+        const contributionType = row.querySelector('[data-adoption-type]').value;
+        if (resolvesGap && gapNote.length < 4) return notice('请写明解决了哪项资料缺口。', true);
+        target.disabled = true;
+        try {
+          await callAdmin({ action: 'adoptStoryThemeContribution', themeId,
+            themeVersion: adoptionWorkspace.version, chapterId: row.dataset.chapterId,
+            sourceLinkId: row.dataset.sourceLinkId, contributionType, resolvesGap, gapNote });
+          await load(themeId); notice('已记录正式采用，并通知投稿者。');
+        } catch (error) { target.disabled = false; throw error; }
+        return;
+      }
       readEditor();
       if (target.hasAttribute('data-theme-add-node')) {
         const value = content.querySelector('[data-theme-add-select]').value;
@@ -222,7 +257,8 @@
         proposal = null; return render();
       }
       if (target.hasAttribute('data-theme-add-chapter')) {
-        draft.chapters.push({ title: '', body: '', nodeIds: [], sourceLinkIds: [], claimIds: [] });
+        draft.chapters.push({ id: 'chapter_' + crypto.randomUUID().replaceAll('-', ''),
+          title: '', body: '', nodeIds: [], sourceLinkIds: [], claimIds: [] });
         return render();
       }
       for (const [kind, key] of [['node', 'nodes'], ['chapter', 'chapters']]) {
@@ -243,6 +279,7 @@
       }
       if (target.hasAttribute('data-theme-apply-ai') && proposal?.ai) {
         draft.chapters = proposal.ai.chapters.map(item => ({
+          id: 'chapter_' + crypto.randomUUID().replaceAll('-', ''),
           title: item.title, body: '', nodeIds: item.nodeIds,
           sourceLinkIds: item.sourceLinkIds, claimIds: []
         }));

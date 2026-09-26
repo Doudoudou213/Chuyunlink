@@ -25,6 +25,8 @@ const read = async (db, collection, key) => first(await db.collection(collection
 const recordId = item => item && (item._id || item.id) || '';
 const time = value => value instanceof Date ? value.toISOString() : value && typeof value.toDate === 'function' ? value.toDate().toISOString() : value || null;
 const year = value => Number.isInteger(Number(value)) && String(value == null ? '' : value).trim() !== '' ? Number(value) : null;
+const chapterIdFor = (themeId, chapter, index) => chapter && chapter.id ||
+  'chapter_' + crypto.createHash('sha256').update(`${themeId}:${index}`).digest('hex').slice(0, 24);
 
 function normalize(input) {
   const title = text(input.title, 100);
@@ -49,6 +51,7 @@ function normalize(input) {
   const rawChapters = Array.isArray(input.chapters) ? input.chapters : [];
   if (rawChapters.length > 12) fail('INVALID_THEME_ITEMS', '专题最多包含 12 个章节');
   const chapters = rawChapters.map((chapter, index) => ({
+    id: chapter.id ? id(chapter.id, '章节') : '',
     title: text(chapter.title, 100),
     body: text(chapter.body, 2500),
     nodeIds: ids(chapter.nodeIds || [], 20),
@@ -58,6 +61,9 @@ function normalize(input) {
   }));
   if (chapters.some(chapter => chapter.nodeIds.some(entityId => !nodeIds.has(entityId))))
     fail('THEME_CHAPTER_NODE', '章节引用了未加入专题的实体');
+  const chapterIds = chapters.map(chapter => chapter.id).filter(Boolean);
+  if (new Set(chapterIds).size !== chapterIds.length)
+    fail('DUPLICATE_THEME_CHAPTER', '章节编号不能重复');
   return {
     title, introduction, closing: text(input.closing, 800),
     questions: (Array.isArray(input.questions) ? input.questions : []).slice(0, 8).map(value => text(value, 180)).filter(Boolean),
@@ -208,7 +214,9 @@ function createStoryThemeService({ db }) {
     const themes = (themeResult.data || []).filter(item => !item.archivedAt)
       .map(item => ({ id: recordId(item), title: item.title, status: item.status,
         revision: item.revision || 1, publishedVersion: item.publishedVersion || 0,
-        nodes: item.nodes || [], relationIds: item.relationIds || [], chapters: item.chapters || [],
+        nodes: item.nodes || [], relationIds: item.relationIds || [],
+        chapters: (item.chapters || []).map((chapter, index) => ({
+          ...chapter, id: chapterIdFor(recordId(item), chapter, index) })),
         introduction: item.introduction || '', closing: item.closing || '', questions: item.questions || [],
         proposal: item.proposal || null, updatedAt: time(item.updatedAt) }));
     const query = text(event.query, 80).toLowerCase();
@@ -272,7 +280,11 @@ function createStoryThemeService({ db }) {
       await validateTheme(transaction, input, false);
       const now = db.serverDate();
       const revision = existing ? Number(existing.revision || 1) + 1 : 1;
-      const payload = { ...input, status: 'draft', revision,
+      const chapters = input.chapters.map((chapter, index) => ({
+        ...chapter, id: chapter.id || (existing && existing.chapters &&
+          existing.chapters[index] ? chapterIdFor(themeId, existing.chapters[index], index) :
+          'chapter_' + crypto.randomBytes(12).toString('hex')) }));
+      const payload = { ...input, chapters, status: 'draft', revision,
         publishedVersion: Number(existing && existing.publishedVersion) || 0,
         createdBy: existing && existing.createdBy || adminUid,
         createdAt: existing && existing.createdAt || now, updatedBy: adminUid, updatedAt: now };
@@ -294,6 +306,8 @@ function createStoryThemeService({ db }) {
       if (theme.status !== 'draft' || Number(event.expectedRevision) !== Number(theme.revision))
         fail('THEME_EDIT_CONFLICT', '请刷新专题后再发布');
       const input = normalize(theme);
+      input.chapters = input.chapters.map((chapter, index) => ({
+        ...chapter, id: chapterIdFor(themeId, chapter, index) }));
       const checked = await validateTheme(transaction, input, true);
       const version = Number(theme.publishedVersion || 0) + 1;
       const now = db.serverDate();
@@ -330,4 +344,4 @@ function createStoryThemeService({ db }) {
   return { workspace, save, publish, archive };
 }
 
-module.exports = { C, normalize, validLink, validateTheme, snapshot, createStoryThemeService };
+module.exports = { C, normalize, chapterIdFor, validLink, validateTheme, snapshot, createStoryThemeService };

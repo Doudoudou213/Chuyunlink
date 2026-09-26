@@ -1152,27 +1152,63 @@ async function getContributionImpact(uid) {
   try {
     const result = await db.collection(STORY_CONTRIBUTION_COLLECTION).where({ userId: uid }).limit(100).get();
     const contributions = (result.data || []).filter((item) => item.status === 'adopted');
-    const storyIds = new Set(contributions.map((item) => item.storyId).filter(Boolean));
+    const storyIds = new Set(contributions.filter(item => item.type !== 'theme_adoption')
+      .map(item => item.storyId).filter(Boolean));
+    const themeIds = new Set(contributions.filter(item => item.type === 'theme_adoption')
+      .map(item => item.themeId).filter(Boolean));
     const totalRewardPoints = contributions.reduce((sum, item) => sum + Math.max(0, Number(item.rewardPointsAwarded) || 0), 0);
-    const items = sortNewest(contributions).slice(0, 8).map((item) => ({
-      id: item._id || item.id || '',
-      submissionId: item.submissionId || '',
-      taskTitle: cleanText(item.taskTitle, 48),
-      storyId: cleanText(item.storyId, 128),
-      storyTitle: cleanText(item.storyTitle, 100),
-      storyVersion: Math.max(1, Number(item.storyVersion) || 1),
-      resourceId: cleanText(item.resourceId, 128),
-      chapterIndex: Number.isInteger(Number(item.chapterIndex)) ? Number(item.chapterIndex) : null,
-      rewardStatus: item.rewardStatus || 'not_applicable',
-      rewardPointsAwarded: Math.max(0, Number(item.rewardPointsAwarded) || 0),
-      adoptedAt: item.adoptedAt || null,
-      rewardAwardedAt: item.rewardAwardedAt || null
+    const publicThemes = new Map();
+    const recent = [...contributions].sort((left, right) =>
+      (new Date(right.adoptedAt || 0).getTime() || 0) -
+      (new Date(left.adoptedAt || 0).getTime() || 0) ||
+      Number(right.themeVersion || 0) - Number(left.themeVersion || 0));
+    const seen = new Set();
+    const items = await Promise.all(recent.filter(item => {
+      if (item.type !== 'theme_adoption') return true;
+      const key = `${item.themeId}:${item.chapterId}:${item.submissionId}`;
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    }).slice(0, 8).map(async (item) => {
+      let currentlyPublic = false;
+      if (item.type === 'theme_adoption' && item.themeId) {
+        if (!publicThemes.has(item.themeId)) publicThemes.set(item.themeId,
+          storyThemeService.get({ themeId: item.themeId }).catch(() => null));
+        const current = await publicThemes.get(item.themeId);
+        currentlyPublic = Boolean(current && current.ok &&
+          Number(current.theme.version) === Number(item.themeVersion) &&
+          current.theme.chapters.some(chapter => chapter.id === item.chapterId &&
+            (chapter.adoptedSourceLinkIds || []).includes(item.sourceLinkId)));
+      }
+      return {
+        id: item._id || item.id || '',
+        type: item.type || 'gap_task_adoption',
+        submissionId: item.submissionId || '',
+        taskTitle: cleanText(item.taskTitle, 48),
+        storyId: cleanText(item.storyId, 128),
+        storyTitle: cleanText(item.storyTitle, 100),
+        storyVersion: Math.max(1, Number(item.storyVersion) || 1),
+        themeId: cleanText(item.themeId, 128),
+        themeTitle: cleanText(item.themeTitle, 100),
+        themeVersion: Math.max(0, Number(item.themeVersion) || 0),
+        chapterId: cleanText(item.chapterId, 128),
+        chapterIndex: Number.isInteger(Number(item.chapterIndex)) ? Number(item.chapterIndex) : null,
+        contributionType: cleanText(item.contributionType, 40),
+        resolvesGap: item.resolvesGap === true,
+        currentlyPublic,
+        resourceId: cleanText(item.resourceId, 128),
+        rewardStatus: item.rewardStatus || 'not_applicable',
+        rewardPointsAwarded: Math.max(0, Number(item.rewardPointsAwarded) || 0),
+        adoptedAt: item.adoptedAt || null,
+        rewardAwardedAt: item.rewardAwardedAt || null
+      };
     }));
-    return { adoptedCount: contributions.length, storyCount: storyIds.size, totalRewardPoints, items };
+    return { adoptedCount: contributions.filter(item => item.type !== 'theme_adoption').length +
+      seen.size, storyCount: storyIds.size, themeCount: themeIds.size, totalRewardPoints, items };
   } catch (error) {
     const details = `${error && error.code || ''} ${error && error.message || ''}`;
     if (/collection.*not.*exist|DATABASE_COLLECTION_NOT_EXIST|ResourceNotFound/i.test(details)) {
-      return { adoptedCount: 0, storyCount: 0, totalRewardPoints: 0, items: [], collectionReady: false };
+      return { adoptedCount: 0, storyCount: 0, themeCount: 0,
+        totalRewardPoints: 0, items: [], collectionReady: false };
     }
     throw error;
   }

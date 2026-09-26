@@ -27,6 +27,10 @@
 
 ## 本地测试与尚需验收
 
+### 专题正式采用补充（2026-09-26）
+
+管理员可以在已发布专题的章节来源旁一键确认“正式采用”。普通证据引用不会自动成为贡献。采用记录复用 `story_contributions`，按投稿、专题版本和稳定章节编号保存，并通过现有通知集合告知投稿者；贡献类型默认为“资料佐证”，解决资料缺口时另填说明。专题采用不写积分账本，也不会重复发放征集任务奖励。个人主页显示专题采用与历史状态；公开专题仅对当前有效版本显示正式采用标记，并继续遵守逐条匿名署名选择。来源撤回或专题归档后保留采用记录，公开页仍按实时来源校验隐藏。本补充仅经过本地虚构数据测试，尚未部署或云端验收。
+
 - `node tools/check-multimodal-local.js`：现有智能体、故事、材料、撤回回归和构建检查，自动包含专题服务测试。
 - `node tools/test-story-theme-ui.js <仓库外截图目录>` 与 `node tools/test-story-theme-public-ui.js <仓库外截图目录>`：固定数据浏览器操作及 390、768、1440 宽度视觉检查。
 - 未来集中部署需要 `appCore`、`adminSubmissions`，以及 `index.html`、`admin.html`、`themes.html`、`static/admin-story-themes.js`、`static/theme-page.js`。静态部署脚本继续保留较新视觉基线检查。

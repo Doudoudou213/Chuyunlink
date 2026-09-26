@@ -53,10 +53,23 @@ async function main() {
     await page.evaluate(data => {
       window.themeCalls = [];
       window.themeRows = [];
+      window.themeAdopted = false;
       callAdmin = async request => {
         themeCalls.push(request);
         if (request.action === 'getStoryThemeWorkspace')
           return { ok: true, themes: themeRows, catalog: data };
+        if (request.action === 'getStoryThemeContributionWorkspace')
+          return { ok: true, themeId: 'theme_test', version: 1, title: '凤鸟纹样跨地区观察',
+            available: true, chapters: themeRows[0].chapters.map((chapter, index) => ({
+              id: chapter.id, number: index + 1, title: chapter.title,
+              sources: (chapter.sourceLinkIds || []).map(sourceLinkId => ({
+                sourceLinkId, submissionId: 'submission_' + index, title: '虚构投稿',
+                summary: '已审核来源', adopted: themeAdopted && index === 0
+              }))
+            })) };
+        if (request.action === 'adoptStoryThemeContribution') {
+          themeAdopted = true; return { ok: true, contributionId: 'theme_adopted_1' };
+        }
         if (request.action === 'saveStoryTheme') {
           themeRows = [{
             ...request, id: 'theme_test', revision: (themeRows[0]?.revision || 0) + 1,
@@ -132,6 +145,20 @@ async function main() {
     const published = await page.evaluate(() => themeCalls.find(item => item.action === 'publishStoryTheme'));
     assert.equal(published.humanReviewed, true);
     assert.equal(published.expectedRevision, 2);
+    await page.locator('[data-theme-adoption-source]').first().waitFor();
+    await page.locator('[data-theme-adopt]').first().click();
+    await page.waitForFunction(() => themeCalls.some(item => item.action === 'adoptStoryThemeContribution'));
+    const adoption = await page.evaluate(() => themeCalls.find(item => item.action === 'adoptStoryThemeContribution'));
+    assert.equal(adoption.themeVersion, 1);
+    assert.equal(adoption.sourceLinkId, 'l_hb');
+    assert.equal(adoption.resolvesGap, false);
+    assert.equal(await page.locator('[data-theme-adoption-source]').first().locator('text=已正式采用').count(), 1);
+    for (const width of [390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false,
+        'adoption overflow ' + width);
+      await page.screenshot({ path: path.join(output, 'theme-adoption-' + width + '.png'), fullPage: true });
+    }
     assert.deepEqual(errors, []);
     console.log('Story theme admin UI passed: selection, evidence, chapters, suggestions and 390/768/1440.');
   } finally {

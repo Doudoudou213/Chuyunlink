@@ -441,8 +441,8 @@ feedback_closed: '反馈处理',
         <div class="flex items-stretch">
           <div class="flex w-14 shrink-0 items-center justify-center bg-[#241a17] text-[#e3bd69]"><span class="cultural-font text-2xl font-black">链</span></div>
           <div class="min-w-0 flex-1 p-4">
-            <div class="flex items-start justify-between gap-3"><div><p class="text-[9px] font-black uppercase tracking-[0.16em] text-[#9e2f24]">我的文化贡献</p><h4 class="mt-1 text-sm font-bold text-stone-900">被故事采用的真实资料</h4></div><strong id="cloud-impact-adopted" class="text-2xl text-[#7d2b23]">0</strong></div>
-            <div class="mt-3 grid grid-cols-2 gap-2 text-center"><div class="rounded-lg bg-white p-2"><strong id="cloud-impact-stories" class="block text-sm text-stone-800">0</strong><span class="text-[9px] text-stone-400">帮助补全故事</span></div><div class="rounded-lg bg-white p-2"><strong id="cloud-impact-points" class="block text-sm text-stone-800">0</strong><span class="text-[9px] text-stone-400">贡献额外积分</span></div></div>
+            <div class="flex items-start justify-between gap-3"><div><p class="text-[9px] font-black uppercase tracking-[0.16em] text-[#9e2f24]">我的文化贡献</p><h4 class="mt-1 text-sm font-bold text-stone-900">被故事与专题采用的真实资料</h4></div><strong id="cloud-impact-adopted" class="text-2xl text-[#7d2b23]">0</strong></div>
+            <div class="mt-3 grid grid-cols-3 gap-2 text-center"><div class="rounded-lg bg-white p-2"><strong id="cloud-impact-stories" class="block text-sm text-stone-800">0</strong><span class="text-[9px] text-stone-400">帮助补全故事</span></div><div class="rounded-lg bg-white p-2"><strong id="cloud-impact-themes" class="block text-sm text-stone-800">0</strong><span class="text-[9px] text-stone-400">进入专题</span></div><div class="rounded-lg bg-white p-2"><strong id="cloud-impact-points" class="block text-sm text-stone-800">0</strong><span class="text-[9px] text-stone-400">贡献额外积分</span></div></div>
             <div id="cloud-impact-recent" class="mt-3"></div>
           </div>
         </div>
@@ -2005,15 +2005,21 @@ feedback_closed: '反馈处理',
     const items = Array.isArray(impact.items) ? impact.items : [];
     const adopted = document.getElementById('cloud-impact-adopted');
     const stories = document.getElementById('cloud-impact-stories');
+    const themes = document.getElementById('cloud-impact-themes');
     const points = document.getElementById('cloud-impact-points');
     const recent = document.getElementById('cloud-impact-recent');
-    if (!adopted || !stories || !points || !recent) return;
+    if (!adopted || !stories || !themes || !points || !recent) return;
     adopted.textContent = Number(impact.adoptedCount || 0);
     stories.textContent = Number(impact.storyCount || 0);
+    themes.textContent = Number(impact.themeCount || 0);
     points.textContent = `+${Number(impact.totalRewardPoints || 0)}`;
     recent.innerHTML = items.length
-      ? `<details class="rounded-xl border border-[#b68a4a]/20 bg-white px-3 py-2"><summary class="cursor-pointer text-[10px] font-bold text-[#7d2b23]">查看最近采用记录</summary><div class="mt-2 space-y-2">${items.slice(0, 4).map((item) => `<article class="border-t border-stone-100 pt-2 first:border-0 first:pt-0"><p class="text-[10px] font-bold text-stone-700">${safeText(item.storyTitle || item.taskTitle || '楚韵故事')}</p><p class="mt-0.5 text-[9px] text-stone-400">${safeText(item.taskTitle || '资料补充')}${item.rewardStatus === 'awarded' ? ` · 已获 +${Number(item.rewardPointsAwarded || 0)} 积分` : item.rewardStatus === 'pending_manual_confirmation' ? ' · 积分待管理员确认' : ''}</p></article>`).join('')}</div></details>`
-      : '<p class="text-[10px] leading-5 text-stone-400">资料被故事采用后，贡献记录会出现在这里。</p>';
+      ? `<details class="rounded-xl border border-[#b68a4a]/20 bg-white px-3 py-2"><summary class="cursor-pointer text-[10px] font-bold text-[#7d2b23]">查看最近采用记录</summary><div class="mt-2 space-y-2">${items.slice(0, 4).map((item) => `<article class="border-t border-stone-100 pt-2 first:border-0 first:pt-0">${item.type === 'theme_adoption' ? `
+          <p class="text-[10px] font-bold text-stone-700">你的材料被专题《${safeText(item.themeTitle || '文化专题')}》第 ${Number(item.chapterIndex) + 1} 章采用</p>
+          <p class="mt-0.5 text-[9px] text-stone-400">${item.currentlyPublic ? '当前专题可查看' : '历史采用记录 · 当前公开状态已变化'} · 不重复发放积分</p>` : `
+          <p class="text-[10px] font-bold text-stone-700">${safeText(item.storyTitle || item.taskTitle || '楚韵故事')}</p>
+          <p class="mt-0.5 text-[9px] text-stone-400">${safeText(item.taskTitle || '资料补充')}${item.rewardStatus === 'awarded' ? ` · 已获 +${Number(item.rewardPointsAwarded || 0)} 积分` : item.rewardStatus === 'pending_manual_confirmation' ? ' · 积分待管理员确认' : ''}</p>`}</article>`).join('')}</div></details>`
+      : '<p class="text-[10px] leading-5 text-stone-400">资料被故事或专题正式采用后，贡献记录会出现在这里。</p>';
   }
 
   function renderCloudProfile(data) {
