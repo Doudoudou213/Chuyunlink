@@ -79,3 +79,7 @@
 ### 阶段 1
 已实现独立向导页面、原行程篮入口、同城会话、锁定与剩余行程修改、手动到访和私有云保存接口。交通完整性、停留缓冲、来源未知和模拟道路均明确标注；本机恢复已验证。账号保存需在首次到访前开启，避免把本机历史自动归入账号。
 测试：test-visit-sessions、test-map-personalization（11 项）、validate-cloudbase-build、test-cultural-guide-ui 全部通过；浏览器使用本地固定响应并拦截外网，390/768/1440 检查通过。真实云保存、地图仍未测。checkpoint：见本阶段提交。
+
+### 阶段 2
+已实现讲解片段的草稿、人工审核、发布版本与下架；站点按兴趣选择已审核内容，展开事实与来源，实时遵守来源及署名状态。增加参观条件核实入口。没有接入模型或语音。
+测试：test-guide-evidence、test-story-claims、validate-cloudbase-build、test-cultural-guide-ui、test-guide-admin-ui 全部通过。管理员浏览器检查覆盖真实本地业务模块与模拟数据库的保存/审核/发布及三种屏宽；真实云端未测。阶段 1 checkpoint：99d7c10。
