@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>楚韵链迹 - 荆楚物质文化遗产众包采集系统</title>
+  <link rel="icon" href="data:,">
   <!-- Tailwind CSS 引入 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide 图标库引入 -->
@@ -1067,6 +1068,1352 @@
       color: #f1d8a8 !important;
     }
 
+    /* 活动科普页第二阶段：活动册首章。规则严格限制在 #view-community。 */
+    #view-community {
+      --community-paper: #f5efe4;
+      --community-surface: #fbf7ef;
+      --community-surface-warm: #eee3d2;
+      --community-ink: #4b2e2b;
+      --community-action: #592620;
+      --community-lacquer: #17110f;
+      --community-vermilion: #9e2f24;
+      --community-gold: #b68a4a;
+      --community-patina: #496a61;
+      --community-shadow: 0 12px 32px rgba(65, 39, 27, 0.08);
+      color: var(--community-ink);
+    }
+    #view-community .community-page-intro {
+      position: absolute !important;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    #view-community .community-hero {
+      height: clamp(20rem, 43vw, 25rem);
+      border-radius: 0.55rem 1.15rem 0.55rem 1.15rem !important;
+      background: var(--community-lacquer);
+      box-shadow: 0 14px 34px rgba(65, 39, 27, 0.14) !important;
+    }
+    #view-community .community-hero-image {
+      object-position: center 52%;
+      transform: scale(1.01);
+    }
+    #view-community .community-hero-overlay {
+      background:
+        linear-gradient(180deg, rgba(23, 17, 15, 0.12) 4%, rgba(23, 17, 15, 0.26) 38%, rgba(23, 17, 15, 0.96) 100%);
+    }
+    #view-community .community-hero-content {
+      right: clamp(1.1rem, 3vw, 2rem);
+      bottom: clamp(1.1rem, 3vw, 1.7rem);
+      left: clamp(1.1rem, 3vw, 2rem);
+    }
+    #view-community .community-hero-meta {
+      margin-bottom: 0.72rem;
+    }
+    #view-community .community-seal,
+    #view-community .community-enrolled {
+      display: inline-flex;
+      min-height: 26px;
+      align-items: center;
+      padding: 0.28rem 0.58rem;
+      border-radius: 0.32rem;
+      font-size: 0.72rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    #view-community .community-seal {
+      background: var(--community-vermilion);
+      color: #fff5df;
+      box-shadow: 0 4px 12px rgba(23, 17, 15, 0.18);
+    }
+    #view-community .community-enrolled {
+      background: rgba(255, 250, 241, 0.9);
+      color: var(--community-ink);
+      backdrop-filter: blur(8px);
+    }
+    #view-community .community-hero-title {
+      margin-top: 0;
+      color: #f1d6a0;
+      font-size: clamp(1.65rem, 4vw, 2.35rem);
+      font-weight: 800;
+      letter-spacing: 0.025em;
+      line-height: 1.22;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.42);
+    }
+    #view-community .community-hero-description {
+      max-width: 42rem;
+      margin-top: 0.48rem;
+      color: rgba(255, 250, 241, 0.92);
+      font-size: 0.86rem;
+      line-height: 1.65;
+    }
+    #view-community .community-hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.9rem;
+    }
+    #view-community .community-hero-actions button {
+      display: inline-flex;
+      min-width: 0;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      gap: 0.42rem;
+      border: 0 !important;
+      border-radius: 0.42rem !important;
+      font-size: 0.78rem;
+      font-weight: 800;
+      line-height: 1;
+      box-shadow: none !important;
+    }
+    #view-community .community-hero-actions button svg {
+      width: 1rem;
+      height: 1rem;
+    }
+    #view-community .community-hero .community-hero-actions .community-hero-primary {
+      padding: 0 1rem;
+      background: var(--community-vermilion) !important;
+      color: #fff5df !important;
+      box-shadow: 0 7px 18px rgba(91, 26, 21, 0.28) !important;
+    }
+    #view-community .community-hero-secondary {
+      padding: 0 0.58rem;
+      background: transparent !important;
+      color: rgba(255, 250, 241, 0.94) !important;
+    }
+    #view-community .community-hero-secondary + .community-hero-secondary {
+      position: relative;
+    }
+    #view-community .community-hero-secondary + .community-hero-secondary::before {
+      content: "";
+      position: absolute;
+      top: 12px;
+      bottom: 12px;
+      left: -0.28rem;
+      width: 1px;
+      background: rgba(255, 250, 241, 0.34);
+    }
+    #view-community .community-section-titlebar {
+      min-height: 44px;
+    }
+    #view-community .chu-section-heading {
+      gap: 0.4rem;
+      color: var(--community-ink) !important;
+      font-size: 1.05rem !important;
+      letter-spacing: 0.015em !important;
+    }
+    #view-community .chu-section-heading svg {
+      width: 1.05rem;
+      height: 1.05rem;
+      color: var(--community-action);
+      stroke-width: 1.8;
+    }
+    #view-community .community-progress {
+      color: var(--community-action);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    #view-community #community-route-card {
+      overflow: hidden;
+      padding: clamp(1rem, 2.4vw, 1.35rem) !important;
+      border: 0 !important;
+      border-radius: 0.85rem !important;
+      background: rgba(251, 247, 239, 0.96) !important;
+      box-shadow: var(--community-shadow) !important;
+    }
+    #view-community .community-route-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    #view-community .community-route-chip {
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 0.18rem 0.5rem;
+      border-radius: 0.34rem;
+      background: rgba(182, 138, 74, 0.13);
+      color: #735322;
+      font-size: 0.7rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-chip--patina {
+      background: rgba(73, 106, 97, 0.12);
+      color: var(--community-patina);
+    }
+    #view-community .community-route-chip--quiet {
+      background: rgba(238, 227, 210, 0.72);
+      color: #75645a;
+    }
+    #view-community .community-route-duration {
+      margin-left: auto;
+      color: #735322;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-title {
+      margin-top: 0.72rem;
+      color: var(--community-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-description {
+      display: -webkit-box;
+      overflow: hidden;
+      margin-top: 0.26rem;
+      color: #75645a;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
+    }
+    #view-community .community-route-trace {
+      position: relative;
+      display: grid;
+      min-height: 11.75rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.35rem;
+      margin-top: 0.85rem;
+      padding: 0.15rem 0.1rem 0;
+      isolation: isolate;
+    }
+    #view-community .community-route-trace::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 1.7rem;
+      right: -1.2rem;
+      left: -1.2rem;
+      height: 6.5rem;
+      background: url('./static/assets/community-route-trace.png') center / 100% 100% no-repeat;
+      opacity: 0.92;
+      pointer-events: none;
+    }
+    #view-community .community-route-stop {
+      display: flex;
+      min-width: 0;
+      min-height: 10rem;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: var(--trace-offset, 2.2rem) 0.25rem 0.45rem;
+      border: 0;
+      border-radius: 0.45rem;
+      background: transparent;
+      color: var(--community-ink);
+      text-align: center;
+      transition: background-color 150ms ease, transform 150ms ease;
+    }
+    #view-community .community-route-stop:nth-child(1) { --trace-offset: 3.7rem; }
+    #view-community .community-route-stop:nth-child(2) { --trace-offset: 1.65rem; }
+    #view-community .community-route-stop:nth-child(3) { --trace-offset: 3.25rem; }
+    #view-community .community-route-stop:hover {
+      background: rgba(238, 227, 210, 0.36);
+      transform: translateY(-2px);
+    }
+    #view-community .community-route-marker {
+      display: inline-flex;
+      width: 2rem;
+      height: 2rem;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid rgba(255, 245, 223, 0.9);
+      border-radius: 999px;
+      background: var(--community-vermilion);
+      color: #fff5df;
+      box-shadow: 0 4px 10px rgba(89, 38, 32, 0.2);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.88rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-landmark {
+      display: flex;
+      width: 2.2rem;
+      height: 2.2rem;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.28rem;
+      color: #8a6b3b;
+    }
+    #view-community .community-route-landmark svg {
+      width: 1.55rem;
+      height: 1.55rem;
+      stroke-width: 1.35;
+    }
+    #view-community .community-route-stop strong {
+      margin-top: 0.35rem;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+    #view-community .community-route-stop small {
+      display: -webkit-box;
+      overflow: hidden;
+      margin-top: 0.2rem;
+      color: #75645a;
+      font-size: 0.68rem;
+      line-height: 1.45;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+    #view-community .community-route-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.35rem;
+      margin-top: 0.45rem;
+      padding-top: 0.7rem;
+      border-top: 1px solid rgba(89, 38, 32, 0.08);
+    }
+    #view-community .community-route-action {
+      display: inline-flex;
+      min-width: 0;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.45rem 0.35rem;
+      border: 0;
+      border-radius: 0.38rem;
+      background: transparent;
+      color: var(--community-action);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-action--primary {
+      background: var(--community-action);
+      color: #f3d9a9;
+    }
+    #view-community .community-route-action svg {
+      width: 0.95rem;
+      height: 0.95rem;
+      flex: 0 0 auto;
+    }
+    #view-community .community-route-services-toggle {
+      display: flex;
+      width: 100%;
+      min-height: 48px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.55rem;
+      padding: 0.2rem 0.15rem;
+      border: 0;
+      border-top: 1px solid rgba(89, 38, 32, 0.08);
+      border-radius: 0;
+      background: transparent;
+      color: var(--community-ink);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    #view-community .community-route-services-toggle span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    #view-community .community-route-services-toggle svg {
+      width: 1rem;
+      height: 1rem;
+      transition: transform 160ms ease;
+    }
+    #view-community .community-route-services-toggle[aria-expanded="true"] > svg {
+      transform: rotate(180deg);
+    }
+    #view-community .community-route-services[hidden] {
+      display: none !important;
+    }
+    #view-community .community-route-services {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem;
+      padding-top: 0.55rem;
+    }
+    #view-community .community-service-panel {
+      padding: 0.7rem;
+      border-radius: 0.55rem;
+      background: rgba(238, 227, 210, 0.56);
+    }
+    #view-community .community-service-heading {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    #view-community .community-service-icon {
+      display: flex;
+      width: 1.8rem;
+      height: 1.8rem;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      color: var(--community-action);
+    }
+    #view-community .community-service-icon svg {
+      width: 1.1rem;
+      height: 1.1rem;
+    }
+    #view-community .community-service-panel h6 {
+      color: var(--community-ink);
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+    #view-community .community-service-panel p {
+      margin-top: 0.12rem;
+      color: #75645a;
+      font-size: 0.68rem;
+      line-height: 1.45;
+    }
+    #view-community .community-service-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.35rem;
+      margin-top: 0.55rem;
+    }
+    #view-community .community-service-actions button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 0.35rem;
+      background: rgba(251, 247, 239, 0.8);
+      color: var(--community-action);
+      font-size: 0.68rem;
+      font-weight: 800;
+    }
+    #view-community .community-service-actions button:last-child {
+      background: var(--community-action);
+      color: #f3d9a9;
+    }
+    #view-community .chu-knowledge-panel {
+      padding: clamp(1rem, 2.4vw, 1.35rem) !important;
+      border: 0 !important;
+      border-radius: 0.85rem !important;
+      background: rgba(251, 247, 239, 0.96) !important;
+      box-shadow: var(--community-shadow) !important;
+    }
+    #view-community .community-daily-tag {
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 0.18rem 0.5rem;
+      border-radius: 0.32rem;
+      background: rgba(182, 138, 74, 0.13);
+      color: #735322;
+      font-size: 0.7rem;
+      font-weight: 800;
+    }
+    #view-community .community-quiz-date,
+    #view-community .community-learning-summary,
+    #view-community .community-quiz-update {
+      color: #847267;
+      font-size: 0.72rem;
+      line-height: 1.5;
+    }
+    #view-community .community-quiz-question {
+      margin-top: 0.6rem;
+      color: var(--community-ink);
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.55;
+    }
+    #view-community .community-quiz-icon {
+      display: flex;
+      width: 2.75rem;
+      height: 2.75rem;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.55rem;
+      background: var(--community-lacquer);
+      color: #e3c98f;
+    }
+    #view-community .community-quiz-icon svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+    #view-community .community-quiz-options {
+      display: grid;
+      gap: 0.55rem;
+      margin-top: 0.9rem;
+    }
+    #view-community .community-quiz-option {
+      width: 100%;
+      min-height: 48px !important;
+      padding: 0.72rem 0.85rem !important;
+      border: 1px solid transparent !important;
+      border-radius: 0.5rem !important;
+      background: rgba(238, 227, 210, 0.7) !important;
+      color: var(--community-ink) !important;
+      box-shadow: none !important;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      text-align: left;
+    }
+    #view-community .community-quiz-option:hover,
+    #view-community .community-quiz-option:focus-visible {
+      border-color: rgba(182, 138, 74, 0.55) !important;
+      background: rgba(182, 138, 74, 0.12) !important;
+      color: var(--community-ink) !important;
+      outline: 2px solid rgba(182, 138, 74, 0.25);
+      outline-offset: 2px;
+    }
+    #view-community .community-quiz-option:disabled {
+      cursor: default;
+      opacity: 0.64;
+    }
+    #view-community .community-quiz-option.is-correct {
+      border-color: rgba(73, 106, 97, 0.32) !important;
+      background: rgba(73, 106, 97, 0.13) !important;
+      color: var(--community-patina) !important;
+      font-weight: 800;
+      opacity: 1;
+    }
+    #view-community .community-quiz-option.is-wrong {
+      border-color: rgba(158, 47, 36, 0.32) !important;
+      background: rgba(158, 47, 36, 0.1) !important;
+      color: var(--community-vermilion) !important;
+      font-weight: 800;
+      opacity: 1;
+    }
+    #view-community .community-quiz-feedback {
+      margin-top: 0.75rem;
+      padding: 0.8rem;
+      border: 1px solid rgba(182, 138, 74, 0.2) !important;
+      border-radius: 0.55rem;
+      background: rgba(182, 138, 74, 0.1) !important;
+      color: #68584c !important;
+      font-size: 0.75rem;
+      line-height: 1.6;
+    }
+    #view-community .community-quiz-feedback strong {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.2rem;
+    }
+    #view-community .community-quiz-feedback svg {
+      width: 1rem;
+      height: 1rem;
+    }
+    #view-community .community-quiz-feedback.is-correct strong {
+      color: var(--community-patina);
+    }
+    #view-community .community-quiz-feedback.is-wrong strong {
+      color: var(--community-vermilion);
+    }
+    #view-community .community-quiz-update {
+      margin-top: 0.72rem;
+    }
+    #view-community .community-learning-refresh {
+      display: inline-flex;
+      min-width: 44px;
+      min-height: 44px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      gap: 0.32rem;
+      padding: 0 0.42rem;
+      border: 0;
+      border-radius: 0.35rem;
+      background: transparent;
+      color: var(--community-action);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    #view-community .community-learning-refresh svg {
+      width: 1rem;
+      height: 1rem;
+    }
+    #view-community .community-learning-list {
+      display: grid;
+      gap: 0.65rem;
+    }
+    #view-community .community-learning-card {
+      display: grid;
+      width: 100%;
+      min-height: 82px;
+      grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.8rem 0.9rem;
+      border: 0 !important;
+      border-radius: 0.65rem;
+      background: rgba(251, 247, 239, 0.96) !important;
+      color: var(--community-ink);
+      box-shadow: var(--community-shadow) !important;
+      text-align: left;
+    }
+    #view-community .community-learning-icon {
+      display: flex;
+      width: 2.6rem;
+      height: 2.6rem;
+      align-items: center;
+      justify-content: center;
+      color: var(--community-gold);
+    }
+    #view-community .community-learning-icon svg {
+      width: 1.55rem;
+      height: 1.55rem;
+      stroke-width: 1.5;
+    }
+    #view-community .community-learning-copy {
+      min-width: 0;
+    }
+    #view-community .community-learning-copy h5 {
+      color: var(--community-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.84rem;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+    #view-community .community-learning-copy p {
+      margin-top: 0.16rem;
+      color: #847267;
+      font-size: 0.7rem;
+    }
+    #view-community .community-learning-state {
+      display: inline-flex;
+      min-height: 26px;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.2rem 0.45rem;
+      border-radius: 999px;
+      background: rgba(182, 138, 74, 0.12);
+      color: #735322;
+      font-size: 0.67rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    #view-community .community-learning-state.is-complete {
+      background: rgba(73, 106, 97, 0.1);
+      color: var(--community-patina);
+    }
+    #view-community .community-learning-state svg {
+      width: 0.85rem;
+      height: 0.85rem;
+    }
+    #view-community button:focus-visible {
+      outline: 2px solid rgba(182, 138, 74, 0.72);
+      outline-offset: 3px;
+    }
+    @media (max-width: 520px) {
+      #view-community {
+        row-gap: 1.15rem;
+        margin-top: -0.5rem;
+        padding-top: 0;
+      }
+      #view-community .community-hero {
+        height: 19rem !important;
+      }
+      #view-community .community-hero::after {
+        display: none;
+      }
+      #view-community .community-hero-title {
+        font-size: 1.72rem;
+      }
+      #view-community .community-hero-description {
+        font-size: 0.82rem;
+      }
+      #view-community .community-hero-actions {
+        gap: 0.25rem;
+      }
+      #view-community .community-hero-primary {
+        padding: 0 0.8rem;
+      }
+      #view-community .community-hero-secondary {
+        flex: 1 1 auto;
+        padding: 0 0.25rem;
+      }
+      #view-community .community-route-trace {
+        min-height: 9.75rem;
+        margin-right: -0.25rem;
+        margin-left: -0.25rem;
+        margin-top: 0.4rem;
+      }
+      #view-community .community-route-stop {
+        min-height: 8.35rem;
+        padding-right: 0.12rem;
+        padding-left: 0.12rem;
+      }
+      #view-community .community-route-stop:nth-child(1) { --trace-offset: 2.65rem; }
+      #view-community .community-route-stop:nth-child(2) { --trace-offset: 0.85rem; }
+      #view-community .community-route-stop:nth-child(3) { --trace-offset: 2.15rem; }
+      #view-community .community-route-stop strong {
+        font-size: 0.72rem;
+      }
+      #view-community .community-route-stop small {
+        font-size: 0.64rem;
+      }
+      #view-community .community-route-action span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #view-community .community-route-services {
+        grid-template-columns: 1fr;
+      }
+      #view-community .community-learning-refresh span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+      #view-community .community-learning-card {
+        grid-template-columns: 2.35rem minmax(0, 1fr) auto;
+        gap: 0.62rem;
+        padding-right: 0.7rem;
+        padding-left: 0.7rem;
+      }
+    }
+    @media (min-width: 768px) {
+      #view-community .community-hero-content {
+        max-width: 48rem;
+      }
+      #view-community .community-route-stop strong {
+        font-size: 0.84rem;
+      }
+      #view-community .community-route-stop small {
+        max-width: 12rem;
+        font-size: 0.72rem;
+      }
+      #view-community .community-learning-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #view-community .community-route-stop,
+      #view-community .community-route-services-toggle svg {
+        transition: none !important;
+      }
+      #view-community .community-route-stop:hover {
+        transform: none;
+      }
+    }
+
+    /* 我的：宣纸图鉴厅。功能入口收进齿轮，投稿以藏品缩略图为主。 */
+    #view-profile {
+      position: relative;
+      min-height: calc(100vh - 122px);
+      padding: 1.35rem clamp(1rem, 3vw, 1.6rem) 3.5rem;
+      background: var(--chu-paper) !important;
+      color: var(--chu-rose-gray);
+      isolation: isolate;
+    }
+    #view-profile::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background: url('./static/assets/collect-scroll-watermark-v2.webp') right -5rem top -15rem / 29rem auto no-repeat;
+      opacity: 0.7;
+      filter: sepia(0.5) saturate(0.82) contrast(1.38);
+      mix-blend-mode: multiply;
+    }
+    #view-profile::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 92% 3%, rgba(169, 135, 79, 0.075), transparent 18rem),
+        radial-gradient(circle at 4% 42%, rgba(73, 106, 97, 0.045), transparent 20rem);
+    }
+    #view-profile > * {
+      position: relative;
+      z-index: 1;
+    }
+    #legacy-profile-card {
+      border: 0 !important;
+      background: transparent !important;
+      color: var(--chu-rose-gray) !important;
+      box-shadow: none !important;
+    }
+    .profile-gallery-header {
+      position: relative;
+      max-width: 46rem;
+      margin-inline: auto;
+      color: var(--chu-rose-gray);
+    }
+    .profile-gallery-titlebar,
+    .profile-submission-heading-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .profile-gallery-kicker {
+      color: var(--chu-gold-muted);
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+    }
+    .profile-gallery-page-title {
+      margin-top: 0.15rem;
+      color: var(--chu-rose-gray);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.42rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+    .profile-settings-trigger,
+    .profile-refresh-button,
+    .profile-inline-edit {
+      display: inline-flex;
+      min-width: 44px;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      background: transparent;
+      color: #78695d;
+      transition: color 150ms ease, background-color 150ms ease;
+    }
+    .profile-settings-trigger {
+      border-radius: 50%;
+      background: rgba(251, 247, 239, 0.82);
+      box-shadow: 0 6px 18px rgba(75, 46, 43, 0.055);
+    }
+    .profile-settings-trigger svg,
+    .profile-refresh-button svg { width: 18px; height: 18px; }
+    .profile-settings-trigger:hover,
+    .profile-settings-trigger:focus-visible,
+    .profile-settings-trigger.is-open,
+    .profile-refresh-button:hover,
+    .profile-refresh-button:focus-visible,
+    .profile-inline-edit:hover,
+    .profile-inline-edit:focus-visible {
+      color: var(--chu-camel);
+      outline: 2px solid rgba(169, 135, 79, 0.32);
+      outline-offset: 2px;
+    }
+    .profile-identity {
+      display: grid;
+      grid-template-columns: 4.35rem minmax(0, 1fr);
+      gap: 0.95rem;
+      align-items: center;
+      margin-top: 1.35rem;
+    }
+    .profile-avatar-frame {
+      width: 4.35rem;
+      height: 4.35rem;
+      overflow: hidden;
+      border: 1px solid rgba(169, 135, 79, 0.24);
+      border-radius: 50%;
+      background: #eadcc7;
+      box-shadow: 0 8px 18px rgba(75, 46, 43, 0.08);
+    }
+    .profile-avatar-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .profile-name-row {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .profile-name-row h3 {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--chu-rose-gray);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .profile-inline-edit {
+      min-width: 44px;
+      min-height: 44px;
+      color: var(--chu-gold-muted);
+    }
+    .profile-inline-edit svg { width: 14px; height: 14px; }
+    .profile-account-badge {
+      flex: 0 0 auto;
+      color: #7f6c52;
+      font-size: 0.56rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .profile-identity-number {
+      margin-top: 0.05rem;
+      color: #9b8e81;
+      font-size: 0.58rem;
+      letter-spacing: 0.04em;
+    }
+    .profile-biography {
+      max-width: 36rem;
+      margin-top: 0.3rem;
+      color: #75685f;
+      font-size: 0.68rem;
+      line-height: 1.65;
+    }
+    .profile-stat-ledger {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 1rem 0 1.15rem 5.25rem;
+      text-align: center;
+    }
+    .profile-stat-ledger > div {
+      position: relative;
+      display: flex;
+      min-height: 3rem;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .profile-stat-ledger > div + div::before {
+      content: "";
+      position: absolute;
+      top: 0.7rem;
+      bottom: 0.7rem;
+      left: 0;
+      width: 1px;
+      background: rgba(89, 38, 32, 0.09);
+    }
+    .profile-stat-ledger strong {
+      color: var(--chu-rose-gray);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .profile-stat-ledger span {
+      margin-top: 0.15rem;
+      color: #96887d;
+      font-size: 0.56rem;
+    }
+    .profile-hidden-stats { display: none; }
+    .profile-utility-menu {
+      margin: 0.25rem 0 1rem;
+      padding: 0.9rem 1rem;
+      border-radius: 0.55rem;
+      background: rgba(251, 247, 239, 0.96);
+      box-shadow: var(--chu-soft-shadow);
+    }
+    .profile-account-hint {
+      padding-bottom: 0.7rem;
+      color: #84766a;
+      font-size: 0.62rem;
+      line-height: 1.55;
+    }
+    .profile-utility-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid rgba(89, 38, 32, 0.08);
+    }
+    .profile-utility-grid button {
+      display: flex;
+      min-height: 46px;
+      align-items: center;
+      gap: 0.55rem;
+      border: 0;
+      border-bottom: 1px solid rgba(89, 38, 32, 0.07);
+      background: transparent;
+      color: #6e6056;
+      font-size: 0.68rem;
+      text-align: left;
+    }
+    .profile-utility-grid button:nth-child(odd) { padding-right: 0.65rem; }
+    .profile-utility-grid button:nth-child(even) { padding-left: 0.65rem; }
+    .profile-utility-grid button svg { width: 15px; height: 15px; color: var(--chu-gold-muted); }
+    .profile-utility-grid button:hover,
+    .profile-utility-grid button:focus-visible {
+      color: var(--chu-camel);
+      outline: 2px solid rgba(169, 135, 79, 0.28);
+      outline-offset: -2px;
+    }
+    .profile-atlas-banner {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(9rem, 0.88fr);
+      min-height: 10.3rem;
+      overflow: hidden;
+      border-radius: 0.9rem 1.35rem 0.9rem 1.35rem;
+      background:
+        radial-gradient(circle at 82% 18%, rgba(255, 250, 241, 0.5), transparent 38%),
+        linear-gradient(120deg, #eadabf 0%, #dfc69e 100%);
+      box-shadow: 0 14px 34px rgba(65, 39, 27, 0.09);
+    }
+    .profile-atlas-copy {
+      position: relative;
+      z-index: 2;
+      padding: 1.15rem 0.4rem 1rem 1.2rem;
+    }
+    .profile-atlas-copy > p {
+      color: #9b8058;
+      font-size: 0.5rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+    }
+    .profile-atlas-copy h3 {
+      margin-top: 0.35rem;
+      color: var(--chu-camel);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .profile-atlas-copy > span {
+      display: block;
+      max-width: 17rem;
+      margin-top: 0.35rem;
+      color: #796954;
+      font-size: 0.61rem;
+      line-height: 1.55;
+    }
+    .profile-atlas-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.2rem 0.85rem;
+      margin-top: 0.55rem;
+    }
+    .profile-atlas-links button {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+      gap: 0.25rem;
+      border: 0;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      color: var(--chu-camel);
+      font-size: 0.63rem;
+      font-weight: 800;
+    }
+    .profile-atlas-links button svg { width: 13px; height: 13px; }
+    .profile-atlas-links button:hover,
+    .profile-atlas-links button:focus-visible,
+    .profile-atlas-links button.is-active {
+      border-bottom-color: var(--chu-camel);
+      outline: 0;
+    }
+    .profile-atlas-preview {
+      position: relative;
+      min-width: 0;
+    }
+    .profile-atlas-preview > img:not(.profile-atlas-emblem) {
+      position: absolute;
+      width: 6.1rem;
+      height: 7.3rem;
+      object-fit: cover;
+      border: 3px solid rgba(251, 247, 239, 0.72);
+      border-radius: 0.35rem;
+      box-shadow: 0 12px 24px rgba(75, 46, 43, 0.16);
+    }
+    #profile-atlas-preview-a { right: 1.05rem; bottom: -0.8rem; transform: rotate(7deg); }
+    #profile-atlas-preview-b { right: 4.9rem; bottom: -1.3rem; transform: rotate(-9deg); }
+    .profile-atlas-emblem {
+      position: absolute;
+      right: 0.15rem;
+      bottom: -0.35rem;
+      width: 9rem;
+      height: 8.2rem;
+      object-fit: contain;
+      opacity: 0.28;
+      filter: sepia(0.45) saturate(0.72);
+    }
+    .profile-atlas-preview.has-submission-images .profile-atlas-emblem { opacity: 0.1; }
+    .profile-submission-section {
+      max-width: 46rem;
+      margin: 2.25rem auto 0;
+    }
+    .profile-submission-heading-row h3 {
+      margin-top: 0.15rem;
+      color: var(--chu-rose-gray);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.02rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .profile-record-filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 0.9rem;
+      border-bottom: 1px solid rgba(89, 38, 32, 0.1);
+    }
+    .profile-record-filters button {
+      position: relative;
+      min-height: 44px;
+      border: 0;
+      background: transparent;
+      color: #8d8074;
+      font-size: 0.64rem;
+      font-weight: 700;
+    }
+    .profile-record-filters button::after {
+      content: "";
+      position: absolute;
+      right: 38%;
+      bottom: -1px;
+      left: 38%;
+      height: 2px;
+      background: transparent;
+    }
+    .profile-record-filters button:hover,
+    .profile-record-filters button:focus-visible,
+    .profile-record-filters button.is-active {
+      color: var(--chu-camel);
+      outline: 0;
+    }
+    .profile-record-filters button.is-active::after { background: var(--chu-gold-muted); }
+    .profile-submission-gallery {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.85rem;
+      align-items: start;
+      margin-top: 0.85rem;
+    }
+    .profile-submission-card {
+      min-width: 0;
+      overflow: hidden;
+      border: 0;
+      border-radius: 0.38rem;
+      background: rgba(251, 247, 239, 0.98);
+      box-shadow: 0 8px 24px rgba(75, 46, 43, 0.07);
+    }
+    .profile-submission-cover {
+      position: relative;
+      aspect-ratio: 4 / 3.35;
+      overflow: hidden;
+      background: #e8ddcb;
+    }
+    .profile-submission-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 240ms ease;
+    }
+    .profile-submission-card:hover .profile-submission-cover img { transform: scale(1.025); }
+    .profile-submission-cover--icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.45rem;
+      background: linear-gradient(145deg, #e9decb, #f1e8da);
+      color: #9a805a;
+    }
+    .profile-submission-cover--icon svg { width: 28px; height: 28px; }
+    .profile-submission-cover--icon span { font-size: 0.58rem; letter-spacing: 0.12em; }
+    .profile-submission-caption {
+      position: relative;
+      min-height: 6.5rem;
+      padding: 0.75rem 0.75rem 0.85rem;
+    }
+    .profile-submission-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      color: #a09387;
+      font-size: 0.52rem;
+    }
+    .profile-submission-caption h4 {
+      display: -webkit-box;
+      overflow: hidden;
+      margin-top: 0.42rem;
+      color: #51443e;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      line-height: 1.5;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+    .profile-status-tag {
+      display: inline-flex;
+      margin-top: 0.55rem;
+      padding: 0.18rem 0.42rem;
+      border-radius: 0.2rem;
+      font-size: 0.52rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+    .profile-status-verified { background: rgba(73, 106, 97, 0.13); color: #3f6158; }
+    .profile-status-gold { background: rgba(182, 138, 74, 0.15); color: #84612e; }
+    .profile-status-attention { background: rgba(172, 31, 24, 0.09); color: #8f3c36; }
+    .profile-review-note {
+      margin-top: 0.55rem;
+      color: #76685d;
+      font-size: 0.56rem;
+      line-height: 1.5;
+    }
+    .profile-review-note summary {
+      min-height: 30px;
+      cursor: pointer;
+      color: var(--chu-gold-muted);
+    }
+    .profile-review-note p { padding-top: 0.2rem; }
+    .profile-attribution-choice {
+      display: flex; align-items: center; gap: 0.55rem;
+      min-height: 44px; margin-top: 0.6rem; padding-top: 0.45rem;
+      border-top: 1px solid rgba(117, 97, 70, 0.17);
+      color: #66564a; font-size: 0.58rem; line-height: 1.5; cursor: pointer;
+    }
+    .profile-attribution-choice input { width: 16px; height: 16px; flex: none; accent-color: #9e2f24; }
+    .profile-source-settings { border-top: 1px solid rgba(117, 97, 70, 0.12); padding-top: 0.2rem; }
+    .profile-source-settings summary { display: flex; align-items: center; min-height: 44px; }
+    .profile-source-controls button {
+      width: 100%; min-height: 44px; margin-top: 0.3rem; padding: 0.5rem 0.65rem;
+      border: 1px solid rgba(117, 97, 70, 0.2); border-radius: 0.25rem;
+      color: #66564a; background: rgba(255, 255, 255, 0.45); text-align: left;
+    }
+    .profile-attribution-choice:focus-within,
+    .profile-source-settings summary:focus-visible,
+    .profile-source-controls button:focus-visible { outline: 2px solid #9e2f24; outline-offset: 2px; }
+    .profile-contribution-impact {
+      margin: 0.85rem 0 1.2rem; padding: 1rem;
+      border: 1px solid rgba(182, 138, 74, 0.27); border-radius: 0.38rem;
+      background: rgba(251, 247, 239, 0.98);
+      box-shadow: 0 8px 24px rgba(75, 46, 43, 0.07);
+    }
+    .profile-contribution-heading { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
+    .profile-contribution-seal {
+      display: grid; flex: none; place-items: center; width: 2.7rem; height: 2.7rem;
+      border-radius: 0.28rem; background: #2b2421; color: #d9ad52;
+      font-family: 'Noto Serif SC', serif; font-size: 1.2rem;
+    }
+    .profile-contribution-heading > div { flex: 1; min-width: 0; }
+    .profile-contribution-heading p { color: #a48150; font-size: 0.5rem; font-weight: 800; letter-spacing: 0.14em; }
+    .profile-contribution-heading h4 { margin-top: 0.2rem; color: #51443e; font-family: 'Noto Serif SC', serif; font-size: 0.78rem; }
+    .profile-contribution-heading div > span { color: #8a796b; font-size: 0.56rem; }
+    #cloud-impact-adopted { align-self: start; color: #9e2f24; font-family: 'Noto Serif SC', serif; font-size: 1.25rem; }
+    .profile-contribution-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 0.9rem; border-top: 1px solid rgba(117, 97, 70, 0.14); }
+    .profile-contribution-metrics > div { display: grid; gap: 0.18rem; padding: 0.75rem 0.2rem 0.2rem; text-align: center; }
+    .profile-contribution-metrics > div + div { border-left: 1px solid rgba(117, 97, 70, 0.14); }
+    .profile-contribution-metrics strong { color: #51443e; font-size: 0.78rem; }
+    .profile-contribution-metrics span { color: #8a796b; font-size: 0.52rem; }
+    .profile-contribution-history { margin-top: 0.7rem; border-top: 1px solid rgba(117, 97, 70, 0.14); color: #66564a; font-size: 0.58rem; }
+    .profile-contribution-history summary { display: flex; align-items: center; min-height: 44px; color: #8a6342; cursor: pointer; }
+    .profile-contribution-history article { padding: 0.5rem 0; border-top: 1px solid rgba(117, 97, 70, 0.12); }
+    .profile-contribution-history summary:focus-visible { outline: 2px solid #9e2f24; outline-offset: 2px; }
+    .profile-reward-note {
+      margin-top: 0.5rem;
+      color: #3f6158;
+      font-size: 0.54rem;
+      font-weight: 700;
+    }
+    .profile-gallery-empty {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(7rem, 0.72fr) minmax(12rem, 1.28fr);
+      min-height: 15.5rem;
+      align-items: center;
+      gap: clamp(1rem, 4vw, 2.25rem);
+      overflow: hidden;
+      padding: 1.4rem clamp(1rem, 4vw, 2.25rem);
+      border-radius: 0.85rem 1.5rem 0.85rem 1.5rem;
+      background:
+        radial-gradient(circle at 12% 50%, rgba(73, 106, 97, 0.11), transparent 13rem),
+        rgba(238, 227, 210, 0.62);
+      color: #887b70;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.72rem;
+      line-height: 1.7;
+      text-align: left;
+      box-shadow: inset 0 0 0 1px rgba(182, 138, 74, 0.1), 0 12px 30px rgba(65, 39, 27, 0.055);
+    }
+    .profile-gallery-empty-art {
+      position: relative;
+      display: flex;
+      min-height: 11.5rem;
+      align-items: center;
+      justify-content: center;
+    }
+    .profile-gallery-empty-art::after {
+      content: "";
+      position: absolute;
+      right: 5%;
+      bottom: 0.65rem;
+      left: 5%;
+      height: 1.05rem;
+      border-radius: 50%;
+      background: rgba(65, 39, 27, 0.12);
+      filter: blur(10px);
+    }
+    .profile-gallery-empty-art img {
+      position: relative;
+      z-index: 1;
+      width: min(100%, 9.5rem);
+      height: 11rem;
+      object-fit: contain;
+      filter: drop-shadow(0 13px 11px rgba(65, 39, 27, 0.16));
+    }
+    .profile-gallery-empty-copy { position: relative; z-index: 1; }
+    .profile-gallery-empty-kicker {
+      color: #8a6a3a;
+      font-family: system-ui, sans-serif;
+      font-size: 0.54rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+    }
+    .profile-gallery-empty h4 {
+      margin-top: 0.42rem;
+      color: var(--chu-rose-gray);
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .profile-gallery-empty p {
+      margin-top: 0.5rem;
+      color: #76685d;
+      font-family: system-ui, sans-serif;
+      font-size: 0.68rem;
+      line-height: 1.75;
+    }
+    .profile-gallery-empty-action {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+      gap: 0.42rem;
+      margin-top: 0.9rem;
+      border: 0;
+      border-radius: 0.42rem;
+      background: #241a17;
+      padding: 0.65rem 0.92rem;
+      color: #e3c98f;
+      font-family: system-ui, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(36, 26, 23, 0.14);
+    }
+    .profile-gallery-empty-action svg { width: 15px; height: 15px; }
+    .profile-gallery-empty-action:hover,
+    .profile-gallery-empty-action:focus-visible {
+      background: #592620;
+      outline: 2px solid rgba(182, 138, 74, 0.42);
+      outline-offset: 2px;
+    }
+    .profile-gallery-empty--filtered,
+    .profile-gallery-empty--error {
+      display: flex;
+      min-height: 9rem;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .profile-gallery-empty--error { color: #8f3c36; }
+    #profile-badges-section,
+    #profile-coupons-section {
+      scroll-margin-top: 5rem;
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 0 !important;
+      border-radius: 0.45rem 1.1rem 0.45rem 1.1rem;
+      background: rgba(251, 247, 239, 0.92);
+      box-shadow: var(--chu-soft-shadow);
+    }
+    #profile-badges-section [class*="bg-white"],
+    #profile-coupons-section [class*="bg-white"] {
+      border-color: transparent !important;
+      background: rgba(245, 239, 228, 0.94) !important;
+      box-shadow: none !important;
+    }
+
     @media (max-width: 767px) {
       #view-collect,
       #view-community { min-height: calc(100vh - 60px); }
@@ -1074,8 +2421,1908 @@
       .chu-page-watermark--cloud { width: 62vw; }
       #map-planner-panel { border-radius: 1.2rem 1.2rem 0.45rem 0.45rem; }
       #view-community .community-hero { height: 13.5rem; }
+      #view-profile {
+        min-height: calc(100vh - 60px);
+        padding: 1rem 1rem 6.2rem;
+      }
+      .profile-atlas-banner { grid-template-columns: minmax(0, 1.2fr) minmax(7rem, 0.8fr); }
+      .profile-atlas-copy { padding-left: 1rem; }
+      .profile-atlas-copy > span { max-width: 13rem; }
     }
-  </style>
+    @media (max-width: 420px) {
+      .profile-identity { grid-template-columns: 3.9rem minmax(0, 1fr); gap: 0.75rem; }
+      .profile-avatar-frame { width: 3.9rem; height: 3.9rem; }
+      .profile-stat-ledger { margin-left: 0; }
+      .profile-atlas-banner { grid-template-columns: minmax(0, 1.3fr) minmax(6.2rem, 0.7fr); }
+      .profile-atlas-copy h3 { font-size: 1rem; }
+      .profile-atlas-copy > span { max-width: 11rem; }
+      .profile-atlas-links { gap: 0 0.55rem; }
+      .profile-atlas-preview > img:not(.profile-atlas-emblem) { width: 4.9rem; height: 6.3rem; }
+      #profile-atlas-preview-a { right: 0.45rem; }
+      #profile-atlas-preview-b { right: 3.3rem; }
+      .profile-submission-gallery { gap: 0.65rem; }
+      .profile-submission-caption { padding: 0.65rem; }
+      .profile-gallery-empty {
+        grid-template-columns: minmax(6.8rem, 0.78fr) minmax(10.5rem, 1.22fr);
+        min-height: 11.4rem;
+        gap: 0.65rem;
+        padding: 0.75rem 0.85rem;
+        text-align: left;
+      }
+      .profile-gallery-empty-art { min-height: 8.45rem; }
+      .profile-gallery-empty-art img { height: 8.15rem; }
+      .profile-gallery-empty-kicker { letter-spacing: 0.12em; }
+      .profile-gallery-empty h4 { font-size: 0.88rem; }
+      .profile-gallery-empty p { font-size: 0.62rem; line-height: 1.65; }
+      .profile-gallery-empty-action { margin-top: 0.6rem; padding-inline: 0.72rem; font-size: 0.62rem; white-space: nowrap; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .profile-submission-cover img { transition: none; }
+      .profile-submission-card:hover .profile-submission-cover img { transform: none; }
+    }
+
+    /* 活动科普页第三阶段：严格复刻已选定的移动端活动册视觉。 */
+    #view-community {
+      padding: 0 0 5.75rem;
+      background: var(--community-paper);
+    }
+    #view-community > .chu-page-watermark,
+    #view-community .community-page-intro {
+      display: none !important;
+    }
+    #view-community .community-hero-shell {
+      padding: 0;
+    }
+    #view-community .community-hero {
+      height: 24rem;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+    #view-community .community-hero-image {
+      object-position: center 46%;
+      transform: none;
+    }
+    #view-community .community-hero-overlay {
+      background: linear-gradient(180deg, rgba(23, 17, 15, 0.08) 8%, rgba(23, 17, 15, 0.28) 47%, rgba(23, 17, 15, 0.96) 100%);
+    }
+    #view-community .community-hero-content {
+      right: 1.05rem;
+      bottom: 1.05rem;
+      left: 1.05rem;
+    }
+    #view-community .community-hero-meta {
+      justify-content: flex-start;
+      margin-bottom: 0.75rem;
+    }
+    #view-community .community-seal {
+      min-height: 28px;
+      padding: 0.34rem 0.62rem;
+      border-radius: 0.42rem;
+      background: #ac1f18;
+      font-size: 0.72rem;
+      box-shadow: none;
+    }
+    #view-community .community-hero-title {
+      font-size: 2.15rem;
+      line-height: 1.18;
+    }
+    #view-community .community-hero-description {
+      max-width: 34rem;
+      margin-top: 0.62rem;
+      font-size: 0.88rem;
+      line-height: 1.75;
+    }
+    #view-community .community-hero-actions {
+      width: 100%;
+      margin-top: 1rem;
+      gap: 0.25rem;
+    }
+    #view-community .community-hero-actions button {
+      min-height: 44px;
+      border-radius: 0.45rem !important;
+      font-size: 0.84rem;
+    }
+    #view-community .community-hero .community-hero-actions .community-hero-primary {
+      flex: 0 0 9.25rem;
+      padding: 0 1rem;
+      background: #ac1f18 !important;
+      color: #fffaf1 !important;
+      box-shadow: none !important;
+    }
+    #view-community .community-hero-secondary {
+      flex: 1 1 0;
+      padding: 0 0.35rem;
+    }
+
+    #view-community .community-route-section,
+    #view-community .community-quiz-section {
+      padding: 0.75rem 0.65rem 0;
+    }
+    #view-community #community-route-card {
+      overflow: hidden;
+      padding: 1rem 0.9rem 0 !important;
+      border: 1px solid rgba(182, 138, 74, 0.18) !important;
+      border-radius: 0.7rem !important;
+      background-color: #fffaf1 !important;
+      background-image: url('./static/assets/community-paper-atlas-v2.webp') !important;
+      background-position: center 43% !important;
+      background-size: cover !important;
+      box-shadow: 0 8px 24px rgba(65, 39, 27, 0.045) !important;
+    }
+    #view-community .community-route-heading {
+      display: flex;
+      min-height: 2.25rem;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    #view-community .community-route-heading h4 {
+      color: var(--community-ink);
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+    #view-community .community-progress {
+      color: var(--community-ink);
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    #view-community .community-route-location {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.25rem;
+      color: #68584c;
+      font-size: 0.78rem;
+    }
+    #view-community .community-route-location svg {
+      width: 1rem;
+      height: 1rem;
+      color: #a55a3d;
+      stroke-width: 1.8;
+    }
+    #view-community .community-route-trace {
+      min-height: 9.45rem;
+      margin: 0.35rem -0.35rem 0;
+      padding-top: 0;
+    }
+    #view-community .community-route-trace::before {
+      top: 0.15rem;
+      right: -0.8rem;
+      left: -0.8rem;
+      height: 4.8rem;
+      opacity: 0.9;
+    }
+    #view-community .community-route-stop {
+      position: relative;
+      min-height: 9rem;
+      padding: 0;
+      border-radius: 0 !important;
+    }
+    #view-community .community-route-stop:nth-child(1) { --marker-top: 3rem; --landmark-top: 1.45rem; }
+    #view-community .community-route-stop:nth-child(2) { --marker-top: 2.1rem; --landmark-top: 4.3rem; }
+    #view-community .community-route-stop:nth-child(3) { --marker-top: 1.65rem; --landmark-top: 4.1rem; }
+    #view-community .community-route-stop:hover {
+      background: transparent;
+      transform: none;
+    }
+    #view-community .community-route-marker {
+      position: absolute;
+      z-index: 2;
+      top: var(--marker-top);
+      left: 50%;
+      width: 2.05rem;
+      height: 2.05rem;
+      border: 2px solid rgba(255, 245, 223, 0.92);
+      background: #a93425;
+      color: #fffaf1;
+      font-size: 0.82rem;
+      box-shadow: 0 4px 11px rgba(91, 26, 21, 0.2);
+      transform: translateX(-50%);
+    }
+    #view-community img.community-route-landmark {
+      position: absolute;
+      z-index: 1;
+      top: var(--landmark-top);
+      left: 50%;
+      display: block;
+      width: 2.8rem;
+      height: 1.75rem;
+      object-fit: contain;
+      filter: saturate(0.72) sepia(0.14);
+      transform: translateX(-50%);
+    }
+    #view-community .community-route-stop strong {
+      position: absolute;
+      top: 6.2rem;
+      right: 0.1rem;
+      left: 0.1rem;
+      margin-top: 0;
+      color: #4b2e2b;
+      font-size: 0.79rem;
+      line-height: 1.35;
+    }
+    #view-community .community-route-stop small {
+      position: absolute;
+      top: 7.45rem;
+      right: 0;
+      left: 0;
+      max-width: 6.8rem;
+      margin: 0 auto;
+      color: #6e6259;
+      font-size: 0.68rem;
+      line-height: 1.48;
+      -webkit-line-clamp: 2;
+    }
+    #view-community .community-route-services-toggle {
+      min-height: 3.35rem;
+      margin: 0.1rem -0.9rem 0;
+      padding: 0 0.95rem;
+      border-top: 1px solid rgba(182, 138, 74, 0.12) !important;
+      border-radius: 0 !important;
+      background: rgba(255, 250, 241, 0.22) !important;
+      color: #4b2e2b;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.95rem;
+    }
+    #view-community .community-route-services-toggle span {
+      gap: 0.5rem;
+    }
+    #view-community .community-route-services-toggle span svg {
+      width: 1.2rem;
+      height: 1.2rem;
+      color: #68584c;
+    }
+    #view-community .community-route-services {
+      margin: 0 -0.9rem;
+      padding: 0.75rem 0.9rem 1rem;
+      border-top: 1px solid rgba(182, 138, 74, 0.08);
+      background: rgba(255, 250, 241, 0.12);
+    }
+    #view-community .community-route-services[hidden] {
+      display: none !important;
+    }
+    #view-community .community-route-actions {
+      margin: 0 0 0.75rem;
+      padding: 0.55rem;
+      border: 0;
+      border-radius: 0.55rem;
+      background: rgba(238, 227, 210, 0.42);
+    }
+    #view-community .community-route-action {
+      color: #592620;
+    }
+    #view-community .community-route-action--primary {
+      background: rgba(182, 138, 74, 0.18);
+      color: #592620;
+    }
+    #view-community .community-service-panel {
+      background: rgba(238, 227, 210, 0.48);
+    }
+    #view-community .community-service-actions button {
+      background: rgba(255, 250, 241, 0.52);
+    }
+    #view-community .community-service-actions button:last-child {
+      background: #592620;
+      color: #f3d9a9;
+    }
+
+    #view-community .community-quiz-section {
+      padding-top: 0.55rem;
+      padding-bottom: 0.15rem;
+    }
+    #view-community .chu-knowledge-panel {
+      position: relative;
+      display: grid;
+      min-height: 10.25rem;
+      grid-template-columns: 5rem minmax(0, 1fr);
+      gap: 0.65rem;
+      overflow: hidden;
+      padding: 0.95rem 1rem !important;
+      border: 1px solid rgba(182, 138, 74, 0.15) !important;
+      border-radius: 0.7rem !important;
+      background-color: #fffaf1 !important;
+      background-image: url('./static/assets/community-paper-atlas-v2.webp') !important;
+      background-position: center 18% !important;
+      background-size: cover !important;
+      box-shadow: 0 8px 24px rgba(65, 39, 27, 0.04) !important;
+    }
+    #view-community .community-quiz-preview-art {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    #view-community .community-quiz-preview-art img {
+      width: 5rem;
+      height: 8.35rem;
+      object-fit: contain;
+      filter: saturate(0.78) contrast(0.92);
+    }
+    #view-community .community-quiz-preview-copy {
+      min-width: 0;
+      align-self: center;
+    }
+    #view-community .community-quiz-preview-copy h4 {
+      color: #68543b;
+      font-size: 1.4rem;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+    #view-community .community-quiz-preview-meta {
+      margin-top: 0.12rem;
+      color: #7b674d;
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+    }
+    #view-community .community-quiz-preview-description {
+      display: -webkit-box;
+      overflow: hidden;
+      margin-top: 0.5rem;
+      color: #75685e;
+      font-size: 0.73rem;
+      line-height: 1.55;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+    #view-community .community-quiz-preview-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      margin-top: 0.65rem;
+    }
+    #view-community #community-quiz-start {
+      min-width: 5.75rem;
+      min-height: 44px;
+      padding: 0 0.8rem;
+      border: 0;
+      border-radius: 0.42rem;
+      background: #ac1f18;
+      color: #fffaf1;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+    #view-community .community-quiz-streak {
+      display: inline-flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.28rem;
+      color: #75685e;
+      font-size: 0.68rem;
+      white-space: nowrap;
+    }
+    #view-community .community-quiz-streak svg {
+      width: 1rem;
+      height: 1rem;
+      color: var(--community-patina);
+    }
+    #view-community .community-quiz-streak strong {
+      color: var(--community-patina);
+      font-size: 1rem;
+    }
+    #view-community .community-quiz-challenge {
+      grid-column: 1 / -1;
+      padding-top: 0.9rem;
+      border-top: 1px solid rgba(182, 138, 74, 0.15);
+    }
+    #view-community .community-quiz-challenge[hidden] {
+      display: none !important;
+    }
+    #view-community .chu-knowledge-panel.is-quiz-open {
+      min-height: auto;
+    }
+    #view-community .community-learning-list {
+      margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 520px) {
+      #view-community {
+        margin-top: 0;
+        padding-top: 0;
+      }
+      #view-community .community-hero {
+        height: clamp(17.8rem, calc(85.1vw - 46.9px), 19.78rem) !important;
+      }
+      #view-community .community-hero-content {
+        right: 1rem;
+        bottom: 1rem;
+        left: 1rem;
+      }
+      #view-community .community-hero-title {
+        font-size: 1.48rem;
+      }
+      #view-community .community-hero-description {
+        max-width: 22rem;
+        font-size: 0.78rem;
+        line-height: 1.65;
+      }
+      #view-community .community-hero .community-hero-actions .community-hero-primary {
+        flex-basis: 8.8rem;
+      }
+      #view-community .community-route-trace {
+        min-height: clamp(9.45rem, calc(40.5vw - 6.75px), 10.4rem);
+        margin-top: 0.25rem;
+      }
+      #view-community .community-route-stop {
+        min-height: clamp(9rem, calc(40.5vw - 13.95px), 9.95rem);
+      }
+    }
+    @media (min-width: 768px) {
+      #view-community .community-hero-shell,
+      #view-community .community-route-section,
+      #view-community .community-quiz-section,
+      #view-community > .px-4 {
+        width: min(100%, 60rem);
+        margin-right: auto;
+        margin-left: auto;
+      }
+      #view-community .community-hero-shell {
+        padding-top: 2rem;
+      }
+      #view-community .community-hero {
+        border-radius: 1rem !important;
+        box-shadow: 0 14px 34px rgba(65, 39, 27, 0.12) !important;
+      }
+      #view-community .chu-knowledge-panel {
+        grid-template-columns: 9rem minmax(0, 1fr);
+      }
+    }
+
+    /* 活动科普页第四阶段：以朱漆路线为唯一强视觉，其他内容收束为宣纸展册。 */
+    #view-community {
+      --community-paper: #f4eddf;
+      --community-paper-light: #fbf5e9;
+      --community-paper-deep: #eadbc2;
+      --community-ink: #4b2e2b;
+      --community-lacquer: #592620;
+      --community-vermilion: #9e2f24;
+      --community-gold: #b68a4a;
+      --community-patina: #496a61;
+      --community-shadow: 0 10px 30px rgba(65, 39, 27, 0.065);
+      background-color: var(--community-paper);
+      background-image:
+        radial-gradient(circle at 10% 18%, rgba(182, 138, 74, 0.055), transparent 27%),
+        linear-gradient(90deg, rgba(89, 38, 32, 0.018) 1px, transparent 1px);
+      background-size: auto, 26px 26px;
+    }
+    #view-community .community-hero-overlay {
+      background:
+        linear-gradient(180deg, rgba(23, 17, 15, 0.03) 6%, rgba(23, 17, 15, 0.2) 48%, rgba(39, 25, 20, 0.92) 100%),
+        linear-gradient(90deg, rgba(50, 31, 22, 0.2), transparent 60%);
+    }
+    #view-community .community-hero .community-hero-actions .community-hero-primary,
+    #view-community #community-quiz-start {
+      background: var(--community-lacquer) !important;
+      color: #edcf91 !important;
+      box-shadow: 0 8px 20px rgba(48, 26, 21, 0.22) !important;
+    }
+    #view-community .community-hero .community-hero-actions .community-hero-primary {
+      border: 1px solid rgba(227, 201, 143, 0.18) !important;
+    }
+    #view-community .community-hero-secondary {
+      color: rgba(255, 250, 241, 0.9) !important;
+      font-weight: 700 !important;
+    }
+    #view-community .community-content-shell {
+      width: min(100%, 60rem);
+      margin: 0 auto;
+    }
+    #view-community #community-route-card,
+    #view-community .chu-knowledge-panel,
+    #view-community .community-learning-list {
+      border: 0 !important;
+      background-color: rgba(251, 245, 233, 0.96) !important;
+      box-shadow: var(--community-shadow) !important;
+    }
+    #view-community #community-route-card {
+      box-shadow: 0 12px 34px rgba(65, 39, 27, 0.075) !important;
+    }
+    #view-community .community-route-services-toggle {
+      min-height: 3.7rem;
+      border-top: 0 !important;
+      background: transparent !important;
+      color: var(--community-ink);
+    }
+    #view-community .community-route-services-toggle::before {
+      content: "";
+      width: 2.1rem;
+      height: 1px;
+      margin-right: 0.15rem;
+      background: linear-gradient(90deg, rgba(182, 138, 74, 0.55), transparent);
+    }
+    #view-community .community-route-services-toggle span {
+      margin-right: auto;
+    }
+    #view-community .community-route-services-toggle:focus-visible {
+      outline: 0;
+      box-shadow: inset 0 -2px 0 rgba(182, 138, 74, 0.48);
+    }
+    #view-community .community-route-services {
+      gap: 0;
+      padding-top: 0.2rem;
+      border-top: 0;
+      background: transparent;
+    }
+    #view-community .community-route-actions {
+      margin: 0 0 0.35rem;
+      padding: 0.35rem 0 0.65rem;
+      border-radius: 0;
+      border-bottom: 1px solid rgba(182, 138, 74, 0.16);
+      background: transparent;
+    }
+    #view-community .community-route-action,
+    #view-community .community-route-action--primary {
+      border-radius: 0;
+      background: transparent !important;
+      color: var(--community-lacquer);
+    }
+    #view-community .community-route-action--primary {
+      color: #8b642b;
+    }
+    #view-community .community-service-panel {
+      display: grid;
+      min-height: 5.75rem;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(182, 138, 74, 0.13);
+      border-radius: 0;
+      background: transparent;
+    }
+    #view-community .community-service-panel:last-child {
+      border-bottom: 0;
+    }
+    #view-community .community-service-heading {
+      align-items: center;
+    }
+    #view-community .community-service-icon {
+      width: 2.45rem;
+      height: 2.45rem;
+      border-radius: 50%;
+      background: rgba(73, 106, 97, 0.09);
+      color: var(--community-patina);
+    }
+    #view-community .community-service-copy {
+      min-width: 0;
+    }
+    #view-community .community-service-type,
+    #view-community .community-learning-phase {
+      color: var(--community-patina);
+      font-size: 0.64rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+    #view-community .community-service-panel h6 {
+      margin-top: 0.1rem;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.82rem;
+    }
+    #view-community .community-service-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.15rem;
+      margin: 0;
+    }
+    #view-community .community-service-actions button,
+    #view-community .community-service-actions button:last-child {
+      min-height: 44px;
+      padding: 0 0.15rem;
+      border-radius: 0;
+      background: transparent;
+      color: #735322;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-decoration-color: rgba(182, 138, 74, 0.45);
+      text-underline-offset: 0.2rem;
+    }
+    #view-community .community-service-actions button:hover {
+      text-decoration: underline;
+    }
+    #view-community .community-quick-section {
+      padding-top: 0.8rem;
+      padding-bottom: 0.5rem;
+    }
+    #view-community .community-learning-heading {
+      padding: 0 0.15rem;
+    }
+    #view-community .community-learning-kicker {
+      margin-bottom: 0.25rem;
+      color: var(--community-vermilion);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+    }
+    #view-community .community-learning-list {
+      display: block;
+      overflow: hidden;
+      padding: 0.2rem 0.85rem;
+      border-radius: 0.72rem;
+      background-image:
+        linear-gradient(rgba(251, 245, 233, 0.89), rgba(251, 245, 233, 0.89)),
+        url('./static/assets/community-paper-atlas-v2.webp');
+      background-position: center;
+      background-size: cover;
+    }
+    #view-community .community-learning-card {
+      min-height: 6.15rem;
+      grid-template-columns: 4.25rem minmax(0, 1fr) auto;
+      gap: 0.85rem;
+      padding: 0.75rem 0;
+      border: 0 !important;
+      border-bottom: 1px solid rgba(182, 138, 74, 0.14) !important;
+      border-radius: 0;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    #view-community .community-learning-card:last-child {
+      border-bottom: 0 !important;
+    }
+    #view-community .community-learning-icon {
+      width: 4.25rem;
+      height: 4.25rem;
+      overflow: hidden;
+      border-radius: 0.42rem;
+      background: rgba(234, 219, 194, 0.62);
+    }
+    #view-community .community-learning-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 0.25rem;
+      filter: saturate(0.76) contrast(0.94);
+    }
+    #view-community .community-learning-copy h5 {
+      margin-top: 0.18rem;
+      font-size: 0.9rem;
+    }
+    #view-community .community-learning-copy p {
+      font-size: 0.72rem;
+    }
+    #view-community .community-learning-state {
+      min-height: 44px;
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+      color: #735322;
+    }
+    #view-community .community-learning-state.is-complete {
+      background: transparent;
+      color: var(--community-patina);
+    }
+    @media (max-width: 520px) {
+      #view-community .community-route-section,
+      #view-community .community-quiz-section,
+      #view-community .community-quick-section {
+        padding-right: 0.65rem;
+        padding-left: 0.65rem;
+      }
+      #view-community .community-service-panel {
+        grid-template-columns: minmax(0, 1fr) 4.2rem;
+      }
+      #view-community .community-learning-card {
+        grid-template-columns: 3.7rem minmax(0, 1fr) auto;
+        gap: 0.65rem;
+      }
+      #view-community .community-learning-icon {
+        width: 3.7rem;
+        height: 3.7rem;
+      }
+      #view-community .community-learning-state {
+        font-size: 0.7rem;
+      }
+    }
+    @media (min-width: 768px) {
+      #view-community .community-content-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1.12fr) minmax(19rem, 0.88fr);
+        align-items: start;
+        gap: 0.8rem;
+        padding: 0.9rem 0.75rem 0;
+      }
+      #view-community .community-route-section,
+      #view-community .community-quiz-section,
+      #view-community .community-quick-section {
+        width: auto;
+        margin: 0;
+        padding: 0;
+      }
+      #view-community .community-study-column {
+        display: grid;
+        gap: 0.8rem;
+      }
+      #view-community .chu-knowledge-panel {
+        grid-template-columns: 6.2rem minmax(0, 1fr);
+      }
+      #view-community .community-quiz-preview-art img {
+        width: 6rem;
+      }
+      #view-community .community-learning-card {
+        grid-template-columns: 3.8rem minmax(0, 1fr) auto;
+      }
+      #view-community .community-learning-icon {
+        width: 3.8rem;
+        height: 3.8rem;
+      }
+    }
+
+    /* 采集页：青绿山水入卷，沿用活动科普页的宣纸、漆器与楚石绿视觉。 */
+    #view-collect.collect-field-page {
+      --collect-paper: #f5efe4;
+      --collect-paper-light: #fffaf1;
+      --collect-paper-warm: #eee3d2;
+      --collect-ink: #4b2e2b;
+      --collect-lacquer: #592620;
+      --collect-vermilion: #9e2f24;
+      --collect-gold: #b68a4a;
+      --collect-patina: #496a61;
+      max-width: 760px;
+      min-height: calc(100vh - 122px);
+      padding: 0 0 2rem !important;
+      background: var(--collect-paper) !important;
+      color: var(--collect-ink);
+    }
+    #view-collect .collect-hero {
+      position: relative;
+      min-height: clamp(20rem, 63vw, 29rem);
+      overflow: hidden;
+      background: var(--collect-paper);
+      isolation: isolate;
+    }
+    #view-collect .collect-hero-image {
+      position: absolute;
+      inset: -1rem 0 0;
+      width: 100%;
+      height: calc(100% + 1rem);
+      object-fit: cover;
+      object-position: 48% 50%;
+      transform: translate3d(0, var(--collect-hero-drift, 0), 0) scale(1.015);
+      transition: transform 120ms linear;
+    }
+    #view-collect .collect-hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: linear-gradient(180deg, rgba(245, 239, 228, 0.04) 0%, rgba(245, 239, 228, 0.02) 52%, var(--collect-paper) 100%);
+      pointer-events: none;
+    }
+    #view-collect .collect-hero-copy {
+      position: relative;
+      z-index: 2;
+      width: min(78%, 30rem);
+      padding: clamp(2.1rem, 7vw, 4rem) clamp(1.4rem, 6vw, 3rem);
+      color: #3d2824;
+      text-shadow: 0 1px 0 rgba(255, 250, 241, 0.62);
+    }
+    #view-collect .collect-hero-kicker {
+      color: var(--collect-vermilion);
+      font-size: 0.58rem;
+      font-weight: 900;
+      letter-spacing: 0.24em;
+    }
+    #view-collect .collect-hero-title {
+      margin-top: 0.42rem;
+      color: #3d2824;
+      font-family: 'Noto Serif SC', serif;
+      font-size: clamp(2rem, 7vw, 3.25rem);
+      font-weight: 900;
+      letter-spacing: 0.035em;
+      line-height: 1.18;
+    }
+    #view-collect .collect-hero-description {
+      margin-top: 0.62rem;
+      color: #59443e;
+      font-family: 'Noto Serif SC', serif;
+      font-size: clamp(0.82rem, 2.8vw, 1.08rem);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1.7;
+    }
+    #view-collect .collect-scroll-shell {
+      position: relative;
+      z-index: 3;
+      margin-top: -2.25rem;
+    }
+    #view-collect .collect-scroll-roller {
+      position: relative;
+      z-index: 3;
+      height: 2.9rem;
+      margin: 0 -0.35rem -1.15rem;
+      border-radius: 999px;
+      background:
+        linear-gradient(180deg, rgba(255, 250, 241, 0.98), rgba(224, 207, 177, 0.98) 50%, rgba(255, 250, 241, 0.98));
+      box-shadow: 0 8px 18px rgba(65, 39, 27, 0.13), inset 0 0 0 1px rgba(182, 138, 74, 0.15);
+      pointer-events: none;
+    }
+    #view-collect .collect-scroll-roller::before,
+    #view-collect .collect-scroll-roller::after {
+      content: "";
+      position: absolute;
+      top: 0.36rem;
+      width: 0.72rem;
+      height: 2.18rem;
+      border-radius: 999px;
+      background: #806141;
+      box-shadow: inset 0 0 0 1px rgba(67, 38, 24, 0.22);
+    }
+    #view-collect .collect-scroll-roller::before { left: -0.16rem; }
+    #view-collect .collect-scroll-roller::after { right: -0.16rem; }
+    #view-collect .collect-scroll-sheet {
+      position: relative;
+      overflow: hidden;
+      padding: 2.9rem clamp(1rem, 4.8vw, 2.5rem) 1.4rem;
+      background: var(--collect-paper);
+      box-shadow: 0 -1px 0 rgba(182, 138, 74, 0.08);
+      transform-origin: 50% 0;
+      isolation: isolate;
+    }
+    #view-collect .collect-scroll-watermark {
+      position: absolute;
+      inset: 2rem 0 0;
+      z-index: -1;
+      width: 100%;
+      height: calc(100% - 2rem);
+      object-fit: cover;
+      object-position: center bottom;
+      opacity: 0.18;
+      pointer-events: none;
+    }
+    #view-collect .collect-form-intro {
+      display: none;
+      margin: 0 0 1.7rem 5.25rem;
+      padding: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    #view-collect .collect-form-intro::before,
+    #view-collect .collect-form-section::before,
+    #view-collect .collect-consent-disclosure::before {
+      display: none !important;
+    }
+    #view-collect .collect-form-intro p:first-child {
+      color: var(--collect-vermilion);
+      font-size: 0.58rem;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+    }
+    #view-collect .collect-form-intro h3 {
+      margin-top: 0.26rem;
+      color: var(--collect-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.12rem;
+      font-weight: 800;
+    }
+    #view-collect .collect-form-intro p:last-child {
+      margin-top: 0.38rem;
+      color: #76685e;
+      font-size: 0.65rem;
+      line-height: 1.65;
+    }
+    #view-collect #collect-form {
+      display: block;
+      counter-reset: none;
+    }
+    #view-collect #collect-form > * + * {
+      margin-top: 0 !important;
+    }
+    #view-collect .collect-form-section {
+      display: grid;
+      grid-template-columns: 4.35rem minmax(0, 1fr);
+      gap: 0.9rem;
+      position: relative;
+      padding: 1.1rem 0 !important;
+      border: 0 !important;
+      border-top: 1px solid rgba(182, 138, 74, 0.18) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    #view-collect .collect-form-section[aria-labelledby="collect-media-label"] {
+      padding-top: 0 !important;
+      border-top: 0 !important;
+    }
+    #view-collect .collect-gap-context {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 0.8rem;
+      margin-bottom: 1rem !important; padding: 0.85rem;
+      border: 1px solid rgba(182, 138, 74, 0.32); border-radius: 0.38rem;
+      background: rgba(248, 238, 219, 0.85);
+    }
+    #view-collect .collect-gap-context.hidden { display: none; }
+    #view-collect .collect-gap-context > div { min-width: 0; }
+    #view-collect .collect-gap-context p { color: #9e2f24; font-size: 0.55rem; font-weight: 800; letter-spacing: 0.12em; }
+    #view-collect .collect-gap-context h3 { margin-top: 0.25rem; color: var(--collect-ink); font-family: 'Noto Serif SC', serif; font-size: 0.78rem; }
+    #view-collect .collect-gap-context span,
+    #view-collect .collect-gap-context strong { display: block; margin-top: 0.25rem; color: #76685e; font-size: 0.6rem; line-height: 1.5; }
+    #view-collect .collect-gap-context button { flex: none; min-height: 44px; color: #8a6342; font-size: 0.58rem; }
+    #view-collect .collect-section-label {
+      align-self: stretch;
+      padding-right: 0.8rem;
+      border-right: 1px solid rgba(182, 138, 74, 0.24);
+      color: var(--collect-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.24rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      line-height: 1.5;
+      writing-mode: vertical-rl;
+    }
+    #view-collect .collect-section-label small {
+      margin-top: 0.42rem;
+      color: var(--collect-vermilion);
+      font-family: inherit;
+      font-size: 0.5rem;
+      letter-spacing: 0.08em;
+    }
+    #view-collect .collect-section-content {
+      min-width: 0;
+    }
+    #view-collect .collect-type-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-bottom: 0.9rem;
+    }
+    #view-collect .collect-type-option {
+      display: flex !important;
+      min-width: 0;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      gap: 0.38rem;
+      position: relative;
+      padding: 0.45rem 0.25rem !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: #74675d;
+      cursor: pointer;
+    }
+    #view-collect .collect-type-option::after {
+      content: "";
+      position: absolute;
+      right: 35%;
+      bottom: 0;
+      left: 35%;
+      height: 2px;
+      background: transparent;
+    }
+    #view-collect .collect-type-option.is-selected {
+      color: var(--collect-vermilion);
+    }
+    #view-collect .collect-type-option.is-selected::after {
+      background: var(--collect-vermilion);
+    }
+    #view-collect .collect-type-option svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      color: var(--collect-gold);
+      stroke-width: 1.7;
+    }
+    #view-collect .collect-type-option.is-selected svg {
+      color: var(--collect-vermilion);
+    }
+    #view-collect .collect-type-option span {
+      display: block;
+      margin: 0 !important;
+      color: currentColor !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.76rem !important;
+      font-weight: 700 !important;
+      white-space: nowrap;
+    }
+    #view-collect .collect-upload-zone {
+      position: relative;
+      min-height: 10.8rem;
+      overflow: hidden;
+      padding: 1.1rem !important;
+      border: 0 !important;
+      border-radius: 0.55rem !important;
+      background: rgba(238, 227, 210, 0.62) !important;
+      box-shadow: inset 0 0 0 1px rgba(182, 138, 74, 0.13) !important;
+      cursor: pointer;
+    }
+    #view-collect .collect-upload-placeholder {
+      display: flex;
+      min-height: 8.6rem;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: #716359;
+      text-align: center;
+    }
+    #view-collect .collect-upload-placeholder.hidden,
+    #view-collect #upload-preview.hidden {
+      display: none !important;
+    }
+    #view-collect .collect-upload-placeholder svg {
+      width: 2.15rem;
+      height: 2.15rem;
+      color: var(--collect-gold);
+      stroke-width: 1.45;
+    }
+    #view-collect .collect-upload-placeholder strong {
+      margin-top: 0.7rem;
+      color: var(--collect-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.82rem;
+    }
+    #view-collect .collect-upload-placeholder span {
+      margin-top: 0.28rem;
+      color: #8b7d72;
+      font-size: 0.58rem;
+      line-height: 1.55;
+    }
+    #view-collect #upload-preview {
+      position: relative;
+      width: 100%;
+    }
+    #view-collect #upload-preview > div {
+      max-height: none !important;
+      border-radius: 0.45rem !important;
+    }
+    #view-collect #preview-img,
+    #view-collect #preview-media-icon {
+      width: 100%;
+      height: clamp(10.5rem, 42vw, 16rem) !important;
+      border-radius: 0.45rem;
+    }
+    #view-collect #preview-media-icon {
+      background: rgba(89, 38, 32, 0.94) !important;
+      color: #e3c98f;
+    }
+    #view-collect .collect-preview-overlay {
+      align-items: flex-end !important;
+      justify-content: flex-end !important;
+      padding: 0.65rem;
+      background: linear-gradient(180deg, transparent 58%, rgba(42, 27, 23, 0.55)) !important;
+    }
+    #view-collect #preview-file-name {
+      border-radius: 0.3rem;
+      background: rgba(255, 250, 241, 0.87);
+      color: var(--collect-ink);
+      font-size: 0 !important;
+      backdrop-filter: blur(8px);
+    }
+    #view-collect #preview-file-name::after {
+      content: "已选择现场影像";
+      padding: 0.36rem 0.55rem;
+      font-size: 0.62rem;
+      font-weight: 700;
+    }
+    #view-collect .collect-replace-file {
+      margin-top: 0.58rem !important;
+      color: var(--collect-vermilion) !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.65rem !important;
+      font-weight: 700;
+    }
+    #view-collect .collect-audio-panel {
+      margin-top: 0.72rem;
+      padding: 0.8rem !important;
+      border: 0 !important;
+      border-radius: 0.45rem !important;
+      background: rgba(89, 38, 32, 0.96) !important;
+      color: #f6e7ca;
+      box-shadow: 0 8px 22px rgba(65, 39, 27, 0.1) !important;
+    }
+    #view-collect #record-audio-btn {
+      width: 2.8rem;
+      height: 2.8rem;
+      border: 1px solid rgba(227, 201, 143, 0.36);
+      background: transparent !important;
+      color: #e3c98f !important;
+      box-shadow: none !important;
+    }
+    #view-collect #record-audio-status { color: #fff4df !important; }
+    #view-collect #record-audio-time { color: rgba(255, 244, 223, 0.66) !important; }
+    #view-collect .audio-wave-bar { background: #b68a4a !important; }
+    #view-collect #audio-summary-card {
+      border: 0 !important;
+      background: rgba(255, 250, 241, 0.1) !important;
+      color: #f3dfb7;
+      box-shadow: none !important;
+    }
+    #view-collect #audio-summary-card p,
+    #view-collect #audio-summary-card div { color: inherit !important; }
+    #view-collect .collect-location-row {
+      display: flex;
+      min-height: 4.2rem;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.45rem 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    #view-collect .collect-location-copy {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.55rem;
+    }
+    #view-collect .collect-location-copy > svg {
+      width: 1.3rem;
+      height: 1.3rem;
+      color: var(--collect-gold);
+      flex: 0 0 auto;
+    }
+    #view-collect #geo-text {
+      color: var(--collect-ink) !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.82rem !important;
+      font-weight: 700;
+    }
+    #view-collect #coord-text {
+      margin-top: 0.16rem;
+      color: #8b7b6f !important;
+      font-size: 0.58rem !important;
+    }
+    #view-collect .collect-location-refresh {
+      display: inline-flex;
+      min-height: 36px;
+      align-items: center;
+      gap: 0.28rem;
+      flex: 0 0 auto;
+      padding: 0.38rem 0.52rem;
+      border: 1px solid rgba(73, 106, 97, 0.26);
+      border-radius: 0.35rem;
+      color: var(--collect-patina);
+      font-size: 0.58rem;
+      font-weight: 800;
+    }
+    #view-collect .collect-location-refresh svg {
+      width: 0.92rem;
+      height: 0.92rem;
+    }
+    #view-collect .collect-location-note {
+      margin-top: 0.32rem;
+      color: #948478;
+      font-size: 0.56rem;
+      line-height: 1.55;
+    }
+    #view-collect .collect-notes-paper {
+      position: relative;
+      min-height: 9.4rem;
+      overflow: hidden;
+      border-radius: 0.35rem;
+      background:
+        repeating-linear-gradient(180deg, transparent 0, transparent 2rem, rgba(182, 138, 74, 0.22) 2rem, rgba(182, 138, 74, 0.22) calc(2rem + 1px));
+    }
+    #view-collect #collect-description {
+      width: 100%;
+      min-height: 9.4rem;
+      resize: vertical;
+      padding: 0.45rem 0.7rem !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--collect-ink) !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.75rem;
+      line-height: 2rem;
+      box-shadow: none !important;
+    }
+    #view-collect #collect-description:focus-visible {
+      outline: 2px solid rgba(182, 138, 74, 0.34);
+      outline-offset: 2px;
+    }
+    #view-collect .collect-consent-disclosure {
+      position: relative;
+      margin-top: 0.35rem !important;
+      padding: 0 !important;
+      border: 0 !important;
+      border-top: 1px solid rgba(182, 138, 74, 0.18) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    #view-collect .collect-consent-disclosure summary {
+      display: flex;
+      min-height: 54px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+    #view-collect .collect-consent-disclosure summary::-webkit-details-marker { display: none; }
+    #view-collect .collect-consent-title {
+      display: inline-flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.42rem;
+      color: var(--collect-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    #view-collect .collect-consent-title svg {
+      width: 1rem;
+      height: 1rem;
+      color: var(--collect-gold);
+    }
+    #view-collect .collect-consent-summary {
+      display: inline-flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.38rem;
+      color: #88796d;
+      font-size: 0.58rem;
+      white-space: nowrap;
+    }
+    #view-collect .collect-consent-chevron {
+      width: 0.88rem;
+      height: 0.88rem;
+      transition: transform 180ms ease;
+    }
+    #view-collect .collect-consent-disclosure[open] .collect-consent-chevron {
+      transform: rotate(180deg);
+    }
+    #view-collect .collect-consent-body {
+      display: grid;
+      gap: 0.55rem;
+      padding: 0 0 0.85rem;
+    }
+    #view-collect .collect-consent-option {
+      display: grid !important;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.65rem;
+      position: relative;
+      padding: 0.72rem !important;
+      border: 0 !important;
+      border-radius: 0.38rem !important;
+      background: rgba(238, 227, 210, 0.52) !important;
+      box-shadow: none !important;
+      cursor: pointer;
+    }
+    #view-collect .collect-consent-option input {
+      margin-top: 0.12rem;
+      accent-color: var(--collect-patina);
+    }
+    #view-collect .collect-consent-option strong {
+      display: block;
+      color: var(--collect-ink);
+      font-size: 0.66rem;
+    }
+    #view-collect .collect-consent-option span span {
+      display: block;
+      margin-top: 0.24rem;
+      color: #817267;
+      font-size: 0.56rem;
+      line-height: 1.55;
+    }
+    #view-collect .collect-cloud-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.42rem;
+      padding: 0.55rem 0.15rem 0;
+      color: #88796d;
+      font-size: 0.55rem;
+      line-height: 1.55;
+    }
+    #view-collect .collect-cloud-note svg {
+      width: 0.88rem;
+      height: 0.88rem;
+      flex: 0 0 auto;
+      color: var(--collect-gold);
+    }
+    #view-collect #collect-form > button[type="submit"] {
+      width: calc(100% - 5.25rem);
+      min-height: 50px;
+      margin: 0.78rem 0 0 5.25rem !important;
+      border: 0 !important;
+      border-radius: 0.42rem !important;
+      background: var(--collect-lacquer) !important;
+      color: #e3c98f !important;
+      box-shadow: 0 10px 22px rgba(65, 39, 27, 0.13) !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+    #view-collect #collect-form > button[type="submit"] svg {
+      width: 1.08rem;
+      height: 1.08rem;
+      stroke-width: 1.65;
+    }
+    #view-collect #collect-form > button[type="submit"]:focus-visible,
+    #view-collect .collect-type-option:focus-within,
+    #view-collect .collect-location-refresh:focus-visible,
+    #view-collect .collect-consent-disclosure summary:focus-visible {
+      outline: 2px solid rgba(158, 47, 36, 0.42);
+      outline-offset: 3px;
+    }
+    #view-collect .collect-ai-modal-card {
+      border: 1px solid rgba(182, 138, 74, 0.18);
+      border-radius: 0.55rem 1.2rem 0.55rem 1.2rem !important;
+      background: var(--collect-paper-light) !important;
+      box-shadow: 0 24px 64px rgba(31, 19, 16, 0.26);
+    }
+    #view-collect .collect-ai-modal-card > div:first-child {
+      border-color: rgba(182, 138, 74, 0.18) !important;
+    }
+    #view-collect .collect-ai-modal-card h4 { color: var(--collect-ink) !important; }
+    #view-collect .collect-ai-modal-card #ai-btn-close:not(:disabled) {
+      background: var(--collect-lacquer) !important;
+      color: #e3c98f !important;
+    }
+    #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-roller {
+      animation: collect-roller-drop 780ms cubic-bezier(.22,.82,.26,1) both;
+    }
+    #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-sheet {
+      animation: collect-sheet-unroll 820ms cubic-bezier(.2,.78,.24,1) 80ms both;
+    }
+    #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-watermark {
+      animation: collect-watermark-arrive 620ms ease 520ms both;
+    }
+    @keyframes collect-roller-drop {
+      from { transform: translate3d(0, -1.15rem, 0); opacity: 0.72; }
+      to { transform: translate3d(0, 0, 0); opacity: 1; }
+    }
+    @keyframes collect-sheet-unroll {
+      from { clip-path: inset(0 0 100% 0); transform: scaleY(0.92); opacity: 0.5; }
+      to { clip-path: inset(0 0 0 0); transform: scaleY(1); opacity: 1; }
+    }
+    @keyframes collect-watermark-arrive {
+      from { opacity: 0; }
+      to { opacity: 0.18; }
+    }
+    @media (max-width: 767px) {
+      #view-collect.collect-field-page { min-height: calc(100vh - 60px); }
+      #view-collect .collect-hero { min-height: clamp(18.5rem, 78vw, 21rem); }
+      #view-collect .collect-hero-copy { width: 88%; padding: 2rem 1.25rem; }
+      #view-collect .collect-scroll-sheet { padding-right: 1rem; padding-left: 1rem; }
+    }
+    @media (max-width: 420px) {
+      #view-collect .collect-form-section { grid-template-columns: 3.7rem minmax(0, 1fr); gap: 0.72rem; }
+      #view-collect .collect-section-label { padding-right: 0.55rem; font-size: 1.08rem; }
+      #view-collect .collect-form-intro { margin-left: 4.42rem; }
+      #view-collect #collect-form > button[type="submit"] { width: calc(100% - 4.42rem); margin-left: 4.42rem !important; }
+      #view-collect .collect-type-option { gap: 0.22rem; }
+      #view-collect .collect-type-option svg { width: 1.08rem; height: 1.08rem; }
+      #view-collect .collect-type-option span { font-size: 0.68rem !important; }
+      #view-collect .collect-consent-summary > span { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #view-collect .collect-hero-image { transition: none; transform: none !important; }
+      #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-roller,
+      #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-sheet,
+      #view-collect .collect-scroll-shell.is-unrolling .collect-scroll-watermark {
+        animation: none !important;
+      }
+    }
+
+    /* 行程篮：用暖杏纸色和鎏金计数轻提层级，仍让漆色定位按钮保持主操作地位 */
+    #view-map .map-planner-trigger {
+      min-height: 2rem;
+      border: 1px solid rgba(182, 138, 74, 0.38) !important;
+      border-radius: 0.4rem 0.72rem 0.4rem 0.72rem !important;
+      background: rgba(238, 227, 210, 0.96) !important;
+      color: #592620 !important;
+      box-shadow: 0 8px 20px rgba(65, 39, 27, 0.11) !important;
+      backdrop-filter: blur(10px);
+    }
+    #view-map .map-planner-trigger svg { color: #9e2f24; }
+    #view-map .map-planner-trigger #map-planner-count {
+      display: inline-flex;
+      min-width: 1.2rem;
+      min-height: 1.2rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.28rem;
+      background: #592620 !important;
+      color: #ead39d !important;
+    }
+    #view-map .map-planner-trigger:focus-visible {
+      outline: 2px solid rgba(158, 47, 36, 0.48);
+      outline-offset: 2px;
+    }
+
+    /* 地图路线手记：与地点题签共享宣纸、漆色题签和淡墨图语言 */
+    #map-planner-panel.map-planner-ticket {
+      --planner-paper: #fbf7ef;
+      --planner-paper-deep: #eee3d2;
+      --planner-ink: #4b2e2b;
+      --planner-lacquer: #592620;
+      --planner-vermilion: #9e2f24;
+      --planner-gold: #b68a4a;
+      --planner-patina: #496a61;
+      border: 0;
+      border-radius: 0.55rem 1.25rem 0.55rem 1.25rem;
+      background-color: rgba(251, 247, 239, 0.98);
+      background-image: url('./static/assets/community-paper-atlas-v2.webp');
+      background-position: center;
+      background-size: cover;
+      color: var(--planner-ink);
+      box-shadow: 0 20px 52px rgba(65, 39, 27, 0.2);
+      backdrop-filter: blur(10px);
+    }
+    #map-planner-panel.map-planner-ticket::after { display: none; }
+    .map-planner-cover {
+      position: relative;
+      display: grid;
+      flex: 0 0 auto;
+      grid-template-columns: 2.55rem minmax(0, 1fr);
+      gap: 0.65rem;
+      padding: 1.15rem 0.72rem 0.72rem;
+      overflow: hidden;
+      box-shadow: inset 0 -1px rgba(182, 138, 74, 0.18);
+    }
+    .map-planner-slip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.26rem 0.52rem 0.26rem 0.52rem;
+      background: var(--planner-lacquer);
+      color: #ead39d;
+      box-shadow: inset 0 0 0 1px rgba(227, 201, 143, 0.4), 0 8px 18px rgba(89, 38, 32, 0.14);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+    }
+    .map-planner-cover-main { min-width: 0; padding-right: 2.25rem; }
+    .map-planner-cover-art {
+      height: 3.7rem;
+      margin: 0 0 0.48rem;
+      overflow: hidden;
+      border-radius: 0.34rem 0.68rem 0.34rem 0.68rem;
+      background: var(--planner-paper-deep);
+    }
+    .map-planner-cover-art img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 38% center;
+      mix-blend-mode: multiply;
+    }
+    .map-planner-eyebrow {
+      margin: 0;
+      color: var(--planner-vermilion);
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+    }
+    .map-planner-cover h3 {
+      margin-top: 0.08rem;
+      color: var(--planner-ink);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .map-planner-cover h3 + p {
+      margin-top: 0.12rem;
+      color: rgba(75, 46, 43, 0.62);
+      font-size: 0.67rem;
+      line-height: 1.45;
+    }
+    .map-planner-close {
+      position: absolute;
+      top: 0.45rem;
+      right: 0.45rem;
+      display: inline-flex;
+      width: 2.75rem;
+      height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(251, 247, 239, 0.86);
+      color: rgba(75, 46, 43, 0.68);
+    }
+    .map-planner-close svg { width: 1.05rem; height: 1.05rem; }
+    #map-planner-scroll {
+      padding: 0.7rem 0.72rem 0.8rem !important;
+      scrollbar-color: rgba(89, 38, 32, 0.22) transparent;
+    }
+    #map-planner-scroll h4 {
+      color: var(--planner-ink) !important;
+      font-family: 'Noto Serif SC', serif;
+    }
+    #resource-sync-status {
+      color: var(--planner-patina) !important;
+      font-weight: 700;
+    }
+    #map-planner-point-strip { gap: 0.42rem !important; }
+    #map-planner-point-strip > button {
+      min-height: 4rem;
+      min-width: 7rem;
+      border: 0 !important;
+      border-radius: 0.35rem 0.72rem 0.35rem 0.72rem !important;
+      background: rgba(238, 227, 210, 0.72) !important;
+      color: var(--planner-ink) !important;
+      box-shadow: none !important;
+    }
+    #map-planner-point-strip > button.bg-deepTeal {
+      background: var(--planner-lacquer) !important;
+      color: #f5e5bd !important;
+      box-shadow: 0 8px 18px rgba(89, 38, 32, 0.14) !important;
+    }
+    #map-planner-point-strip > button.bg-deepTeal .text-stone-400 { color: #d9bd7d !important; }
+    #map-planner-detail {
+      margin-top: 0.65rem !important;
+      border: 0 !important;
+      border-radius: 0.45rem 0.95rem 0.45rem 0.95rem !important;
+      background: rgba(251, 247, 239, 0.76) !important;
+      box-shadow: 0 8px 22px rgba(65, 39, 27, 0.055) !important;
+    }
+    #map-planner-detail [class*="border-stone-200"] {
+      border-color: transparent !important;
+      background: rgba(238, 227, 210, 0.62) !important;
+    }
+    #map-planner-detail .rounded-full,
+    #map-planner-detail .rounded-lg,
+    #map-planner-detail .rounded-xl { border-radius: 0.34rem !important; }
+    #map-planner-detail button {
+      min-height: 2.75rem;
+      border: 0 !important;
+      border-radius: 0.38rem !important;
+    }
+    #map-planner-detail button.bg-deepTeal {
+      background: var(--planner-lacquer) !important;
+      color: #ead39d !important;
+      box-shadow: 0 7px 16px rgba(89, 38, 32, 0.13) !important;
+    }
+    #map-planner-detail button.bg-white {
+      background: rgba(182, 138, 74, 0.14) !important;
+      color: var(--planner-ink) !important;
+    }
+    .map-planner-section--warm,
+    .map-planner-section--transport {
+      border: 0 !important;
+      border-radius: 0.45rem 0.95rem 0.45rem 0.95rem !important;
+      background: rgba(238, 227, 210, 0.58) !important;
+      box-shadow: none !important;
+    }
+    .map-planner-section--warm select {
+      border: 0 !important;
+      border-radius: 0.36rem !important;
+      background: var(--planner-paper) !important;
+      color: var(--planner-ink) !important;
+    }
+    #map-planner-interest-options label {
+      border: 0 !important;
+      border-radius: 0.34rem !important;
+      background: rgba(251, 247, 239, 0.78) !important;
+      color: var(--planner-ink) !important;
+    }
+    #map-planner-interest-options label.bg-\[\#9e2f24\] {
+      background: var(--planner-lacquer) !important;
+      color: #f5e5bd !important;
+    }
+    .map-planner-section--warm > button {
+      border: 0 !important;
+      border-radius: 0.38rem !important;
+      background: var(--planner-lacquer) !important;
+      color: #ead39d !important;
+      box-shadow: 0 8px 18px rgba(89, 38, 32, 0.14);
+    }
+    .map-planner-section--route {
+      border-color: rgba(182, 138, 74, 0.22) !important;
+    }
+    .map-planner-section--route > div:first-child > button {
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+      border-radius: 0.34rem;
+    }
+    #map-planner-route-list .planner-route-item {
+      border: 0 !important;
+      border-radius: 0.38rem 0.78rem 0.38rem 0.78rem !important;
+      background: rgba(251, 247, 239, 0.82) !important;
+      box-shadow: 0 6px 16px rgba(65, 39, 27, 0.045) !important;
+    }
+    #map-planner-route-list .planner-route-item > span {
+      background: var(--planner-lacquer) !important;
+      color: #ead39d !important;
+    }
+    #map-planner-route-list button[aria-label="前移"],
+    #map-planner-route-list button[aria-label="后移"],
+    #map-planner-route-list button[aria-label="移除"] {
+      display: inline-flex;
+      width: 2.75rem;
+      height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.34rem;
+    }
+    #map-planner-mode-options button {
+      min-height: 2.75rem;
+      border: 0 !important;
+      border-radius: 0.34rem !important;
+      background: rgba(251, 247, 239, 0.82) !important;
+      color: var(--planner-ink) !important;
+    }
+    #map-planner-mode-options button.bg-deepTeal {
+      background: var(--planner-lacquer) !important;
+      color: #ead39d !important;
+    }
+    .map-planner-footer {
+      border-color: rgba(182, 138, 74, 0.2) !important;
+      background: rgba(251, 247, 239, 0.94) !important;
+      padding: 0.65rem 0.72rem !important;
+    }
+    .map-planner-footer button {
+      min-height: 2.75rem;
+      border: 0 !important;
+      border-radius: 0.38rem !important;
+    }
+    .map-planner-footer button:first-child {
+      background: rgba(182, 138, 74, 0.15) !important;
+      color: var(--planner-ink) !important;
+    }
+    .map-planner-footer button:last-child {
+      background: var(--planner-lacquer) !important;
+      color: #ead39d !important;
+      box-shadow: 0 8px 18px rgba(89, 38, 32, 0.14) !important;
+    }
+    .map-planner-close:focus-visible,
+    #map-planner-panel button:focus-visible,
+    #map-planner-panel select:focus-visible,
+    #map-planner-panel label:focus-within {
+      outline: 2px solid rgba(158, 47, 36, 0.46);
+      outline-offset: 2px;
+    }
+    @media (max-width: 767px) {
+      #map-planner-panel.map-planner-ticket {
+        max-height: min(78vh, 650px);
+        border-radius: 0.8rem 1.2rem 0.45rem 0.45rem;
+      }
+      .map-planner-cover { grid-template-columns: 2.35rem minmax(0, 1fr); }
+      .map-planner-cover-art { height: 3.2rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #map-planner-panel.map-planner-ticket { transition: none; }
+    }
+
+    /* 地图地点题签：保留地图主导，用低矮宣纸抽屉承接地点与采集动作 */
+    #landmark-drawer.landmark-ticket-drawer {
+      --map-ticket-paper: #fbf7ef;
+      --map-ticket-paper-deep: #eee3d2;
+      --map-ticket-ink: #4b2e2b;
+      --map-ticket-lacquer: #592620;
+      --map-ticket-vermilion: #9e2f24;
+      --map-ticket-gold: #b68a4a;
+      --map-ticket-patina: #496a61;
+      position: absolute;
+      bottom: 0.7rem;
+      left: 0.7rem;
+      right: 0.7rem;
+      z-index: 404;
+      max-width: 48rem;
+      margin-inline: auto;
+      padding: 1.35rem 0.78rem 0.4rem;
+      overflow: hidden;
+      border: 0 !important;
+      border-radius: 0.55rem 1.25rem 0.55rem 1.25rem !important;
+      background-color: rgba(251, 247, 239, 0.975) !important;
+      background-image: url('./static/assets/community-paper-atlas-v2.webp');
+      background-position: center 62%;
+      background-size: cover;
+      color: var(--map-ticket-ink) !important;
+      box-shadow: 0 18px 44px rgba(65, 39, 27, 0.2) !important;
+      backdrop-filter: blur(9px);
+      transform: translateY(calc(100% + 1.5rem));
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 260ms cubic-bezier(.2,.76,.28,1), opacity 180ms ease;
+    }
+    #landmark-drawer.landmark-ticket-drawer.is-open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .landmark-ticket-handle {
+      position: absolute;
+      top: 0.55rem;
+      left: 50%;
+      width: 2.45rem;
+      height: 0.25rem;
+      border-radius: 999px;
+      background: rgba(89, 38, 32, 0.28);
+      transform: translateX(-50%);
+    }
+    .landmark-ticket-close {
+      position: absolute;
+      top: 0.42rem;
+      right: 0.5rem;
+      z-index: 3;
+      display: inline-flex;
+      width: 2.75rem;
+      height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(251, 247, 239, 0.82);
+      color: rgba(75, 46, 43, 0.72);
+    }
+    .landmark-ticket-close svg { width: 1.1rem; height: 1.1rem; }
+    .landmark-ticket-layout {
+      display: grid;
+      grid-template-columns: 3rem minmax(0, 1fr);
+      gap: 0.65rem;
+      min-width: 0;
+    }
+    .landmark-ticket-slip {
+      display: flex;
+      align-self: stretch;
+      min-height: 0;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 0.28rem 0.55rem 0.28rem 0.55rem;
+      background: var(--map-ticket-lacquer);
+      color: #ead39d;
+      box-shadow: inset 0 0 0 1px rgba(227, 201, 143, 0.42), 0 8px 20px rgba(89, 38, 32, 0.14);
+    }
+    #drawer-title-slip {
+      max-height: 11rem;
+      padding: 0.3rem 0;
+      overflow: hidden;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.88rem;
+      font-weight: 800;
+      line-height: 1.35;
+      letter-spacing: 0.08em;
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+    }
+    .landmark-ticket-main { min-width: 0; padding-right: 0.15rem; }
+    .landmark-ticket-art {
+      width: 100%;
+      height: 3.15rem;
+      margin-bottom: 0.38rem;
+      overflow: hidden;
+      border-radius: 0.38rem 0.72rem 0.38rem 0.72rem;
+      background: var(--map-ticket-paper-deep);
+      box-shadow: inset 0 0 0 1px rgba(182, 138, 74, 0.12);
+    }
+    .landmark-ticket-art img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 38% center;
+      mix-blend-mode: multiply;
+    }
+    .landmark-ticket-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.65rem;
+    }
+    .landmark-ticket-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-bottom: 0.08rem;
+      color: var(--map-ticket-vermilion);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+    .landmark-ticket-eyebrow svg { width: 0.85rem; height: 0.85rem; }
+    #landmark-drawer[data-status="verified"] .landmark-ticket-eyebrow { color: var(--map-ticket-patina); }
+    #landmark-drawer[data-status="pending"] .landmark-ticket-eyebrow { color: var(--map-ticket-vermilion); }
+    #landmark-drawer #drawer-title {
+      margin: 0;
+      color: var(--map-ticket-ink) !important;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.92rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .landmark-ticket-reward {
+      display: inline-flex;
+      min-height: 1.8rem;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 0.28rem;
+      padding: 0.28rem 0.5rem;
+      border-radius: 0.35rem;
+      background: rgba(73, 106, 97, 0.1);
+      color: var(--map-ticket-patina);
+      font-size: 0.64rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .landmark-ticket-reward svg { width: 0.9rem; height: 0.9rem; }
+    #landmark-drawer #drawer-desc {
+      display: -webkit-box;
+      margin-top: 0.18rem;
+      overflow: hidden;
+      color: rgba(75, 46, 43, 0.72) !important;
+      font-size: 0.7rem;
+      line-height: 1.45;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
+    }
+    .landmark-ticket-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: 0.5rem;
+      margin-top: 0.38rem;
+    }
+    .landmark-ticket-action {
+      display: inline-flex;
+      min-height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+      gap: 0.38rem;
+      border: 0;
+      border-radius: 0.38rem;
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+    .landmark-ticket-action svg { width: 1rem; height: 1rem; }
+    .landmark-ticket-action--primary {
+      background: var(--map-ticket-lacquer);
+      color: #ead39d;
+      box-shadow: 0 8px 18px rgba(89, 38, 32, 0.16);
+    }
+    .landmark-ticket-action--secondary {
+      background: rgba(182, 138, 74, 0.17);
+      color: var(--map-ticket-ink);
+    }
+    .landmark-ticket-quiet-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 0;
+    }
+    .landmark-ticket-quiet {
+      display: inline-flex;
+      min-height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      border: 0;
+      background: transparent;
+      color: var(--map-ticket-ink);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .landmark-ticket-quiet + .landmark-ticket-quiet {
+      box-shadow: inset 1px 0 rgba(182, 138, 74, 0.26);
+    }
+    .landmark-ticket-quiet svg { width: 0.96rem; height: 0.96rem; }
+    .landmark-ticket-close:focus-visible,
+    .landmark-ticket-action:focus-visible,
+    .landmark-ticket-quiet:focus-visible {
+      outline: 2px solid rgba(158, 47, 36, 0.48);
+      outline-offset: 2px;
+    }
+    @media (min-width: 768px) {
+      #landmark-drawer.landmark-ticket-drawer {
+        right: 1rem;
+        left: auto;
+        width: min(30rem, calc(100% - 2rem));
+        margin-inline: 0;
+      }
+    }
+    @media (max-width: 420px) {
+      #landmark-drawer.landmark-ticket-drawer { padding-inline: 0.72rem; }
+      .landmark-ticket-layout { grid-template-columns: 2.65rem minmax(0, 1fr); gap: 0.62rem; }
+      .landmark-ticket-art { height: 3rem; }
+      #drawer-title-slip { font-size: 0.79rem; }
+      #landmark-drawer #drawer-title { font-size: 0.92rem; }
+      .landmark-ticket-reward { padding-inline: 0.38rem; font-size: 0.62rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #landmark-drawer.landmark-ticket-drawer { transition: none; }
+    }
+    </style>
 </head>
 <body class="min-h-screen bg-parchment">
 
@@ -1356,7 +4603,7 @@
               真实地图：高德在线瓦片
             </div>
             <div class="pointer-events-auto flex items-center gap-2">
-              <button type="button" onclick="toggleMapPlanner()" class="flex items-center rounded-lg border border-stone-200 bg-white/95 px-2.5 py-1.5 text-[10px] font-black text-deepTeal shadow">
+              <button type="button" onclick="toggleMapPlanner()" class="map-planner-trigger flex items-center px-2.5 py-1.5 text-[10px] font-black">
                 <i data-lucide="route" class="mr-1 h-3.5 w-3.5"></i> 行程篮 <span id="map-planner-count" class="ml-1 rounded-full bg-sandGold/25 px-1.5 text-[9px]">0</span>
               </button>
               <button type="button" onclick="refreshGPS()" class="bg-deepTeal text-sandGold px-2.5 py-1.5 rounded-lg shadow text-[10px] font-bold flex items-center">
@@ -1366,20 +4613,24 @@
           </div>
 
           <!-- 自选点位与路线规划侧栏；移动端自动变为底部抽屉 -->
-          <aside id="map-planner-panel" aria-label="自选点位路线规划">
-            <div class="flex shrink-0 items-start justify-between gap-3 border-b border-stone-200 px-4 py-3">
-              <div>
-                <p class="text-[9px] font-black uppercase tracking-[0.18em] text-sandGold">Trip Builder</p>
-                <h3 class="cultural-font mt-0.5 text-base font-bold text-deepTeal">自选探索路线</h3>
-                <p class="mt-0.5 text-[10px] text-stone-500">挑选点位并安排自己的前往顺序</p>
+          <aside id="map-planner-panel" class="map-planner-ticket is-collapsed" aria-label="自选点位路线规划" aria-hidden="true">
+            <header class="map-planner-cover">
+              <span class="map-planner-slip" aria-hidden="true">路线手记</span>
+              <div class="map-planner-cover-main">
+                <figure class="map-planner-cover-art">
+                  <img src="./static/assets/map-landmark-east-lake-ink-v1.webp" alt="楚地湖亭与水岸淡墨插画">
+                </figure>
+                <p class="map-planner-eyebrow">ROUTE FIELD NOTE · 楚地寻访</p>
+                <h3>自选探索路线</h3>
+                <p>挑选点位，按自己的节奏编排行程。</p>
               </div>
-              <button type="button" onclick="toggleMapPlanner(false)" class="rounded-lg border border-stone-200 bg-stone-50 p-1.5 text-stone-500" aria-label="收起路线规划">
-                <i data-lucide="x" class="h-4 w-4"></i>
+              <button type="button" onclick="toggleMapPlanner(false)" class="map-planner-close" aria-label="收起路线规划">
+                <i data-lucide="x" aria-hidden="true"></i>
               </button>
-            </div>
+            </header>
 
             <div id="map-planner-scroll" class="flex-1 px-4 py-3 text-stone-700">
-              <section>
+              <section class="map-planner-section map-planner-section--points">
                 <div class="flex items-center justify-between">
                   <h4 class="text-xs font-black text-stone-800">选择点位</h4>
                   <span id="resource-sync-status" class="text-[9px] text-stone-400">本地兼容数据</span>
@@ -1389,7 +4640,7 @@
 
               <section id="map-planner-detail" class="mt-3 rounded-2xl border border-stone-200 bg-stone-50 p-3"></section>
 
-              <section class="mt-4 rounded-2xl border border-sandGold/35 bg-[#fbf5e9] p-3">
+              <section class="map-planner-section map-planner-section--warm mt-4 rounded-2xl border border-sandGold/35 bg-[#fbf5e9] p-3">
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <h4 class="text-xs font-black text-stone-800">按偏好推荐路线</h4>
@@ -1421,7 +4672,7 @@
                 <p id="map-planner-recommendation-status" class="mt-2 text-[9px] leading-relaxed text-stone-500">推荐只调整行程篮，你仍可继续增删或拖动顺序。</p>
               </section>
 
-              <section class="mt-4 border-t border-stone-200 pt-3">
+              <section class="map-planner-section map-planner-section--route mt-4 border-t border-stone-200 pt-3">
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <h4 class="text-xs font-black text-stone-800">我的前往顺序</h4>
@@ -1432,7 +4683,7 @@
                 <div id="map-planner-route-list" class="mt-2 space-y-2"></div>
               </section>
 
-              <section class="mt-4 rounded-xl border border-sandGold/30 bg-sandGold/5 p-3">
+              <section class="map-planner-section map-planner-section--transport mt-4 rounded-xl border border-sandGold/30 bg-sandGold/5 p-3">
                 <div class="flex items-center justify-between gap-2">
                   <h4 class="text-xs font-black text-deepTeal">交通偏好</h4>
                   <span class="text-[9px] text-stone-400">影响打开导航的方式</span>
@@ -1442,7 +4693,7 @@
               </section>
             </div>
 
-            <div class="grid shrink-0 grid-cols-2 gap-2 border-t border-stone-200 bg-white px-4 py-3">
+            <div class="map-planner-footer grid shrink-0 grid-cols-2 gap-2 border-t border-stone-200 bg-white px-4 py-3">
               <button type="button" onclick="previewMapPlannerRoute()" class="rounded-xl border border-deepTeal bg-white py-2 text-[11px] font-black text-deepTeal">
                 地图预览
               </button>
@@ -1481,42 +4732,58 @@
             <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 mr-1.5 inline-block"></span>文博认证数字点</div>
           </div>
 
-          <!-- 导航提示浮窗 -->
-          <div id="landmark-drawer" class="absolute bottom-4 right-4 left-4 bg-white/95 rounded-2xl p-3 shadow-xl border border-sandGold/30 transform translate-y-[200px] transition-transform duration-300">
-            <div class="flex justify-between items-start">
-              <div>
-                <h4 id="drawer-title" class="cultural-font text-sm font-bold text-stone-800">曾侯遗韵牌楼</h4>
-                <p id="drawer-desc" class="text-xs text-stone-500 mt-0.5">面临漏水及倒塌危险，需要外墙及结构件细节拍摄和定位采集。</p>
+          <!-- 地点题签：紧凑承接地点信息，保持地图为主画面 -->
+          <section id="landmark-drawer" class="landmark-ticket-drawer translate-y-[200px]" role="dialog" aria-label="地点详情" aria-hidden="true">
+            <span class="landmark-ticket-handle" aria-hidden="true"></span>
+            <button type="button" onclick="closeLandmarkDrawer()" class="landmark-ticket-close" aria-label="关闭地点详情">
+              <i data-lucide="x" aria-hidden="true"></i>
+            </button>
+
+            <div class="landmark-ticket-layout">
+              <div class="landmark-ticket-slip" aria-hidden="true">
+                <span id="drawer-title-slip">曾侯遗韵牌楼</span>
               </div>
-              <button onclick="closeLandmarkDrawer()" class="text-stone-400 hover:text-stone-600">
-                <i data-lucide="x" class="w-4 h-4"></i>
-              </button>
-            </div>
-            <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-stone-100">
-              <span class="text-xs text-deepTeal font-semibold flex items-center">
-                <i data-lucide="zap" class="w-4 h-4 mr-1 text-sandGold fill-sandGold"></i> 任务奖励：+<span id="drawer-points">50</span> 积分
-              </span>
-              <div class="flex flex-wrap items-center justify-end gap-2">
-                <button type="button" onclick="window.openStoryEvidence(activeLandmark.id, activeLandmark.title)" class="border border-sandGold/50 bg-amber-50 text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="link-2" class="w-3.5 h-3.5 mr-1"></i> 链迹
-                </button>
-                <button type="button" onclick="window.openCloudDiscussion('landmark', activeLandmark.id, activeLandmark.title)" class="border border-deepTeal/20 bg-white text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="messages-square" class="w-3.5 h-3.5 mr-1"></i> 讨论
-                </button>
-                <button id="drawer-nav-btn" onclick="openCurrentLandmarkNavigation()" class="bg-sandGold text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="navigation" class="w-3.5 h-3.5 mr-1"></i> 打开导航
-                </button>
-                <button onclick="switchTab('collect')" class="bg-deepTeal text-sandGold px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="camera" class="w-3.5 h-3.5 mr-1"></i> 采集
-                </button>
+
+              <div class="landmark-ticket-main">
+                <figure class="landmark-ticket-art" aria-label="楚地湖亭淡墨图">
+                  <img src="./static/assets/map-landmark-east-lake-ink-v1.webp" alt="楚地湖亭与水岸淡墨插画">
+                </figure>
+
+                <div class="landmark-ticket-heading">
+                  <div class="min-w-0">
+                    <span class="landmark-ticket-eyebrow"><i data-lucide="map-pin-check" aria-hidden="true"></i><span id="drawer-status">实地寻访</span></span>
+                    <h4 id="drawer-title">曾侯遗韵牌楼</h4>
+                  </div>
+                  <span class="landmark-ticket-reward">
+                    <i data-lucide="gem" aria-hidden="true"></i>入藏奖励 +<span id="drawer-points">50</span> 积分
+                  </span>
+                </div>
+                <p id="drawer-desc">面临漏水及倒塌危险，需要外墙及结构件细节拍摄和定位采集。</p>
+
+                <div class="landmark-ticket-actions">
+                  <button type="button" onclick="switchTab('collect')" class="landmark-ticket-action landmark-ticket-action--primary">
+                    <i data-lucide="camera" aria-hidden="true"></i><span>去采集</span>
+                  </button>
+                  <button id="drawer-nav-btn" type="button" onclick="openCurrentLandmarkNavigation()" class="landmark-ticket-action landmark-ticket-action--secondary">
+                    <i data-lucide="navigation" aria-hidden="true"></i><span>导航到这里</span>
+                  </button>
+                </div>
+                <div class="landmark-ticket-quiet-actions">
+                  <button type="button" onclick="window.openStoryEvidence(activeLandmark.id, activeLandmark.title)" class="landmark-ticket-quiet">
+                    <i data-lucide="link-2" aria-hidden="true"></i><span>查看链迹</span>
+                  </button>
+                  <button type="button" onclick="window.openCloudDiscussion('landmark', activeLandmark.id, activeLandmark.title)" class="landmark-ticket-quiet">
+                    <i data-lucide="messages-square" aria-hidden="true"></i><span>参与讨论</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
         </div>
       </section>
 
       <!-- 页面 3：采集发布中心 (COLLECT) -->
-      <section id="view-collect" class="page-view hidden space-y-4 py-4 px-4">
+      <template id="collect-legacy-template">
         <div class="chu-page-watermark chu-page-watermark--cloud" aria-hidden="true">
           <svg viewBox="0 0 360 190" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 112h112c20 0 20-29 0-29H77c-18 0-18-28 0-28h129c22 0 22-32 0-32h-50M111 143h181c25 0 25-37 0-37h-75c-20 0-20-30 0-30h125" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
@@ -1734,10 +5001,173 @@
             </div>
           </div>
         </div>
+      </template>
+
+      <section id="view-collect" class="page-view hidden collect-field-page">
+        <header class="collect-hero" aria-labelledby="collect-hero-title">
+          <img src="./static/assets/collect-hero-shanshui-v1.webp" alt="云山江水与临水古亭构成的荆楚山水长卷" class="collect-hero-image">
+          <div class="collect-hero-copy">
+            <p class="collect-hero-kicker">FIELD NOTE · 楚地采集</p>
+            <h2 id="collect-hero-title" class="collect-hero-title">楚地采集簿</h2>
+            <p class="collect-hero-description">把眼前所见，留进共同图鉴</p>
+          </div>
+        </header>
+
+        <div id="collect-scroll-shell" class="collect-scroll-shell">
+          <div class="collect-scroll-roller" aria-hidden="true"></div>
+          <div class="collect-scroll-sheet">
+            <img src="./static/assets/collect-scroll-watermark-v2.webp" alt="" class="collect-scroll-watermark" aria-hidden="true">
+            <div class="collect-form-intro">
+              <p>FIELD RECORD · 现场记录</p>
+              <h3>收存一条可复核的文化线索</h3>
+              <p>景点、文物、纹样、技艺或口述片段，都可以从这里进入共同图鉴。</p>
+            </div>
+
+            <form id="collect-form" onsubmit="handleUploadSubmit(event)">
+              <section id="collect-gap-task-context" class="collect-gap-context hidden" aria-label="当前定向资料征集">
+                <div><p>定向资料征集</p><h3 id="collect-gap-task-title"></h3>
+                  <span id="collect-gap-task-description"></span><strong id="collect-gap-task-reward"></strong></div>
+                <button id="collect-gap-task-clear" type="button">退出任务</button>
+              </section>
+              <section class="collect-form-section" aria-labelledby="collect-media-label">
+                <div id="collect-media-label" class="collect-section-label">影像<small>壹</small></div>
+                <div class="collect-section-content">
+                  <div class="collect-type-grid" role="radiogroup" aria-label="采集素材类型">
+                    <label class="collect-type-option is-selected" onclick="selectType(this)">
+                      <input type="radio" name="asset-type" value="image" checked class="hidden">
+                      <i data-lucide="image"></i><span>图片</span>
+                    </label>
+                    <label class="collect-type-option" onclick="selectType(this)">
+                      <input type="radio" name="asset-type" value="audio" class="hidden">
+                      <i data-lucide="audio-lines"></i><span>音频</span>
+                    </label>
+                    <label class="collect-type-option" onclick="selectType(this)">
+                      <input type="radio" name="asset-type" value="video" class="hidden">
+                      <i data-lucide="video"></i><span>视频</span>
+                    </label>
+                  </div>
+
+                  <div class="collect-upload-zone" onclick="triggerFileSelect()">
+                    <input type="file" id="real-file-input" class="hidden" accept="image/*" onchange="previewFile(event)">
+                    <div id="upload-placeholder" class="collect-upload-placeholder">
+                      <i id="upload-placeholder-icon" data-lucide="scan-line"></i>
+                      <strong id="upload-placeholder-title">拍摄或选择一份现场影像</strong>
+                      <span id="upload-placeholder-desc">支持 JPG、PNG、WEBP、GIF，单份不超过 20MB</span>
+                    </div>
+                    <div id="upload-preview" class="hidden flex flex-col items-center">
+                      <div class="relative w-full overflow-hidden">
+                        <img id="preview-img" src="" alt="已选择的采集素材预览" class="w-full object-cover">
+                        <div id="preview-media-icon" class="hidden w-full flex items-center justify-center">
+                          <i data-lucide="file-audio" class="w-10 h-10"></i>
+                        </div>
+                        <div class="collect-preview-overlay absolute inset-0 flex">
+                          <p id="preview-file-name">已选择现场影像</p>
+                        </div>
+                      </div>
+                      <button type="button" onclick="resetFilePreview(event)" class="collect-replace-file">更换素材</button>
+                    </div>
+                  </div>
+
+                  <div id="audio-record-panel" class="collect-audio-panel hidden">
+                    <div class="flex items-center justify-between gap-3">
+                      <button type="button" id="record-audio-btn" onclick="toggleAudioRecording(event)" class="rounded-full flex items-center justify-center">
+                        <i data-lucide="mic" class="w-5 h-5"></i>
+                      </button>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                          <p id="record-audio-status" class="text-xs font-bold">口述采集待开始</p>
+                          <span id="record-audio-time" class="text-[10px] font-mono">00:00</span>
+                        </div>
+                        <div class="mt-2 flex items-end gap-1 h-8" aria-hidden="true">
+                          <span class="audio-wave-bar h-2 flex-1 rounded"></span><span class="audio-wave-bar h-5 flex-1 rounded"></span><span class="audio-wave-bar h-3 flex-1 rounded"></span><span class="audio-wave-bar h-7 flex-1 rounded"></span><span class="audio-wave-bar h-4 flex-1 rounded"></span><span class="audio-wave-bar h-6 flex-1 rounded"></span><span class="audio-wave-bar h-3 flex-1 rounded"></span>
+                        </div>
+                      </div>
+                    </div>
+                    <div id="audio-summary-card" class="hidden mt-3 rounded-lg p-2">
+                      <div class="flex items-center text-xs font-bold"><i data-lucide="list-checks" class="w-3.5 h-3.5 mr-1"></i> 识别梗概</div>
+                      <p id="audio-summary-text" class="text-[10px] mt-1 leading-relaxed"></p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="collect-form-section" aria-labelledby="collect-location-label">
+                <div id="collect-location-label" class="collect-section-label">方位<small>贰</small></div>
+                <div class="collect-section-content">
+                  <div class="collect-location-row">
+                    <div class="collect-location-copy">
+                      <i data-lucide="map-pin"></i>
+                      <div class="min-w-0">
+                        <p id="geo-text" class="line-clamp-1">尚未获取真实定位</p>
+                        <p id="coord-text">点击右侧题记当前位置</p>
+                      </div>
+                    </div>
+                    <button type="button" onclick="refreshGPS()" class="collect-location-refresh" aria-label="刷新真实定位"><i data-lucide="locate-fixed"></i><span>定位</span></button>
+                  </div>
+                  <p class="collect-location-note">定位仅用于投稿记录与地理围栏校验；公开内容不会展示精确坐标。</p>
+                </div>
+              </section>
+
+              <section class="collect-form-section" aria-labelledby="collect-notes-label">
+                <div id="collect-notes-label" class="collect-section-label">笔记<small>叁</small></div>
+                <div class="collect-section-content">
+                  <div class="collect-notes-paper">
+                    <textarea id="collect-description" name="description" placeholder="写下现场所见、纹样细节、人物口述或资料出处……" rows="4"></textarea>
+                  </div>
+                </div>
+              </section>
+
+              <details class="collect-consent-disclosure">
+                <summary>
+                  <span class="collect-consent-title"><i data-lucide="lock-keyhole"></i>公开与分析范围</span>
+                  <span class="collect-consent-summary"><span>默认仅供审核</span><i data-lucide="chevron-down" class="collect-consent-chevron"></i></span>
+                </summary>
+                <div class="collect-consent-body">
+                  <label class="collect-consent-option">
+                    <input id="collect-ai-consent" name="ai-analysis-consent" type="checkbox">
+                    <span><strong>审核通过后，允许分析公开文字</strong><span>只发送标题、描述、素材类型和地区；不发送账号、联系方式、原始文件或精确坐标。</span></span>
+                  </label>
+                  <label class="collect-consent-option">
+                    <input id="collect-material-consent" name="material-analysis-consent" type="checkbox">
+                    <span><strong>允许识别原始图片、音频或视频</strong><span>仅在审核通过后用于文字提取和资料整理，识别结果仍需管理员校对。</span></span>
+                  </label>
+                  <label class="collect-consent-option">
+                    <input id="collect-material-research-consent" type="checkbox">
+                    <span><strong>允许研究已校对的材料</strong><span>仅在原始材料识别和 AI 分析均获授权后，使用管理员确认的文字与画面观察来草拟故事；历史判断仍须人工审核。</span></span>
+                  </label>
+                  <label class="collect-consent-option">
+                    <input id="collect-material-excerpt-consent" type="checkbox">
+                    <span><strong>允许公开已确认的材料节选</strong><span>仅公开校对、脱敏并确认的节选与引用，不公开原始高清图片或完整录音。</span></span>
+                  </label>
+                  <p class="collect-cloud-note"><i data-lucide="cloud-check"></i>素材先进入 CloudBase 人工审核，再按你的授权范围进入后续整理流程。</p>
+                </div>
+              </details>
+
+              <button type="submit" class="flex items-center justify-center gap-2"><i data-lucide="archive-restore"></i><span>收存这条采集记录</span></button>
+            </form>
+          </div>
+        </div>
+
+        <div id="ai-check-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-6 backdrop-blur-xs">
+          <div class="collect-ai-modal-card p-5 max-w-sm w-full space-y-4 text-stone-800">
+            <div class="flex items-center space-x-2 pb-2 border-b"><i data-lucide="scan-search" class="w-6 h-6 text-sandGold animate-pulse"></i><h4 class="cultural-font text-base font-bold">资料入藏前校验</h4></div>
+            <div class="space-y-3">
+              <div id="step-gps" class="flex justify-between items-center text-xs"><span class="flex items-center"><i data-lucide="loader" class="w-3.5 h-3.5 animate-spin mr-2 text-sandGold"></i> 核验现场方位与记录完整度</span><span class="text-stone-400">检测中</span></div>
+              <div id="step-deepfake" class="flex justify-between items-center text-xs"><span class="flex items-center"><i data-lucide="loader" class="w-3.5 h-3.5 animate-spin mr-2 text-sandGold"></i> 检查影像来源与安全合规</span><span class="text-stone-400">待开始</span></div>
+              <div id="step-watermark" class="flex justify-between items-center text-xs"><span class="flex items-center"><i data-lucide="loader" class="w-3.5 h-3.5 animate-spin mr-2 text-sandGold"></i> 写入资料保护水印</span><span class="text-stone-400">待开始</span></div>
+              <div id="step-milvus" class="flex justify-between items-center text-xs"><span class="flex items-center"><i data-lucide="loader" class="w-3.5 h-3.5 animate-spin mr-2 text-sandGold"></i> 检索相关馆藏与文化线索</span><span class="text-stone-400">待开始</span></div>
+            </div>
+            <div id="ai-success-result" class="hidden bg-emerald-50 rounded-xl p-3 border border-emerald-200 space-y-1">
+              <div class="flex items-center text-emerald-800 text-xs font-bold"><i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> 校验完成，记录已进入审核</div>
+              <p class="text-[10px] text-emerald-600 pl-5">素材真实度评估：<strong class="font-bold">98.7%</strong></p><p class="text-[10px] text-emerald-600 pl-5">候选关联：<strong class="font-bold">湖北省博物馆 · 曾侯乙青铜器</strong></p><p class="text-[10px] text-emerald-600 pl-5">入藏奖励：<strong class="font-bold">+100 流光值</strong></p>
+            </div>
+            <div class="pt-2 flex space-x-2"><button id="ai-btn-close" disabled onclick="closeAiModal()" class="flex-1 bg-stone-100 text-stone-400 py-2 rounded-xl text-xs font-bold w-full">请等待校验完成...</button></div>
+          </div>
+        </div>
       </section>
 
       <!-- 页面 4：科普与实地活动 (COMMUNITY/LEARN) -->
-      <section id="view-community" class="page-view hidden space-y-4 py-4">
+      <section id="view-community" class="page-view hidden">
         <div class="chu-page-watermark chu-page-watermark--ring" aria-hidden="true">
           <svg viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="160" cy="160" r="118" stroke="currentColor" stroke-width="18"/>
@@ -1745,97 +5175,104 @@
             <path d="M160 54c16 39 35 58 72 75-37 16-56 36-72 73-16-37-35-57-72-73 37-17 56-36 72-75Z" stroke="currentColor" stroke-width="5"/>
           </svg>
         </div>
-        <div class="chu-page-heading px-4">
+        <div class="chu-page-heading community-page-intro px-4">
           <p class="chu-page-kicker">FIELD PROGRAM · 共学共访</p>
           <h2 class="cultural-font mt-1 text-xl font-bold text-[#4b2e2b]">活动与科普</h2>
           <p class="mt-1 text-xs leading-5 text-stone-500">先了解，再抵达现场；把每次寻访变成可复核的文化记录。</p>
         </div>
-        <div class="px-4">
-          <div class="community-hero relative h-44 overflow-hidden rounded-xl shadow-md">
-            <img src="https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&q=80&w=900" alt="荆楚文化活动" class="absolute inset-0 h-full w-full object-cover">
-            <div class="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/30 to-transparent"></div>
-            <div class="absolute left-3 right-3 bottom-3 text-white">
-              <div class="flex items-center justify-between">
-                <span class="bg-cinnabarRed text-white text-[10px] px-2 py-0.5 rounded font-bold">进行中 · 7天后结算</span>
-                <span class="bg-white/90 text-deepTeal text-[10px] px-2 py-0.5 rounded font-bold">已报名 326 人</span>
+        <div class="community-hero-shell">
+          <div class="community-hero relative overflow-hidden" aria-labelledby="community-activity-title">
+            <img src="./static/assets/community-hero-pagoda-v2.webp" alt="晨光中的荆楚古建与高塔" class="community-hero-image absolute inset-0 h-full w-full object-cover">
+            <div class="community-hero-overlay absolute inset-0" aria-hidden="true"></div>
+            <div class="community-hero-content absolute text-white">
+              <div class="community-hero-meta flex items-center justify-between gap-2">
+                <span class="community-seal">进行中 · 7天后结算</span>
               </div>
-              <h3 class="cultural-font text-lg font-bold text-sandGold mt-2">荆楚纹样寻访周</h3>
-              <p class="text-xs text-stone-100 mt-1 line-clamp-2">从武汉、钟祥到恩施，寻找建筑纹样、碑刻题记与民间口述线索。</p>
-              <div class="mt-3 flex items-center gap-2">
-                <button onclick="joinCommunityActivity('荆楚纹样寻访周')" class="bg-sandGold text-deepTeal px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="ticket-check" class="w-3.5 h-3.5 mr-1"></i> 报名活动
+              <h3 id="community-activity-title" class="community-hero-title cultural-font">荆楚纹样寻访周</h3>
+              <p class="community-hero-description">从武汉、钟祥到恩施，寻找建筑纹样、碑刻题记与民间口述线索。</p>
+              <div class="community-hero-actions">
+                <button onclick="joinCommunityActivity('荆楚纹样寻访周')" class="community-hero-primary">
+                  <i data-lucide="ticket-check" aria-hidden="true"></i><span>报名活动</span>
                 </button>
-                <button onclick="openCommunityMapPoint('yellow-crane-tower')" class="bg-white/95 text-stone-800 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="map" class="w-3.5 h-3.5 mr-1"></i> 看任务点
+                <button onclick="openCommunityMapPoint('yellow-crane-tower')" class="community-hero-secondary">
+                  <i data-lucide="map" aria-hidden="true"></i><span>看任务点</span>
                 </button>
-                <button type="button" onclick="window.openCloudDiscussion('activity', 'jingchu-pattern-week', '荆楚纹样寻访周')" class="border border-white/70 bg-stone-950/35 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center">
-                  <i data-lucide="messages-square" class="w-3.5 h-3.5 mr-1"></i> 讨论
+                <button type="button" onclick="window.openCloudDiscussion('activity', 'jingchu-pattern-week', '荆楚纹样寻访周')" class="community-hero-secondary">
+                  <i data-lucide="messages-square" aria-hidden="true"></i><span>讨论</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 推荐路线 -->
-        <div class="px-4 space-y-3">
-          <div class="flex justify-between items-center">
-            <h4 class="chu-section-heading text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-              <i data-lucide="route" class="w-4 h-4 mr-1 text-deepTeal"></i> 今日推荐路线
-            </h4>
-            <span id="activity-progress" class="text-[10px] text-deepTeal font-semibold">0/3 已点亮</span>
+        <div class="community-content-shell">
+          <!-- 推荐路线 -->
+          <div class="community-route-section">
+            <div id="community-route-card" class="chu-paper-panel"></div>
           </div>
 
-          <div id="community-route-card" class="chu-paper-panel bg-white rounded-xl border border-stone-200 shadow-sm p-3"></div>
-        </div>
-
-        <!-- 科普闯关 -->
-        <div class="px-4 space-y-3">
-          <h4 class="chu-section-heading text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-            <i data-lucide="book-open" class="w-4 h-4 mr-1 text-deepTeal"></i> 三分钟科普闯关
-          </h4>
-
-          <div class="chu-knowledge-panel bg-white rounded-xl border border-stone-200 shadow-sm p-3">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-[10px] bg-sandGold/20 text-deepTeal px-2 py-0.5 rounded font-bold">每日更新</span>
-                  <span id="quiz-date" class="text-[10px] text-stone-400"></span>
+          <div class="community-study-column">
+            <!-- 科普闯关 -->
+            <div class="community-quiz-section">
+              <div class="chu-knowledge-panel">
+            <div class="community-quiz-preview-art" aria-hidden="true">
+              <img src="./static/assets/community-quiz-bronze-v2.webp" alt="">
+            </div>
+            <div class="community-quiz-preview-copy">
+              <h4 class="cultural-font">三分钟科普闯关</h4>
+              <p class="community-quiz-preview-meta">每日一题 · 知识小测</p>
+              <p class="community-quiz-preview-description">从藏品、建筑与地名中发现线索，答对即可点亮今日进度，解锁更多纹样故事。</p>
+              <div class="community-quiz-preview-actions">
+                <button id="community-quiz-start" type="button" aria-expanded="false" aria-controls="community-quiz-challenge" onclick="toggleCommunityQuiz()">开始答题</button>
+                <span class="community-quiz-streak"><i data-lucide="circle-check" aria-hidden="true"></i> 已完成 <strong id="community-quiz-complete-count">0</strong> 天</span>
+              </div>
+            </div>
+            <div id="community-quiz-challenge" class="community-quiz-challenge" hidden>
+              <div class="community-quiz-heading flex items-start justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="community-daily-tag">每日更新</span>
+                    <span id="quiz-date" class="community-quiz-date"></span>
+                  </div>
+                  <h5 id="quiz-question" class="community-quiz-question cultural-font">采集古建筑纹样时，最应该优先补充哪类信息？</h5>
                 </div>
-                <h5 id="quiz-question" class="cultural-font font-bold text-stone-800 text-sm mt-2">采集古建筑纹样时，最应该优先补充哪类信息？</h5>
+                <div class="community-quiz-icon" aria-hidden="true">
+                  <i data-lucide="brain"></i>
+                </div>
               </div>
-              <div class="bg-deepTeal text-sandGold w-9 h-9 rounded-lg flex items-center justify-center shrink-0">
-                <i data-lucide="brain" class="w-4 h-4"></i>
+
+              <div class="community-quiz-options">
+                <button id="quiz-option-a" onclick="answerCommunityQuiz(0)" class="community-quiz-option">只拍一张远景照片，方便快速完成任务</button>
+                <button id="quiz-option-b" onclick="answerCommunityQuiz(1)" class="community-quiz-option">补充纹样近景、所在位置、保存状态和尺度参照</button>
+                <button id="quiz-option-c" onclick="answerCommunityQuiz(2)" class="community-quiz-option">尽量加滤镜，让图像看起来更清晰</button>
+              </div>
+
+              <div id="quiz-feedback" class="community-quiz-feedback hidden" aria-live="polite">
+                答对了：近景、位置、保存状态和尺度参照能帮助专家复核，也能减少后续补采。
+              </div>
+              <p id="quiz-update-tip" class="community-quiz-update">明日 00:00 更新 · 答对可得 50 积分</p>
+            </div>
               </div>
             </div>
 
-            <div class="mt-3 space-y-2">
-              <button id="quiz-option-a" onclick="answerCommunityQuiz(0)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">只拍一张远景照片，方便快速完成任务</button>
-              <button id="quiz-option-b" onclick="answerCommunityQuiz(1)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">补充纹样近景、所在位置、保存状态和尺度参照</button>
-              <button id="quiz-option-c" onclick="answerCommunityQuiz(2)" class="w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700">尽量加滤镜，让图像看起来更清晰</button>
-            </div>
+            <!-- 微课程 -->
+            <div class="community-quick-section px-4 space-y-3">
+              <div class="community-learning-heading flex items-center justify-between gap-3">
+                <div>
+                  <p class="community-learning-kicker">FIELD NOTES · 入场前两课</p>
+                  <h4 class="chu-section-heading flex items-center">
+                    <i data-lucide="graduation-cap" aria-hidden="true"></i> 采集前速学
+                  </h4>
+                  <p id="quick-learning-summary" class="community-learning-summary">每次登录随机展示 2 个知识点</p>
+                </div>
+                <button type="button" onclick="refreshQuickLearningSet(true)" class="community-learning-refresh">
+                  <i data-lucide="refresh-cw" aria-hidden="true"></i><span>换一组</span>
+                </button>
+              </div>
 
-            <div id="quiz-feedback" class="hidden mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-[10px] text-emerald-800">
-              答对了：近景、位置、保存状态和尺度参照能帮助专家复核，也能减少后续补采。
+              <div id="quick-learning-list" class="community-learning-list"></div>
             </div>
-            <p id="quiz-update-tip" class="mt-3 text-[10px] text-stone-400">明日 00:00 更新 · 答对可得 50 积分</p>
           </div>
-        </div>
-
-        <!-- 微课程 -->
-        <div class="px-4 space-y-3">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <h4 class="chu-section-heading text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
-                <i data-lucide="graduation-cap" class="w-4 h-4 mr-1 text-deepTeal"></i> 采集前速学
-              </h4>
-              <p id="quick-learning-summary" class="mt-1 text-[10px] text-stone-400">每次登录随机展示 2 个知识点</p>
-            </div>
-            <button type="button" onclick="refreshQuickLearningSet(true)" class="shrink-0 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-deepTeal">
-              <i data-lucide="refresh-cw" class="mr-1 inline-block h-3.5 w-3.5"></i> 换一组
-            </button>
-          </div>
-
-          <div id="quick-learning-list" class="grid grid-cols-2 gap-3"></div>
         </div>
       </section>
 
@@ -2885,32 +6322,55 @@
 
       options.forEach((option, index) => {
         option.disabled = true;
-        option.className = 'w-full text-left bg-stone-100 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400';
+        option.className = 'community-quiz-option';
         if (index === question.correctIndex) {
-          option.className = 'w-full text-left bg-emerald-100 border border-emerald-300 rounded-lg px-3 py-2 text-xs text-emerald-800 font-bold';
+          option.classList.add('is-correct');
         }
       });
 
       if (!state.isCorrect && options[state.selectedIndex]) {
-        options[state.selectedIndex].className = 'w-full text-left bg-red-100 border border-red-300 rounded-lg px-3 py-2 text-xs text-red-800 font-bold';
+        options[state.selectedIndex].classList.add('is-wrong');
       }
 
       if (state.isCorrect) {
-        feedback.className = 'mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-[11px] text-emerald-800 leading-tight';
-        feedback.innerHTML = `<strong>🟢 回答正确！</strong><br>${question.explanation}<br><span class="font-bold">积分 +${DAILY_QUIZ_REWARD} 已到账！</span>`;
+        feedback.className = 'community-quiz-feedback is-correct';
+        feedback.innerHTML = `<strong><i data-lucide="circle-check-big" aria-hidden="true"></i>回答正确</strong><br>${question.explanation}<br><span class="font-bold">积分 +${DAILY_QUIZ_REWARD} 已到账</span>`;
         updateTip.innerText = `今日已完成 · 已获得 ${DAILY_QUIZ_REWARD} 积分 · 明日 00:00 更新`;
         if (shouldNotify) {
           showToast(`每日答题成功！+${DAILY_QUIZ_REWARD} 积分已放入多宝阁`, 'award');
         }
       } else {
-        feedback.className = 'mt-3 bg-red-50 border border-red-200 rounded-lg p-2.5 text-[11px] text-red-800 leading-tight';
-        feedback.innerHTML = `<strong>🔴 今日回答未通过：</strong><br>${question.explanation}<br>明天会有一道新题，记得再来挑战。`;
+        feedback.className = 'community-quiz-feedback is-wrong';
+        feedback.innerHTML = `<strong><i data-lucide="circle-x" aria-hidden="true"></i>今日回答未通过</strong><br>${question.explanation}<br>明天会有一道新题，记得再来挑战。`;
         updateTip.innerText = '今日已完成 · 明日 00:00 更新';
         if (shouldNotify) {
           showToast('已记录今日答题，查看解析继续学习', 'book-open');
         }
       }
       feedback.classList.remove('hidden');
+      updateCommunityQuizCompleteCount();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function updateCommunityQuizCompleteCount() {
+      const count = document.getElementById('community-quiz-complete-count');
+      if (!count) return;
+      count.innerText = String(Math.floor(getDailyQuizRewardTotal() / DAILY_QUIZ_REWARD));
+    }
+
+    function toggleCommunityQuiz(forceExpanded) {
+      const trigger = document.getElementById('community-quiz-start');
+      const challenge = document.getElementById('community-quiz-challenge');
+      const panel = document.querySelector('#view-community .chu-knowledge-panel');
+      if (!trigger || !challenge || !panel) return;
+
+      const expanded = typeof forceExpanded === 'boolean'
+        ? forceExpanded
+        : trigger.getAttribute('aria-expanded') !== 'true';
+      trigger.setAttribute('aria-expanded', String(expanded));
+      trigger.innerText = expanded ? '收起答题' : '开始答题';
+      challenge.hidden = !expanded;
+      panel.classList.toggle('is-quiz-open', expanded);
     }
 
     function initializeDailyCommunityQuiz() {
@@ -2926,7 +6386,7 @@
       options.forEach((option, index) => {
         option.innerText = question.options[index];
         option.disabled = false;
-        option.className = 'w-full text-left bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700';
+        option.className = 'community-quiz-option';
       });
 
       const savedState = readDailyQuizState(dateKey);
@@ -2940,6 +6400,7 @@
       if (savedRewardTotal > 0) {
         updateUserPoints(savedRewardTotal);
       }
+      updateCommunityQuizCompleteCount();
 
       if (activeDailyQuiz.state) {
         showDailyQuizResult(question, activeDailyQuiz.state, false);
@@ -4621,8 +8082,8 @@
         mapPlannerSelectedIds = [];
       }
 
-      const shouldOpen = window.matchMedia('(min-width: 768px)').matches;
-      toggleMapPlanner(shouldOpen);
+      // 路线手记默认收起；只有用户主动点击“行程篮”或显式 planner=open 时展开。
+      toggleMapPlanner(false);
       renderMapPlanner();
     }
 
@@ -4640,6 +8101,7 @@
       if (!panel) return;
       const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : panel.classList.contains('is-collapsed');
       panel.classList.toggle('is-collapsed', !shouldOpen);
+      panel.setAttribute('aria-hidden', String(!shouldOpen));
       document.body.classList.toggle('map-planner-visible', shouldOpen);
       if (shouldOpen) renderMapPlanner();
       if (heritageMap) setTimeout(() => heritageMap.invalidateSize(), 240);
@@ -4964,7 +8426,6 @@
       mapPlannerActiveId = id;
       activeLandmark = item;
       saveMapPlannerState();
-      toggleMapPlanner(true);
       renderMapPlanner();
       if (heritageMap && options.focusMap !== false) {
         heritageMap.setView(getStaticMapLatLng(item.coords), Math.max(heritageMap.getZoom(), 12), { animate: true });
@@ -5243,16 +8704,6 @@
       openMapPlannerNavigation(firstId);
     }
 
-    function createLandmarkPopup(item) {
-      return `
-        <div>
-          <div class="map-popup-title">${escapeHtml(item.title)}</div>
-          <div class="map-popup-desc">${escapeHtml(item.desc)}</div>
-          <button class="map-popup-nav" onclick="openLandmarkNavigationById('${escapeHtml(item.id)}')">打开系统地图导航</button>
-        </div>
-      `;
-    }
-
     function renderHeritageMapMarkers() {
       if (!heritageMap || typeof L === 'undefined') return;
       if (!heritageMarkerLayerGroup) heritageMarkerLayerGroup = L.layerGroup().addTo(heritageMap);
@@ -5263,7 +8714,6 @@
           title: item.title
         })
         .addTo(heritageMarkerLayerGroup)
-        .bindPopup(createLandmarkPopup(item))
         .bindTooltip(item.title, { direction: 'top', offset: [0, -10] })
         .on('click', () => {
           focusLandmark(item);
@@ -5353,8 +8803,31 @@
       heritageMap.setView(latLng, Math.max(heritageMap.getZoom(), 13), { animate: true });
     }
 
+    let collectScrollHasPlayed = false;
+
+    function playCollectScrollIntro() {
+      if (collectScrollHasPlayed || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const shell = document.getElementById('collect-scroll-shell');
+      if (!shell) return;
+      collectScrollHasPlayed = true;
+      shell.classList.remove('is-unrolling');
+      requestAnimationFrame(() => shell.classList.add('is-unrolling'));
+    }
+
+    function updateCollectHeroDrift() {
+      const collectView = document.getElementById('view-collect');
+      if (!collectView || collectView.classList.contains('hidden') || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const hero = collectView.querySelector('.collect-hero');
+      if (!hero) return;
+      const drift = Math.min(14, Math.max(0, window.scrollY * 0.035));
+      hero.style.setProperty('--collect-hero-drift', `${drift}px`);
+    }
+
+    window.addEventListener('scroll', updateCollectHeroDrift, { passive: true });
+
     // 1. TabBar 路由切换控制
     function switchTab(tabId) {
+      document.body.classList.toggle('profile-view-active', tabId === 'profile');
       document.querySelectorAll('.page-view').forEach(view => {
         view.classList.add('hidden');
       });
@@ -5390,6 +8863,10 @@
       }
       if (tabId === 'community') {
         renderCommunityRouteCard();
+      }
+      if (tabId === 'collect') {
+        playCollectScrollIntro();
+        updateCollectHeroDrift();
       }
     }
 
@@ -5432,13 +8909,27 @@
       document.getElementById('drawer-desc').innerText = item.desc;
       document.getElementById('drawer-points').innerText = item.points;
       const drawer = document.getElementById('landmark-drawer');
+      const titleSlip = document.getElementById('drawer-title-slip');
+      const statusLabel = document.getElementById('drawer-status');
+      const statusText = item.status === 'verified'
+        ? '已入藏'
+        : item.status === 'pending'
+          ? '急需采集'
+          : '实地寻访';
+      if (titleSlip) titleSlip.innerText = item.title;
+      if (statusLabel) statusLabel.innerText = statusText;
+      drawer.dataset.status = item.status || 'explore';
       drawer.classList.remove('translate-y-[200px]');
+      drawer.classList.add('is-open');
+      drawer.setAttribute('aria-hidden', 'false');
       lucide.createIcons();
     }
 
     function closeLandmarkDrawer() {
       const drawer = document.getElementById('landmark-drawer');
+      drawer.classList.remove('is-open');
       drawer.classList.add('translate-y-[200px]');
+      drawer.setAttribute('aria-hidden', 'true');
     }
 
     function buildLandmarkNavigationUrls(item) {
@@ -5484,16 +8975,6 @@
 
     function openCurrentLandmarkNavigation() {
       openLandmarkNavigation(activeLandmark);
-    }
-
-    function openLandmarkNavigationById(id) {
-      const item = heritageLandmarks.find(landmark => landmark.id === id);
-      if (!item) {
-        showToast('未找到该探索点', 'map-pin');
-        return;
-      }
-      activeLandmark = item;
-      openLandmarkNavigation(item);
     }
 
     function openRouteStepNavigation(routeId, stepIndex) {
@@ -6317,80 +9798,88 @@
       const recommendation = getRecommendedCommunityRoute();
       const route = recommendation.route;
       activeCommunityRoute = route;
-      const distanceLabel = recommendation.distanceKm ? `约 ${recommendation.distanceKm}km` : recommendation.reason;
+      const routeLandmarks = [
+        './static/assets/community-landmark-hubei-museum-v2.webp',
+        './static/assets/community-landmark-east-lake-v2.webp',
+        './static/assets/community-landmark-yellow-crane-v2.webp'
+      ];
+      const routeStepDescriptions = [
+        '先秦纹饰与楚国工艺展区',
+        '东湖古建筑与摩崖题刻',
+        '诗词与题记里的城市印记'
+      ];
 
       container.innerHTML = `
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="bg-sandGold/20 text-deepTeal text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(route.city)}</span>
-              <span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(route.badge)}</span>
-              <span class="bg-stone-100 text-stone-500 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(distanceLabel)}</span>
-            </div>
-            <h5 class="cultural-font font-bold text-stone-800 text-sm mt-2">${escapeHtml(route.title)}</h5>
-            <p class="text-[10px] text-stone-500 mt-1 leading-relaxed">${escapeHtml(route.desc)}</p>
-          </div>
-          <span class="shrink-0 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">${escapeHtml(route.duration)}</span>
+        <div class="community-route-heading">
+          <h4 class="cultural-font">今日推荐路线</h4>
+          <span id="activity-progress" class="community-progress">${communityRouteProgress}/3 已点亮</span>
         </div>
+        <p class="community-route-location"><i data-lucide="map-pin" aria-hidden="true"></i>${escapeHtml(route.city)} · ${escapeHtml(route.duration)}</p>
 
-        <div class="mt-3 grid grid-cols-3 gap-2 text-[10px]">
+        <div class="community-route-trace" aria-label="今日推荐路线的三个打卡点">
           ${route.steps.map((step, index) => `
-            <button type="button" onclick="handleCommunityRouteStep(${index})" class="bg-stone-50 border border-stone-200 rounded-lg p-2 text-left hover:border-sandGold transition-colors">
-              <p class="font-bold ${step.action === 'collect' ? 'text-deepTeal' : 'text-stone-800'}">${index + 1}. ${escapeHtml(step.title)}</p>
-              <p class="text-[9px] text-stone-500 mt-0.5">${escapeHtml(step.desc)}</p>
+            <button type="button" onclick="handleCommunityRouteStep(${index})" class="community-route-stop" aria-label="第${index + 1}站：${escapeHtml(step.title)}">
+              <span class="community-route-marker">${index + 1}</span>
+              <img class="community-route-landmark" src="${routeLandmarks[index] || routeLandmarks[0]}" alt="" aria-hidden="true">
+              <strong>${escapeHtml(step.title)}</strong>
+              <small>${escapeHtml(routeStepDescriptions[index] || step.desc)}</small>
             </button>
           `).join('')}
         </div>
 
-        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <button type="button" onclick="openActivityRouteGraphModal()" class="flex w-full items-center justify-center rounded-xl border border-deepTeal bg-white px-3 py-2 text-xs font-black text-deepTeal">
-            <i data-lucide="list-ordered" class="mr-1.5 h-3.5 w-3.5"></i> 游览引导
-          </button>
-          <button type="button" onclick="openActivityRoutesOnMap('${escapeJsString(route.id)}')" class="flex w-full items-center justify-center rounded-xl bg-deepTeal px-3 py-2 text-xs font-black text-sandGold">
-            <i data-lucide="route" class="mr-1.5 h-3.5 w-3.5"></i> 站点地图
-          </button>
-          <button type="button" onclick="window.openCloudDiscussion('activity', '${escapeJsString(route.id)}', '${escapeJsString(route.title)}')" class="flex w-full items-center justify-center rounded-xl border border-sandGold/50 bg-sandGold/10 px-3 py-2 text-xs font-black text-deepTeal">
-            <i data-lucide="messages-square" class="mr-1.5 h-3.5 w-3.5"></i> 路线讨论
-          </button>
-        </div>
-
-        <div class="mt-3 rounded-xl border border-sandGold/25 bg-sandGold/5 p-3">
-          <div class="flex items-center justify-between">
-            <h5 class="text-xs font-bold text-stone-700 flex items-center">
-              <i data-lucide="map-pinned" class="w-3.5 h-3.5 mr-1 text-deepTeal"></i> 路线周边
-            </h5>
-            <span class="text-[9px] text-stone-400">城市站评分优先</span>
+        <button id="community-route-services-toggle" type="button" class="community-route-services-toggle" aria-expanded="false" aria-controls="community-route-services" onclick="toggleCommunityRouteServices()">
+          <span><i data-lucide="package-open" aria-hidden="true"></i>路线周边</span>
+          <i data-lucide="chevron-down" aria-hidden="true"></i>
+        </button>
+        <div id="community-route-services" class="community-route-services" hidden>
+          <div class="community-route-actions">
+            <button type="button" onclick="openActivityRouteGraphModal()" class="community-route-action">
+              <i data-lucide="list-ordered" aria-hidden="true"></i><span>游览引导</span>
+            </button>
+            <button type="button" onclick="openActivityRoutesOnMap('${escapeJsString(route.id)}')" class="community-route-action community-route-action--primary">
+              <i data-lucide="route" aria-hidden="true"></i><span>站点地图</span>
+            </button>
+            <button type="button" onclick="window.openCloudDiscussion('activity', '${escapeJsString(route.id)}', '${escapeJsString(route.title)}')" class="community-route-action">
+              <i data-lucide="messages-square" aria-hidden="true"></i><span>路线讨论</span>
+            </button>
           </div>
-          <div class="mt-2 grid grid-cols-2 gap-2">
-            ${renderRouteServicePanel('food', route.services.food, 'utensils')}
-            ${renderRouteServicePanel('hotel', route.services.hotel, 'bed')}
-          </div>
+          ${renderRouteServicePanel('food', route.services.food, 'utensils')}
+          ${renderRouteServicePanel('hotel', route.services.hotel, 'bed')}
         </div>
       `;
       lucide.createIcons();
     }
 
+    function toggleCommunityRouteServices(forceExpanded) {
+      const toggle = document.getElementById('community-route-services-toggle');
+      const services = document.getElementById('community-route-services');
+      if (!toggle || !services) return;
+
+      const expanded = typeof forceExpanded === 'boolean'
+        ? forceExpanded
+        : toggle.getAttribute('aria-expanded') !== 'true';
+      toggle.setAttribute('aria-expanded', String(expanded));
+      services.hidden = !expanded;
+    }
+
     function renderRouteServicePanel(type, service, icon) {
       return `
-        <div class="rounded-lg border border-stone-200 bg-white p-2">
-          <div class="flex items-start gap-2">
-            <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-deepTeal text-sandGold">
-              <i data-lucide="${icon}" class="h-3.5 w-3.5"></i>
+        <section class="community-service-panel">
+          <div class="community-service-heading">
+            <div class="community-service-icon" aria-hidden="true">
+              <i data-lucide="${icon}"></i>
             </div>
-            <div class="min-w-0">
-              <p class="text-[11px] font-bold text-stone-800">${escapeHtml(service.title)}</p>
-              <p class="mt-0.5 text-[9px] leading-snug text-stone-500">${escapeHtml(service.desc)}</p>
+            <div class="community-service-copy">
+              <span class="community-service-type">${type === 'food' ? '沿途风物' : '歇脚去处'}</span>
+              <h6>${escapeHtml(service.title)}</h6>
+              <p>${escapeHtml(service.desc)}</p>
             </div>
           </div>
-          <div class="mt-2 grid grid-cols-2 gap-1.5">
-            <button type="button" onclick="openRouteService('${type}', 'dianping')" class="rounded-md border border-stone-200 bg-stone-50 px-1.5 py-1 text-[9px] font-bold text-deepTeal">
-              点评好评
-            </button>
-            <button type="button" onclick="openRouteService('${type}', 'meituan')" class="rounded-md bg-deepTeal px-1.5 py-1 text-[9px] font-bold text-sandGold">
-              美团好评
-            </button>
+          <div class="community-service-actions">
+            <button type="button" onclick="openRouteService('${type}', 'dianping')">大众点评 <span aria-hidden="true">↗</span></button>
+            <button type="button" onclick="openRouteService('${type}', 'meituan')">美团搜索 <span aria-hidden="true">↗</span></button>
           </div>
-        </div>
+        </section>
       `;
     }
 
@@ -6931,14 +10420,33 @@
       container.innerHTML = activeLearningModules.map((module) => {
         const isCompleted = Boolean(completed[module.id]);
         const rewardText = hasClaimedToday ? '今日已领' : `今日+${module.reward}积分`;
+        const artworkById = {
+          'pre-scope-permission': './static/assets/community-quiz-bronze-v2.webp',
+          'field-safety-boundary': './static/assets/community-landmark-hubei-museum-v2.webp',
+          'photo-evidence-package': './static/assets/community-landmark-yellow-crane-v2.webp',
+          'oral-history-audio': './static/assets/community-landmark-east-lake-v2.webp',
+          'location-metadata': './static/assets/community-landmark-east-lake-v2.webp',
+          'video-scan-route': './static/assets/community-landmark-yellow-crane-v2.webp',
+          'condition-description': './static/assets/community-quiz-bronze-v2.webp',
+          'upload-review': './static/assets/community-landmark-hubei-museum-v2.webp',
+          'light-shadow-check': './static/assets/community-landmark-east-lake-v2.webp',
+          'quick-note-naming': './static/assets/community-landmark-yellow-crane-v2.webp'
+        };
+        const artwork = artworkById[module.id] || './static/assets/community-quiz-bronze-v2.webp';
         return `
-          <button type="button" onclick="openLearningTip('${escapeJsString(module.id)}')" class="bg-white border ${isCompleted ? 'border-emerald-200' : 'border-stone-200'} rounded-xl p-3 shadow-sm text-left">
-            <div class="bg-deepTeal text-sandGold w-8 h-8 rounded-lg flex items-center justify-center mb-2">
-              <i data-lucide="${escapeHtml(module.icon)}" class="w-4 h-4"></i>
+          <button type="button" onclick="openLearningTip('${escapeJsString(module.id)}')" class="community-learning-card">
+            <div class="community-learning-icon" aria-hidden="true">
+              <img src="${artwork}" alt="">
             </div>
-            <h5 class="cultural-font font-bold text-xs text-stone-800">${escapeHtml(module.title)}</h5>
-            <p class="text-[10px] text-stone-400 mt-1">${escapeHtml(module.minutes)}分钟 · ${escapeHtml(rewardText)}</p>
-            ${isCompleted ? '<p class="mt-1 text-[9px] font-bold text-emerald-700">已学会</p>' : ''}
+            <div class="community-learning-copy">
+              <span class="community-learning-phase">${escapeHtml(module.phase)}</span>
+              <h5>${escapeHtml(module.title)}</h5>
+              <p>${escapeHtml(module.minutes)}分钟 · ${escapeHtml(rewardText)}</p>
+            </div>
+            <span class="community-learning-state ${isCompleted ? 'is-complete' : ''}">
+              <i data-lucide="${isCompleted ? 'circle-check-big' : 'arrow-right'}" aria-hidden="true"></i>
+              ${isCompleted ? '已学会' : '去学习'}
+            </span>
           </button>
         `;
       }).join('');
@@ -7546,9 +11054,9 @@
       const configs = {
         image: {
           accept: 'image/*',
-          icon: 'cloud-lightning',
-          title: '点击拍照或上传本地图片',
-          desc: '大小限20MB内，支持 JPG, PNG, WEBP, GIF',
+          icon: 'scan-line',
+          title: '拍摄或选择一份现场影像',
+          desc: '支持 JPG、PNG、WEBP、GIF，单份不超过 20MB',
           previewIcon: 'image',
           invalidTip: '请上传 JPG、PNG、WEBP 或 GIF 图片文件'
         },
@@ -7604,7 +11112,7 @@
       document.getElementById('preview-img').src = '';
       document.getElementById('preview-img').classList.remove('hidden');
       document.getElementById('preview-media-icon').classList.add('hidden');
-      document.getElementById('preview-file-name').innerText = '已选择本地图片';
+      document.getElementById('preview-file-name').innerText = '已选择现场影像';
       document.getElementById('upload-placeholder').classList.remove('hidden');
       document.getElementById('upload-preview').classList.add('hidden');
     }
@@ -7645,7 +11153,7 @@
           previewMediaIcon.classList.remove('hidden');
           previewMediaIcon.querySelector('i').setAttribute('data-lucide', config.previewIcon);
         }
-        document.getElementById('preview-file-name').innerText = `已选：${file.name}`;
+        document.getElementById('preview-file-name').innerText = '已选择现场素材';
         lucide.createIcons();
       }
       if (mediaType === 'image') {
@@ -7696,7 +11204,7 @@
         const previewMediaIcon = document.getElementById('preview-media-icon');
         previewMediaIcon.classList.remove('hidden');
         previewMediaIcon.querySelector('i').setAttribute('data-lucide', 'file-audio');
-        document.getElementById('preview-file-name').innerText = `已录制：${selectedUploadFile.name}`;
+        document.getElementById('preview-file-name').innerText = '已完成一段现场口述';
       }
 
       document.getElementById('audio-summary-text').innerText = generateAudioSummary(audioRecordSeconds);
@@ -8372,31 +11880,30 @@
     function selectType(el) {
       const labels = el.parentNode.querySelectorAll('label');
       labels.forEach(l => {
-        l.className = "border-2 border-stone-200 bg-white rounded-xl p-3 text-center cursor-pointer block";
-        const icon = l.querySelector('i');
-        if (icon) {
-          icon.className = "w-6 h-6 mx-auto text-stone-400";
-        }
-        const text = l.querySelector('span');
-        if (text) {
-          text.className = "text-xs font-medium text-stone-500 block mt-1";
-        }
+        l.classList.remove('is-selected');
       });
-      el.className = "border-2 border-sandGold bg-sandGold/5 rounded-xl p-3 text-center cursor-pointer block";
-      const activeIcon = el.querySelector('i');
-      if (activeIcon) {
-        activeIcon.className = "w-6 h-6 mx-auto text-deepTeal";
-      }
-      const activeText = el.querySelector('span');
-      if (activeText) {
-        activeText.className = "text-xs font-bold text-stone-800 block mt-1";
-      }
+      el.classList.add('is-selected');
       const radio = el.querySelector('input[type="radio"]');
       if (radio) {
         radio.checked = true;
         updateCollectMediaMode(radio.value);
       }
     }
+
+    function keepCollectSubmitCopy() {
+      const button = document.querySelector('#collect-form button[type="submit"]');
+      if (!button) return;
+      const applyCopy = () => {
+        const label = button.querySelector('span');
+        if (label && label.textContent.trim() === '上传并提交审核') {
+          label.textContent = '收存这条采集记录';
+        }
+      };
+      applyCopy();
+      new MutationObserver(applyCopy).observe(button, { childList: true, subtree: true, characterData: true });
+    }
+
+    keepCollectSubmitCopy();
   </script>
   <script src="https://static.cloudbase.net/cloudbase-js-sdk/2.28.6/cloudbase.full.js"></script>
   <script src="./static/cloudbase-app.js"></script>

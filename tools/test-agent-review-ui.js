@@ -49,7 +49,8 @@ async function main() {
         if (request.action === 'saveAgentGapDraft' || request.action === 'publishAgentGapDraft') return { ok:true, task:{...request, draftVersion:1, status:request.action === 'saveAgentGapDraft' ? 'draft':'published'} };
         return { ok:true, results:request.items.map(item=>({ok:true,candidateId:item.candidateId,status:'approved'})) };
       };
-      loginPanel.classList.add('hidden'); adminPanel.classList.remove('hidden');
+      loginPanel.classList.add('hidden'); loginPanel.style.display = 'none';
+      adminPanel.classList.remove('hidden');
       identity.textContent = '管理员 · 本地演示数据';
     }, seed);
     await page.waitForFunction(() => getComputedStyle(document.getElementById('login-panel')).display === 'none');

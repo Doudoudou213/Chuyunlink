@@ -1,7 +1,8 @@
 param(
   [switch]$StaticOnly,
   [switch]$FunctionsOnly,
-  [switch]$FullFunctionDeploy
+  [switch]$FullFunctionDeploy,
+  [switch]$ThemeOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -145,19 +146,21 @@ try {
       Invoke-CloudBaseCli -CliArguments @('fn', 'code', 'update', 'adminSubmissions', '-e', $environmentId, '--deployMode', 'zip', '--yes')
     }
 
-    if (Test-CloudBaseFunctionExists -FunctionName 'storyWorker') {
-      Write-Host 'Updating storyWorker code while preserving its API key and cloud configuration...'
-      Invoke-CloudBaseCli -CliArguments @('fn', 'code', 'update', 'storyWorker', '-e', $environmentId, '--deployMode', 'zip', '--yes')
-    } else {
-      Write-Warning 'storyWorker is not initialized yet. Existing deployment continues without it.'
-    }
+    if (-not $ThemeOnly) {
+      if (Test-CloudBaseFunctionExists -FunctionName 'storyWorker') {
+        Write-Host 'Updating storyWorker code while preserving its API key and cloud configuration...'
+        Invoke-CloudBaseCli -CliArguments @('fn', 'code', 'update', 'storyWorker', '-e', $environmentId, '--deployMode', 'zip', '--yes')
+      } else {
+        Write-Warning 'storyWorker is not initialized yet. Existing deployment continues without it.'
+      }
 
-    if (Test-CloudBaseFunctionExists -FunctionName 'materialWorker') {
-      Write-Host 'Updating materialWorker code while preserving cloud configuration...'
-      Invoke-CloudBaseCli -CliArguments @('fn', 'code', 'update', 'materialWorker', '-e', $environmentId, '--deployMode', 'zip', '--yes')
-    } else {
-      Write-Host 'Creating materialWorker with its safe mock-only configuration...'
-      Invoke-CloudBaseCli -CliArguments @('fn', 'deploy', 'materialWorker', '-e', $environmentId, '--deployMode', 'zip', '--force')
+      if (Test-CloudBaseFunctionExists -FunctionName 'materialWorker') {
+        Write-Host 'Updating materialWorker code while preserving cloud configuration...'
+        Invoke-CloudBaseCli -CliArguments @('fn', 'code', 'update', 'materialWorker', '-e', $environmentId, '--deployMode', 'zip', '--yes')
+      } else {
+        Write-Host 'Creating materialWorker with its safe mock-only configuration...'
+        Invoke-CloudBaseCli -CliArguments @('fn', 'deploy', 'materialWorker', '-e', $environmentId, '--deployMode', 'zip', '--force')
+      }
     }
   }
 
@@ -188,6 +191,7 @@ try {
       )
       Copy-Item -LiteralPath $hostingRootFiles -Destination $hostingDirectory
       Copy-Item -LiteralPath $hostingStaticFiles -Destination $hostingStaticDirectory
+      Copy-Item -LiteralPath (Join-Path $staticDirectory 'assets') -Destination $hostingStaticDirectory -Recurse
 
       Write-Host 'Deploying static hosting...'
       Invoke-CloudBaseCli -CliArguments @('hosting', 'deploy', $hostingDirectory, '-e', $environmentId, '--concurrency', '2', '--retry-count', '3')
