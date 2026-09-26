@@ -1349,7 +1349,7 @@ exports.main = async (event = {}) => {
     }
 
     await ensureInteractionCollections();
-    if (['previewGuideGeneration','getGuideWorkspace','getGuideFragmentDraft','saveGuideFragment','publishGuideFragment','archiveGuideFragment','saveGuideVisitInfo'].includes(action)) return await require('./domains/guide-fragments').createGuideFragmentService({db}).handle(event,callerUid);
+    if (['rejectGuideFragment','previewGuideGeneration','getGuideWorkspace','getGuideFragmentDraft','saveGuideFragment','publishGuideFragment','archiveGuideFragment','saveGuideVisitInfo'].includes(action)) return await require('./domains/guide-fragments').createGuideFragmentService({db}).handle(event,callerUid);
     if (action === 'getAgentReviewWorkspace') return await storyAgentReviewService.workspace(event);
     if (action === 'reviewAgentCandidates') return await storyAgentReviewService.review(event, callerUid);
     if (action === 'saveAgentGapDraft') return await storyAgentGapService.save(event, callerUid);

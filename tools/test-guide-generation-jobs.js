@@ -16,4 +16,4 @@ async function main(){
  let release;const wait=new Promise(r=>release=r),concurrent=fakeDb(fixture());const concurrentService=createGuideGenerationService({db:concurrent,config,client:{generate:async(i,h)=>{await h.beforeAttempt();await wait;return {output:output()};}}});const pending=concurrentService.generate(selection,'a');await new Promise(r=>setTimeout(r,15));await assert.rejects(concurrentService.generate(selection,'a'),{code:'GUIDE_BUSY'});release();await pending;
  console.log('Guide jobs passed: disabled, cache, before-call/save/retry withdrawal, invalid refs, budget, mock, concurrency.');
 }
-main().catch(e=>{console.error(e);process.exit(1)});module.exports={output,config};
+if(require.main===module)main().catch(e=>{console.error(e);process.exit(1)});module.exports={output,config};
