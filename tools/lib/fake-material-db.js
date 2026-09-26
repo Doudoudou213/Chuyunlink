@@ -6,6 +6,7 @@ function fakeDb(seed) {
     let filter = {}, offset = 0, limit = 100;
     const query = {
       doc(key) { return {
+        async remove() { delete data[name][key]; },
         async get() { return { data: data[name][key] ? [{ ...data[name][key], _id: key }] : [] }; },
         async set(record) { if (name === failCollection) throw new Error('injected failure'); data[name][key] = structuredClone(record); },
         async update(record) { if (name === failCollection) throw new Error('injected failure'); data[name][key] = { ...data[name][key], ...structuredClone(record) }; }
