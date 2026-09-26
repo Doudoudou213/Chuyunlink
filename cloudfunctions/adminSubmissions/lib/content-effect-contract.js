@@ -1,6 +1,6 @@
 'use strict';
 const crypto=require('node:crypto');
-const EVENTS=Object.freeze({story:['source_open','explore','contribute_start'],theme:['source_open','explore','contribute_start'],guide:['source_open','read_mark','bookmark','contribute_start'],route:['replan','reorder','skip','arrive','end_early','complete','contribute_start']});
+const EVENTS=Object.freeze({story:['source_open','explore','contribute_start'],theme:['source_open','explore','contribute_start'],guide:['explore','source_open','read_mark','bookmark','contribute_start'],route:['explore','source_open','replan','reorder','skip','arrive','end_early','complete','contribute_start']});
 const hash=x=>crypto.createHash('sha256').update(String(x)).digest('hex');
 const first=r=>Array.isArray(r?.data)?r.data[0]:r?.data;
 const read=async(db,c,id)=>first(await db.collection(c).doc(id).get());

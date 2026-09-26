@@ -3097,6 +3097,7 @@ feedback_closed: '反馈处理',
         fileID: uploadedFileID,
         cloudPath
       });
+      window.ContentEffects?.clear();
       await loadCloudSupplements(context.item);
       if (typeof showToast === 'function') showToast('补充资料已提交，管理员通过后发放积分', 'clock');
     } catch (error) {

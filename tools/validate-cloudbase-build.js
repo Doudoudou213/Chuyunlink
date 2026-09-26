@@ -147,6 +147,15 @@ const javascriptFiles = [
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const guideFiles = [
+  "static/content-effects.js",
+  "static/admin-content-effects.js",
+  "static/admin-content-effects.css",
+  "cloudfunctions/appCore/domains/content-effects.js",
+  "cloudfunctions/adminSubmissions/domains/content-effects.js",
+  "cloudfunctions/appCore/lib/content-effect-contract.js",
+  "cloudfunctions/adminSubmissions/lib/content-effect-contract.js",
+  "cloudfunctions/appCore/lib/content-effect-store.js",
+  "cloudfunctions/adminSubmissions/lib/content-effect-store.js",
   "cloudfunctions/storyWorker/lib/guide-evidence.js",
   "cloudfunctions/storyWorker/lib/guide-generation-evidence.js",
   "cloudfunctions/adminSubmissions/lib/guide-generation-evidence.js",
@@ -183,6 +192,7 @@ for (const file of ["visit-engine.js","visit-route.js"]) { if (fs.readFileSync(p
 if (fs.readFileSync(path.join(projectRoot,"cloudfunctions/appCore/lib/guide-evidence.js"),"utf8") !== fs.readFileSync(path.join(projectRoot,"cloudfunctions/adminSubmissions/lib/guide-evidence.js"),"utf8")) throw Error("讲解来源检查副本不同步");
 for (const file of guideFiles.filter(f=>f.startsWith("static/")||f==="guide.html")) { if (!fs.readFileSync(path.join(projectRoot,"tools/deploy-cloudbase.ps1"),"utf8").includes("'"+path.basename(file)+"'")) throw Error("发布文件清单缺少："+file); }
 for (const name of ['guide-generation-evidence.js','guide-contract.js','guide-evidence.js']) {if(fs.readFileSync(path.join(projectRoot,'cloudfunctions/storyWorker/lib',name),'utf8')!==fs.readFileSync(path.join(projectRoot,'cloudfunctions/adminSubmissions/lib',name),'utf8'))throw Error('讲解智能体共享副本不同步：'+name);}
+for(const name of ['content-effect-contract.js','content-effect-store.js']){if(fs.readFileSync(path.join(projectRoot,'cloudfunctions/appCore/lib',name),'utf8')!==fs.readFileSync(path.join(projectRoot,'cloudfunctions/adminSubmissions/lib',name),'utf8'))throw Error('内容效果规则副本不同步：'+name);}
 const forbiddenPatterns = [
   { label: 'localhost', pattern: /\blocalhost\b/i },
   { label: '127.0.0.1', pattern: /\b127\.0\.0\.1\b/ },

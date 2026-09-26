@@ -27,7 +27,9 @@
     "test:miniprogram": "node tools/test-miniprogram-scaffold.js",
     "deploy:cloudbase": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/deploy-cloudbase.ps1",
     "test:guide": "node tools/test-cultural-guide-all.js",
-    "test:guide:browser": "node tools/test-cultural-guide-all.js --browser"
+    "test:guide:browser": "node tools/test-cultural-guide-all.js --browser",
+    "test:effects": "node tools/test-content-effects-all.js",
+    "test:effects:browser": "node tools/test-content-effects-all.js --browser"
   },
   "dependencies": {
     "cors": "^2.8.6",

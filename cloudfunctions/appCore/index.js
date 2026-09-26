@@ -2015,7 +2015,7 @@ exports.main = async (event = {}) => {
       requireStableAccount(userInfo);
       return await require('./domains/visit-sessions').createVisitSessionService({db,routePlanner:planRoute}).handle(uid,event);
     }
-    if (['beginContentEffect','recordContentEffect'].includes(action)) return await require('./domains/content-effects').createContentEffects({db}).handle(event);
+    if (['beginContentEffect','recordContentEffect'].includes(action)) return await require('./domains/content-effects').createContentEffects({db}).handle(event,uid);
     if (action === 'bootstrap') return await bootstrap(uid, userInfo);
     if (['recordVisitActivity','getVisitRecord'].includes(action)) { requireStableAccount(userInfo); const service=require('./domains/visit-records').createVisitRecordService({db}); return await service[action==='recordVisitActivity'?'activity':'summary'](uid,event); }
     if (action === 'getGuideContributionContext') return await require('./domains/visit-records').createVisitRecordService({db}).context(uid,event);
