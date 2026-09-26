@@ -3164,7 +3164,9 @@ feedback_closed: '反馈处理',
       if (typeof showToast === 'function') showToast('素材大小必须在 25MB 以内', 'alert-circle');
       return;
     }
-    if (!currentLocation || !currentLocation.isReal) {
+    const stationLocation = window.GuideContribution?.stationLocation();
+    const submissionLocation = stationLocation || currentLocation;
+    if (!stationLocation && (!currentLocation || !currentLocation.isReal)) {
       if (typeof showToast === 'function') showToast('请先点击定位按钮取得真实 GPS', 'map-pin');
       return;
     }
@@ -3198,9 +3200,10 @@ feedback_closed: '反馈处理',
         assetType: typeof getSelectedAssetType === 'function' ? getSelectedAssetType() : 'image',
         mimeType: selectedUploadFile.type || '',
         size: selectedUploadFile.size,
-        longitude: currentLocation.longitude,
-        latitude: currentLocation.latitude,
-        locationAccuracy: currentLocation.accuracy,
+        longitude: submissionLocation.longitude,
+        latitude: submissionLocation.latitude,
+        locationAccuracy: stationLocation ? null : submissionLocation.accuracy,
+        ...(window.GuideContribution?.fields() || {}),
         regionName: '湖北',
         aiAnalysisConsent: document.getElementById('collect-ai-consent')?.checked === true,
         materialResearchConsent: document.getElementById('collect-material-research-consent')?.checked === true,
@@ -3208,6 +3211,7 @@ feedback_closed: '反馈处理',
         materialAnalysisConsent: document.getElementById('collect-material-consent')?.checked === true,
         gapTaskId: activeStoryGapTask && activeStoryGapTask.id || ''
       });
+      window.GuideContribution?.clear();
       const aiTask = await enqueueCloudAiReview(result.submission.id);
 
       if (typeof showToast === 'function') {
@@ -3349,6 +3353,7 @@ feedback_closed: '反馈处理',
     if (reportCancel) reportCancel.addEventListener('click', closeCloudReportModal);
     await refreshCloudProfile();
     await loadUnifiedResources();
+    await window.GuideContribution?.prepare(callCore);
     await loadCloudPublicFeed();
     scheduleCloudPublicFeedRefresh();
   });

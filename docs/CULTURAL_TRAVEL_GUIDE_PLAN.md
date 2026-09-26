@@ -91,3 +91,7 @@
 ### 阶段 4
 已增加安静/简短/深入阅读、已审核观察提示与位置不确定说明；手动到达/完成/纠正状态保留，防止同时到达多站。语音接口每次重核来源，默认返回尚未接入，未合成或播放真实音频。
 测试：test-guide-evidence、test-visit-sessions、validate-cloudbase-build、test-cultural-guide-ui（观察提示、安静模式、语音未接入提示与三屏宽）通过。定位未接入，保持手动确认。阶段 3 checkpoint：fa093dd。
+
+### 阶段 5
+已实现仅自己可见的到访总结、主动标记已读、故事/来源/专题收藏和撤回后的隐藏；账号行程可以关联本次投稿，读取按当前状态处理。本机行程不自动并入账号历史。站点入口复用原采集表单，并提供明确勾选的站点参考位置，不伪装 GPS。沿用审核、采用、匿名署名和通知，不新增积分发放。
+测试：test-visit-records、test-visit-sessions、test-story-theme-contributions、validate-cloudbase-build、test-cultural-guide-ui、test-guide-contribution-ui 通过。真实上传/审核/通知与跨设备保存未测。阶段 4 checkpoint：6dedee7。

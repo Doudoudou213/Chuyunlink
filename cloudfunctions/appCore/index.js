@@ -1913,9 +1913,12 @@ async function createSubmission(uid, userInfo, event) {
     };
   }
 
-  const longitude = Number(event.longitude);
-  const latitude = Number(event.latitude);
-  const locationAccuracy = Number(event.locationAccuracy);
+  const visitContext = event.visitResourceId ? await require('./domains/visit-records').createVisitRecordService({db}).context(uid,{resourceId:event.visitResourceId,sessionId:event.visitSessionId}) : null;
+  const useStation = !!visitContext && event.useStationLocation === true;
+  if(useStation && !visitContext.location) throw new Error('本站缺少可引用地点，请手动定位');
+  const longitude = useStation ? visitContext.location.longitude : Number(event.longitude);
+  const latitude = useStation ? visitContext.location.latitude : Number(event.latitude);
+  const locationAccuracy = useStation ? NaN : Number(event.locationAccuracy);
   if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
     const error = new Error('请先取得有效定位');
     error.code = 'LOCATION_REQUIRED';
@@ -1969,6 +1972,7 @@ async function createSubmission(uid, userInfo, event) {
     supplementCount: 0,
     approvedSupplements: [],
     ...(gapTaskContext || {}),
+    ...(visitContext ? {visitSessionId:visitContext.sessionId,visitResourceId:visitContext.resourceId,locationSource:useStation?'station_reference':'user_location'} : {}),
     source: 'cloudbase_formal_web',
     createdAt: db.serverDate(),
     updatedAt: db.serverDate()
@@ -2007,6 +2011,8 @@ exports.main = async (event = {}) => {
       return await require('./domains/visit-sessions').createVisitSessionService({db,routePlanner:planRoute}).handle(uid,event);
     }
     if (action === 'bootstrap') return await bootstrap(uid, userInfo);
+    if (['recordVisitActivity','getVisitRecord'].includes(action)) { requireStableAccount(userInfo); const service=require('./domains/visit-records').createVisitRecordService({db}); return await service[action==='recordVisitActivity'?'activity':'summary'](uid,event); }
+    if (action === 'getGuideContributionContext') return await require('./domains/visit-records').createVisitRecordService({db}).context(uid,event);
     if (action === 'getGuideRoute') return await require('./domains/guide-route').createGuideRouteService({db}).get(event);
     if (action === 'getGuideAudio') return await require('./domains/cultural-guide').createCulturalGuideService({db}).audio(event);
     if (action === 'getGuideStation') return await require('./domains/cultural-guide').createCulturalGuideService({db}).station(event);
