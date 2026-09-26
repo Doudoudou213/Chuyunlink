@@ -87,3 +87,7 @@
 ### 阶段 3
 已接通有效专题开场、专题选择和相邻站点关系。仅复用当前可公开专题；保留关系原方向，同主题无关系时明确为比较，不宣称传承。来源失效即停止串联展示。
 测试：test-guide-route、test-story-themes、validate-cloudbase-build、test-cultural-guide-ui（新增专题展开操作）全部通过。未调用模型。阶段 2 checkpoint：3dfe784。
+
+### 阶段 4
+已增加安静/简短/深入阅读、已审核观察提示与位置不确定说明；手动到达/完成/纠正状态保留，防止同时到达多站。语音接口每次重核来源，默认返回尚未接入，未合成或播放真实音频。
+测试：test-guide-evidence、test-visit-sessions、validate-cloudbase-build、test-cultural-guide-ui（观察提示、安静模式、语音未接入提示与三屏宽）通过。定位未接入，保持手动确认。阶段 3 checkpoint：fa093dd。
