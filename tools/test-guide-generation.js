@@ -1,0 +1,6 @@
+'use strict';
+const assert=require('node:assert/strict');const {fakeDb}=require('./lib/fake-material-db');const {seed}=require('./test-guide-evidence');const {prepareGuideInput}=require('../cloudfunctions/storyWorker/lib/guide-generation-evidence');
+function fixture(){const data=seed();Object.assign(data.submissions.s,{aiAnalysisConsent:true,aiConsentVersion:'ai-analysis-consent-v1',aiConsentScope:'approved_public_submission_text'});return data;}
+const selection={storyId:'story',claimIds:['c'],interest:'通用'};
+async function main(){const db=fakeDb(fixture());const input=await prepareGuideInput(db,selection);assert.equal(input.claims.length,1);assert(!JSON.stringify(input).includes('private-user'));assert(!JSON.stringify(input).includes('fileID'));for(const change of [{aiAnalysisConsent:false},{aiConsentVersion:'old'},{aiConsentScope:'other'},{status:'pending'},{withdrawnAt:'now'},{disabledAt:'now'},{sourceUnavailable:true}]){const data=fixture();Object.assign(data.submissions.s,change);await assert.rejects(prepareGuideInput(fakeDb(data),selection));}await assert.rejects(prepareGuideInput(db,{...selection,claimIds:['missing']}));console.log('Guide generation evidence: consent, scope, withdrawal, invalid claims and minimal input passed.');}
+if(require.main===module)main().catch(e=>{console.error(e);process.exit(1)});module.exports={fixture,selection};
