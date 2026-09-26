@@ -68,6 +68,35 @@ async function main() {
   assert.equal(impact.themeCount, 1);
   assert.equal(impact.totalRewardPoints, 50, '旧征集任务奖励保持不变');
   assert.equal(impact.items.find(item => item.type === 'theme_adoption').currentlyPublic, true);
+  await assert.rejects(contributions.retract({ themeId: saved.themeId,
+    contributionId: adopted.contributionId, reason: '误' }, 'admin_1'),
+  { code: 'RETRACTION_REASON_REQUIRED' });
+  await assert.rejects(contributions.retract({ themeId: 'another_theme',
+    contributionId: adopted.contributionId, reason: '误点了采用按钮' }, 'admin_1'),
+  { code: 'CONTRIBUTION_NOT_FOUND' });
+  const retracted = await contributions.retract({ themeId: saved.themeId,
+    contributionId: adopted.contributionId, reason: '误点了采用按钮' }, 'admin_1');
+  assert.equal(retracted.cached, false);
+  assert.equal((await contributions.retract({ themeId: saved.themeId,
+    contributionId: adopted.contributionId, reason: '误点了采用按钮' }, 'admin_1')).cached, true);
+  assert.equal(db.data.story_contributions.get(adopted.contributionId).status, 'retracted');
+  assert.equal(db.data.story_contributions.get(adopted.contributionId).correctionHistory.length, 1);
+  assert.equal(db.data.interaction_notifications.size, 2, '纠正只通知投稿者一次');
+  assert.equal((await contributions.workspace({ themeId: saved.themeId })).chapters[0].sources[0].retracted, true);
+  assert.deepEqual((await publicThemes.get({ themeId: saved.themeId })).theme.chapters[0].adoptedSourceLinkIds, [],
+    '纠正后公开专题停止显示正式采用');
+  const correctedImpact = await getImpact('user_hb');
+  assert.equal(correctedImpact.adoptedCount, 1, '撤销后不再计入正式采用');
+  assert.equal(correctedImpact.items.find(item => item.type === 'theme_adoption').status, 'retracted',
+    '投稿者仍可看到历史纠正记录');
+  assert.equal(correctedImpact.items.find(item => item.type === 'theme_adoption').currentlyPublic, false);
+  assert.equal((await contributions.adopt(request, 'admin_1')).cached, false, '纠正后可重新确认');
+  assert.equal(db.data.story_contributions.get(adopted.contributionId).adoptionCount, 2);
+  assert.equal(db.data.story_contributions.get(adopted.contributionId).correctionHistory.length, 1);
+  assert.equal(db.data.interaction_notifications.size, 3);
+  assert.deepEqual((await publicThemes.get({ themeId: saved.themeId })).theme.chapters[0].adoptedSourceLinkIds,
+    ['l_hb'], '重新确认后恢复采用标记');
+  assert.equal(db.data.point_ledger.size, 1, '纠正与重新确认均不发积分');
   const edited = await themes.save({ ...draft(), themeId: saved.themeId,
     expectedRevision: 1 }, 'admin_1');
   await themes.publish({ themeId: saved.themeId, expectedRevision: edited.revision,
@@ -97,7 +126,7 @@ async function main() {
   assert.equal((await publicThemes.get({ themeId: saved.themeId })).ok, false,
     '来源撤回时公开专题继续隐藏');
   assert.ok(db.data.story_contributions.has(adopted.contributionId), '撤回后保留采用审计');
-  console.log('Theme adoption, idempotency, version history, withdrawal and no double rewards passed.');
+  console.log('Theme adoption, correction, idempotency, version history, withdrawal and no double rewards passed.');
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });

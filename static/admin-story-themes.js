@@ -187,10 +187,14 @@
           ${!adoptionWorkspace.available ? '<p class="mt-2 text-xs text-amber-700">专题来源待复核，暂不能确认采用。</p>' : ''}
           <div class="mt-3 grid gap-3">${adoptionWorkspace.chapters.map(chapter => `<div class="rounded-xl border border-stone-200 p-3">
             <h4 class="text-xs font-bold text-stone-800">第 ${chapter.number} 章 · ${esc(chapter.title)}</h4>
-            <div class="mt-2 grid gap-2">${chapter.sources.map(source => `<div data-theme-adoption-source data-chapter-id="${esc(chapter.id)}" data-source-link-id="${esc(source.sourceLinkId)}" class="rounded-lg border border-stone-100 bg-[#fffaf1] p-3 text-xs">
+            <div class="mt-2 grid gap-2">${chapter.sources.map(source => `<div data-theme-adoption-source data-chapter-id="${esc(chapter.id)}" data-source-link-id="${esc(source.sourceLinkId)}" data-contribution-id="${esc(source.contributionId)}" class="rounded-lg border border-stone-100 bg-[#fffaf1] p-3 text-xs">
               <p class="font-bold text-stone-800">${esc(source.title)}</p><p class="mt-1 text-stone-500">${esc(source.summary)}</p>
-              ${source.adopted ? '<p class="mt-2 font-bold text-emerald-700">已正式采用</p>' : `<div class="mt-2 flex flex-wrap items-start gap-2">
-                <button type="button" data-theme-adopt class="${secondary}" ${adoptionWorkspace.available ? '' : 'disabled'}>正式采用</button>
+              ${source.adopted ? `<p class="mt-2 font-bold text-emerald-700">已正式采用</p>
+                <details class="mt-1 text-stone-600"><summary class="flex min-h-11 cursor-pointer items-center text-[11px]">纠正这条采用记录</summary>
+                  <div class="mt-1 flex flex-wrap gap-2"><input data-adoption-retract-reason class="${ui}" maxlength="180" placeholder="填写纠正原因（至少 4 字）" aria-label="纠正采用原因">
+                  <button type="button" data-theme-retract class="${secondary}">撤销正式采用</button></div></details>` : `<div class="mt-2 flex flex-wrap items-start gap-2">
+                ${source.retracted ? '<p class="w-full text-amber-700">采用已撤销，记录仍保留。</p>' : ''}
+                <button type="button" data-theme-adopt class="${secondary}" ${adoptionWorkspace.available ? '' : 'disabled'}>${source.retracted ? '重新确认采用' : '正式采用'}</button>
                 <details class="min-w-40 text-stone-600"><summary class="flex min-h-11 cursor-pointer items-center text-[11px]">贡献类型与缺口（可选）</summary>
                   <div class="mt-1 grid gap-2"><select data-adoption-type class="${ui}"><option value="source_support">资料佐证</option><option value="oral_history">口述记录</option><option value="visual_record">影像记录</option><option value="document_transcription">文献转录</option></select>
                   <label class="flex min-h-11 items-center gap-2"><input data-adoption-gap type="checkbox"> 解决资料缺口</label>
@@ -244,6 +248,18 @@
             themeVersion: adoptionWorkspace.version, chapterId: row.dataset.chapterId,
             sourceLinkId: row.dataset.sourceLinkId, contributionType, resolvesGap, gapNote });
           await load(themeId); notice('已记录正式采用，并通知投稿者。');
+        } catch (error) { target.disabled = false; throw error; }
+        return;
+      }
+      if (target.hasAttribute('data-theme-retract')) {
+        const row = target.closest('[data-theme-adoption-source]');
+        const reason = row.querySelector('[data-adoption-retract-reason]').value.trim();
+        if (reason.length < 4) return notice('请填写至少 4 字的纠正原因。', true);
+        target.disabled = true;
+        try {
+          await callAdmin({ action: 'retractStoryThemeContribution', themeId,
+            contributionId: row.dataset.contributionId, reason });
+          await load(themeId); notice('采用记录已更正，并通知投稿者。');
         } catch (error) { target.disabled = false; throw error; }
         return;
       }

@@ -1151,12 +1151,14 @@ async function listOwnFeedback(uid, limit = 10) {
 async function getContributionImpact(uid) {
   try {
     const result = await db.collection(STORY_CONTRIBUTION_COLLECTION).where({ userId: uid }).limit(100).get();
-    const contributions = (result.data || []).filter((item) => item.status === 'adopted');
-    const storyIds = new Set(contributions.filter(item => item.type !== 'theme_adoption')
+    const contributions = (result.data || []).filter((item) => item.status === 'adopted' ||
+      item.type === 'theme_adoption' && item.status === 'retracted');
+    const active = contributions.filter(item => item.status === 'adopted');
+    const storyIds = new Set(active.filter(item => item.type !== 'theme_adoption')
       .map(item => item.storyId).filter(Boolean));
-    const themeIds = new Set(contributions.filter(item => item.type === 'theme_adoption')
+    const themeIds = new Set(active.filter(item => item.type === 'theme_adoption')
       .map(item => item.themeId).filter(Boolean));
-    const totalRewardPoints = contributions.reduce((sum, item) => sum + Math.max(0, Number(item.rewardPointsAwarded) || 0), 0);
+    const totalRewardPoints = active.reduce((sum, item) => sum + Math.max(0, Number(item.rewardPointsAwarded) || 0), 0);
     const publicThemes = new Map();
     const recent = [...contributions].sort((left, right) =>
       (new Date(right.adoptedAt || 0).getTime() || 0) -
@@ -1170,7 +1172,7 @@ async function getContributionImpact(uid) {
       seen.add(key); return true;
     }).slice(0, 8).map(async (item) => {
       let currentlyPublic = false;
-      if (item.type === 'theme_adoption' && item.themeId) {
+      if (item.type === 'theme_adoption' && item.status === 'adopted' && item.themeId) {
         if (!publicThemes.has(item.themeId)) publicThemes.set(item.themeId,
           storyThemeService.get({ themeId: item.themeId }).catch(() => null));
         const current = await publicThemes.get(item.themeId);
@@ -1182,6 +1184,7 @@ async function getContributionImpact(uid) {
       return {
         id: item._id || item.id || '',
         type: item.type || 'gap_task_adoption',
+        status: item.status,
         submissionId: item.submissionId || '',
         taskTitle: cleanText(item.taskTitle, 48),
         storyId: cleanText(item.storyId, 128),
@@ -1202,8 +1205,10 @@ async function getContributionImpact(uid) {
         rewardAwardedAt: item.rewardAwardedAt || null
       };
     }));
-    return { adoptedCount: contributions.filter(item => item.type !== 'theme_adoption').length +
-      seen.size, storyCount: storyIds.size, themeCount: themeIds.size, totalRewardPoints, items };
+    const activeThemeCount = new Set(active.filter(item => item.type === 'theme_adoption')
+      .map(item => `${item.themeId}:${item.chapterId}:${item.submissionId}`)).size;
+    return { adoptedCount: active.filter(item => item.type !== 'theme_adoption').length + activeThemeCount,
+    storyCount: storyIds.size, themeCount: themeIds.size, totalRewardPoints, items };
   } catch (error) {
     const details = `${error && error.code || ''} ${error && error.message || ''}`;
     if (/collection.*not.*exist|DATABASE_COLLECTION_NOT_EXIST|ResourceNotFound/i.test(details)) {

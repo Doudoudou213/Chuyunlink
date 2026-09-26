@@ -2015,8 +2015,8 @@ feedback_closed: '反馈处理',
     points.textContent = `+${Number(impact.totalRewardPoints || 0)}`;
     recent.innerHTML = items.length
       ? `<details class="rounded-xl border border-[#b68a4a]/20 bg-white px-3 py-2"><summary class="cursor-pointer text-[10px] font-bold text-[#7d2b23]">查看最近采用记录</summary><div class="mt-2 space-y-2">${items.slice(0, 4).map((item) => `<article class="border-t border-stone-100 pt-2 first:border-0 first:pt-0">${item.type === 'theme_adoption' ? `
-          <p class="text-[10px] font-bold text-stone-700">你的材料被专题《${safeText(item.themeTitle || '文化专题')}》第 ${Number(item.chapterIndex) + 1} 章采用</p>
-          <p class="mt-0.5 text-[9px] text-stone-400">${item.currentlyPublic ? '当前专题可查看' : '历史采用记录 · 当前公开状态已变化'} · 不重复发放积分</p>` : `
+          <p class="text-[10px] font-bold text-stone-700">你的材料${item.status === 'retracted' ? '曾' : ''}被专题《${safeText(item.themeTitle || '文化专题')}》第 ${Number(item.chapterIndex) + 1} 章采用</p>
+          <p class="mt-0.5 text-[9px] text-stone-400">${item.status === 'retracted' ? '采用记录已更正' : item.currentlyPublic ? '当前专题可查看' : '历史采用记录 · 当前公开状态已变化'} · 不重复发放积分</p>` : `
           <p class="text-[10px] font-bold text-stone-700">${safeText(item.storyTitle || item.taskTitle || '楚韵故事')}</p>
           <p class="mt-0.5 text-[9px] text-stone-400">${safeText(item.taskTitle || '资料补充')}${item.rewardStatus === 'awarded' ? ` · 已获 +${Number(item.rewardPointsAwarded || 0)} 积分` : item.rewardStatus === 'pending_manual_confirmation' ? ' · 积分待管理员确认' : ''}</p>`}</article>`).join('')}</div></details>`
       : '<p class="text-[10px] leading-5 text-stone-400">资料被故事或专题正式采用后，贡献记录会出现在这里。</p>';

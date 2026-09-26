@@ -52,9 +52,9 @@ function createStoryThemeContributionService({ db }) {
     }
     const adopted = await db.collection('story_contributions')
       .where({ themeId, themeVersion: Number(version.version) }).limit(400).get();
-    const adoptedIds = new Set((adopted.data || []).filter(item => item.type === 'theme_adoption' &&
-      Number(item.themeVersion) === Number(version.version) && item.status === 'adopted')
-      .map(item => item._id || item.id));
+    const adoptionById = new Map((adopted.data || []).filter(item => item.type === 'theme_adoption' &&
+      Number(item.themeVersion) === Number(version.version))
+      .map(item => [item._id || item.id, item]));
     const chapters = [];
     for (const [index, chapter] of (version.chapters || []).entries()) {
       const chapterId = chapterIdFor(themeId, chapter, index);
@@ -68,9 +68,11 @@ function createStoryThemeContributionService({ db }) {
         if (current.submissionId !== source.submissionId) continue;
         const submission = await read(db, 'submissions', current.submissionId);
         const contributionId = contributionIdFor(themeId, version.version, chapterId, current.submissionId);
+        const adoption = adoptionById.get(contributionId);
         sources.push({ sourceLinkId, submissionId: current.submissionId,
           title: clean(submission && submission.title, 120) || '社区文化记录',
-          summary: current.summary, adopted: adoptedIds.has(contributionId) });
+          summary: current.summary, adopted: Boolean(adoption && adoption.status === 'adopted'),
+          retracted: Boolean(adoption && adoption.status === 'retracted'), contributionId });
       }
       chapters.push({ id: chapterId, number: index + 1, title: clean(chapter.title, 100), sources });
     }
@@ -114,9 +116,12 @@ function createStoryThemeContributionService({ db }) {
         throw Object.assign(new Error('投稿当前不可采用'), { code: 'SUBMISSION_UNAVAILABLE' });
       const contributionId = contributionIdFor(themeId, version.version, chapterId, link.submissionId);
       const existing = await read(tx, 'story_contributions', contributionId);
-      if (existing) return { ok: true, action: 'adoptStoryThemeContribution',
+      if (existing && existing.status === 'adopted') return { ok: true, action: 'adoptStoryThemeContribution',
         contributionId, cached: true };
+      if (existing && existing.status !== 'retracted')
+        throw Object.assign(new Error('采用记录状态需要管理员复核'), { code: 'CONTRIBUTION_STATE_CHANGED' });
       const adoptedAt = db.serverDate();
+      const adoptionCount = existing ? (Number(existing.adoptionCount) || 1) + 1 : 1;
       await tx.collection('story_contributions').doc(contributionId).set({
         id: contributionId, type: 'theme_adoption', status: 'adopted',
         userId: submission.userId, submissionId: link.submissionId, sourceLinkId,
@@ -124,19 +129,63 @@ function createStoryThemeContributionService({ db }) {
         chapterId, chapterIndex, chapterTitle: clean(chapter.title, 100),
         contributionType, resolvesGap, gapNote: resolvesGap ? gapNote : '',
         rewardStatus: 'not_applicable', rewardPointsAwarded: 0,
-        adoptedBy: adminUid, adoptedAt, updatedAt: adoptedAt
+        adoptedBy: adminUid, adoptedAt, updatedAt: adoptedAt, adoptionCount,
+        firstAdoptedAt: existing && existing.firstAdoptedAt ||
+          existing && existing.adoptedAt || adoptedAt,
+        correctionHistory: existing && existing.correctionHistory || []
       });
-      await tx.collection('interaction_notifications').doc('theme_adopted_' + contributionId).set({
+      await tx.collection('interaction_notifications').doc('theme_adopted_' + contributionId + '_' + adoptionCount).set({
         userId: submission.userId, type: 'story_contribution_theme_adopted',
         title: '你的材料已被专题采用',
         message: `你的材料被专题《${clean(version.title, 100)}》第 ${chapterIndex + 1} 章采用（${typeLabel[contributionType]}）。`,
         actorName: '内容管理员', targetType: 'theme', targetId: themeId,
         targetTitle: clean(version.title, 100), isRead: false, createdAt: adoptedAt, readAt: null
       });
+      if (existing) await tx.collection('story_theme_logs').add({ themeId, themeVersion: Number(version.version),
+        action: 'theme_contribution_readopted', contributionId, chapterId,
+        sourceLinkId, reviewerId: adminUid, createdAt: adoptedAt });
       return { ok: true, action: 'adoptStoryThemeContribution', contributionId, cached: false };
     });
   }
-  return { workspace, adopt };
+
+  async function retract(event, adminUid) {
+    const themeId = validId(event.themeId, '专题');
+    const contributionId = validId(event.contributionId, '采用记录');
+    const reason = clean(event.reason, 180);
+    if (reason.length < 4)
+      throw Object.assign(new Error('请填写撤销原因'), { code: 'RETRACTION_REASON_REQUIRED' });
+    return db.runTransaction(async tx => {
+      const record = await read(tx, 'story_contributions', contributionId);
+      if (!record || record.type !== 'theme_adoption' || record.themeId !== themeId)
+        throw Object.assign(new Error('找不到这条专题采用记录'), { code: 'CONTRIBUTION_NOT_FOUND' });
+      if (record.status === 'retracted') return { ok: true, action: 'retractStoryThemeContribution',
+        contributionId, cached: true };
+      if (record.status !== 'adopted')
+        throw Object.assign(new Error('采用记录状态需要管理员复核'), { code: 'CONTRIBUTION_STATE_CHANGED' });
+      const correctedAt = db.serverDate();
+      const correctionHistory = [...(record.correctionHistory || []),
+        { action: 'retracted', reason, reviewerId: adminUid, at: correctedAt }];
+      await tx.collection('story_contributions').doc(contributionId).update({
+        status: 'retracted', correctionHistory, retractedAt: correctedAt,
+        retractedBy: adminUid, retractionReason: reason, updatedAt: correctedAt
+      });
+      await tx.collection('story_theme_logs').add({ themeId, themeVersion: record.themeVersion,
+        action: 'theme_contribution_retracted', contributionId,
+        chapterId: record.chapterId, sourceLinkId: record.sourceLinkId,
+        reason, reviewerId: adminUid, createdAt: correctedAt });
+      await tx.collection('interaction_notifications').doc('theme_retracted_' + contributionId + '_' +
+        (Number(record.adoptionCount) || 1)).set({
+        userId: record.userId, type: 'story_contribution_theme_retracted',
+        title: '专题采用记录已更正',
+        message: `专题《${clean(record.themeTitle, 100)}》第 ${Number(record.chapterIndex) + 1} 章的采用记录已更正：${reason}`,
+        actorName: '内容管理员', targetType: 'theme', targetId: themeId,
+        targetTitle: clean(record.themeTitle, 100), isRead: false,
+        createdAt: correctedAt, readAt: null
+      });
+      return { ok: true, action: 'retractStoryThemeContribution', contributionId, cached: false };
+    });
+  }
+  return { workspace, adopt, retract };
 }
 
 module.exports = { createStoryThemeContributionService, contributionIdFor, TYPES };

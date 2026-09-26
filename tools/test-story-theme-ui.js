@@ -54,6 +54,7 @@ async function main() {
       window.themeCalls = [];
       window.themeRows = [];
       window.themeAdopted = false;
+      window.themeWasRetracted = false;
       callAdmin = async request => {
         themeCalls.push(request);
         if (request.action === 'getStoryThemeWorkspace')
@@ -64,11 +65,17 @@ async function main() {
               id: chapter.id, number: index + 1, title: chapter.title,
               sources: (chapter.sourceLinkIds || []).map(sourceLinkId => ({
                 sourceLinkId, submissionId: 'submission_' + index, title: '虚构投稿',
-                summary: '已审核来源', adopted: themeAdopted && index === 0
+                summary: '已审核来源', adopted: themeAdopted && index === 0,
+                retracted: themeWasRetracted && !themeAdopted && index === 0,
+                contributionId: 'theme_adopted_' + (index + 1)
               }))
             })) };
         if (request.action === 'adoptStoryThemeContribution') {
           themeAdopted = true; return { ok: true, contributionId: 'theme_adopted_1' };
+        }
+        if (request.action === 'retractStoryThemeContribution') {
+          themeAdopted = false; themeWasRetracted = true;
+          return { ok: true, contributionId: request.contributionId };
         }
         if (request.action === 'saveStoryTheme') {
           themeRows = [{
@@ -152,6 +159,16 @@ async function main() {
     assert.equal(adoption.themeVersion, 1);
     assert.equal(adoption.sourceLinkId, 'l_hb');
     assert.equal(adoption.resolvesGap, false);
+    assert.equal(await page.locator('[data-theme-adoption-source]').first().locator('text=已正式采用').count(), 1);
+    await page.locator('[data-theme-adoption-source]').first().locator('summary').click();
+    await page.locator('[data-adoption-retract-reason]').first().fill('管理员误点，撤销记录');
+    await page.locator('[data-theme-retract]').first().click();
+    await page.waitForFunction(() => themeCalls.some(item => item.action === 'retractStoryThemeContribution'));
+    const correction = await page.evaluate(() => themeCalls.find(item => item.action === 'retractStoryThemeContribution'));
+    assert.equal(correction.contributionId, 'theme_adopted_1');
+    assert.equal(await page.locator('[data-theme-adoption-source]').first().locator('text=采用已撤销').count(), 1);
+    await page.screenshot({ path: path.join(output, 'theme-adoption-corrected-390.png'), fullPage: true });
+    await page.locator('[data-theme-adopt]').first().click();
     assert.equal(await page.locator('[data-theme-adoption-source]').first().locator('text=已正式采用').count(), 1);
     for (const width of [390, 768, 1440]) {
       await page.setViewportSize({ width, height: 1000 });

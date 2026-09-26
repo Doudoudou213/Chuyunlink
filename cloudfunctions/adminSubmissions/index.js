@@ -1381,6 +1381,7 @@ exports.main = async (event = {}) => {
     if (action === 'getStoryThemeWorkspace') return await storyThemeService.workspace(event);
     if (action === 'getStoryThemeContributionWorkspace') return await storyThemeContributionService.workspace(event);
     if (action === 'adoptStoryThemeContribution') return await storyThemeContributionService.adopt(event, callerUid);
+    if (action === 'retractStoryThemeContribution') return await storyThemeContributionService.retract(event, callerUid);
     if (action === 'saveStoryTheme') return await storyThemeService.save(event, callerUid);
     if (action === 'publishStoryTheme') return await storyThemeService.publish(event, callerUid);
     if (action === 'archiveStoryTheme') return await storyThemeService.archive(event, callerUid);
