@@ -2,7 +2,9 @@
 const fail=m=>{throw Object.assign(new Error(m),{code:'GUIDE_OUTPUT_INVALID'});};
 const str=(v,min,max)=>{if(typeof v!=='string'||v.trim().length<min||v.length>max)fail('讲解内容长度或格式不合要求');return v.trim();};
 const keys=(o,names)=>{if(!o||typeof o!=='object'||Array.isArray(o)||Object.keys(o).some(k=>!names.includes(k)))fail('模型返回了范围之外的内容');};
+function checkGuidePrivacy(value){const data=JSON.stringify(value);if(/https?:\/\/|cloud:\/\/|(?<!\d)1[3-9]\d{9}(?!\d)|(?<!\d)\d{17}[\dXx](?!\d)|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(data))fail('材料或讲解含联系方式或文件链接，请先人工处理');}
 function validateGuideOutput(raw,input){
+ checkGuidePrivacy(raw);
  keys(raw,['title','sentences','observations','gaps']);
  const title=str(raw.title,2,100);
  const refs=(v)=>{if(!Array.isArray(v)||!v.length||v.length>12||v.some(x=>typeof x!=='string'||!input.claims.some(c=>c.id===x)))fail('引用了未提供的事实');return [...new Set(v)];};
@@ -19,4 +21,4 @@ function validateGuideOutput(raw,input){
 const string={type:'string'};const refs={type:'array',items:string};
 const object=properties=>({type:'object',additionalProperties:false,properties,required:Object.keys(properties)});
 const GUIDE_SCHEMA=object({title:string,sentences:{type:'array',items:object({text:string,claimIds:refs})},observations:{type:'array',items:object({text:string,claimIds:refs,locator:string,locationEvidence:string})},gaps:{type:'array',items:string}});
-module.exports={validateGuideOutput,GUIDE_SCHEMA};
+module.exports={validateGuideOutput,GUIDE_SCHEMA,checkGuidePrivacy};

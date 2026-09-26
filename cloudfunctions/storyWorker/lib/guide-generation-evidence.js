@@ -18,6 +18,7 @@ async function prepareGuideInput(db,selection){
   const claims=checked.claims.map(c=>({id:c.id,text:String(c.claimText||''),sourceLinkIds:c.sourceLinkIds}));
   const sources=checked.sources.map(s=>({id:s.id,excerpt:String(s.link.evidenceSummary||''),material:referenceFor(s.link)}));
   if(claims.some(c=>!c.text||c.text.length>1200)||sources.some(s=>!s.excerpt||s.excerpt.length>2000)||JSON.stringify({claims,sources}).length>16000)fail('GUIDE_INPUT_SIZE','材料不足或过长，请减少所选事实；不会自动截断证据');
+  require('./guide-contract').checkGuidePrivacy({resourceTitle:checked.resource.title,claims,sources});
   return {...fragment,interest,resourceTitle:String(checked.resource.title||''),sourceFingerprint:checked.fingerprint,claims,sources};
 }
 module.exports={prepareGuideInput};

@@ -91,6 +91,8 @@ function createStoryAgentEvaluationService({ db }) {
   }
 
   async function currentSourceState(sample) {
+    if(sample.candidateType==='guide') {try {const input=await require('../lib/guide-generation-evidence').prepareGuideInput(db,sample.sourceSelection);return input.sourceFingerprint===sample.sourceFingerprint?{valid:true}:{valid:false,reason:'讲解来源版本已变化'};}catch(e){if(/^GUIDE_/.test(e.code||''))return {valid:false,reason:'讲解来源失效或授权已撤回'};throw e;}}
+
     if (!sample.submissionId) return { valid: false, reason: '缺少来源投稿' };
     const submission = first(await db.collection('submissions').doc(sample.submissionId).get());
     if (!hasCurrentAiConsent(submission)) return { valid: false, reason: '来源投稿已失效或撤回 AI 授权' };
@@ -166,6 +168,21 @@ function createStoryAgentEvaluationService({ db }) {
     if (!SPLITS.has(split)) fail('INVALID_EVALUATION_SPLIT', '请选择调试集或固定验收集');
     const setRecord = first(await db.collection(SET_COLLECTION).doc(setId).get());
     if (!setRecord || setRecord.status !== 'active') fail('EVALUATION_SET_UNAVAILABLE', '评测集不存在或已停用');
+    if(event.candidateType==='guide') {
+      const review=first(await db.collection('guide_fragment_logs').doc(reviewId).get());
+      if(!review||review.action!=='generation_review'||!review.generation)fail('GUIDE_REVIEW_NOT_FOUND','讲解审核反馈不存在');
+      if(split==='fixed'&&(review.simulated||review.decision!=='approve'||review.humanRating!=='correct'))fail('GUIDE_FIXED_SAMPLE','固定验收集只接受人工确认正确、已通过且非模拟的讲解');
+      const key=sampleIdFor(setId,reviewId),existing=first(await db.collection(SAMPLE_COLLECTION).doc(key).get());
+      if(existing)return {ok:true,cached:true,sample:{id:key,...existing}};
+      const fields=['title','text','sentences','observations','gaps'];
+      const sample={setId,setVersion:setRecord.version,reviewId,candidateId:review.fragmentId,candidateType:'guide',jobId:review.generation.jobId,
+        split,decision:review.decision,original:review.original,final:review.final,changedFields:fields.filter(k=>JSON.stringify(review.original?.[k])!==JSON.stringify(review.final?.[k])),
+        model:review.generation.model,promptVersion:review.generation.promptVersion,codeVersion:review.generation.codeVersion,
+        sourceSelection:review.sourceSelection,sourceFingerprint:review.sourceFingerprint,humanRating:review.humanRating,active:true,sourceValid:true,simulated:review.simulated===true,selectedBy:adminUid,selectedAt:db.serverDate()};
+      const state=await currentSourceState(sample);if(!state.valid)fail('SOURCE_UNAVAILABLE',state.reason);
+      await db.runTransaction(async tx=>{if(!first(await tx.collection(SAMPLE_COLLECTION).doc(key).get()))await tx.collection(SAMPLE_COLLECTION).doc(key).set(sample);});
+      return {ok:true,sample:{id:key,...sample}};
+    }
     const review = first(await db.collection('story_agent_reviews').doc(reviewId).get());
     if (!review) fail('REVIEW_NOT_FOUND', '管理员反馈记录不存在');
     const candidate = first(await db.collection('story_agent_candidates').doc(review.candidateId || reviewId).get());
@@ -186,6 +203,7 @@ function createStoryAgentEvaluationService({ db }) {
       evidenceRefs: evidenceRefs(review, job), humanRating: '', ratingNote: '', active: true, sourceValid: true,
       selectedBy: adminUid, selectedAt: db.serverDate(), updatedAt: db.serverDate()
     };
+
     const state = await currentSourceState(sample);
     if (!state.valid) fail('SOURCE_UNAVAILABLE', state.reason);
     await db.collection(SAMPLE_COLLECTION).doc(key).set(sample);
@@ -200,6 +218,7 @@ function createStoryAgentEvaluationService({ db }) {
     if (!RATINGS.has(rating)) fail('INVALID_HUMAN_RATING', '请选择正确、部分正确或错误');
     const sample = first(await db.collection(SAMPLE_COLLECTION).doc(evaluationId).get());
     if (!sample) fail('EVALUATION_SAMPLE_NOT_FOUND', '评测样本不存在');
+    if(sample.candidateType==='guide'&&sample.split==='fixed')fail('GUIDE_FIXED_LOCKED','固定样本保留原判断；需修订时创建新评测版本');
     const state = await currentSourceState(sample);
     if (!state.valid) {
       await db.collection(SAMPLE_COLLECTION).doc(evaluationId).update({ active: false, sourceValid: false,
