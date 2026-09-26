@@ -1,5 +1,6 @@
 'use strict';
 const { materialLinkValid, referenceFor } = require('../lib/material-evidence');
+const { contributorNameFor } = require('../lib/public-attribution');
 
 const C = Object.freeze({
   themes: 'story_themes', versions: 'story_theme_versions', resources: 'resources',
@@ -27,6 +28,7 @@ async function loadPublicTheme(db, themeId) {
     !Array.isArray(version.sources) || !Array.isArray(version.relations) ||
     !Array.isArray(version.claims)) return null;
   const validSources = new Map();
+  const profileCache = new Map();
   for (const source of version.sources) {
     const link = await read(db, C.links, source.id);
     if (!link || link.status !== 'confirmed' || link.needsSourceReview === true ||
@@ -38,7 +40,10 @@ async function loadPublicTheme(db, themeId) {
       !await materialLinkValid(db, link, submission, true)) return null;
     const material = referenceFor(link);
     validSources.set(source.id, {
-      id: source.id, resourceId: link.resourceId, summary: text(link.evidenceSummary, 400),
+      id: source.id, resourceId: link.resourceId,
+      submissionTitle: text(submission.title, 120) || '社区文化记录',
+      contributorName: await contributorNameFor(db, submission, profileCache),
+      summary: text(link.evidenceSummary, 400),
       material: material ? {
         kind: text(material.kind, 40), reviewVersion: Number(material.reviewVersion) || 0,
         locator: material.locator || null
@@ -126,7 +131,8 @@ async function loadPublicTheme(db, themeId) {
     if (!story || story.status !== 'published' || story.needsSourceReview === true ||
       story.resourceId !== claim.resourceId ||
       Number(story.version || 1) !== Number(claim.storyVersion || 1)) return null;
-    claims.set(old.id, { id: old.id, resourceId: claim.resourceId, text: text(claim.claimText, 360),
+    claims.set(old.id, { id: old.id, resourceId: claim.resourceId,
+      storyId: claim.storyId, text: text(claim.claimText, 360),
       sourceLinkIds: claim.sourceLinkIds });
   }
   const chapters = [];
@@ -155,7 +161,7 @@ async function loadPublicTheme(db, themeId) {
     introduction: text(version.introduction, 800), closing: text(version.closing, 800),
     questions: (version.questions || []).map(question => text(question, 180)),
     chapters, nodes, relations,
-    claims: [...claims.values()].map(({ resourceId, ...claim }) => claim),
+    claims: [...claims.values()],
     sources: [...validSources.values()],
     publishedAt: time(version.publishedAt)
   };

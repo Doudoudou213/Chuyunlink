@@ -521,6 +521,22 @@ feedback_closed: '反馈处理',
         if (typeof showToast === 'function') showToast(error.message || '操作失败，请稍后重试', 'error');
       }
     });
+    document.getElementById('cloud-my-submissions').addEventListener('change', async (event) => {
+      const checkbox = event.target.closest('input[data-public-attribution]');
+      if (!checkbox) return;
+      const showNickname = checkbox.checked;
+      checkbox.disabled = true;
+      try {
+        await callCore({ action: 'setSubmissionAttribution',
+          submissionId: checkbox.dataset.publicAttribution, showNickname });
+        await refreshCloudProfile();
+        if (typeof showToast === 'function') showToast(showNickname ? '这条投稿将显示你的昵称' : '这条投稿已改为匿名展示', 'privacy');
+      } catch (error) {
+        checkbox.checked = !showNickname;
+        checkbox.disabled = false;
+        if (typeof showToast === 'function') showToast(error.message || '署名设置失败', 'error');
+      }
+    });
     document.querySelectorAll('[data-profile-feature]').forEach((button) => {
       button.addEventListener('click', () => toggleProfileFeature(button.dataset.profileFeature));
     });
@@ -1327,6 +1343,9 @@ feedback_closed: '反馈处理',
       </div>
       <div class="mt-5">${activeStoryEvidenceView === 'graph' ? renderStoryEvidenceGraphV2(result) : activeStoryEvidenceView === 'timeline' ? renderStoryEvidenceTimeline(items) : renderPublishedStory(result)}</div>`;
     bindStoryEvidenceControls();
+    const storyResourceId = new URLSearchParams(window.location.search).get('storyResourceId');
+    if (storyResourceId && /^[A-Za-z0-9_-]{1,128}$/.test(storyResourceId))
+      openStoryEvidence(storyResourceId, '', 'story');
   }
 
   async function openStoryEvidence(resourceId, resourceTitle, preferredView = 'story') {
@@ -1966,6 +1985,11 @@ feedback_closed: '反馈处理',
         </div>
         ${item.reviewNote ? `<p class="mt-2 rounded-lg bg-stone-50 p-2 text-[10px] text-stone-600">审核意见：${safeText(item.reviewNote)}</p>` : ''}
         ${item.status === 'approved' ? `<p class="mt-2 text-[10px] font-bold text-emerald-600">已发放 +${Number(item.rewardPoints || 100)} 流光积分</p>` : ''}
+        ${item.status === 'approved' ? `<label class="mt-2 flex min-h-11 cursor-pointer items-center gap-2 border-t border-stone-100 pt-2 text-[10px] text-stone-600">
+          <input type="checkbox" data-public-attribution="${safeText(item.id)}" ${item.publicContributorConsent === true ? 'checked' : ''}
+            class="h-4 w-4 accent-[#9e2f24] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9e2f24]">
+          <span>在故事和专题中显示我的昵称</span>
+        </label>` : ''}
         ${item.materialAnalysisConsent === true && item.aiAnalysisConsent === true ? `<button type="button" data-material-grant="${safeText(item.id)}" class="min-h-11 rounded-lg border border-stone-200 px-3 text-xs">设置材料研究与节选授权</button>` : ''}
         ${item.materialAnalysisConsent === true ? `<div class="mt-2"><button type="button" data-withdraw-material-consent="${safeText(item.id)}" class="min-h-11 rounded-lg border border-stone-200 px-3 text-xs text-stone-500">停止材料处理与后续使用</button></div>` : ''}
         ${item.aiAnalysisConsent === true ? `<div class="mt-2 border-t border-stone-100 pt-2"><button type="button" data-withdraw-ai-consent="${safeText(item.id)}" class="min-h-10 rounded-lg border border-stone-200 px-3 text-[10px] font-bold text-stone-500 hover:border-[#9e2f24] hover:text-[#9e2f24] disabled:opacity-50">停止后续 AI 分析</button></div>` : ''}

@@ -53,6 +53,11 @@ async function main() {
     await page.locator('.theme-card a').click();
     await page.locator('.chapter').first().waitFor();
     assert.equal(await page.locator('.chapter').count(), 2);
+    assert.equal(await page.locator('.claim-item').count(), 2, '每条事实可以单独展开');
+    await page.locator('.claim-item summary').first().click();
+    assert.equal(await page.locator('.claim-item').first().locator('.claim-sources .source-row').count(), 1);
+    assert.match(await page.locator('.claim-item').first().innerText(), /匿名贡献者/);
+    assert.match(await page.locator('.claim-item').first().locator('.story-link').getAttribute('href'), /storyResourceId=r_hb/);
     assert.equal(await page.locator('.expand > details').count(), 3);
     assert.equal(await page.locator('.chapter > .chapter-source .source-row').count(), 2);
     assert.equal(await page.locator('.expand > details').first().evaluate(node => node.open), false,

@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const https = require('https');
 const { createResourceService } = require('./domains/resources');
 const { createStoryEvidenceService } = require('./domains/story-evidence');
+const { ANONYMOUS, contributorNameFor } = require('./lib/public-attribution');
 
 const app = cloudbase.init({
   env: process.env.TCB_ENV || cloudbase.SYMBOL_CURRENT_ENV
@@ -16,6 +17,7 @@ const storyEvidenceService = createStoryEvidenceService({ db, app });
 const storyThemeService = require('./domains/story-themes').createPublicStoryThemeService({ db });
 const materialConsentService = require('./domains/material-consent').createMaterialConsentService({ db });
 const aiConsentService = require('./domains/ai-consent').createAiConsentService({ db });
+const submissionAttributionService = require('./domains/submission-attribution').createSubmissionAttributionService({ db });
 
 const PROFILE_COLLECTION = 'user_profiles';
 const SUBMISSION_COLLECTION = 'submissions';
@@ -588,7 +590,8 @@ function submissionView(item, includeOwnerDetails = false) {
     latitude: Number.isFinite(Number(item.latitude)) ? Number(item.latitude) : null,
     locationAccuracy: Number.isFinite(Number(item.locationAccuracy)) ? Number(item.locationAccuracy) : null,
     status: item.status || 'pending',
-    contributorName: item.contributorName || '楚韵守护者',
+    contributorName: includeOwnerDetails ? item.contributorName || '楚韵守护者' : ANONYMOUS,
+    ...(includeOwnerDetails ? { publicContributorConsent: item.publicContributorConsent === true } : {}),
     rewardPoints: Number(item.rewardPoints) || 100,
     createdAt: item.createdAt || null,
     updatedAt: item.updatedAt || null,
@@ -624,7 +627,7 @@ function submissionView(item, includeOwnerDetails = false) {
         slotTitle: supplement.slotTitle || '',
         assetType: supplement.assetType || 'image',
         fileID: supplement.fileID || '',
-        contributorName: supplement.contributorName || '社区用户',
+        contributorName: includeOwnerDetails ? supplement.contributorName || '社区用户' : ANONYMOUS,
         approvedAt: supplement.approvedAt || null
       }))
       : []
@@ -759,7 +762,11 @@ async function listPublic(limit = 30, viewerUid = '') {
     .where({ status: 'approved' })
     .limit(Math.max(1, Math.min(Number(limit) || 30, 100)))
     .get();
-  const items = sortNewest(result.data || []).map((item) => submissionView(item, false));
+  const profileCache = new Map();
+  const items = await Promise.all(sortNewest(result.data || []).map(async item => ({
+    ...submissionView(item, false),
+    contributorName: await contributorNameFor(db, item, profileCache)
+  })));
   const fileList = [...new Set(items.flatMap((item) => [
     item.fileID,
     ...(item.approvedSupplements || []).map((supplement) => supplement.fileID)
@@ -818,7 +825,7 @@ function supplementView(item, includePrivate = false, viewerUid = '') {
     assetType: item.assetType || 'image',
     status: item.status || 'pending',
     rewardPoints: Number(item.rewardPoints) || 0,
-    contributorName: item.contributorName || '社区用户',
+    contributorName: includePrivate ? item.contributorName || '社区用户' : ANONYMOUS,
     createdAt: item.createdAt || null,
     reviewedAt: item.reviewedAt || null,
     reviewNote: item.reviewNote || '',
@@ -1878,6 +1885,7 @@ async function createSubmission(uid, userInfo, event) {
     userId: uid,
     contributorName: profile.nickname || '楚韵守护者',
     title,
+    publicContributorConsent: false,
     description,
     assetType,
     mimeType,
@@ -1973,6 +1981,7 @@ exports.main = async (event = {}) => {
     if (action === 'markNotificationRead') return await markNotificationRead(uid, userInfo, event);
     if (action === 'planRoute') return await planRoute(uid, event);
     if (action === 'updateProfile') return await updateProfile(uid, userInfo, event);
+    if (action === 'setSubmissionAttribution') return await submissionAttributionService.change(event, uid);
     if (['withdrawMaterialConsent','grantMaterialResearchConsent'].includes(action)) return await materialConsentService.change(event, uid);
     if (action === 'withdrawAiAnalysisConsent') return await aiConsentService.withdraw(event, uid);
     if (action === 'getRewards') {

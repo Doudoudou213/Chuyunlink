@@ -44,6 +44,7 @@ function mockDatabase() {
         userId: 'must-not-leak-either'
       }
     },
+    user_profiles: { 'must-not-leak': { nickname: '现在的公开昵称' } },
     story_chains: [{
       _id: 'story_1', resourceId: 'yellow-crane-tower', status: 'published', version: 1,
       title: '题刻故事', introduction: '东侧题刻的现场记录', sourceLinkIds: ['story_confirmed'],
@@ -119,6 +120,11 @@ async function main() {
   const result = await service.list({ resourceId: 'yellow-crane-tower' });
   assert.equal(result.count, 1, '只公开 confirmed 且来源投稿为 approved 的关系');
   assert.equal(result.items[0].submission.fileUrl, 'https://example.test/approved.jpg');
+  assert.equal(result.items[0].submission.contributorName, '匿名贡献者', '旧投稿默认匿名');
+  db.records.submissions.approved_1.publicContributorConsent = true;
+  assert.equal((await service.list({ resourceId: 'yellow-crane-tower' })).items[0].submission.contributorName,
+    '现在的公开昵称', '用户主动勾选后才展示当前昵称');
+  db.records.submissions.approved_1.publicContributorConsent = false;
   assert.equal(Object.hasOwn(result.items[0].submission, 'userId'), false, '公共接口不得暴露投稿者 UID');
   assert.equal(Object.hasOwn(result.items[0].submission, 'location'), false, '公共接口不得暴露投稿的精确位置');
   assert.equal(JSON.stringify(result).includes('must-not-leak'), false, '公共响应不得泄露用户 UID');

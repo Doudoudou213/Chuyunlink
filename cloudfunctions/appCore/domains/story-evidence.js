@@ -1,5 +1,6 @@
 'use strict';
 const {materialLinkValid,isMaterialLink,referenceFor}=require('../lib/material-evidence');
+const { contributorNameFor } = require('../lib/public-attribution');
 
 const { loadPublicStoryGraph } = require('./story-graph');
 
@@ -71,7 +72,7 @@ function createStoryEvidenceService({ db, app }) {
     let links = [];
     try {
       const result = await db.collection(LINK_COLLECTION).where({ resourceId }).limit(100).get();
-      links = (result.data || []).filter((item) => item.status === 'confirmed');
+      links = (result.data || []).filter((item) => item.status === 'confirmed' && item.needsSourceReview !== true);
     } catch (error) {
       if (!isMissingCollectionError(error)) throw error;
       return {
@@ -120,8 +121,9 @@ function createStoryEvidenceService({ db, app }) {
       } catch (_) {}
     }
 
-    const items = evidence
-      .map(({ link, submission }) => ({
+    const profileCache = new Map();
+    const items = (await Promise.all(evidence
+      .map(async ({ link, submission }) => ({
         id: link._id || link.id || '',
         relationType: link.relationType || 'supports_story',
         evidenceSummary: link.evidenceSummary || '',
@@ -132,14 +134,15 @@ function createStoryEvidenceService({ db, app }) {
           title: submission.title || submission.description || '社区投稿',
           description: submission.description || '',
           assetType: submission.assetType || 'image',
-          contributorName: submission.contributorName || '社区守护者',
+          contributorName: await contributorNameFor(db, submission, profileCache),
           regionName: submission.regionName || '',
           createdAt: timeValue(submission.createdAt),
           fileUrl: isMaterialLink(link) || materialSubmissionIds.has(link.submissionId) ? '' : fileUrls.get(submission.imageFileID || submission.fileID || '') || ''
         }
-      }))
+      }))))
       .sort((left, right) => String(left.submission.createdAt || '').localeCompare(String(right.submission.createdAt || '')));
-    const contributors = new Set(items.map((item) => item.submission.contributorName).filter(Boolean));
+    const contributors = new Set(evidence.map(({ submission }) =>
+      submission.userId || submission._id || submission.id).filter(Boolean));
     const validNarrativeLinkIds = new Set(evidence
       .filter(({ submission }) => !submission.aiConsentRevokedAt && submission.aiAnalysisStatus !== 'consent_revoked')
       .map(({ link }) => link._id || link.id || ''));
