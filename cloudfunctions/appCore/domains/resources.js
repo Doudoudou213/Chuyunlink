@@ -49,6 +49,7 @@ function publicResource(item) {
     tags: Array.isArray(item.tags) ? item.tags.slice(0, 30) : [],
     media: Array.isArray(item.media) ? item.media.slice(0, 20) : [],
     transport: item.transport || {},
+    visitInfo: {status: ['verified','closed','unavailable'].includes(item.visitInfo?.status) ? item.visitInfo.status : 'unknown', note: cleanText(item.visitInfo?.note,240),source:cleanText(item.visitInfo?.source,240),checkedAt:item.visitInfo?.checkedAt||null},
     collectables: Array.isArray(item.collectables) ? item.collectables.slice(0, 20) : [],
     capabilities: item.capabilities || {},
     relatedResourceIds: Array.isArray(item.relatedResourceIds)

@@ -6,6 +6,7 @@ const vm = require('node:vm');
 
 const projectRoot = path.resolve(__dirname, '..');
 const requiredFiles = [
+  'guide.html','static/visit-engine.js','static/cultural-guide.js','static/guide-cloud.js','static/guide-entry.js','static/cultural-guide.css','cloudfunctions/appCore/lib/visit-engine.js','cloudfunctions/appCore/domains/visit-sessions.js',
   'cloudfunctions/appCore/domains/ai-consent.js',
   'cloudfunctions/storyWorker/lib/graph-context.js',
   'cloudfunctions/adminSubmissions/domains/story-agent-gaps.js',

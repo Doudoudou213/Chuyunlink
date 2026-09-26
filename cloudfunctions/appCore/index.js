@@ -2002,6 +2002,10 @@ exports.main = async (event = {}) => {
     }
 
     const action = cleanText(event.action, 40);
+    if (['saveVisitSession','getVisitSession','listVisitSessions','visitSessionEvent','checkVisitRoute'].includes(action)) {
+      requireStableAccount(userInfo);
+      return await require('./domains/visit-sessions').createVisitSessionService({db,routePlanner:planRoute}).handle(uid,event);
+    }
     if (action === 'bootstrap') return await bootstrap(uid, userInfo);
     if (action === 'getResources') return await resourceService.list(event);
     if (action === 'getResourceDetail') return await resourceService.detail(event);
