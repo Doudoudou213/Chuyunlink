@@ -1349,6 +1349,7 @@ exports.main = async (event = {}) => {
     }
 
     await ensureInteractionCollections();
+    if (['getContentEffects','getContentEffectDetail'].includes(action)) {const reports=require('./domains/content-effects').createContentEffectReport({db});return await reports[action==='getContentEffects'?'list':'detail'](event);}
     if (['getGuideEvaluations','selectGuideEvaluation'].includes(action)) return await require('./domains/guide-evaluations').createGuideEvaluationService({db}).handle(event,callerUid);
     if (['rejectGuideFragment','previewGuideGeneration','getGuideWorkspace','getGuideFragmentDraft','saveGuideFragment','publishGuideFragment','archiveGuideFragment','saveGuideVisitInfo'].includes(action)) return await require('./domains/guide-fragments').createGuideFragmentService({db}).handle(event,callerUid);
     if (action === 'getAgentReviewWorkspace') return await storyAgentReviewService.workspace(event);

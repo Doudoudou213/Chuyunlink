@@ -188,6 +188,8 @@ try {
         (Join-Path $staticDirectory 'admin-story-themes.js'),
         (Join-Path $staticDirectory 'theme-page.js'),
         (Join-Path $staticDirectory 'content-effects.js'),
+        (Join-Path $staticDirectory 'admin-content-effects.js'),
+        (Join-Path $staticDirectory 'admin-content-effects.css'),
         (Join-Path $staticDirectory 'visit-engine.js'),
         (Join-Path $staticDirectory 'visit-route.js'),
         (Join-Path $staticDirectory 'guide-cloud.js'),
