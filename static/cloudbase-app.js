@@ -839,6 +839,7 @@ feedback_closed: '反馈处理',
   }
 
   function closeStoryEvidence() {
+    window.ContentEffects?.close('story');
     closeStoryClaimDrawer();
     const modal = document.getElementById('cloud-story-evidence-modal');
     if (modal) modal.classList.add('hidden');
@@ -1319,6 +1320,7 @@ feedback_closed: '反馈处理',
   }
 
   function startStoryGapTask(taskId) {
+    window.ContentEffects?.contribute('story');
     window.GuideContribution?.clear();
     const task = (activeStoryEvidenceResult && activeStoryEvidenceResult.gapTasks || []).find((item) => item.id === taskId);
     if (!task) return;
@@ -1341,6 +1343,7 @@ feedback_closed: '反馈处理',
   }
 
   function switchStoryEvidenceView(view, focusId) {
+    if(view==='timeline')window.ContentEffects?.emit('story','source_open');if(view==='graph')window.ContentEffects?.emit('story','explore');
     activeStoryEvidenceView = view === 'timeline' ? 'timeline' : view === 'story' ? 'story' : 'graph';
     if (focusId) activeStoryEvidenceNodeId = focusId;
     renderStoryEvidence(activeStoryEvidenceResult);
@@ -1402,6 +1405,7 @@ feedback_closed: '反馈处理',
       await ensureCloudUser();
       const result = await callCore({ action: 'getStoryEvidence', resourceId });
       renderStoryEvidence(result);
+      if(result.story)window.ContentEffects?.open('story',{kind:'story',id:result.story.id,version:String(result.story.version)});
     } catch (error) {
       content.innerHTML = `<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">${safeText(error.message || '链迹资料暂时无法读取')}</div>`;
     }
@@ -3058,6 +3062,7 @@ feedback_closed: '反馈处理',
       if (typeof showToast === 'function') showToast('登录正式账号后才能补充资料', 'log-in');
       return;
     }
+    window.ContentEffects?.contribute('story');
     activeCloudSupplement = { item, submissionId: rawSubmissionId(item.id || item.feedId), slotId };
     if (legacyTriggerDiscoverSupplementUpload) legacyTriggerDiscoverSupplementUpload(itemId, slotId);
   }
@@ -3083,6 +3088,7 @@ feedback_closed: '反馈处理',
       if (!uploadedFileID) throw new Error('云存储未返回 fileID');
       await callCore({
         action: 'createSupplement',
+        ...(window.ContentEffects?.fields()||{}),
         submissionId: context.submissionId,
         slotId: context.slotId,
         assetType,
@@ -3194,6 +3200,7 @@ feedback_closed: '反馈处理',
 
       const result = await callCore({
         action: 'createSubmission',
+        ...(window.ContentEffects?.fields()||{}),
         fileID: uploadedFileID,
         cloudPath,
         title: selectedUploadFile.name || '未命名文化采集素材',
@@ -3212,6 +3219,7 @@ feedback_closed: '反馈处理',
         materialAnalysisConsent: document.getElementById('collect-material-consent')?.checked === true,
         gapTaskId: activeStoryGapTask && activeStoryGapTask.id || ''
       });
+      window.ContentEffects?.clear();
       window.GuideContribution?.clear();
       const aiTask = await enqueueCloudAiReview(result.submission.id);
 
@@ -3353,6 +3361,7 @@ feedback_closed: '反馈处理',
     const reportCancel = document.getElementById('cloud-report-cancel');
     if (reportCancel) reportCancel.addEventListener('click', closeCloudReportModal);
     try {
+      window.ContentEffects?.configure(callCore);
       await refreshCloudProfile();
       await loadUnifiedResources();
       await window.GuideContribution?.prepare(callCore);

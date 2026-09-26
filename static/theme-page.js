@@ -54,6 +54,7 @@
       <p class="expand-help">按已发布资源坐标绘制。点位顺序用于阅读，不表示历史传播路线或游览路线。</p>`;
   }
 
+  function contributionLinks(chapter,theme,nodeById){return [...new Set(chapter.nodeIds.map(id=>nodeById.get(id)?.resourceId).filter(Boolean))].map(id=>'<a class="story-link" data-effect-contribute="theme" href="./index.html?guideResourceId='+encodeURIComponent(id)+'">为「'+esc(theme.nodes.find(n=>n.resourceId===id)?.resourceTitle||'本章地点')+'」补充资料 →</a>').join(' · ');}
   function renderTheme(theme) {
     const nodeById = new Map((theme.nodes || []).map(node => [node.id, node]));
     const sourceById = new Map((theme.sources || []).map(source => [source.id, source]));
@@ -75,6 +76,7 @@
             </div></details>`).join('')}</div>
         <details class="chapter-source"><summary>查看本章来源 · ${sources.length} 份</summary>
           ${sources.map(source => sourceCard(source, (chapter.adoptedSourceLinkIds || []).includes(source.id))).join('')}</details>
+        <p>${contributionLinks(chapter,theme,nodeById)}</p>
       </article>`;
     }).join('');
     const timeline = [...theme.nodes].sort((a, b) => {
@@ -117,6 +119,7 @@
           </div>`).join('') : '<p class="expand-help">当前节点间没有已确认的正式关系。</p>'}</div></details>
       </div>`;
     status.textContent = '';
+    window.ContentEffects?.open('theme',{kind:'theme',id:theme.id,version:String(theme.version)});
     document.title = theme.title + ' · 楚韵链迹';
   }
 
@@ -168,5 +171,8 @@
       content.innerHTML = '<p class="intro">可以返回发现页，稍后再来查看。</p>';
     }
   }
+  window.ContentEffects?.configure(callCore);
+  content.addEventListener('toggle',e=>{if(e.target.open&&(e.target.matches('.chapter-source')||e.target.matches('.claim-item')))window.ContentEffects?.emit('theme','source_open');},true);
+  content.addEventListener('click',e=>{if(e.target.closest('.story-link'))window.ContentEffects?.emit('theme','explore');});
   start();
 })();

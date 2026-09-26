@@ -1114,6 +1114,7 @@ async function createSupplement(uid, userInfo, event) {
     createdAt: db.serverDate(),
     updatedAt: db.serverDate()
   });
+  if(event.effectNonce)try{await require('./domains/content-effects').createContentEffects({db}).attach(uid,event,SUPPLEMENT_COLLECTION,recordId);}catch(_){}
   return {
     ok: true,
     action: 'createSupplement',
@@ -1843,7 +1844,6 @@ async function updateProfile(uid, userInfo, event) {
     error.code = 'NICKNAME_REQUIRED';
     throw error;
   }
-
   await db.collection(PROFILE_COLLECTION).doc(uid).update({
     nickname,
     avatarUrl,
@@ -1983,6 +1983,7 @@ async function createSubmission(uid, userInfo, event) {
   };
 
   const added = await db.collection(SUBMISSION_COLLECTION).add(record);
+  if(event.effectNonce)try{await require('./domains/content-effects').createContentEffects({db}).attach(uid,event,SUBMISSION_COLLECTION,added.id||added._id);}catch(_){}
   await db.collection(PROFILE_COLLECTION).doc(uid).update({
     uploadCount: (Number(profile.uploadCount) || 0) + 1,
     updatedAt: db.serverDate()
@@ -2014,6 +2015,7 @@ exports.main = async (event = {}) => {
       requireStableAccount(userInfo);
       return await require('./domains/visit-sessions').createVisitSessionService({db,routePlanner:planRoute}).handle(uid,event);
     }
+    if (['beginContentEffect','recordContentEffect'].includes(action)) return await require('./domains/content-effects').createContentEffects({db}).handle(event);
     if (action === 'bootstrap') return await bootstrap(uid, userInfo);
     if (['recordVisitActivity','getVisitRecord'].includes(action)) { requireStableAccount(userInfo); const service=require('./domains/visit-records').createVisitRecordService({db}); return await service[action==='recordVisitActivity'?'activity':'summary'](uid,event); }
     if (action === 'getGuideContributionContext') return await require('./domains/visit-records').createVisitRecordService({db}).context(uid,event);
