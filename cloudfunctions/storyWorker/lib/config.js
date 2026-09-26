@@ -26,6 +26,9 @@ function loadConfig(env = process.env) {
     throw Object.assign(new Error('AI_PROVIDER 格式不正确'), { code: 'INVALID_AI_PROVIDER' });
   }
   return {
+    guideMode: ['mock','real'].includes(env.GUIDE_GENERATION_MODE) ? env.GUIDE_GENERATION_MODE : 'off',
+    guideDailyCalls: positiveInteger(env.GUIDE_DAILY_CALL_LIMIT, 5, 1, 100),
+    guideDailyTokens: positiveInteger(env.GUIDE_DAILY_TOKEN_LIMIT, 200000, 1000, 1000000),
     enabled: String(env.AI_ENABLED || '').trim().toLowerCase() === 'true',
     provider,
     baseUrl: normalizeBaseUrl(env.AI_BASE_URL),

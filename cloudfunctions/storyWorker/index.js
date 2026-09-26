@@ -1124,6 +1124,7 @@ exports.main = async (event = {}) => {
     const config = loadConfig();
     await ensureCollections();
     const action = cleanText(event.action, 40);
+    if (action === 'generateGuideDraft') return await require('./lib/guide-generation').createGuideGenerationService({db,config,reserveGlobal:reserveDailyCall,recordGlobal:recordCompletedUsage}).generate(event,adminUid);
     if (action === 'status') return await status(config);
     if (action === 'getSubmissionWorkspace') return await realWorkspace();
     if (action === 'analyzeSubmission') return await runSubmissionAnalysis(config, adminUid, event);
