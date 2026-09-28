@@ -2,6 +2,7 @@
 function diagnosis(code){
  const c=String(code||'GUIDE_FAILED');
  const rules=[
+ [/GROUNDING/,'grounding','讲解有待核对的证据问题','查看逐句依据并修改；不自动重复付费生成。',false],
  [/^(ENOTFOUND|EAI_AGAIN)$/,'network','无法找到模型服务地址','检查接口域名和云函数网络；换模型名称通常不能解决。',true],
  [/TIMEOUT|ETIMEDOUT|ECONNRESET|ECONNREFUSED|AI_PROVIDER_NETWORK/,'network','模型连接超时或中断','核对服务状态与网络，费用可能已产生；先查看预算，再决定重试。',true],
  [/CERT|TLS|EPROTO/,'network','安全连接失败','检查服务地址与证书，不要关闭证书校验。',false],
