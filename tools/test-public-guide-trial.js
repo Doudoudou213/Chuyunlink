@@ -1,0 +1,25 @@
+'use strict';
+const fs = require('node:fs'), os = require('node:os'), path = require('node:path'), assert = require('node:assert/strict');
+const { runTrial } = require('./lib/public-guide-trial');
+const { loadConfig } = require('../cloudfunctions/storyWorker/lib/config');
+(async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'chulink-public-trial-')), bundlePath = path.join(root, 'bundle.json');
+  const bundle = { environment: 'local_only', productionWrites: false, testBatchId: 'TEST', sources: [{ id: 'official', url: 'https://ylj.wuhan.gov.cn/example', publisher: '本地夹具' }], records: [{ testOnly: true, publishAllowed: false, status: 'local_draft', testBatchId: 'TEST', interestVersions: ['通用'], officialSourceId: 'official', localSampleId: 'TEST-1', resourceName: '本地测试资源', claimCandidates: [{ localId: 'c', text: '此处有一组石刻。' }] }] };
+  fs.writeFileSync(bundlePath, JSON.stringify(bundle));
+  const config = { ...loadConfig({}), apiKey: 'fake-test-only' }, outputDirectory = path.join(root, 'results');
+  let calls = 0;
+  const args = { bundlePath, outputDirectory, config, transport: async (url, options, body) => { calls++; assert(body.includes('不是产品内已人工审核')); assert(!body.includes('fake-test-only')); assert(!body.includes('https://ylj')); return { choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({ title: '测试石刻', sentences: [{ text: '材料记录此处有一组石刻，可以展开所给资料核对相应内容。', claimIds: ['c'] }], observations: [], gaps: [] }), reasoning_content: 'never-persist-this' } }], usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 } }; } };
+  assert((await runTrial(args)).ready); assert.equal(calls, 0);
+  const first = await runTrial({ ...args, execute: true }); assert.equal(first.status, 'draft_only'); assert.equal(calls, 1);
+  const state = JSON.parse(fs.readFileSync(path.join(outputDirectory, 'trial-state.json'))); assert.deepEqual(Object.keys(state.db), ['guide_trial_budgets']);
+  const persisted = fs.readFileSync(path.join(outputDirectory, 'trial-state.json'), 'utf8'); assert(!persisted.includes('fake-test-only')); assert(!persisted.includes('never-persist-this'));
+  const noThinking = await runTrial({ ...args, execute: true, variant: 'no-thinking', transport: async (url, options, body) => { const data = JSON.parse(body); assert.equal(data.thinking.type, 'disabled'); assert.equal(data.reasoning_effort, 'none'); throw Object.assign(Error('provider secret'), { code: 'ETIMEDOUT' }); } });
+  assert.equal(noThinking.status, 'failed'); assert(noThinking.budget.reservedCny > first.budget.reservedCny); assert.equal(noThinking.budget.unknownAttempts, 1);
+  assert(!fs.readFileSync(path.join(outputDirectory, 'trial-state.json'), 'utf8').includes('provider secret'));
+  const changed = await runTrial({ ...args, execute: true, transport: async (...params) => { const response = await args.transport(...params); fs.appendFileSync(bundlePath, ' '); return response; } });
+  assert.equal(changed.status, 'failed'); assert.equal(changed.error.code, 'GUIDE_SOURCE_CHANGED');
+  const latest = JSON.parse(fs.readFileSync(path.join(outputDirectory, 'trial-state.json'))); latest.db.guide_trial_budgets['guide-trial-20260928'].reservedMicros = 5000000; fs.writeFileSync(path.join(outputDirectory, 'trial-state.json'), JSON.stringify(latest));
+  const before = calls; const blocked = await runTrial({ ...args, execute: true }); assert.equal(blocked.status, 'failed'); assert.equal(calls, before);
+  assert.equal(fs.readFileSync(bundlePath, 'utf8').trim(), JSON.stringify(bundle), 'does not rewrite input to approved');
+  console.log('Public guide trial passed: dry run, real adapter/fixed transport, no fabricated approvals, persistent budget, unknown cost, source change, secret/reasoning omission and 5 CNY stop.');
+})().catch(e => { console.error(e); process.exit(1); });

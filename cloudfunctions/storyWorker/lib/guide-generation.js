@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto');const {prepareGuideInput}=require('./guide-generation-evidence');const {read}=require('./guide-evidence');const {validateGuideOutput}=require('./guide-contract');const {createGuideClient}=require('./guide-client');
 const {createTrialBudget,trialId,quote}=require('./guide-trial-budget');const {diagnosis}=require('./guide-diagnostics');const {guideConfig,estimateBounds}=require('./guide-client');
-const PROMPT_VERSION='evidence-guide-v1',CODE_VERSION='guide-agent-v2-trial';
+const PROMPT_VERSION='evidence-guide-v1',CODE_VERSION='guide-agent-v3-hy3-output';
 const fail=(code,message)=>{throw Object.assign(new Error(message),{code});};
 const optional=async promise=>promise.catch(e=>{if(/not.?exist|not.?found|ResourceNotFound/i.test(String(e.code)+e.message))return null;throw e;});
 const hash=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
