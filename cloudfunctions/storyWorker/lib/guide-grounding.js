@@ -43,7 +43,8 @@ function inspectGuide(output,input){
   if(refs.some(s=>s.context?.kind==='official')&&/尚不确定|尚未.*核实|未能.*验证|据称/.test(t)&&!/尚不确定|尚未.*核实|未能.*验证|据称/.test(evidence))add('OVERHEDGE');
   if(refs.length&&refs.every(s=>s.context?.kind==='image_observation')&&/始建|年代|真迹|赝品|建于|朝代/.test(t))add('IMAGE_INFERENCE');
   if(unit.path!=='title')for(let clause of t.split(/[，。；！？]/)){
-   clause=clause.replace(/(?:可以|可)?展开来源[^，。；！？]*|【已核对引语】|【否定示例】/g,'').trim();
+   clause=clause.replace(/【已核对引语】|【否定示例】/g,'').trim();
+   if(/^(?:可|可以|请)?(?:展开来源(?:查看原始材料|阅读原始记录|仔细阅读原始记录|阅读记录|核对|查看)|通过来源了解其记录内容)$/.test(clause))continue;
    if(clause.length<8||evidence.includes(clause))continue;
    const chars=clause.match(/[\u4e00-\u9fff]/g)||[];let matches=0;
    for(let i=0;i<chars.length-1;i++)if(evidence.includes(chars[i]+chars[i+1]))matches++;
