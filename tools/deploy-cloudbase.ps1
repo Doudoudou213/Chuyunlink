@@ -200,6 +200,7 @@ try {
         (Join-Path $staticDirectory 'guide-record.js'),
         (Join-Path $staticDirectory 'guide-contribution.js'),
         (Join-Path $staticDirectory 'admin-guide.js'),
+        (Join-Path $staticDirectory 'admin-guide-trial.js'),
         (Join-Path $staticDirectory 'cultural-guide.css'),
         (Join-Path $staticDirectory 'admin-guide.css'),
         (Join-Path $staticDirectory 'logo.png'),
