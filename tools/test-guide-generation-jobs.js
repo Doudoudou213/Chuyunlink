@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');const {fakeDb}=require('./lib/fake-material-db');const {fixture,selection}=require('./test-guide-generation');const {createGuideGenerationService}=require('../cloudfunctions/storyWorker/lib/guide-generation');const {createGuideClient}=require('../cloudfunctions/storyWorker/lib/guide-client');const {loadConfig}=require('../cloudfunctions/storyWorker/lib/config');
 const output=()=>({title:'看见石刻',sentences:[{text:'这份已确认材料记录了可见的石刻，可以展开来源阅读原始记录。',claimIds:['c']}],observations:[],gaps:[]});
-const config={...loadConfig({}),guideMode:'real',enabled:true,apiKey:'local-test',providerMaxAttempts:2,retryBaseDelayMs:1};
+const config={...loadConfig({}),guideInputCnyPerMillion:1,guideOutputCnyPerMillion:4,guideMode:'real',enabled:true,apiKey:'local-test',providerMaxAttempts:2,retryBaseDelayMs:1};
 async function main(){
  assert.equal(loadConfig({AI_ENABLED:'true'}).guideMode,'off');
  const db=fakeDb(fixture());await assert.rejects(createGuideGenerationService({db,config:{...config,guideMode:'off'}}).generate(selection,'admin'),{code:'GUIDE_DISABLED'});

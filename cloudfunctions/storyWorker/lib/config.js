@@ -26,6 +26,17 @@ function loadConfig(env = process.env) {
     throw Object.assign(new Error('AI_PROVIDER 格式不正确'), { code: 'INVALID_AI_PROVIDER' });
   }
   return {
+    guideTrialId: String(env.GUIDE_TRIAL_ID || 'guide-trial-20260928'),
+    guideTrialLimitCny: env.GUIDE_TRIAL_LIMIT_CNY == null ? 5 : Number(env.GUIDE_TRIAL_LIMIT_CNY),
+    guideInputCnyPerMillion: env.GUIDE_INPUT_CNY_PER_MILLION == null ? null : Number(env.GUIDE_INPUT_CNY_PER_MILLION),
+    guideOutputCnyPerMillion: env.GUIDE_OUTPUT_CNY_PER_MILLION == null ? null : Number(env.GUIDE_OUTPUT_CNY_PER_MILLION),
+    guideProvider: String(env.GUIDE_PROVIDER || ''),
+    guideBaseUrl: env.GUIDE_API_BASE_URL ? normalizeBaseUrl(env.GUIDE_API_BASE_URL) : '',
+    guideApiKey: String(env.GUIDE_API_KEY || ''),
+    guideModel: String(env.GUIDE_MODEL || ''),
+    guideFormat: String(env.GUIDE_RESPONSE_FORMAT || 'json_schema'),
+    guideTokenParameter: String(env.GUIDE_TOKEN_PARAMETER || 'max_tokens'),
+    guideTemperature: env.GUIDE_SEND_TEMPERATURE !== 'false',
     guideMode: ['mock','real'].includes(env.GUIDE_GENERATION_MODE) ? env.GUIDE_GENERATION_MODE : 'off',
     guideDailyCalls: positiveInteger(env.GUIDE_DAILY_CALL_LIMIT, 5, 1, 100),
     guideDailyTokens: positiveInteger(env.GUIDE_DAILY_TOKEN_LIMIT, 200000, 1000, 1000000),
