@@ -19,6 +19,6 @@ async function prepareGuideInput(db,selection){
   const sources=checked.sources.map(s=>({id:s.id,excerpt:String(s.link.evidenceSummary||''),material:referenceFor(s.link),context:require('./guide-source-context').contextFor(s.link),contextBaseFingerprint:require('./guide-source-context').baseFingerprint(s.link)}));
   if(claims.some(c=>!c.text||c.text.length>1200)||sources.some(s=>!s.excerpt||s.excerpt.length>2000)||JSON.stringify({claims,sources}).length>16000)fail('GUIDE_INPUT_SIZE','材料不足或过长，请减少所选事实；不会自动截断证据');
   require('./guide-contract').checkGuidePrivacy({resourceTitle:checked.resource.title,claims,sources});
-  return {...fragment,interest,resourceTitle:String(checked.resource.title||''),sourceFingerprint:checked.fingerprint,sourceContextFingerprint:checked.contextFingerprint,claims,sources};
+  return {...fragment,interest,resourceTitle:String(checked.resource.title||''),sourceFingerprint:checked.fingerprint,sourceContextFingerprint:checked.contextFingerprint,contentPlan:require('./guide-content-plan').contentPlan(claims,interest),claims,sources};
 }
 module.exports={prepareGuideInput};
