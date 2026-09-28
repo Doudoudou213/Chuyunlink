@@ -42,18 +42,28 @@ function inspectGuide(output,input){
   for(const word of ['传承','源于','导致','因此形成','传播至','唯一','最早','第一座','首创'])if(t.includes(word)&&!evidence.includes(word))add(['唯一','最早','第一座','首创'].includes(word)?'SUPERLATIVE':'CAUSAL');
   if(refs.some(s=>s.context?.kind==='official')&&/尚不确定|尚未.*核实|未能.*验证|据称/.test(t)&&!/尚不确定|尚未.*核实|未能.*验证|据称/.test(evidence))add('OVERHEDGE');
   if(refs.length&&refs.every(s=>s.context?.kind==='image_observation')&&/始建|年代|真迹|赝品|建于|朝代/.test(t))add('IMAGE_INFERENCE');
-  if(unit.path!=='title')for(let clause of t.split(/[，。；！？]/)){
+  for(let clause of t.split(/[，。；！？]/)){
    clause=clause.replace(/【已核对引语】|【否定示例】/g,'').trim();
    if(/^(?:可|可以|请)?(?:展开来源(?:查看原始材料|阅读原始记录|仔细阅读原始记录|阅读记录|核对|查看)|通过来源了解其记录内容)$/.test(clause))continue;
    if(clause.length<8||evidence.includes(clause))continue;
    const chars=clause.match(/[\u4e00-\u9fff]/g)||[];let matches=0;
    for(let i=0;i<chars.length-1;i++)if(evidence.includes(chars[i]+chars[i+1]))matches++;
-   if(chars.length>=8&&matches/Math.max(1,chars.length-1)<0.22)add('SUPPORT');
+   if(chars.length>=8&&matches/Math.max(1,chars.length-1)<(unit.path==='title'?0.35:0.22))add('SUPPORT');
   }
  }
- const fingerprint=hash([RULE_VERSION,output.title,output.sentences,output.observations,output.gaps,input.sourceFingerprint,input.sourceContextFingerprint,input.claims,input.sources]);
+ const fingerprint=hash([RULE_VERSION,output.title,output.sentences,output.observations,output.gaps,input.sourceFingerprint,input.sourceContextFingerprint,claims.map(c=>({id:c.id,text:c.text,sourceLinkIds:c.sourceLinkIds})),sources.map(s=>({id:s.id,excerpt:s.excerpt,context:s.context}))]);
  return {ruleVersion:RULE_VERSION,fingerprint,status:issues.some(i=>i.severity==='blocker')?'blocked':issues.length?'needs_review':'screened',issues,note:'规则未发现问题不代表事实已经正确，仍需人工审核。'};
 }
 function assertNoBlockers(report){if(report.status==='blocked')throw Object.assign(Error('讲解存在明确越界，已停止保存或发布，请查看逐句问题'),{code:'GUIDE_GROUNDING_BLOCKED',grounding:report});}
 function assertPublishable(report,resolution){assertNoBlockers(report);const warnings=report.issues.filter(i=>i.severity==='warning');if(!warnings.length)return;if(resolution?.fingerprint!==report.fingerprint||warnings.some(i=>typeof resolution.reasons?.[i.id]!=='string'||resolution.reasons[i.id].trim().length<8||resolution.reasons[i.id].length>500))throw Object.assign(Error('仍有待核对句子：请修改后保存，或逐项填写至少8字的保留理由'),{code:'GUIDE_GROUNDING_REVIEW'});require('./guide-contract').checkGuidePrivacy(resolution.reasons);}
-module.exports={RULE_VERSION,inspectGuide,assertNoBlockers,assertPublishable};
+function publishedGuideValid(fragment,checked){
+ if(fragment.sentences&&fragment.text!==fragment.sentences.map(s=>s.text).join(''))return false;
+ if(!fragment.grounding)return true; // Historical human-reviewed versions are not silently migrated.
+ if(fragment.grounding.ruleVersion!==RULE_VERSION)return false;
+ const output={title:fragment.title,sentences:fragment.sentences||[{text:fragment.text,claimIds:fragment.claimIds}],observations:(fragment.observations||[]).map(o=>({...o,claimIds:o.claimIds||fragment.claimIds})),gaps:fragment.gaps||[]};
+ const input={resourceTitle:checked.resource.title,sourceFingerprint:checked.fingerprint,sourceContextFingerprint:checked.contextFingerprint,claims:checked.claims.map(c=>({id:c.id,text:c.claimText,sourceLinkIds:c.sourceLinkIds})),sources:checked.sources.map(s=>({id:s.id,excerpt:s.link.evidenceSummary,context:require('./guide-source-context').contextFor(s.link)}))};
+ const report=inspectGuide(output,input);
+ if(report.fingerprint!==fragment.grounding.fingerprint)return false;
+ try{assertPublishable(report,fragment.groundingResolution);return true;}catch(e){if(/^GUIDE_(GROUNDING|OUTPUT)/.test(e.code||''))return false;throw e;}
+}
+module.exports={publishedGuideValid,RULE_VERSION,inspectGuide,assertNoBlockers,assertPublishable};

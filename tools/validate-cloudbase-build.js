@@ -147,6 +147,10 @@ const javascriptFiles = [
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const guideFiles = [
+ ...['storyWorker','adminSubmissions'].flatMap(f=>['guide-content-plan.js','guide-grounding.js','guide-source-context.js'].map(n=>'cloudfunctions/'+f+'/lib/'+n)),
+ 'cloudfunctions/appCore/lib/guide-grounding.js',
+ 'cloudfunctions/appCore/lib/guide-source-context.js',
+ 'cloudfunctions/appCore/lib/guide-contract.js',
   "static/content-effects.js",
   "static/admin-content-effects.js",
   "static/admin-content-effects.css",
@@ -195,6 +199,7 @@ for (const file of ["visit-engine.js","visit-route.js"]) { if (fs.readFileSync(p
 if (fs.readFileSync(path.join(projectRoot,"cloudfunctions/appCore/lib/guide-evidence.js"),"utf8") !== fs.readFileSync(path.join(projectRoot,"cloudfunctions/adminSubmissions/lib/guide-evidence.js"),"utf8")) throw Error("讲解来源检查副本不同步");
 for (const file of guideFiles.filter(f=>f.startsWith("static/")||f==="guide.html")) { if (!fs.readFileSync(path.join(projectRoot,"tools/deploy-cloudbase.ps1"),"utf8").includes("'"+path.basename(file)+"'")) throw Error("发布文件清单缺少："+file); }
 for (const name of ['guide-content-plan.js','guide-grounding.js','guide-source-context.js','guide-generation-evidence.js','guide-contract.js','guide-evidence.js']) {if(fs.readFileSync(path.join(projectRoot,'cloudfunctions/storyWorker/lib',name),'utf8')!==fs.readFileSync(path.join(projectRoot,'cloudfunctions/adminSubmissions/lib',name),'utf8'))throw Error('讲解智能体共享副本不同步：'+name);}
+for(const name of ['guide-grounding.js','guide-source-context.js','guide-contract.js']){if(read('cloudfunctions/appCore/lib/'+name)!==read('cloudfunctions/storyWorker/lib/'+name))throw Error('讲解公开读取副本不同步：'+name);}
 for(const name of ['content-effect-contract.js','content-effect-store.js']){if(fs.readFileSync(path.join(projectRoot,'cloudfunctions/appCore/lib',name),'utf8')!==fs.readFileSync(path.join(projectRoot,'cloudfunctions/adminSubmissions/lib',name),'utf8'))throw Error('内容效果规则副本不同步：'+name);}
 const forbiddenPatterns = [
   { label: 'localhost', pattern: /\blocalhost\b/i },

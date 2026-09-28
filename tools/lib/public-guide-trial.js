@@ -4,7 +4,7 @@ const fs = require('node:fs'), path = require('node:path'), crypto = require('no
 const { createGuideClient, buildGuideRequest } = require('../../cloudfunctions/storyWorker/lib/guide-client');
 const { requestJson } = require('../../cloudfunctions/storyWorker/lib/tokenhub-client');
 const { createTrialBudget } = require('../../cloudfunctions/storyWorker/lib/guide-trial-budget');
-const { checkGuidePrivacy } = require('../../cloudfunctions/storyWorker/lib/guide-contract');
+const { validateGuideResult, checkGuidePrivacy } = require('../../cloudfunctions/storyWorker/lib/guide-contract');
 const { diagnosis } = require('../../cloudfunctions/storyWorker/lib/guide-diagnostics');
 const digest = x => crypto.createHash('sha256').update(x).digest('hex');
 const fail = code => { throw Object.assign(new Error(code), { code }); };
@@ -18,7 +18,8 @@ function inputFromBundle(bundle, index, interest) {
   if (!source || !allowedHosts.includes(new URL(source.url).hostname)) fail('TRIAL_SOURCE');
   const claims = record.claimCandidates.map(c => ({ id: c.localId, text: c.text, sourceLinkIds: [source.id] }));
   if (!claims.length || claims.length > 12 || new Set(claims.map(c => c.id)).size !== claims.length || claims.some(c => !c.text || c.text.length > 1200)) fail('TRIAL_CLAIMS');
-  const input = { resourceTitle: record.resourceName, interest, claims, sources: [{ id: source.id, excerpt: source.publisher + '公开介绍的摘要：' + claims.map(c => c.text).join('') }] };
+  const input = { resourceTitle: record.resourceName, interest, claims, sources: [{ id: source.id, excerpt: source.publisher + '公开介绍的摘要：' + claims.map(c => c.text).join(''), context:{kind:'unknown',excerptType:'public_test_summary',attribution:source.publisher,qualifiers:[],boundary:'隔离公开资料测试摘要，不代表应用内已审核证据，不自称亲历。'} }] };
+  input.contentPlan=require('../../cloudfunctions/storyWorker/lib/guide-content-plan').contentPlan(claims,interest);
   if (JSON.stringify(input).length > 16000) fail('TRIAL_INPUT_SIZE');
   checkGuidePrivacy(input);
   return { input, record, source };
@@ -26,7 +27,7 @@ function inputFromBundle(bundle, index, interest) {
 function trialBody(input, config, variant) {
   if (!['baseline', 'no-thinking'].includes(variant)) fail('TRIAL_VARIANT');
   const body = buildGuideRequest(input, config);
-  body.messages[0].content = body.messages[0].content.replace('给定已确认事实与节选', '给定的官方公开资料条目与摘要') + ' 本次为隔离的公开资料测试，输入条目不是产品内已人工审核的事实；仅生成测试草稿，不可公开。资料不足时宁可短，不添加内容来凑一分钟。';
+  body.messages[0].content = body.messages[0].content.replaceAll('已确认事实', '待核对的公开资料条目') + ' 本次为隔离的公开资料测试，输入条目不是产品内已人工审核的事实；仅生成测试草稿，不可公开。资料不足时宁可短，不添加内容来凑一分钟。';
   if (variant === 'baseline') { delete body.thinking; delete body.reasoning_effort; }
   if (variant === 'no-thinking') { body.thinking = { type: 'disabled' }; body.reasoning_effort = 'none'; }
   return body;
@@ -74,30 +75,30 @@ async function runTrial({ bundlePath, outputDirectory, index = 0, interest = '�
     const db = budgetDb(state.db, data => { state.db = data; atomic(statePath, state); });
     const budget = createTrialBudget({ db, config });
     const runId = 'run-' + String(state.runs.length + 1).padStart(2, '0');
-    const report = { runId, testOnly: true, publishAllowed: false, mode: 'real-provider-local-public-text', sampleId: record.localSampleId, resource: input.resourceTitle, interest, variant, model: config.textModel, promptVersion: require('../../cloudfunctions/storyWorker/lib/guide-generation').PROMPT_VERSION + '-public-trial-v1', codeVersion: 'public-guide-trial-v2', inputFingerprint: fingerprint, source, sourceCount: input.sources.length, status: 'reserved', startedAt: new Date().toISOString(), usage: null, humanReview: null };
+    const report = { runId, testOnly: true, publishAllowed: false, mode: 'real-provider-local-public-text', sampleId: record.localSampleId, resource: input.resourceTitle, interest, variant, model: config.textModel, promptVersion: require('../../cloudfunctions/storyWorker/lib/guide-generation').PROMPT_VERSION + '-public-trial-v1', codeVersion: 'public-guide-trial-v3-grounding', inputFingerprint: fingerprint, source, sourceCount: input.sources.length, status: 'reserved', startedAt: new Date().toISOString(), usage: null, humanReview: null };
     state.runs.push(report);
     atomic(statePath, state);
     const before = () => { if (digest(fs.readFileSync(bundlePath, 'utf8')) !== fingerprint) fail('GUIDE_SOURCE_CHANGED'); };
-    const started = Date.now();
+    const started = Date.now();let diagnosticCandidate=null;
     const client = createGuideClient({ config, transport: async (url, options, unusedBody, timeout) => {
       report.requestStarted = true; atomic(statePath, state);
       const response = await transport(url, options, JSON.stringify(body), timeout);
       const choice = response.choices?.[0], message = choice?.message || {};
       report.response = { finishReason: String(choice?.finish_reason || '').slice(0, 40), contentCharacters: typeof message.content === 'string' ? message.content.length : 0, reasoningCharacters: typeof message.reasoning_content === 'string' ? message.reasoning_content.length : 0 };
       if (typeof message.content === 'string' && message.content.length < 12000) {
-        try { const candidate = JSON.parse(message.content); checkGuidePrivacy(candidate); if (!message.content.includes(config.apiKey)) report.returnedDraftForDiagnosis = candidate; } catch (_) {}
+        try { const candidate = JSON.parse(message.content); checkGuidePrivacy(candidate); if (!message.content.includes(config.apiKey)) diagnosticCandidate = candidate; } catch (_) {}
       }
       // Never persist hidden reasoning or provider error bodies.
       return response;
     } });
     try {
       const result = await client.generate(input, { beforeAttempt: async () => { before(); await budget.reserve(runId, runId, bounds); }, onUsage: async usage => { await budget.record(runId, usage); if (Number.isSafeInteger(usage.inputTokens) && Number.isSafeInteger(usage.outputTokens) && usage.inputTokens >= 0 && usage.outputTokens >= 0 && usage.totalTokens === usage.inputTokens + usage.outputTokens) report.usage = usage; } });
-      before(); report.output = result.output; report.status = 'draft_only';
-      report.characterCount = [...result.output.sentences.map(s => s.text).join('')].length;
+      before();const checked=validateGuideResult(result.output,input);if(checked.outcome==='insufficient'){report.status='insufficient';report.gaps=checked.gaps;report.characterCount=0;}else{report.grounding=require('../../cloudfunctions/storyWorker/lib/guide-grounding').inspectGuide(checked.output,input);require('../../cloudfunctions/storyWorker/lib/guide-grounding').assertNoBlockers(report.grounding);report.output=result.output;report.status='draft_only';report.characterCount=[...checked.output.text].length;}
     } catch (error) {
       report.status = 'failed'; report.error = diagnosis(error.code);
       if (error.code === 'GUIDE_OUTPUT_INVALID') report.validationIssue = error.message;
     }
+    try{before();if(diagnosticCandidate)report.returnedDraftForDiagnosis=diagnosticCandidate;}catch{delete report.output;delete report.grounding;}
     report.elapsedMs = Date.now() - started;
     report.budget = await budget.status();
     atomic(statePath, state);

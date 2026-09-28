@@ -26,15 +26,17 @@ async function main(){
  assert.equal(d.grounding.status,'needs_review');
  await assert.rejects(x.admin.handle(publish(d,prior),'admin'),{code:'GUIDE_GROUNDING_REVIEW'});
  await x.admin.handle(publish(d,resolve(d)),'admin');
- let exposed=(await x.pub.station({resourceId:'r'})).items;
+ let exposed=(await x.pub.station({resourceId:'r'})).items;const vid=x.db.data().guide_fragments[fragmentId].publishedVersionId;const snapshot=x.db.data().guide_fragment_versions[vid];await x.db.collection('guide_fragment_versions').doc(vid).update({text:'发布后绕过逐句依据修改正文，不能继续公开。'});assert.equal((await x.pub.station({resourceId:'r'})).items.length,0);await x.db.collection('guide_fragment_versions').doc(vid).update({text:snapshot.text,grounding:{...snapshot.grounding,ruleVersion:'obsolete'}});assert.equal((await x.pub.station({resourceId:'r'})).items.length,0);await x.db.collection('guide_fragment_versions').doc(vid).update({grounding:snapshot.grounding});
  assert.equal(exposed.length,1);assert(!JSON.stringify(exposed).includes('grounding'));assert(!JSON.stringify(exposed).includes('管理员'));
- const link=x.db.data().story_evidence_links.l;
+ const evals=require('../cloudfunctions/adminSubmissions/domains/guide-evaluations').createGuideEvaluationService({db:x.db});let ew=await evals.handle({action:'getGuideEvaluations'},'admin');await evals.handle({action:'selectGuideEvaluation',reviewId:ew.reviews[0].id,split:'debug'},'admin');ew=await evals.handle({action:'getGuideEvaluations'},'admin');assert.equal(ew.groups[0].screening.screened,1);assert(ew.groups[0].screening.warningCount>0);const link=x.db.data().story_evidence_links.l;
  await x.admin.handle({action:'saveGuideSourceContext',sourceLinkId:'l',baseFingerprint:baseFingerprint(link),contextVersion:0,context:{kind:'document'}},'admin');
- assert.equal((await x.pub.station({resourceId:'r'})).items.length,0);
+ assert.equal((await x.pub.station({resourceId:'r'})).items.length,0);ew=await evals.handle({action:'getGuideEvaluations'},'admin');assert.equal(ew.samples[0].active,false);assert.equal(ew.groups[0].screening.screened,0);
  const clean=await setup(output().sentences[0].text);const r=await clean.gen.generate(selection,'admin');d=(await clean.admin.handle({action:'getGuideFragmentDraft',fragmentId:r.fragmentId},'admin')).draft;
  await clean.admin.handle(publish(d),'admin');await clean.db.collection('guide_fragments').doc(d.id).update({needsSourceReview:true});
  assert.equal((await clean.pub.station({resourceId:'r'})).items.length,0);
  await assert.rejects(clean.admin.handle({action:'getGuideFragmentDraft',fragmentId:d.id},'admin'),{code:'GUIDE_SOURCE_INVALID'});
+ await assert.rejects(clean.gen.generate(selection,'admin'),{code:'GUIDE_SOURCE_INVALID'});
+ const revoked=fakeDb(fixture());const revokedGen=createGuideGenerationService({db:revoked,config,client:{generate:async(i,h)=>{await h.beforeAttempt();await revoked.collection('submissions').doc('s').update({aiAnalysisConsent:false});return {output:{...output(),sentences:[{text:'我们现场观察到石刻，现在可以展开来源阅读材料。',claimIds:['c']}]}};}}});await assert.rejects(revokedGen.generate(selection,'admin'));assert.equal(Object.values(revoked.data().ai_jobs)[0].grounding,null);assert.equal(Object.keys(revoked.data().guide_fragments||{}).length,0);
  console.log('Grounding review passed: generation blocked, no extra call, warning gate, forged/stale review, edit recheck, reason audit, public privacy, source context change and review flag.');
 }
 if(require.main===module)main().catch(e=>{console.error(e);process.exit(1)});

@@ -91,7 +91,7 @@ function createStoryAgentEvaluationService({ db }) {
   }
 
   async function currentSourceState(sample) {
-    if(sample.candidateType==='guide') {try {const input=await require('../lib/guide-generation-evidence').prepareGuideInput(db,sample.sourceSelection);return input.sourceFingerprint===sample.sourceFingerprint?{valid:true}:{valid:false,reason:'讲解来源版本已变化'};}catch(e){if(/^GUIDE_/.test(e.code||''))return {valid:false,reason:'讲解来源失效或授权已撤回'};throw e;}}
+    if(sample.candidateType==='guide') {try {const input=await require('../lib/guide-generation-evidence').prepareGuideInput(db,sample.sourceSelection);return input.sourceFingerprint===sample.sourceFingerprint&&(!sample.sourceContextFingerprint||sample.sourceContextFingerprint===input.sourceContextFingerprint)?{valid:true}:{valid:false,reason:'讲解来源版本已变化'};}catch(e){if(/^GUIDE_/.test(e.code||''))return {valid:false,reason:'讲解来源失效或授权已撤回'};throw e;}}
 
     if (!sample.submissionId) return { valid: false, reason: '缺少来源投稿' };
     const submission = first(await db.collection('submissions').doc(sample.submissionId).get());
@@ -140,7 +140,7 @@ function createStoryAgentEvaluationService({ db }) {
         split: item.split, decision: item.decision, reasonCategory: item.reasonCategory || '', changedFields: item.changedFields || [],
         model: item.model || '', promptVersion: item.promptVersion || '', codeVersion: item.codeVersion || 'legacy',
         humanRating: item.humanRating || '', ratingNote: item.ratingNote || '', active: item.active !== false,
-        sourceValid: item.sourceValid !== false, disabledReason: item.disabledReason || '' })),
+        groundingSummary:item.active!==false?item.groundingSummary||null:null,sourceValid: item.sourceValid !== false, disabledReason: item.disabledReason || '' })),
       selectedReviewIds: samples.map(item => item.reviewId) };
   }
 
@@ -178,7 +178,7 @@ function createStoryAgentEvaluationService({ db }) {
       const sample={setId,setVersion:setRecord.version,reviewId,candidateId:review.fragmentId,candidateType:'guide',jobId:review.generation.jobId,
         split,decision:review.decision,original:review.original,final:review.final,changedFields:fields.filter(k=>JSON.stringify(review.original?.[k])!==JSON.stringify(review.final?.[k])),
         model:review.generation.model,promptVersion:review.generation.promptVersion,codeVersion:review.generation.codeVersion,
-        sourceSelection:review.sourceSelection,sourceFingerprint:review.sourceFingerprint,humanRating:review.humanRating,active:true,sourceValid:true,simulated:review.simulated===true,selectedBy:adminUid,selectedAt:db.serverDate()};
+        sourceSelection:review.sourceSelection,sourceFingerprint:review.sourceFingerprint,sourceContextFingerprint:review.sourceContextFingerprint||null,groundingSummary:review.grounding?{ruleVersion:review.grounding.ruleVersion,warningCount:review.grounding.issues.filter(i=>i.severity==='warning').length,blockerCount:review.grounding.issues.filter(i=>i.severity==='blocker').length,retainedCount:Object.keys(review.groundingResolution?.reasons||{}).length}:null,humanRating:review.humanRating,active:true,sourceValid:true,simulated:review.simulated===true,selectedBy:adminUid,selectedAt:db.serverDate()};
       const state=await currentSourceState(sample);if(!state.valid)fail('SOURCE_UNAVAILABLE',state.reason);
       await db.runTransaction(async tx=>{if(!first(await tx.collection(SAMPLE_COLLECTION).doc(key).get()))await tx.collection(SAMPLE_COLLECTION).doc(key).set(sample);});
       return {ok:true,sample:{id:key,...sample}};
