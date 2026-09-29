@@ -8501,20 +8501,11 @@
         if (status) status.innerText = '当前没有可用于推荐的已发布点位。';
         return;
       }
-      const maxByIntensity = { relaxed: 2, balanced: 4, active: 6 }[mapPlannerPreferences.intensity] || 4;
-      const maxByDuration = Math.max(1, Math.floor(mapPlannerPreferences.duration / 65));
-      const maxPoints = Math.min(maxByIntensity, maxByDuration, 8);
-      const chosen = [];
-      let usedMinutes = 0;
-      for (const entry of selectedGroup.entries) {
-        if (chosen.length >= maxPoints) break;
-        const nextMinutes = usedMinutes + entry.stayMinutes;
-        if (chosen.length && nextMinutes > mapPlannerPreferences.duration) continue;
-        chosen.push(entry);
-        usedMinutes = nextMinutes;
-      }
-      if (!chosen.length) chosen.push(selectedGroup.entries[0]);
-      const ordered = orderMapPlannerRecommendations(chosen);
+      const ordered = VisitPlanner.selectEntries(selectedGroup.entries, {
+        minutes: mapPlannerPreferences.duration, intensity: mapPlannerPreferences.intensity,
+        anchor: currentLocation && currentLocation.isReal ? [currentLocation.latitude, currentLocation.longitude] : null
+      });
+      const usedMinutes = ordered.reduce((sum, entry) => sum + entry.stayMinutes, 0);
       mapPlannerSelectedIds = ordered.map(entry => entry.item.id);
       mapPlannerActiveId = mapPlannerSelectedIds[0];
       mapPlannerRecommendationReasons = new Map(ordered.map(entry => [entry.item.id, entry.reasons.length ? entry.reasons : ['符合当前偏好']]));
@@ -12024,6 +12015,8 @@
   <script src="./static/guide-contribution.js"></script>
   <script src="./static/cloudbase-app.js"></script>
   
+<script src="./static/visit-engine.js"></script>
+<script src="./static/visit-planner.js"></script>
 <script src="./static/guide-entry.js"></script>
 </body>
 </html>

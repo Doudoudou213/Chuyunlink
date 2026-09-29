@@ -176,6 +176,8 @@ const guideFiles = [
   "static/guide-cloud.js",
   "static/guide-entry.js",
   "static/cultural-guide.js",
+  "static/visit-planner.js",
+  "static/guide-conversation.js",
   "static/guide-content.js",
   "static/guide-route.js",
   "static/guide-record.js",

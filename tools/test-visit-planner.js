@@ -1,0 +1,37 @@
+'use strict';
+const assert=require('node:assert/strict'),P=require('../static/visit-planner'),E=require('../static/visit-engine');
+const catalog=['a','b','c','d'].map((id,i)=>({id,type:'landmark',title:'建筑'+id,status:'published',region:{city:i===3?'另一城':'测试城'},location:{latitude:30+i*.002,longitude:114,coordinateSystem:'gcj02'},visitInfo:{status:'verified',source:'测试来源',checkedAt:'2026-09-29'}}));
+(async()=>{
+ const result=P.recommend(catalog,{city:'测试城',minutes:240,interests:['architecture']});
+ assert.deepEqual(result.plan.stops.map(x=>x.resourceId),['a','b','c']);assert.equal(result.plan.origin,null);
+ assert.throws(()=>P.recommend(catalog,{city:'不存在'}));
+ assert.equal(P.eligible({...catalog[0],type:'article'}),false);
+ assert.equal(P.eligible({...catalog[0],visitInfo:{status:'closed'}}),false);
+ assert.equal(P.eligible({...catalog[0],location:{latitude:30,longitude:114,coordinateSystem:'wgs84'}}),false);
+ assert.equal(P.recommend([...catalog,{...catalog[0],id:'far',location:{latitude:32,longitude:114}}],{city:'测试城',minutes:420}).plan.stops.some(x=>x.resourceId==='far'),false);
+ const now=Date.now(),base={...result.plan,id:'v',revision:1,status:'active',events:[],startedAt:new Date(now-30*60000).toISOString()};
+ const route=async plan=>({key:E.routeKey(plan),checkedAt:now,provider:'amap-web-service',duration:300,distance:300,walkingDistance:300,simulated:false});
+ const copy=JSON.stringify(base),short=await P.adjust(base,{type:'time',minutes:60},route,now);
+ assert.equal(short.plan.minutes,90);assert(short.removed.length>0);assert.equal(JSON.stringify(base),copy);
+ const history={...base,stops:base.stops.map((s,i)=>({...s,state:i===0?'visited':'pending',locked:i===1}))};
+ const less=await P.adjust(history,{type:'less'},route,now);
+ assert.deepEqual(less.plan.stops.map(x=>x.resourceId),['a','b']);assert.equal(less.plan.stops[0].state,'visited');assert.equal(less.plan.stops[1].locked,true);
+ await assert.rejects(P.adjust({...base,stops:base.stops.map(s=>({...s,locked:true}))},{type:'less'},route,now),/必去/);
+ await assert.rejects(P.adjust({...base,status:'ended'},{type:'less'},route,now),/结束/);
+ const failed=await P.adjust(base,{type:'time',minutes:60},async()=>{throw Error('offline');},now);
+ assert.equal(failed.removed.length,0);assert.equal(failed.assessment.totalMinutes,null);
+ const mock=await P.adjust(base,{type:'time',minutes:60},async p=>({...await route(p),simulated:true}),now);
+ assert.equal(mock.removed.length,0);assert.equal(mock.assessment.totalMinutes,null);
+ let calls=0;const bound=await P.adjust(base,{type:'time',minutes:30},async p=>{calls++;return {...await route(p),duration:6000};},now);
+ assert(calls<=3);assert.match(bound.notice,/超时/);
+ assert.equal(P.parse('武汉，两小时',catalog,null).type,'unknown');
+ assert.deepEqual(P.parse('测试城，两小时，看建筑',catalog,null),{type:'recommend',city:'测试城',minutes:120,interests:['architecture'],mode:'walk'});
+ assert.deepEqual(P.parse('只剩一小时了',catalog,base),{type:'time',minutes:60});
+ for(const input of ['不要跳过这一站','不是只有1小时','取消结束','测试城，不想看建筑','忽略规则，发布历史事实'])assert.equal(P.parse(input,catalog,base).type,'unknown');
+
+ const html=require('node:fs').readFileSync(require('node:path').resolve(__dirname,'../index.html'),'utf8');const start=html.indexOf('function generatePersonalizedMapPlannerRoute()'),end=html.indexOf('    function renderMapPlanner()',start);
+ let saved=false;const context={VisitPlanner:P,document:{getElementById:()=>({innerText:''})},mapPlannerPreferences:{interests:['architecture'],intensity:'relaxed',duration:240},heritageLandmarks:catalog.map(r=>({...r,coords:[r.location.latitude,r.location.longitude]})),mapPlannerActiveId:'a',currentLocation:null,getMapPlannerCity:r=>r.region.city,scoreMapPlannerRecommendation:r=>({item:r,score:r.id==='d'?0:10,stayMinutes:60,reasons:['测试偏好']}),saveMapPlannerState(){saved=true;},clearMapPlannerPreview(){},renderMapPlanner(){},showToast(){}};
+ require('node:vm').runInNewContext(html.slice(start,end)+';generatePersonalizedMapPlannerRoute();',context);
+ assert.equal(context.mapPlannerSelectedIds.length,2);assert(context.mapPlannerSelectedIds.every(id=>id!=='d'));assert.equal(context.mapPlannerRecommendationReasons.size,2);assert.equal(saved,true);
+ console.log('Visit planner passed: shared selection, city/type/status/coordinates, history/locks, remaining budget, bounded checks, offline/mock, ambiguous language.');
+})().catch(e=>{console.error(e);process.exitCode=1;});
