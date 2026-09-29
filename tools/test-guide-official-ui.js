@@ -24,7 +24,7 @@ async function main(){
   await page.exposeFunction('localOfficialCore',async e=>{if(e.action==='getResources')return {ok:true,items:catalog};if(e.action==='getGuideStation')return core.station(e);if(e.action==='getGuideRoute')return {ok:true,items:[]};return {ok:true};});
   await page.route('**/static/guide-cloud.js',r=>r.fulfill({contentType:'application/javascript',body:'window.GuideCloud={identity:async()=>null,call:window.localOfficialCore};'}));
   await page.addInitScript(c=>{localStorage.clear();localStorage.setItem('chulink-guide-seed',JSON.stringify({catalog:c,plan:{stops:[{resourceId:'r',stayMinutes:30}],minutes:120}}));},catalog);
-  await page.goto(base+'/guide.html');await page.locator('.guide-origin-dot.is-verified').waitFor();
+  await page.goto(base+'/guide.html');await page.locator('[data-act=view]').first().click();await page.locator('#guide-station-panel > summary').click();await page.locator('.guide-origin-dot.is-verified').waitFor();
   await page.getByRole('button',{name:'查看依据',exact:true}).click();await page.locator('.guide-origin-detail:not([hidden])').waitFor();
   assert.match(await page.locator('.guide-origin-detail').innerText(),/对应第1句/);
   assert.match(await page.locator('.guide-origin-detail').innerText(),/固定响应/);

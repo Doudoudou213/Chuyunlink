@@ -20,7 +20,7 @@ function assess(plan,route,now=Date.now()){
  if(!plan.origin&&remaining.length)issues.push('未指定起点：前往第一站的交通时间尚未计入');
  if(remaining.some(s=>!s.location))issues.push('有站点缺少位置，无法完整核算交通');
  if(remaining.some(s=>!s.city))issues.push('有站点城市尚未核实');if(remaining.some(s=>s.location?.coordinateSystem!=='gcj02'))issues.push('站点坐标系尚未核实');if(remaining.some(s=>s.visitStatus!=='verified'))issues.push('部分参观条件尚未核实');
- const valid=route&&route.key===routeKey(plan)&&now-Number(route.checkedAt)<15*60*1000&&now>=Number(route.checkedAt)&&(route.provider==='amap-web-service'||route.provider==='no-travel'&&routePoints(plan).every(p=>p.latitude===plan.origin?.latitude&&p.longitude===plan.origin?.longitude))&&!route.simulated&&Number.isFinite(route.duration)&&route.duration>=0;
+ const valid=route&&route.key===routeKey(plan)&&now-Number(route.checkedAt)<15*60*1000&&now>=Number(route.checkedAt)&&(route.provider==='amap-web-service'||route.provider==='no-travel'&&routePoints(plan).every(p=>p.latitude===routePoints(plan)[0]?.latitude&&p.longitude===routePoints(plan)[0]?.longitude))&&!route.simulated&&Number.isFinite(route.duration)&&route.duration>=0;
  const stay=remaining.reduce((n,s)=>n+s.stayMinutes,0),traffic=valid?Math.ceil(route.duration/60):null;
  const total=traffic===null?null:stay+traffic+plan.bufferMinutes;
  const elapsed=plan.startedAt?Math.max(0,Math.floor((now-Date.parse(plan.startedAt))/60000)):0; const available=Math.max(0,plan.minutes-elapsed);
