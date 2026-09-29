@@ -199,6 +199,7 @@ try {
         (Join-Path $staticDirectory 'guide-route.js'),
         (Join-Path $staticDirectory 'guide-record.js'),
         (Join-Path $staticDirectory 'guide-contribution.js'),
+        (Join-Path $staticDirectory 'admin-guide-official.js'),
         (Join-Path $staticDirectory 'admin-guide.js'),
         (Join-Path $staticDirectory 'admin-guide-trial.js'),
         (Join-Path $staticDirectory 'cultural-guide.css'),

@@ -181,6 +181,13 @@ const guideFiles = [
   "static/guide-record.js",
   "static/guide-contribution.js",
   "static/admin-guide.js",
+  "static/admin-guide-official.js",
+  'cloudfunctions/adminSubmissions/lib/official-source-registry.js',
+  'cloudfunctions/adminSubmissions/lib/official-source-fetch.js',
+  'cloudfunctions/adminSubmissions/lib/guide-official-evidence.js',
+  'cloudfunctions/adminSubmissions/domains/guide-official-sources.js',
+  'cloudfunctions/appCore/lib/official-source-registry.js',
+  'cloudfunctions/appCore/lib/guide-official-evidence.js',
   "static/admin-guide-trial.js",
   "cloudfunctions/storyWorker/lib/guide-trial-budget.js",
   "cloudfunctions/storyWorker/lib/guide-diagnostics.js",
@@ -199,6 +206,7 @@ for (const file of ["visit-engine.js","visit-route.js"]) { if (fs.readFileSync(p
 if (fs.readFileSync(path.join(projectRoot,"cloudfunctions/appCore/lib/guide-evidence.js"),"utf8") !== fs.readFileSync(path.join(projectRoot,"cloudfunctions/adminSubmissions/lib/guide-evidence.js"),"utf8")) throw Error("讲解来源检查副本不同步");
 for (const file of guideFiles.filter(f=>f.startsWith("static/")||f==="guide.html")) { if (!fs.readFileSync(path.join(projectRoot,"tools/deploy-cloudbase.ps1"),"utf8").includes("'"+path.basename(file)+"'")) throw Error("发布文件清单缺少："+file); }
 for (const name of ['guide-content-plan.js','guide-grounding.js','guide-source-context.js','guide-generation-evidence.js','guide-contract.js','guide-evidence.js']) {if(fs.readFileSync(path.join(projectRoot,'cloudfunctions/storyWorker/lib',name),'utf8')!==fs.readFileSync(path.join(projectRoot,'cloudfunctions/adminSubmissions/lib',name),'utf8'))throw Error('讲解智能体共享副本不同步：'+name);}
+for(const name of ['guide-official-evidence.js','official-source-registry.js']){if(read('cloudfunctions/appCore/lib/'+name)!==read('cloudfunctions/adminSubmissions/lib/'+name))throw Error('官网来源公开读取副本不同步：'+name);}
 for(const name of ['guide-grounding.js','guide-source-context.js','guide-contract.js']){if(read('cloudfunctions/appCore/lib/'+name)!==read('cloudfunctions/storyWorker/lib/'+name))throw Error('讲解公开读取副本不同步：'+name);}
 for(const name of ['content-effect-contract.js','content-effect-store.js']){if(fs.readFileSync(path.join(projectRoot,'cloudfunctions/appCore/lib',name),'utf8')!==fs.readFileSync(path.join(projectRoot,'cloudfunctions/adminSubmissions/lib',name),'utf8'))throw Error('内容效果规则副本不同步：'+name);}
 const forbiddenPatterns = [
