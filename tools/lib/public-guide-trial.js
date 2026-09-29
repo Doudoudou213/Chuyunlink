@@ -54,14 +54,20 @@ function budgetDb(initial, save) {
     save(next); state = next; return result;
   } };
 }
-async function runTrial({ bundlePath, outputDirectory, index = 0, interest = '通用', variant = 'baseline', execute = false, config, transport = requestJson }) {
+const LEGACY_POLICY = Object.freeze({ id: 'guide-trial-20260928', maxCalls: 8, limitCny: 5 });
+function checkedPolicy(policy = LEGACY_POLICY) {
+  if (!policy || typeof policy.id !== 'string' || !/^[a-zA-Z0-9_-]{1,64}$/.test(policy.id) || !Number.isInteger(policy.maxCalls) || policy.maxCalls < 1 || policy.maxCalls > 8 || !Number.isFinite(policy.limitCny) || policy.limitCny < 0.000001 || policy.limitCny > 5) fail('TRIAL_POLICY');
+  return { id: policy.id, maxCalls: policy.maxCalls, limitCny: policy.limitCny };
+}
+async function runTrial({ bundlePath, outputDirectory, index = 0, interest = '通用', variant = 'baseline', execute = false, config, policy, transport = requestJson }) {
+  policy = checkedPolicy(policy);
   if (config.textModel !== 'hy3' || config.baseUrl !== 'https://tokenhub.tencentmaas.com/v1') fail('TRIAL_PROVIDER_NOT_PRICED');
-  config = { ...config, guideTrialId: 'guide-trial-20260928', guideTrialLimitCny: 5, guideInputCnyPerMillion: 1, guideOutputCnyPerMillion: 4, providerMaxAttempts: 1, maxOutputTokens: 1800 };
+  config = { ...config, guideTrialId: policy.id, guideTrialLimitCny: policy.limitCny, guideInputCnyPerMillion: 1, guideOutputCnyPerMillion: 4, providerMaxAttempts: 1, maxOutputTokens: 1800 };
   const contents = fs.readFileSync(bundlePath, 'utf8'), fingerprint = digest(contents);
   const { input, record, source } = inputFromBundle(JSON.parse(contents), index, interest);
   const body = trialBody(input, config, variant);
   const bounds = { inputTokens: Buffer.byteLength(JSON.stringify(body)) + 4096, outputTokens: 1800 };
-  if (!execute) return { ready: true, paidCall: false, sample: record.localSampleId, variant, sourceCount: input.sources.length, expectedReservationCny: (bounds.inputTokens + 4 * bounds.outputTokens) / 1e6 };
+  if (!execute) return { ready: true, paidCall: false, policy, sample: record.localSampleId, variant, sourceCount: input.sources.length, expectedReservationCny: (bounds.inputTokens + 4 * bounds.outputTokens) / 1e6 };
   if (!config.apiKey) fail('TRIAL_KEY_MISSING');
   fs.mkdirSync(outputDirectory, { recursive: true });
   const lock = path.join(outputDirectory, '.trial-lock'), statePath = path.join(outputDirectory, 'trial-state.json');
@@ -69,13 +75,14 @@ async function runTrial({ bundlePath, outputDirectory, index = 0, interest = '�
   try { fd = fs.openSync(lock, 'wx'); } catch (_) { fail('TRIAL_BUSY'); }
   try {
     const existing = fs.existsSync(statePath);
-    const state = existing ? JSON.parse(fs.readFileSync(statePath, 'utf8')) : { trialId: config.guideTrialId, db: {}, runs: [] };
-    if (state.trialId !== config.guideTrialId || !Array.isArray(state.runs) || state.runs.length >= 8) fail('TRIAL_ATTEMPTS');
+    const state = existing ? JSON.parse(fs.readFileSync(statePath, 'utf8')) : { trialId: config.guideTrialId, policy, db: {}, runs: [] };
+    if (JSON.stringify(checkedPolicy(state.policy || LEGACY_POLICY)) !== JSON.stringify(policy)) fail('TRIAL_POLICY_CHANGED');
+    if (state.trialId !== config.guideTrialId || !Array.isArray(state.runs) || state.runs.length >= policy.maxCalls) fail('TRIAL_ATTEMPTS');
     if (!existing && fs.readdirSync(outputDirectory).some(n => /^run-/.test(n))) fail('TRIAL_LEDGER_MISSING');
     const db = budgetDb(state.db, data => { state.db = data; atomic(statePath, state); });
     const budget = createTrialBudget({ db, config });
     const runId = 'run-' + String(state.runs.length + 1).padStart(2, '0');
-    const report = { runId, testOnly: true, publishAllowed: false, mode: 'real-provider-local-public-text', sampleId: record.localSampleId, resource: input.resourceTitle, interest, variant, model: config.textModel, promptVersion: require('../../cloudfunctions/storyWorker/lib/guide-generation').PROMPT_VERSION + '-public-trial-v1', codeVersion: 'public-guide-trial-v3-grounding', inputFingerprint: fingerprint, source, sourceCount: input.sources.length, status: 'reserved', startedAt: new Date().toISOString(), usage: null, humanReview: null };
+    const report = { runId, trialId: policy.id, policy, testOnly: true, publishAllowed: false, mode: 'real-provider-local-public-text', sampleId: record.localSampleId, resource: input.resourceTitle, interest, variant, model: config.textModel, promptVersion: require('../../cloudfunctions/storyWorker/lib/guide-generation').PROMPT_VERSION + '-public-trial-v1', codeVersion: 'public-guide-trial-v3-grounding', inputFingerprint: fingerprint, source, sourceCount: input.sources.length, status: 'reserved', startedAt: new Date().toISOString(), usage: null, humanReview: null };
     state.runs.push(report);
     atomic(statePath, state);
     const before = () => { if (digest(fs.readFileSync(bundlePath, 'utf8')) !== fingerprint) fail('GUIDE_SOURCE_CHANGED'); };

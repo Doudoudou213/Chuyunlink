@@ -9,7 +9,9 @@ const { runTrial } = require('./lib/public-guide-trial');
   // Keys arrive through stdin, never command-line arguments, logs or a file.
   const env = execute ? JSON.parse(fs.readFileSync(0, 'utf8')) : {};
   const config = loadConfig(env);
+  // A new batch requires an explicit, separately authorized policy; old ledgers stay locked.
+  const policy = args.includes('--policy') ? JSON.parse(fs.readFileSync(path.resolve(value('--policy')), 'utf8')) : undefined;
   const outputDirectory = path.resolve(value('--out'));
-  const result = await runTrial({ bundlePath: path.resolve(value('--bundle')), outputDirectory, index: args.includes('--sample') ? Number(value('--sample')) : 0, interest: args.includes('--interest') ? value('--interest') : '通用', variant: args.includes('--variant') ? value('--variant') : 'baseline', execute, config });
+  const result = await runTrial({ bundlePath: path.resolve(value('--bundle')), outputDirectory, index: args.includes('--sample') ? Number(value('--sample')) : 0, interest: args.includes('--interest') ? value('--interest') : '通用', variant: args.includes('--variant') ? value('--variant') : 'baseline', execute, config, policy });
   console.log(JSON.stringify(result, null, 2));
 })().catch(() => { console.error('试跑未能执行：请检查参数、凭证或本地预算文件；未输出私有配置。'); process.exit(1); });
