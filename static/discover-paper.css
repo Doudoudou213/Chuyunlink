@@ -1,0 +1,214 @@
+/* Home-only paper composition. Existing pages keep their own visual contracts. */
+.discover-paper-active,
+.profile-paper-active {
+  --home-paper: #f8f4eb;
+  --home-ink: #30392e;
+  --home-muted: #756e5e;
+  --home-red: #a7493d;
+  --home-sage: #6c8170;
+  --home-gold: #b38c45;
+  --home-surface: #fffcf5;
+  --home-heading: 'Noto Serif SC', 'Songti SC', SimSun, serif;
+  background: var(--home-paper);
+}
+.discover-paper-active #platform-header { display: none; }
+.discover-paper-active #app-shell,
+.discover-paper-active #app-viewport { background: var(--home-paper); }
+.discover-paper-active #app-viewport { min-height: 100vh; padding-top: 0; }
+.discover-paper-active #app-viewport > #view-discover {
+  width: min(100%, 1040px);
+  padding-top: 0;
+  padding-bottom: 36px;
+  color: var(--home-ink);
+  background: transparent;
+  overflow: visible;
+}
+.discover-paper-active #view-discover::before { display: none; }
+.discover-paper-active #view-discover > :not(.paper-home-hero) {
+  position: relative;
+  margin-top: 28px;
+  padding-left: 28px;
+  padding-right: 28px;
+}
+.paper-home-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: 362px;
+  padding: 25px 28px 0;
+}
+.paper-home-art {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: -90px;
+  left: 50%;
+  width: min(100vw, 1600px);
+  overflow: hidden;
+  pointer-events: none;
+  transform: translate(-50%, var(--paper-drift, 0px));
+  mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%), linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-composite: intersect;
+}
+.paper-home-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 29%;
+  mix-blend-mode: multiply;
+  animation: paper-botanical-breath 12s ease-in-out infinite alternate;
+}
+@keyframes paper-botanical-breath {
+  from { transform: translate3d(-2px, 0, 0) scale(1.015); }
+  to { transform: translate3d(2px, 4px, 0) scale(1.025); }
+}
+.paper-is-out-of-view .paper-home-art img { animation-play-state: paused; }
+.paper-home-utilities {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+  z-index: 5;
+  min-height: 44px;
+}
+.paper-home-utility-right { display: flex; align-items: center; position: relative; gap: 2px; }
+.paper-home-utilities button {
+  min-height: 44px;
+  min-width: 44px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--home-ink) !important;
+  border-radius: 3px !important;
+  font: inherit;
+  cursor: pointer;
+}
+#paper-home-location > button { display: flex; gap: 5px; align-items: center; padding: 0 6px; }
+#paper-home-location #current-gps { max-width: 110px; font-size: 12px; }
+#paper-home-location svg { width: 15px; height: 15px; }
+#paper-home-more { display: flex; align-items: center; gap: 5px; padding: 0 4px 0 10px; font-size: 12px; }
+#paper-home-more svg { width: 20px; height: 20px; }
+#paper-home-notifications #header-notification-entry { width: 44px; height: 44px; padding: 12px; }
+#paper-home-notifications #header-notification-badge { top: 2px; right: 1px; background: var(--home-red); color: white; }
+.paper-home-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 168px;
+  padding: 8px;
+  background: var(--home-surface);
+  box-shadow: 0 12px 32px #514c3926;
+  border-radius: 8px;
+}
+.paper-home-menu[hidden] { display: none; }
+.paper-home-menu > button { display: flex; width: 100%; justify-content: flex-start; gap: 12px; padding: 9px 12px; height: auto; font-size: 13px; white-space: nowrap; }
+.paper-home-menu > button:hover { background: #ebe6d7 !important; }
+.paper-home-menu > button svg { width: 17px; height: 17px; flex-shrink: 0; }
+.paper-home-utilities button:focus-visible,
+.discover-paper-active #view-discover button:focus-visible,
+.discover-paper-active #view-discover input:focus-visible {
+  outline: 2px solid var(--home-sage) !important;
+  outline-offset: 3px;
+}
+.paper-home-brand { margin: 5px auto 0; text-align: center; }
+.paper-home-wordmark { width: 260px; margin: 0 auto; position: relative; }
+.paper-home-wordmark img { display: block; width: 100%; height: 76px; object-fit: contain; }
+.paper-home-wordmark-fallback { display: none; font-family: var(--home-heading); font-size: 34px; letter-spacing: .1em; }
+.paper-home-wordmark.is-image-unavailable img { display: none; }
+.paper-home-wordmark.is-image-unavailable .paper-home-wordmark-fallback { display: block; }
+.paper-home-imprint { font-size: 11px; letter-spacing: .25em; color: #69715e; margin-top: 2px; }
+.paper-home-intro { position: relative; text-align: center; margin-top: 42px; }
+.paper-home-heading { font: 500 29px/1.65 var(--home-heading); color: var(--home-ink); letter-spacing: .08em; }
+.paper-mobile-break { display: none; }
+.paper-home-caption { margin-top: 9px; font-size: 12px; line-height: 1.9; letter-spacing: .04em; color: var(--home-muted); }
+.discover-paper-active #paper-home-navigation #app-navigation {
+  position: relative !important;
+  top: auto !important;
+  order: initial;
+  margin-top: 26px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.discover-paper-active #paper-home-navigation .nav-item { min-width: 104px; color: var(--home-muted); }
+.discover-paper-active #paper-home-navigation .nav-item.is-active { color: var(--home-red); }
+.discover-paper-active #paper-home-navigation .nav-icon { width: 19px; height: 19px; }
+.discover-paper-active #paper-home-navigation .nav-label { font-size: 12px; font-weight: 500; }
+.discover-paper-active #view-discover .discover-quick-actions {
+  padding: 9px 0 21px;
+  border: 0;
+  background: transparent;
+}
+.discover-paper-active #view-discover .chu-quick-entry { min-height: 100px; color: var(--home-ink); font-size: 14px; gap: 10px; font-weight: 500; }
+.discover-paper-active #view-discover .chu-feature-icon { width: 62px; height: 56px; }
+.discover-paper-active #view-discover .discover-search-shell {
+  min-height: 48px;
+  border: 0;
+  border-radius: 6px;
+  background: #eeeadd;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding-left: 16px;
+}
+.discover-paper-active #view-discover .discover-search-shell input { font-size: 14px; color: var(--home-ink); }
+.discover-paper-active #view-discover .discover-search-shell input::placeholder { color: #797767; }
+.discover-paper-active #view-discover #discover-board-share,
+.discover-paper-active #view-discover #discover-board-needs {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--home-muted);
+  font: 500 16px/1.5 var(--home-heading);
+  padding: 12px 4px;
+  min-height: 48px;
+}
+.discover-paper-active #view-discover button[data-paper-selected='true'] {
+  color: var(--home-red) !important;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 11px;
+}
+.discover-paper-active #view-discover button[onclick*='openEndangeredHotspot'] {
+  background: #eee7d5 !important;
+  border-radius: 8px;
+  box-shadow: none !important;
+  padding: 22px;
+}
+.discover-paper-active #view-discover button[onclick*='openEndangeredHotspot'] h3 { color: var(--home-ink) !important; font-size: 19px; line-height: 1.65; font-weight: 500; }
+.discover-paper-active #view-discover button[onclick*='openEndangeredHotspot'] p { font-size: 13px; line-height: 1.9; }
+.discover-paper-active #view-discover button[onclick*='openEndangeredHotspot'] > .inline-block { color: var(--home-red); background: transparent; padding: 0; font-size: 11px; letter-spacing: .1em; }
+.discover-paper-active #view-discover button[onclick*='openEndangeredHotspot'] .bg-sandGold { background: transparent; color: var(--home-ink); box-shadow: none; padding-right: 0; }
+.discover-paper-active #view-discover .discover-feed-heading { color: var(--home-ink); font-size: 22px; font-weight: 500; }
+.discover-paper-active #view-discover #discover-share-section,
+.discover-paper-active #view-discover #discover-needs-section { margin-top: 22px; }
+.discover-paper-active #view-discover #discover-share-feed > article,
+.discover-paper-active #view-discover #discover-needs-feed > article { background: var(--home-surface); border-color: transparent; box-shadow: 0 4px 18px #60594409; }
+@media (max-width: 767px) {
+  .discover-paper-active #view-discover > :not(.paper-home-hero) { padding-left: 20px; padding-right: 20px; margin-top: 20px; }
+  .paper-home-hero { min-height: 315px; padding: max(12px, env(safe-area-inset-top)) 16px 0; }
+  .paper-home-art { bottom: -36px; mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%); }
+  .paper-home-art img { object-position: center top; }
+  .paper-home-brand { margin-top: 0; }
+  .paper-home-wordmark { width: 205px; }
+  .paper-home-wordmark img { height: 66px; }
+  .paper-home-imprint { font-size: 10px; letter-spacing: .2em; }
+  .paper-home-intro { margin-top: 34px; }
+  .paper-home-heading { font-size: 24px; line-height: 1.6; letter-spacing: .06em; }
+  .paper-mobile-break { display: initial; }
+  .paper-home-caption { margin: 13px auto 0; max-width: 260px; font-size: 11px; line-height: 1.9; }
+  .discover-paper-active #app-navigation { background: #fcf9f2fa; box-shadow: none; border-top-color: #d9d4c3; }
+  .discover-paper-active #app-navigation .nav-item.is-active { color: var(--home-red); }
+  .discover-paper-active #view-discover .chu-quick-entry { font-size: 12px; min-height: 86px; gap: 7px; }
+  .discover-paper-active #view-discover .chu-feature-icon { width: 52px; height: 49px; }
+  .discover-paper-active #view-discover .discover-quick-actions { padding: 0 0 6px; }
+  .discover-paper-active #view-discover .discover-feed-heading { font-size: 19px; }
+  .discover-paper-active #view-discover button[onclick*='openEndangeredHotspot'] { padding: 18px; }
+  .discover-paper-active #view-discover button[onclick*='openEndangeredHotspot'] h3 { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .paper-home-art { transform: translateX(-50%) !important; }
+  .paper-home-art img { animation: none; }
+}

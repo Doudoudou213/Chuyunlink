@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8').replace(/\r\n/g, '\n');
 
 function main() {
   const indexHtml = read('index.html');
@@ -31,12 +31,16 @@ function main() {
   assert.match(worker, /if \(!hasCurrentAiConsent\(latestSubmission\)\)/);
   assert.match(worker, /beforeAttempt: async \(\) => \{\s*await eligibleSubmission\(submissionId\)/);
   assert.match(worker, /function sanitizedSubmission\(item\)[\s\S]*title:[\s\S]*description:[\s\S]*assetType:[\s\S]*regionName:/);
-  assert.doesNotMatch(worker.match(/function sanitizedSubmission\(item\)[\s\S]*?\n}\n/)[0], /userId|email|fileID|cloudPath|longitude|latitude/);
+  const sanitizedMatch = worker.match(/function sanitizedSubmission\(item\)[\s\S]*?\n}\n/);
+  assert.ok(sanitizedMatch, 'Must locate the submission sanitizer before checking privacy');
+  assert.doesNotMatch(sanitizedMatch[0], /userId|email|fileID|cloudPath|longitude|latitude/);
 
   // The worker can only create review candidates; formal links remain an admin transaction.
   assert.match(worker, /CANDIDATE_COLLECTION = 'ai_link_candidates'/);
   assert.match(worker, /status:\s*'pending_admin'/);
-  const candidatePipeline = worker.match(/async function runSubmissionAnalysis[\s\S]*?\n}\n\nasync function buildConfirmedStoryInput/)[0];
+  const candidateMatch = worker.match(/async function runSubmissionAnalysis[\s\S]*?\n}\n\nasync function buildConfirmedStoryInput/);
+  assert.ok(candidateMatch, 'Must locate the candidate pipeline before checking publication boundaries');
+  const candidatePipeline = candidateMatch[0];
   assert.doesNotMatch(candidatePipeline, /story_evidence_links|LINK_COLLECTION/);
   assert.match(adminService, /candidate\.status !== 'pending_admin'/);
   assert.match(adminService, /candidate\.submissionId !== submissionId \|\| candidate\.resourceId !== resourceId \|\| candidate\.relationType !== relationType/);

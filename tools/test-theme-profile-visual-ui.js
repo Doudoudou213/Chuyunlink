@@ -15,6 +15,7 @@ const server = http.createServer((request, response) => {
   if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile())
     return response.writeHead(404).end();
   response.setHeader('Content-Type', name.endsWith('.js') ? 'application/javascript' :
+    name.endsWith('.css') ? 'text/css' :
     name.endsWith('.html') ? 'text/html; charset=utf-8' : 'application/octet-stream');
   response.end(fs.readFileSync(file));
 });
@@ -28,7 +29,11 @@ async function main() {
     const source = fs.readFileSync(path.join(root, 'static/cloudbase-app.js'), 'utf8');
     const marker = '  document.addEventListener(\'DOMContentLoaded\', async () => {';
     assert.ok(source.includes(marker));
-    const script = source.replace(marker, '  if (false) document.addEventListener(\'DOMContentLoaded\', async () => {')
+    const script = source.replace(marker, `  document.addEventListener('DOMContentLoaded', () => {
+      window.__themeProfileRender(window.__themeProfileFixture);
+      window.dispatchEvent(new Event('chu:initial-content-ready'));
+    });
+    if (false) document.addEventListener('DOMContentLoaded', async () => {`)
       .replace(/\}\)\(\);\s*$/, `  window.__themeProfileRender = data => {
         cloudUser = { uid: 'test_member', email: 'test@example.org' };
         latestBootstrap = data;
@@ -40,22 +45,33 @@ async function main() {
     await page.route('**/static/cloudbase-app.js', route => route.fulfill({
       contentType: 'application/javascript', body: script
     }));
-    await page.route('https://**/*', route => route.abort());
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`, { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => typeof window.__themeProfileRender === 'function');
-    await page.evaluate(() => {
-      window.__themeProfileRender({
+    // Use the page's real layout dependency; keep all cloud APIs blocked.
+    await page.route('https://**/*', async route => {
+      if (route.request().url() !== 'https://cdn.tailwindcss.com/' ||
+          route.request().method() !== 'GET') return route.abort();
+      const response = await route.fetch({ timeout: 60000, maxRetries: 2 });
+      assert.ok(response.ok(), 'Tailwind layout dependency must load for visual checks');
+      return route.fulfill({ response });
+    });
+    page.setDefaultNavigationTimeout(180000);
+    // Account markup must exist before the paper layout enhances it, as in production.
+    await page.addInitScript(() => {
+      window.__themeProfileFixture = {
         mySubmissions: [{ id: 'test_submission', title: '虚构凤鸟纹照片', status: 'approved',
           assetType: 'image', createdAt: '2026-09-26', publicContributorConsent: false,
           materialAnalysisConsent: true, aiAnalysisConsent: true, rewardPoints: 100 }],
         contributionImpact: { adoptedCount: 1, storyCount: 0, themeCount: 1,
           totalRewardPoints: 0, items: [{ type: 'theme_adoption', status: 'adopted',
             themeTitle: '虚构文化专题', chapterIndex: 0, currentlyPublic: true }] }
-      });
-      const profile = document.getElementById('view-profile');
-      profile.classList.remove('hidden');
-      profile.style.display = 'block';
+      };
     });
+    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => typeof window.__themeProfileRender === 'function');
+    await page.evaluate(() => {
+      window.switchTab('profile');
+      window.dispatchEvent(new Event('chu:initial-content-ready'));
+    });
+    await page.waitForFunction(() => !document.getElementById('chu-startup'), {}, { timeout: 30000 });
     assert.equal(await page.locator('[data-public-attribution]').count(), 1);
     assert.equal(await page.locator('#cloud-impact-adopted').innerText(), '1');
     for (const width of [390, 768, 1440]) {
@@ -68,12 +84,16 @@ async function main() {
         profile: document.getElementById('view-profile').scrollWidth,
         profileWidth: document.getElementById('view-profile').clientWidth
       }));
-      assert.equal(bounds.profile > bounds.profileWidth, false,
+      // The paper illustration deliberately extends beyond the centered column.
+      assert.equal(bounds.page > bounds.window, false,
         'profile horizontal overflow at ' + width + ': ' + JSON.stringify(bounds));
+      for (const selector of ['#cloud-profile-card', '#cloud-contribution-impact', '#cloud-my-submissions'])
+        assert.ok(await page.locator(selector).evaluate(el => el.scrollWidth <= el.clientWidth),
+          selector + ' content overflow at ' + width);
     }
     await page.evaluate(() => {
+      window.switchTab('collect');
       const collect = document.getElementById('view-collect');
-      collect.classList.remove('hidden'); collect.style.display = 'block';
       const task = document.getElementById('collect-gap-task-context');
       task.classList.remove('hidden');
       document.getElementById('collect-gap-task-title').textContent = '虚构资料征集';

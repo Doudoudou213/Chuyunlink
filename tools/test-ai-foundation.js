@@ -10,7 +10,7 @@ const { validateAnalysis } = require('../cloudfunctions/storyWorker/lib/contract
 const { createTokenHubClient, parseModelContent } = require('../cloudfunctions/storyWorker/lib/tokenhub-client');
 
 function read(relativePath) {
-  return fs.readFileSync(path.join(projectRoot, relativePath), 'utf8');
+  return fs.readFileSync(path.join(projectRoot, relativePath), 'utf8').replace(/\r\n/g, '\n');
 }
 
 async function main() {
@@ -147,7 +147,9 @@ async function main() {
   assert.match(workerSource, /submission\.status !== 'approved'/);
   assert.match(workerSource, /function hasCurrentAiConsent/);
   assert.match(workerSource, /if \(!hasCurrentAiConsent\(submission\)\)/);
-  const candidatePipeline = workerSource.match(/async function runSubmissionAnalysis[\s\S]*?\n}\n\nasync function buildConfirmedStoryInput/)[0];
+  const candidatePipelineMatch = workerSource.match(/async function runSubmissionAnalysis[\s\S]*?\n}\n\nasync function buildConfirmedStoryInput/);
+  assert.ok(candidatePipelineMatch, '必须能提取投稿分析流程以检查证据写入边界');
+  const candidatePipeline = candidatePipelineMatch[0];
   assert.doesNotMatch(candidatePipeline, /story_evidence_links|LINK_COLLECTION/);
 
   const userClient = read('static/cloudbase-app.js');

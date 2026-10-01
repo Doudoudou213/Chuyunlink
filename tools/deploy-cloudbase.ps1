@@ -206,6 +206,17 @@ try {
         (Join-Path $staticDirectory 'admin-guide-trial.js'),
         (Join-Path $staticDirectory 'cultural-guide.css'),
         (Join-Path $staticDirectory 'admin-guide.css'),
+        (Join-Path $staticDirectory 'discover-paper.css'),
+        (Join-Path $staticDirectory 'discover-paper.js'),
+        (Join-Path $staticDirectory 'profile-paper.css'),
+        (Join-Path $staticDirectory 'profile-paper.js'),
+        (Join-Path $staticDirectory 'community-paper.css'),
+        (Join-Path $staticDirectory 'field-paper.css'),
+        (Join-Path $staticDirectory 'field-paper.js'),
+        (Join-Path $staticDirectory 'map-paper-edge.css'),
+        (Join-Path $staticDirectory 'map-paper-edge.js'),
+        (Join-Path $staticDirectory 'paper-editorial.css'),
+        (Join-Path $staticDirectory 'paper-editorial.js'),
         (Join-Path $staticDirectory 'logo.png'),
         (Join-Path $staticDirectory 'map-config.js')
       )
