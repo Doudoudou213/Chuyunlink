@@ -1,0 +1,171 @@
+/* Shared home paper palette; profile-specific composition, not account logic. */
+.profile-paper-active #platform-header { display: none; }
+.profile-paper-active #app-shell,
+.profile-paper-active #app-viewport { background: var(--home-paper); }
+.profile-paper-active #app-viewport { padding-top: 0; }
+.profile-paper-active #app-viewport > #view-profile {
+  width: min(100%, 760px);
+  padding: 0 24px 42px;
+  color: var(--home-ink);
+  background: transparent !important;
+  overflow: visible;
+}
+.profile-paper-active #view-profile::before,
+.profile-paper-active #view-profile::after { display: none; }
+/* Let art stay behind the identity card while utilities float above it. */
+#app-viewport #view-profile > #paper-profile-hero { z-index: auto; }
+#view-profile .paper-profile-hero {
+  isolation: auto;
+  min-height: 240px;
+  margin: 0 -24px;
+  padding: 18px 24px 42px;
+}
+.paper-profile-hero .paper-home-art { z-index: 0; bottom: -90px; width: min(100vw, 1400px); }
+.paper-profile-hero .paper-home-art img { object-position: center 22%; }
+.paper-profile-utilities { position: relative; z-index: 3; display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
+.paper-profile-utilities h1 { font: 500 15px/1.4 var(--home-heading); letter-spacing: .1em; }
+.paper-profile-hero .paper-home-wordmark { z-index: 1; width: 228px; margin-top: 0; }
+.paper-profile-hero .paper-home-wordmark img { height: 72px; }
+#paper-profile-settings-slot { position: relative; }
+.profile-paper-active .profile-settings-trigger {
+  min-width: 44px; min-height: 44px; width: 44px; height: 44px;
+  color: var(--home-ink); border: 0; border-radius: 4px;
+  background: transparent; box-shadow: none;
+}
+.profile-paper-active .profile-settings-trigger:hover,
+.profile-paper-active .profile-settings-trigger.is-open { background: #e7e7d5; }
+.profile-paper-active #profile-utility-menu {
+  position: absolute; top: 50px; right: 0; z-index: 10;
+  width: min(320px, calc(100vw - 40px)); margin: 0; padding: 16px;
+  border: 0; border-radius: 10px; background: var(--home-surface);
+  box-shadow: 0 10px 32px #514c3926;
+}
+.profile-paper-active #profile-utility-menu .profile-utility-grid { gap: 3px 8px; margin-top: 10px; }
+.profile-paper-active #profile-utility-menu button {
+  display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+  width: auto; height: auto; min-height: 44px; padding: 8px;
+  background: transparent; border: 0; border-radius: 4px;
+  box-shadow: none; color: var(--home-ink); font-size: 12px;
+}
+.profile-paper-active #profile-utility-menu button:hover { background: #eeeadd; }
+.profile-paper-active #profile-utility-menu button svg { width: 16px; height: 16px; flex: 0 0 16px; color: var(--home-sage); }
+.profile-paper-active #paper-profile-navigation #app-navigation {
+  position: relative !important; top: auto !important; order: initial;
+  height: 48px; margin: 16px 0 0; padding: 0; border: 0;
+  background: transparent; box-shadow: none;
+}
+.profile-paper-active #paper-profile-navigation .nav-item { min-width: 100px; color: var(--home-muted); }
+.profile-paper-active #paper-profile-navigation .nav-item.is-active { color: var(--home-red); }
+.profile-paper-active #paper-profile-navigation .nav-icon { width: 18px; height: 18px; }
+.profile-paper-active #paper-profile-navigation .nav-label { font-size: 12px; font-weight: 500; }
+.profile-paper-active #cloud-profile-card {
+  margin: -22px auto 0; padding: 23px 25px 0;
+  border: 0; border-radius: 12px;
+  background: var(--home-surface);
+  box-shadow: 0 5px 22px #61573e09;
+}
+.profile-paper-active .profile-gallery-titlebar { display: none; }
+.profile-paper-active .profile-identity { grid-template-columns: 62px minmax(0,1fr); align-items: center; gap: 16px; margin: 0; }
+.profile-paper-active .profile-avatar-frame { width: 62px; height: 62px; border: 0; box-shadow: none; }
+.profile-paper-active .profile-name-row { gap: 3px 8px; flex-wrap: wrap; }
+.profile-paper-active #cloud-profile-name { max-width: 100%; font: 600 19px/1.4 var(--home-heading); color: var(--home-ink); }
+.profile-paper-active .profile-inline-edit { color: var(--home-muted); }
+.profile-paper-active #cloud-account-badge { background: #e9eddf; border: 0; border-radius: 3px; color: #53664e; font-size: 10px; font-weight: 400; padding: 3px 6px; }
+.profile-paper-active #cloud-profile-uid { margin-top: 3px; font-size: 10px; color: var(--home-muted); }
+.profile-paper-active .profile-biography { color: var(--home-muted); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+.profile-paper-active .profile-stat-ledger { margin: 22px -5px 0; padding: 0 0 20px; }
+.profile-paper-active .profile-stat-ledger > div + div::before { background: #e9e4d7; }
+.profile-paper-active .profile-stat-ledger strong { color: var(--home-red); font: 500 22px/1.35 var(--home-heading); }
+.profile-paper-active .profile-stat-ledger span { color: var(--home-muted); font-size: 11px; margin-top: 5px; }
+#paper-profile-badges { margin-top: 22px; }
+.paper-profile-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 44px; }
+.paper-profile-section-heading h2 { font: 500 18px/1.5 var(--home-heading); color: var(--home-ink); }
+.paper-profile-section-heading button { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; background: transparent; color: var(--home-muted); font-size: 11px; }
+.paper-profile-section-heading svg { width: 14px; height: 14px; transition: transform 160ms; }
+.paper-profile-section-heading button[aria-expanded='true'] svg { transform: rotate(90deg); }
+.paper-profile-badge-row { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); padding: 12px 10px 13px; background: var(--home-surface); border-radius: 10px; }
+.paper-profile-badge-row figure { margin: 0; text-align: center; }
+.paper-profile-badge-row img { display: block; width: 66px; height: 66px; margin: 0 auto; object-fit: contain; }
+.paper-profile-badge-row figcaption { margin-top: 7px; font: 400 11px/1.6 var(--home-heading); color: var(--home-muted); letter-spacing: .05em; }
+/* Legacy badge data is demonstrative, not earned history. Keep its hooks inert. */
+.profile-paper-active #profile-badges-section > :not(.paper-badge-detail) { display: none !important; }
+.profile-paper-active #profile-badges-section,
+.profile-paper-active #profile-coupons-section { margin-top: 12px; padding: 18px; border: 0; border-radius: 10px; background: var(--home-surface); box-shadow: none; }
+.paper-badge-detail h3 { font: 500 17px/1.5 var(--home-heading); }
+.paper-badge-detail p { margin-top: 8px; color: var(--home-muted); font-size: 12px; line-height: 1.8; }
+.paper-badge-detail-gallery { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin-top: 18px; }
+.paper-badge-detail-gallery img { width: 100%; height: auto; max-width: 160px; margin: auto; }
+.paper-badge-detail .paper-badge-preview-note { margin-top: 18px; font-size: 11px; }
+.profile-paper-active #view-profile > .profile-atlas-banner {
+  display: grid; grid-template-columns: minmax(0,1fr) 96px;
+  margin-top: 16px; min-height: 114px; padding: 18px 20px;
+  border: 0; border-radius: 10px; background: #eee8d7; box-shadow: none;
+}
+.profile-paper-active .profile-atlas-banner::after { display: none; }
+.profile-paper-active .profile-atlas-copy > p { display: none; }
+.profile-paper-active .profile-atlas-copy { padding: 0; align-self: center; }
+.profile-paper-active .profile-atlas-copy h3 { margin-top: 0; color: var(--home-ink); font: 500 17px/1.5 var(--home-heading); }
+.profile-paper-active .profile-atlas-copy > span { color: var(--home-muted); max-width: 26em; margin-top: 5px; font-size: 11px; line-height: 1.8; }
+.profile-paper-active .profile-atlas-links { gap: 12px; margin-top: 4px; }
+.profile-paper-active .profile-atlas-links button { min-height: 44px; padding: 6px 0; color: #735131; font-size: 11px; font-weight: 500; }
+.profile-paper-active .profile-atlas-preview { position: relative; min-height: 80px; align-self: center; }
+.profile-paper-active .profile-atlas-emblem { display: none; }
+.profile-paper-active #profile-atlas-preview-a,
+.profile-paper-active #profile-atlas-preview-b { width: 63px; height: 80px; top: 0; bottom: auto; border: 3px solid var(--home-surface); border-radius: 2px; box-shadow: 0 2px 5px #514c3917; }
+.profile-paper-active #profile-atlas-preview-a { left: 0; right: auto; transform: rotate(-8deg); }
+.profile-paper-active #profile-atlas-preview-b { right: 0; left: auto; transform: rotate(9deg); }
+.profile-paper-active .profile-submission-section { margin-top: 26px; }
+.profile-paper-active .profile-submission-heading-row .profile-gallery-kicker { display: none; }
+.profile-paper-active #profile-submission-heading { font: 500 19px/1.5 var(--home-heading); color: var(--home-ink); }
+.profile-paper-active .profile-refresh-button { color: var(--home-muted); }
+.profile-paper-active .profile-record-filters { margin-top: 10px; border-bottom-color: #e2dece; }
+.profile-paper-active .profile-record-filters button { min-height: 44px; font-size: 12px; color: var(--home-muted); }
+.profile-paper-active .profile-record-filters button[aria-pressed='true'] { color: var(--home-red); }
+.profile-paper-active .profile-record-filters button[aria-pressed='true']::after { background: var(--home-red); }
+.profile-paper-active .profile-submission-gallery { gap: 14px; margin-top: 16px; }
+.profile-paper-active .profile-submission-card { background: var(--home-surface); box-shadow: 0 4px 16px #61573e08; }
+.profile-paper-active .profile-submission-meta { color: var(--home-muted); font-size: 10px; flex-wrap: wrap; gap: 3px; }
+.profile-paper-active .profile-submission-caption h4 { color: var(--home-ink); font-size: 13px; font-weight: 500; line-height: 1.7; }
+.profile-paper-active .profile-status-tag { font-size: 10px; font-weight: 500; }
+.profile-paper-active .profile-review-note,
+.profile-paper-active .profile-reward-note { font-size: 10px; line-height: 1.7; }
+.profile-paper-active .profile-review-note summary { min-height: 44px; padding-top: 12px; }
+.profile-paper-active .profile-submission-cover--icon { background: #eee8d7; color: #78664b; }
+.profile-paper-active .profile-gallery-empty { background: var(--home-surface); border: 0; box-shadow: none; }
+.profile-paper-active .profile-gallery-empty-kicker { display: none; }
+.profile-paper-active .profile-gallery-empty-copy h4 { color: var(--home-ink); font-size: 17px; font-weight: 500; }
+.profile-paper-active .profile-gallery-empty-copy > p { color: var(--home-muted); font-size: 12px; }
+.profile-paper-active .profile-gallery-empty-action { background: #eee8d7; color: var(--home-ink); box-shadow: none; font-size: 12px; }
+.profile-paper-active #view-profile button:focus-visible { outline: 2px solid var(--home-sage) !important; outline-offset: 3px; }
+@media (max-width: 767px) {
+  .profile-paper-active #app-viewport > #view-profile { padding: 0 18px 32px; }
+  #view-profile .paper-profile-hero { min-height: 164px; margin: 0 -18px; padding: max(12px, env(safe-area-inset-top)) 18px 25px; }
+  .paper-profile-hero .paper-home-art { bottom: -44px; }
+  .paper-profile-hero .paper-home-art img { object-position: center top; }
+  .paper-profile-hero .paper-home-wordmark { width: 192px; margin-top: 3px; }
+  .paper-profile-hero .paper-home-wordmark img { height: 64px; }
+  .profile-paper-active #cloud-profile-card { margin-top: -22px; padding: 18px 18px 0; }
+  .profile-paper-active .profile-identity { grid-template-columns: 56px minmax(0,1fr); gap: 13px; }
+  .profile-paper-active .profile-avatar-frame { width: 56px; height: 56px; }
+  .profile-paper-active #cloud-profile-name { font-size: 18px; }
+  .profile-paper-active .profile-stat-ledger { margin-top: 15px; padding-bottom: 17px; }
+  .profile-paper-active .profile-stat-ledger strong { font-size: 21px; }
+  #paper-profile-badges { margin-top: 16px; }
+  .paper-profile-badge-row { padding-block: 9px; }
+  .paper-profile-badge-row img { width: 56px; height: 56px; }
+  .profile-paper-active #view-profile > .profile-atlas-banner { grid-template-columns: minmax(0,1fr) 78px; min-height: 100px; padding: 12px 16px; margin-top: 14px; }
+  .profile-paper-active .profile-atlas-copy > span { display: none; }
+  .profile-paper-active .profile-atlas-links { flex-wrap: wrap; gap: 0 12px; }
+  .profile-paper-active #profile-atlas-preview-a,
+  .profile-paper-active #profile-atlas-preview-b { width: 53px; height: 73px; }
+  .profile-paper-active .profile-submission-section { margin-top: 21px; }
+  .profile-paper-active #app-navigation {
+    height: auto; min-height: calc(68px + env(safe-area-inset-bottom));
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    align-items: stretch; background: #fcf9f2fa; box-shadow: none; border-top-color: #d9d4c3;
+  }
+  .profile-paper-active #app-navigation .nav-item.is-active { color: var(--home-red); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .paper-profile-section-heading svg { transition: none; }
+}

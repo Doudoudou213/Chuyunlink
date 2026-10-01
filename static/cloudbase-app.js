@@ -520,6 +520,24 @@ feedback_closed: '反馈处理',
       activeSubmissionFilter = button.dataset.cloudFilter || 'all';
       renderCloudSubmissionRecords();
     });
+    document.getElementById('cloud-my-submissions').addEventListener('click', async (event) => {
+      const button = event.target.closest('button[data-withdraw-ai-consent]');
+      if (!button || button.disabled) return;
+      const submissionId = button.dataset.withdrawAiConsent;
+      if (!window.confirm('将停止此投稿后续 AI 分析。依赖这份材料的故事和链迹会暂时进入复核，原投稿不会删除。继续吗？')) return;
+      button.disabled = true;
+      const originalText = button.textContent;
+      button.textContent = '处理中…';
+      try {
+        await callCore({ action: 'withdrawAiAnalysisConsent', submissionId });
+        if (typeof showToast === 'function') showToast('已停止后续 AI 分析', 'privacy');
+        await refreshCloudProfile();
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = originalText;
+        if (typeof showToast === 'function') showToast(error.message || '操作失败，请稍后重试', 'error');
+      }
+    });
     document.querySelectorAll('[data-profile-feature]').forEach((button) => {
       button.addEventListener('click', () => toggleProfileFeature(button.dataset.profileFeature));
     });
@@ -1906,6 +1924,8 @@ feedback_closed: '反馈处理',
           <span class="profile-status-tag ${profileStatusClass(item.status)}">${safeText(profileStatusLabel(item.status))}</span>
           ${item.reviewNote ? `<details class="profile-review-note"><summary>查看整理意见</summary><p>${safeText(item.reviewNote)}</p></details>` : ''}
           ${item.status === 'approved' ? `<p class="profile-reward-note">入藏奖励 · +${Number(item.rewardPoints || 100)} 流光</p>` : ''}
+          ${item.aiAnalysisConsent === true ? `<button type="button" class="profile-consent-stop" data-withdraw-ai-consent="${safeText(item.id)}">停止后续 AI 分析</button>` : ''}
+          ${item.aiAnalysisStatus === 'consent_revoked' ? '<p class="profile-consent-revoked">已停止后续 AI 分析，原投稿仍保留。</p>' : ''}
         </div>
       </article>
     `).join('') : emptyGallery;
@@ -3106,9 +3126,13 @@ feedback_closed: '反馈处理',
     if (reportClose) reportClose.addEventListener('click', closeCloudReportModal);
     const reportCancel = document.getElementById('cloud-report-cancel');
     if (reportCancel) reportCancel.addEventListener('click', closeCloudReportModal);
-    await refreshCloudProfile();
-    await loadUnifiedResources();
-    await loadCloudPublicFeed();
-    scheduleCloudPublicFeedRefresh();
+    try {
+      await refreshCloudProfile();
+      await loadUnifiedResources();
+      await loadCloudPublicFeed();
+      scheduleCloudPublicFeedRefresh();
+    } finally {
+      window.dispatchEvent(new Event('chu:initial-content-ready'));
+    }
   });
 })();

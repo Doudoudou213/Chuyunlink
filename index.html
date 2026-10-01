@@ -5,6 +5,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>楚韵链迹 - 荆楚物质文化遗产众包采集系统</title>
   <link rel="icon" href="data:,">
+  <link rel="preload" as="image" href="./static/assets/loading-gold-weave.webp">
+  <style>
+    #chu-startup {
+      --loading-ink: #79572f; --loading-gold: #9a743f;
+      position: fixed; inset: 0; z-index: 2147483000;
+      height: 100vh; height: 100dvh; overflow: hidden;
+      background: #f7f0e2 url('./static/assets/loading-gold-weave.webp') center / cover no-repeat;
+      color: var(--loading-ink); text-align: center;
+      font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+      opacity: 1; transition: opacity 280ms ease;
+    }
+    #chu-startup.is-leaving { opacity: 0; pointer-events: none; }
+    #chu-startup .chu-startup-title { position: absolute; top: 14%; left: 0; right: 0; margin: 0; font-size: clamp(28px, 5vw, 42px); font-weight: 500; letter-spacing: .18em; padding-left: .18em; }
+    #chu-startup .chu-startup-rule { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 18px auto 0; }
+    #chu-startup .chu-startup-rule::before, #chu-startup .chu-startup-rule::after { content: ''; width: 38px; height: 1px; background: #af8a5266; }
+    #chu-startup .chu-startup-rule span { width: 8px; height: 8px; border: 1px solid #af8a52; transform: rotate(45deg); }
+    #chu-startup-avatar { position: absolute; top: 46%; left: 50%; width: clamp(76px, 19vw, 96px); transform: translate(-50%, -50%); perspective: 700px; }
+    #chu-startup-avatar::after { content: ''; position: absolute; bottom: -5%; left: 30%; width: 40%; height: 5%; border-radius: 50%; background: #99734318; filter: blur(5px); }
+    #chu-startup-avatar svg { display: block; width: 100%; overflow: visible; position: relative; z-index: 1; }
+    .chu-phoenix-fill { transform: translateY(92px); transition: transform 800ms ease; }
+    .chu-phoenix-relief { filter: drop-shadow(0 0 0 #79532300); transition: filter 650ms ease; }
+    #chu-startup[data-stage="background-ready"] .chu-phoenix-fill { transform: translateY(45px); }
+    #chu-startup[data-stage="ready"] .chu-phoenix-fill { transform: translateY(-10px); transition-duration: 240ms; }
+    #chu-startup[data-stage="background-ready"] .chu-phoenix-relief { filter: drop-shadow(0 1px 1px #79532322); }
+    #chu-startup[data-stage="ready"] .chu-phoenix-relief { filter: drop-shadow(-.4px -.6px .2px #fff6df88) drop-shadow(.5px 1px .5px #79532338) drop-shadow(0 2px 2px #79532314); transition-duration: 240ms; }
+    .chu-phoenix-pose { transform: rotateX(7deg) rotateZ(-3deg); transition: transform 500ms ease; }
+    #chu-startup[data-stage="background-ready"] .chu-phoenix-pose { transform: rotateX(2deg) rotateZ(-1deg); }
+    #chu-startup[data-stage="ready"] .chu-phoenix-pose { transform: rotateX(0) rotateZ(0) translateY(-3px); }
+    .chu-phoenix-float { animation: chu-phoenix-float 3.8s ease-in-out infinite; }
+    .chu-phoenix-wing { transform-box: view-box; }
+    .chu-phoenix-wing-left { transform-origin: 46% 48%; animation: chu-wing-left 3.6s ease-in-out infinite; }
+    .chu-phoenix-wing-right { transform-origin: 57% 48%; animation: chu-wing-right 3.6s ease-in-out infinite; }
+    #chu-startup .chu-startup-status { position: absolute; top: calc(46% + clamp(38px, 9.5vw, 48px) + 20px); left: 0; right: 0; }
+    #chu-startup .chu-startup-status p { margin: 22px 0 0; font-size: 15px; letter-spacing: .13em; }
+    #chu-startup-skip { position: absolute; bottom: max(28px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); min-height: 44px; padding: 10px 18px; background: #f7f0e2; color: var(--loading-ink); border: 0; border-radius: 4px; cursor: pointer; font: 13px system-ui, sans-serif; }
+    #chu-startup-skip[hidden] { display: none; }
+    #chu-startup-skip:focus-visible { outline: 2px solid var(--loading-gold); outline-offset: 3px; }
+    @keyframes chu-phoenix-float { 0%, 100% { transform: translateY(1px); } 50% { transform: translateY(-1.5px); } }
+    @keyframes chu-wing-left { 0%, 100% { transform: rotate(1deg); } 50% { transform: rotate(-2deg); } }
+    @keyframes chu-wing-right { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(2deg); } }
+    @media (min-aspect-ratio: 1/1) { #chu-startup { background-size: auto 100%; background-repeat: repeat-x; } }
+    @media (prefers-reduced-motion: reduce) { #chu-startup, .chu-phoenix-pose, #chu-startup .chu-phoenix-fill, #chu-startup .chu-phoenix-relief { transition: none; } .chu-phoenix-float, .chu-phoenix-wing { animation: none; } #chu-startup .chu-phoenix-pose { transform: none; } }
+  </style>
+  <script>
+    // Independent of the UI/CDN libraries so startup failures cannot trap the visitor.
+    (() => {
+      const overlay = document.createElement('div');
+      overlay.id = 'chu-startup';
+      overlay.setAttribute('aria-label', '正在载入楚韵链迹');
+      overlay.innerHTML = `<div class="chu-startup-title">楚韵链迹<div class="chu-startup-rule" aria-hidden="true"><span></span></div></div>
+        <div id="chu-startup-avatar" aria-hidden="true"><div class="chu-phoenix-pose"><div class="chu-phoenix-float">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="chu-bronze" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#ddc38d"/><stop offset=".35" stop-color="#b89559"/><stop offset="1" stop-color="#876135"/></linearGradient>
+              <linearGradient id="chu-fill-feather" x1="0" y1="0" x2="0" y2="1"><stop stop-color="white" stop-opacity="0"/><stop offset=".065" stop-color="white"/><stop offset="1" stop-color="white"/></linearGradient>
+              <mask id="chu-fill-mask" maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120" style="mask-type:alpha"><rect class="chu-phoenix-fill" x="-10" width="120" height="120" fill="url(#chu-fill-feather)"/></mask>
+              <g id="chu-phoenix-mark">
+                <path class="chu-phoenix-wing chu-phoenix-wing-left" d="M49 51C29 49 13 35 8 12C17 26 29 32 39 35C29 27 25 21 24 15C33 30 40 35 49 42Z M40 49C26 48 17 43 12 36C23 43 33 42 42 44Z"/>
+                <path class="chu-phoenix-wing chu-phoenix-wing-right" d="M52 51C72 47 87 32 93 10C81 26 72 30 63 34C74 23 76 17 76 12C68 27 61 35 52 42Z M61 48C75 45 83 41 88 34C77 40 68 41 60 43Z"/>
+                <path d="M45 50C44 40 41 32 45 24C48 19 55 20 59 17L57 12L68 18L61 24C53 23 51 28 54 34C58 42 64 47 59 57C56 64 46 64 45 72C45 79 55 82 62 74C62 89 41 91 37 77C33 63 49 62 49 55Z"/>
+                <path d="M44 57C35 70 17 62 12 72C9 80 21 83 28 73C26 85 7 88 6 77C4 61 32 68 40 55Z"/>
+                <path d="M55 59C62 69 82 67 83 79C84 89 70 94 64 85C72 91 81 85 77 79C73 72 58 77 51 65Z"/>
+              </g>
+            </defs>
+            <use href="#chu-phoenix-mark" fill="#ddceb3" opacity=".65"/>
+            <g class="chu-phoenix-relief"><g mask="url(#chu-fill-mask)"><use href="#chu-phoenix-mark" fill="url(#chu-bronze)" stroke="#f6e3b5" stroke-width=".28" stroke-linejoin="round"/></g></g>
+          </svg>
+        </div></div></div>
+        <div class="chu-startup-status" role="status"><p>正在载入共同图鉴</p></div><button id="chu-startup-skip" type="button" hidden>进入页面</button>`;
+      document.documentElement.append(overlay);
+      const illustration = new Image();
+      illustration.onload = () => { if (!dismissed && overlay.dataset.stage !== 'ready') overlay.dataset.stage = 'background-ready'; };
+      illustration.src = './static/assets/loading-gold-weave.webp';
+      let dismissed = false;
+      const dismiss = () => {
+        if (dismissed) return;
+        dismissed = true;
+        clearTimeout(skipTimer); clearTimeout(exitTimer);
+        overlay.classList.add('is-leaving');
+        setTimeout(() => overlay.remove(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300);
+      };
+      const skip = overlay.querySelector('button');
+      skip.addEventListener('click', dismiss);
+      const skipTimer = setTimeout(() => { skip.hidden = false; }, 6000);
+      const exitTimer = setTimeout(dismiss, 12000);
+      let pageLoaded = false;
+      let contentReady = false;
+      const finishIfReady = () => {
+        if (!pageLoaded || !contentReady || dismissed) return;
+        overlay.dataset.stage = 'ready';
+        requestAnimationFrame(() => requestAnimationFrame(dismiss));
+      };
+      window.addEventListener('load', () => { pageLoaded = true; finishIfReady(); }, { once: true });
+      window.addEventListener('chu:initial-content-ready', () => { contentReady = true; finishIfReady(); }, { once: true });
+    })();
+  </script>
   <!-- Tailwind CSS 引入 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide 图标库引入 -->
@@ -2245,6 +2341,24 @@
       font-size: 0.54rem;
       font-weight: 700;
     }
+    .profile-consent-stop {
+      display: block;
+      width: 100%;
+      min-height: 44px;
+      margin-top: 0.6rem;
+      padding: 0.55rem 0.1rem 0;
+      border: 0;
+      border-top: 1px solid rgba(182, 138, 74, 0.2);
+      background: transparent;
+      color: #8f3c36;
+      font-size: 0.58rem;
+      font-weight: 700;
+      text-align: left;
+    }
+    .profile-consent-stop:hover { color: #6f2824; }
+    .profile-consent-stop:focus-visible { outline: 2px solid var(--chu-gold-muted); outline-offset: 2px; }
+    .profile-consent-stop:disabled { opacity: 0.55; cursor: wait; }
+    .profile-consent-revoked { margin-top: 0.55rem; color: #76685d; font-size: 0.56rem; line-height: 1.5; }
     .profile-gallery-empty {
       grid-column: 1 / -1;
       display: grid;
@@ -4258,6 +4372,12 @@
       #landmark-drawer.landmark-ticket-drawer { transition: none; }
     }
     </style>
+  <link rel="stylesheet" href="./static/discover-paper.css">
+  <link rel="stylesheet" href="./static/profile-paper.css">
+  <link rel="stylesheet" href="./static/community-paper.css">
+  <link rel="stylesheet" href="./static/field-paper.css">
+  <link rel="stylesheet" href="./static/map-paper-edge.css">
+  <link rel="stylesheet" href="./static/paper-editorial.css">
 </head>
 <body class="min-h-screen bg-parchment">
 
@@ -4287,7 +4407,7 @@
         </div>
         <div>
           <h1 class="cultural-font text-base font-bold text-sandGold leading-none">楚韵链迹</h1>
-          <span class="text-[10px] text-stone-300">下沉荆楚文化遗产众包平台</span>
+          <span class="paper-signature-latin" aria-hidden="true">CHULINK</span>
         </div>
       </div>
       <div class="flex items-center gap-1.5">
@@ -4313,22 +4433,33 @@
       
       <!-- 页面 1：发现 (DISCOVER) -->
       <section id="view-discover" class="page-view space-y-4 py-4">
-        <div class="chu-page-watermark chu-page-watermark--phoenix" aria-hidden="true">
-          <svg viewBox="0 0 360 310" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M53 209c38-41 81-52 126-31 28 13 54 8 78-18-14 39-39 61-76 64-33 3-56 20-71 51 0-31 9-56 27-76-31-5-59-2-84 10Z" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
-            <path d="M99 159c15-61 53-103 113-126-24 34-31 68-21 103 8 28 29 45 63 51-39 9-70 3-92-18-17-16-38-19-63-10Z" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/>
-            <path d="M182 57c19 9 32 24 39 46m-97 113c-20 23-29 49-26 78m57-88c8 30 5 59-10 86m40-87c23 22 35 48 36 79" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="214" cy="111" r="5" fill="currentColor"/>
-          </svg>
-        </div>
-        <div class="px-4">
-          <div class="discover-masthead px-5 py-6 sm:px-7 sm:py-7">
-            <div class="relative z-[1] max-w-2xl">
-              <p class="discover-kicker">荆楚大众采集志 · CHU CULTURAL ARCHIVE</p>
-              <h2 class="cultural-font mt-3 text-2xl font-black leading-tight text-[#fff3d9] sm:text-3xl">一份投稿，续写一段楚地记忆</h2>
-              <p class="mt-3 max-w-xl text-xs leading-6 text-[#e9ddcb]/75 sm:text-sm">真实采集先被看见，再由已审核资料串成短故事。故事就在投稿下方，来源关系按需展开。</p>
+        <div class="paper-home-hero" id="paper-home-hero">
+          <div class="paper-home-art" aria-hidden="true">
+            <img src="./static/assets/discover-botanical-paper-v1.webp" alt="" width="1536" height="1024" fetchpriority="high" decoding="async">
+          </div>
+          <div class="paper-home-utilities">
+            <div id="paper-home-location"></div>
+            <div class="paper-home-utility-right">
+              <div id="paper-home-notifications"></div>
+              <button id="paper-home-more" type="button" aria-expanded="false" aria-controls="paper-home-menu" aria-label="更多：账号与使用帮助">
+                <i data-lucide="ellipsis" aria-hidden="true"></i><span>更多</span>
+              </button>
+              <div id="paper-home-menu" class="paper-home-menu" hidden aria-label="账号与使用帮助"></div>
             </div>
           </div>
+          <div class="paper-home-brand">
+            <h1 class="paper-home-wordmark" aria-label="楚韵链迹">
+              <img src="./static/assets/chulink-ink-wordmark-v1.webp" alt="楚韵链迹" width="800" height="220" decoding="async">
+              <span class="paper-home-wordmark-fallback" aria-hidden="true">楚韵链迹</span>
+              <span class="paper-signature-latin" aria-hidden="true">CHULINK</span>
+            </h1>
+            <p class="paper-home-imprint">荆楚文化 · 共同记录</p>
+          </div>
+          <div class="paper-home-intro">
+            <p class="paper-home-heading">把眼前所见，<br class="paper-mobile-break">留进共同图鉴。</p>
+            <p class="paper-home-caption">一处老建筑，一件旧器物，一段值得留下的故事。</p>
+          </div>
+          <div id="paper-home-navigation"></div>
         </div>
         <div class="px-4">
           <nav class="discover-quick-actions" aria-label="常用文化探索入口">
@@ -4521,8 +4652,20 @@
 
       <!-- 页面 2：寻迹地图 (MAP) -->
       <section id="view-map" class="page-view hidden h-full flex flex-col">
+        <header class="field-map-heading">
+          <div class="field-map-ink" aria-hidden="true"><img src="./static/assets/map-landmark-east-lake-ink-v1.webp" alt="" width="1200" height="376" decoding="async"></div>
+          <div class="field-paper-topline">
+            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v1.webp" alt="楚韵链迹" width="1000" height="264" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
+            <div class="field-paper-utilities">
+              <div id="field-map-notifications"></div>
+              <button type="button" data-field-more aria-expanded="false" aria-controls="field-map-menu" aria-label="更多：账号与使用帮助"><i data-lucide="ellipsis" aria-hidden="true"></i><span>更多</span></button>
+              <div id="field-map-menu" data-field-menu hidden aria-label="账号与使用帮助"></div>
+            </div>
+          </div>
+          <div id="field-map-navigation" class="field-paper-navigation"></div>
+        </header>
         <!-- 模拟地图容器 -->
-        <div class="flex-1 bg-slate-200 relative overflow-hidden flex items-center justify-center">
+        <div class="field-map-stage flex-1 bg-slate-200 relative overflow-hidden flex items-center justify-center">
           <div id="heritage-map" class="absolute inset-0"></div>
           <div id="map-loading" class="absolute inset-0 z-10 bg-stone-100 flex flex-col items-center justify-center text-deepTeal">
             <i data-lucide="map" class="w-8 h-8 mb-2 text-sandGold animate-pulse"></i>
@@ -4918,6 +5061,15 @@
       <section id="view-collect" class="page-view hidden collect-field-page">
         <header class="collect-hero" aria-labelledby="collect-hero-title">
           <img src="./static/assets/collect-hero-shanshui-v1.webp" alt="云山江水与临水古亭构成的荆楚山水长卷" class="collect-hero-image">
+          <div class="field-paper-topline">
+            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v1.webp" alt="楚韵链迹" width="1000" height="264" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
+            <div class="field-paper-utilities">
+              <div id="field-collect-notifications"></div>
+              <button type="button" data-field-more aria-expanded="false" aria-controls="field-collect-menu" aria-label="更多：账号与使用帮助"><i data-lucide="ellipsis" aria-hidden="true"></i><span>更多</span></button>
+              <div id="field-collect-menu" data-field-menu hidden aria-label="账号与使用帮助"></div>
+            </div>
+          </div>
+          <div id="field-collect-navigation" class="field-paper-navigation"></div>
           <div class="collect-hero-copy">
             <p class="collect-hero-kicker">FIELD NOTE · 楚地采集</p>
             <h2 id="collect-hero-title" class="collect-hero-title">楚地采集簿</h2>
@@ -5067,6 +5219,7 @@
 
       <!-- 页面 4：科普与实地活动 (COMMUNITY/LEARN) -->
       <section id="view-community" class="page-view hidden">
+        <div class="community-illustrated-paper" aria-hidden="true"></div>
         <div class="chu-page-watermark chu-page-watermark--ring" aria-hidden="true">
           <svg viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="160" cy="160" r="118" stroke="currentColor" stroke-width="18"/>
@@ -5081,14 +5234,18 @@
         </div>
         <div class="community-hero-shell">
           <div class="community-hero relative overflow-hidden" aria-labelledby="community-activity-title">
-            <img src="./static/assets/community-hero-pagoda-v2.webp" alt="晨光中的荆楚古建与高塔" class="community-hero-image absolute inset-0 h-full w-full object-cover">
             <div class="community-hero-overlay absolute inset-0" aria-hidden="true"></div>
             <div class="community-hero-content absolute text-white">
               <div class="community-hero-meta flex items-center justify-between gap-2">
-                <span class="community-seal">进行中 · 7天后结算</span>
+                <span class="community-seal">进行中</span>
+                <span class="community-event-deadline">7天后结算</span>
               </div>
               <h3 id="community-activity-title" class="community-hero-title cultural-font">荆楚纹样寻访周</h3>
               <p class="community-hero-description">从武汉、钟祥到恩施，寻找建筑纹样、碑刻题记与民间口述线索。</p>
+              <figure class="community-cover-figure" aria-hidden="true">
+                <img src="./static/assets/community-river-collage-v3.webp" alt="" width="1536" height="1024" decoding="async" class="community-hero-image">
+                <figcaption class="community-cover-imprint">荆楚寻访手札</figcaption>
+              </figure>
               <div class="community-hero-actions">
                 <button onclick="joinCommunityActivity('荆楚纹样寻访周')" class="community-hero-primary">
                   <i data-lucide="ticket-check" aria-hidden="true"></i><span>报名活动</span>
@@ -5177,6 +5334,30 @@
 
       <!-- 页面 5：个人中心与商家反哺 (PROFILE) -->
       <section id="view-profile" class="page-view hidden space-y-4 py-4 px-4">
+        <header id="paper-profile-hero" class="paper-profile-hero">
+          <div class="paper-home-art" aria-hidden="true"><img src="./static/assets/discover-botanical-paper-v1.webp" alt="" width="1536" height="1024"></div>
+          <div class="paper-profile-utilities">
+            <h1>我的</h1>
+            <div id="paper-profile-settings-slot"></div>
+          </div>
+          <div class="paper-home-wordmark" role="img" aria-label="楚韵链迹">
+            <img src="./static/assets/chulink-ink-wordmark-v1.webp" alt="" width="1000" height="292">
+            <span class="paper-home-wordmark-fallback" aria-hidden="true">楚韵链迹</span>
+            <span class="paper-signature-latin" aria-hidden="true">CHULINK</span>
+          </div>
+          <div id="paper-profile-navigation"></div>
+        </header>
+        <section id="paper-profile-badges" aria-labelledby="paper-profile-badges-title">
+          <div class="paper-profile-section-heading">
+            <h2 id="paper-profile-badges-title">我的徽章</h2>
+            <button type="button" data-profile-feature="profile-badges-section" aria-controls="profile-badges-section" aria-expanded="false">图样预览 <i data-lucide="chevron-right" aria-hidden="true"></i></button>
+          </div>
+          <div class="paper-profile-badge-row" aria-label="徽章设计预览，不代表已获得">
+            <figure><img src="./static/assets/profile-badge-architecture-v1.webp" alt="古建、流水与枝叶线描" width="256" height="256"><figcaption>古建寻迹</figcaption></figure>
+            <figure><img src="./static/assets/profile-badge-bronze-v1.webp" alt="编钟与凤鸟线描" width="256" height="256"><figcaption>编钟知音</figcaption></figure>
+            <figure><img src="./static/assets/profile-badge-fieldnotes-v1.webp" alt="手记、毛笔与荷花线描" width="256" height="256"><figcaption>楚地拾遗</figcaption></figure>
+          </div>
+        </section>
         <!-- 个人卡片 -->
         <div id="legacy-profile-card" class="bg-deepTeal rounded-2xl p-4 text-white flex items-center space-x-3 border-b-4 border-sandGold relative overflow-hidden shadow-lg">
           <div class="w-12 h-12 rounded-full border-2 border-sandGold overflow-hidden bg-stone-700 shrink-0">
@@ -5198,6 +5379,16 @@
 
         <!-- 数字化守护者多宝阁 -->
         <div id="profile-badges-section" class="hidden space-y-2">
+          <div class="paper-badge-detail">
+            <h3>徽章图样</h3>
+            <p>古建、器物与采集手记，收进三枚小小的图样。</p>
+            <div class="paper-badge-detail-gallery">
+              <img src="./static/assets/profile-badge-architecture-v1.webp" alt="古建寻迹图样" width="256" height="256" loading="lazy">
+              <img src="./static/assets/profile-badge-bronze-v1.webp" alt="编钟知音图样" width="256" height="256" loading="lazy">
+              <img src="./static/assets/profile-badge-fieldnotes-v1.webp" alt="楚地拾遗图样" width="256" height="256" loading="lazy">
+            </div>
+            <p class="paper-badge-preview-note">当前仅展示设计图样，不代表已获得的成就。</p>
+          </div>
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
               <i data-lucide="shield" class="w-4 h-4 mr-1 text-deepTeal"></i> 数字化守护者唯一徽章墙
@@ -9715,6 +9906,9 @@
         <p class="community-route-location"><i data-lucide="map-pin" aria-hidden="true"></i>${escapeHtml(route.city)} · ${escapeHtml(route.duration)}</p>
 
         <div class="community-route-trace" aria-label="今日推荐路线的三个打卡点">
+          <svg class="community-paper-ribbon" viewBox="0 0 600 104" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path d="M 0 86 C 40 91 69 75 100 72 S 237 24 300 36 S 430 83 500 56 S 573 43 600 36" />
+          </svg>
           ${route.steps.map((step, index) => `
             <button type="button" onclick="handleCommunityRouteStep(${index})" class="community-route-stop" aria-label="第${index + 1}站：${escapeHtml(step.title)}">
               <span class="community-route-marker">${index + 1}</span>
@@ -11805,6 +11999,24 @@
   </script>
   <script src="https://static.cloudbase.net/cloudbase-js-sdk/2.28.6/cloudbase.full.js"></script>
   <script src="./static/cloudbase-app.js"></script>
+  <aside id="paper-activity-note" class="paper-activity-note" aria-label="活动入口样式预览" hidden>
+    <button type="button" class="paper-activity-dismiss" data-activity-note-dismiss aria-label="本次浏览不再显示活动签笺"><i data-lucide="x" aria-hidden="true"></i></button>
+    <button type="button" class="paper-activity-toggle" data-activity-note-toggle aria-expanded="false" aria-controls="paper-activity-panel">
+      <img src="./static/assets/profile-badge-fieldnotes-v1.webp" alt="" width="256" height="256">
+      <span>活动签笺</span><small>样式预览</small>
+    </button>
+    <section id="paper-activity-panel" class="paper-activity-panel" aria-labelledby="paper-activity-title" hidden>
+      <button type="button" class="paper-activity-panel-close" data-activity-note-close aria-label="收起活动说明"><i data-lucide="x" aria-hidden="true"></i></button>
+      <h2 id="paper-activity-title">一起去寻访</h2>
+      <p>这是活动入口的样式预览。正式活动上线后，这里会展示活动名称与时间；当前不代表有新的限时活动。</p>
+      <button type="button" class="paper-activity-visit" data-activity-note-visit>查看活动科普<i data-lucide="arrow-right" aria-hidden="true"></i></button>
+    </section>
+  </aside>
+  <script src="./static/discover-paper.js"></script>
+  <script src="./static/profile-paper.js"></script>
+  <script src="./static/field-paper.js"></script>
+  <script src="./static/map-paper-edge.js"></script>
+  <script src="./static/paper-editorial.js"></script>
   
 </body>
 </html>
