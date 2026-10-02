@@ -217,6 +217,7 @@ try {
         (Join-Path $staticDirectory 'map-paper-edge.js'),
         (Join-Path $staticDirectory 'paper-editorial.css'),
         (Join-Path $staticDirectory 'paper-editorial.js'),
+        (Join-Path $staticDirectory 'paper-motion.js'),
         (Join-Path $staticDirectory 'logo.png'),
         (Join-Path $staticDirectory 'map-config.js')
       )

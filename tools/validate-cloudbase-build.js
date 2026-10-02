@@ -32,6 +32,8 @@ const requiredFiles = [
   'static/map-paper-edge.js',
   'static/paper-editorial.css',
   'static/paper-editorial.js',
+  'static/paper-motion.js',
+  'static/assets/gsap-3.15.0.min.js',
   'static/assets/longcang-editorial-v1.woff2',
   'static/assets/longcang-OFL.txt',
   'static/assets/community-river-collage-v3.webp',
@@ -88,6 +90,7 @@ const requiredFiles = [
   'docs/AI_INTERFACE_FOUNDATION.md'
 ];
 const productionTextFiles = [
+  'static/paper-motion.js',
   'cloudfunctions/appCore/domains/ai-consent.js',
   'cloudfunctions/storyWorker/lib/graph-context.js',
   'cloudfunctions/adminSubmissions/domains/story-agent-gaps.js',
@@ -141,6 +144,8 @@ const productionTextFiles = [
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const javascriptFiles = [
+  'static/paper-motion.js',
+  'static/assets/gsap-3.15.0.min.js',
   'cloudfunctions/appCore/domains/ai-consent.js',
   'cloudfunctions/storyWorker/lib/graph-context.js',
   'cloudfunctions/adminSubmissions/domains/story-agent-gaps.js',

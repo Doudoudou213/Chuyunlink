@@ -6,7 +6,7 @@ const path = require('path');
 const { validateStoryDraft } = require('../cloudfunctions/storyWorker/lib/story-contract');
 
 const root = path.resolve(__dirname, '..');
-const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8').replace(/\r\n/g, '\n');
 
 function main() {
   const valid = validateStoryDraft({

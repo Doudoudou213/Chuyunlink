@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "test:paper-motion": "node tools/test-paper-motion.js",
     "check:cloudbase": "node tools/validate-cloudbase-build.js",
     "check:resources": "node tools/preview-resource-seed.js && node tools/test-resource-model.js",
     "test:resource-binding": "node tools/test-submission-resource-binding.js",
