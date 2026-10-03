@@ -1,5 +1,6 @@
 'use strict';
 const {materialLinkValid,isMaterialLink,referenceFor}=require('../lib/material-evidence');
+const { createAgentProvenanceValidator } = require('../lib/agent-provenance');
 
 const ENTITY_COLLECTION = 'story_entities';
 const RELATION_COLLECTION = 'story_relations';
@@ -128,7 +129,11 @@ async function loadPublicStoryGraph(db, resourceId) {
       db.collection(RELATION_COLLECTION).where({ resourceId }).limit(120).get(),
       db.collection(EVIDENCE_COLLECTION).where({ resourceId }).limit(120).get()
     ]);
-    const nodes = (entityResult.data || [])
+    const validProvenance = createAgentProvenanceValidator(db);
+    const checkedEntities = await Promise.all((entityResult.data || []).map(async item =>
+      item.status === 'confirmed' && item.needsSourceReview !== true &&
+      await validProvenance(item, 'formalEntityId') ? item : null));
+    const nodes = checkedEntities.filter(Boolean)
       .filter((item) => item.status === 'confirmed' && item.needsSourceReview !== true)
       .map(publicNode)
       .filter((item) => item.id && item.label);
@@ -142,7 +147,10 @@ async function loadPublicStoryGraph(db, resourceId) {
         && origin.aiAnalysisStatus !== 'consent_revoked' ? item._id || item.id || '' : '';
     }));
     const validEvidenceIds = new Set(checkedEvidence.filter(Boolean));
-    const edges = (relationResult.data || [])
+    const checkedRelations = await Promise.all((relationResult.data || []).map(async item =>
+      item.status === 'confirmed' && item.needsSourceReview !== true &&
+      await validProvenance(item, 'formalRelationId') ? item : null));
+    const edges = checkedRelations.filter(Boolean)
       .filter((item) => item.status === 'confirmed' && item.needsSourceReview !== true)
       .map((item) => publicEdge(item, validNodeIds))
       .map((item) => item ? {

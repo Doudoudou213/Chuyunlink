@@ -6,6 +6,9 @@ const vm = require('node:vm');
 
 const projectRoot = path.resolve(__dirname, '..');
 const requiredFiles = [
+  'cloudfunctions/appCore/lib/agent-provenance.js',
+  'cloudfunctions/adminSubmissions/domains/submission-moderation.js',
+  'cloudfunctions/adminSubmissions/domains/submission-resources.js',
   'guide.html','static/visit-engine.js','static/cultural-guide.js','static/guide-cloud.js','static/guide-entry.js','static/cultural-guide.css','cloudfunctions/appCore/lib/visit-engine.js','cloudfunctions/appCore/domains/visit-sessions.js',
   'cloudfunctions/appCore/domains/ai-consent.js',
   'cloudfunctions/storyWorker/lib/graph-context.js',
@@ -90,6 +93,9 @@ const requiredFiles = [
   'docs/AI_INTERFACE_FOUNDATION.md'
 ];
 const productionTextFiles = [
+  'cloudfunctions/appCore/lib/agent-provenance.js',
+  'cloudfunctions/adminSubmissions/domains/submission-moderation.js',
+  'cloudfunctions/adminSubmissions/domains/submission-resources.js',
   'static/paper-motion.js',
   'cloudfunctions/appCore/domains/ai-consent.js',
   'cloudfunctions/storyWorker/lib/graph-context.js',
@@ -144,6 +150,9 @@ const productionTextFiles = [
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const javascriptFiles = [
+  'cloudfunctions/appCore/lib/agent-provenance.js',
+  'cloudfunctions/adminSubmissions/domains/submission-moderation.js',
+  'cloudfunctions/adminSubmissions/domains/submission-resources.js',
   'static/paper-motion.js',
   'static/assets/gsap-3.15.0.min.js',
   'cloudfunctions/appCore/domains/ai-consent.js',

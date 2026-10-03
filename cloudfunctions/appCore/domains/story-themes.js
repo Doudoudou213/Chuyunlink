@@ -2,6 +2,7 @@
 const crypto = require('crypto');
 const { materialLinkValid, referenceFor } = require('../lib/material-evidence');
 const { contributorNameFor } = require('../lib/public-attribution');
+const { createAgentProvenanceValidator } = require('../lib/agent-provenance');
 
 const C = Object.freeze({
   themes: 'story_themes', versions: 'story_theme_versions', resources: 'resources',
@@ -57,11 +58,13 @@ async function loadPublicTheme(db, themeId) {
   }
   const nodeIds = new Set();
   const nodes = [];
+  const validProvenance = createAgentProvenanceValidator(db);
   for (const node of version.nodes) {
     const [entity, resource] = await Promise.all([
       read(db, C.entities, node.entityId), read(db, C.resources, node.resourceId)
     ]);
     if (!entity || entity.status !== 'confirmed' || entity.needsSourceReview === true ||
+      !await validProvenance(entity, 'formalEntityId') ||
       !resource || resource.status !== 'published' ||
       entity.resourceId && entity.resourceId !== node.resourceId ||
       !Array.isArray(node.sourceLinkIds) || !node.sourceLinkIds.length ||
@@ -104,6 +107,7 @@ async function loadPublicTheme(db, themeId) {
   for (const old of version.relations) {
     const relation = await read(db, C.relations, old.id);
     if (!relation || relation.status !== 'confirmed' || relation.needsSourceReview === true ||
+      !await validProvenance(relation, 'formalRelationId') ||
       relation.fromEntityId !== old.fromEntityId || relation.toEntityId !== old.toEntityId ||
       relation.relationType !== old.relationType ||
       !nodeIds.has(relation.fromEntityId) || !nodeIds.has(relation.toEntityId) ||

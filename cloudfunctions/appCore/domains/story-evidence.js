@@ -1,6 +1,7 @@
 'use strict';
 const {materialLinkValid,isMaterialLink,referenceFor}=require('../lib/material-evidence');
 const { contributorNameFor } = require('../lib/public-attribution');
+const { createAgentProvenanceValidator } = require('../lib/agent-provenance');
 
 const { loadPublicStoryGraph } = require('./story-graph');
 
@@ -55,6 +56,32 @@ function buildPublicTrail(resource, items) {
 }
 
 function createStoryEvidenceService({ db, app }) {
+  async function taskSourceAvailable(task, validProvenance) {
+    if (task.needsSourceReview === true) return false;
+    try {
+      const sourceIds = new Set([task.sourceSubmissionId].filter(Boolean));
+      let candidate = null;
+      if (task.sourceAgentCandidateId) {
+        candidate = firstDocument(await db.collection('story_agent_candidates').doc(task.sourceAgentCandidateId).get());
+        if (!await validProvenance.candidate(candidate)) return false;
+        if (candidate.submissionId) sourceIds.add(candidate.submissionId);
+        for (const evidenceId of candidate.payload && candidate.payload.evidenceLinkIds || []) {
+          const link = firstDocument(await db.collection(LINK_COLLECTION).doc(evidenceId).get());
+          if (!link || link.status !== 'confirmed' || link.needsSourceReview) return false;
+          const source = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(link.submissionId).get());
+          if (!await materialLinkValid(db, link, source, true)) return false;
+          sourceIds.add(link.submissionId);
+        }
+      }
+      for (const sourceId of sourceIds) {
+        const source = firstDocument(await db.collection(SUBMISSION_COLLECTION).doc(sourceId).get());
+        if (!source || source.status !== 'approved' || source.withdrawnAt || source.disabledAt ||
+            source.sourceUnavailable || source.aiConsentRevokedAt || source.aiAnalysisStatus === 'consent_revoked') return false;
+      }
+      return true;
+    } catch (_) { return false; }
+  }
+
   async function list(event = {}) {
     const resourceId = cleanText(event.resourceId, 128);
     if (!/^[A-Za-z0-9_-]+$/.test(resourceId)) {
@@ -188,10 +215,14 @@ function createStoryEvidenceService({ db, app }) {
           };
           try {
             const taskResult = await db.collection(GAP_TASK_COLLECTION).where({ storyId: story.id }).limit(50).get();
-            gapTasks = (taskResult.data || [])
+            const eligibleTasks = (taskResult.data || [])
               .filter((item) => item.status === 'published'
                 && item.resourceId === resourceId
-                && Number(item.storyVersion || 1) === story.version)
+                && Number(item.storyVersion || 1) === story.version);
+            const validTaskProvenance = createAgentProvenanceValidator(db);
+            const checkedTasks = await Promise.all(eligibleTasks.map(async item =>
+              await taskSourceAvailable(item, validTaskProvenance) ? item : null));
+            gapTasks = checkedTasks.filter(Boolean)
               .map((item) => ({
                 id: item._id || item.id || '',
                 title: cleanText(item.title, 48),

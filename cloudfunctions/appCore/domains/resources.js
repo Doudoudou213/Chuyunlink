@@ -85,7 +85,7 @@ function overlapValues(left, right) {
 
 function regionText(region) {
   if (!region || typeof region !== 'object') return '';
-  return [region.province, region.city, region.district]
+  return [region.label, region.province, region.city, region.district]
     .map((value) => cleanText(value, 40))
     .filter(Boolean)
     .join(' ')

@@ -3701,6 +3701,14 @@
       font-size: 0.56rem;
       line-height: 1.55;
     }
+    #view-collect .collect-title-field { display: block; margin-bottom: 0.8rem; }
+    #view-collect .collect-title-field > span { display: block; margin-bottom: 0.3rem; color: var(--collect-patina); font-size: 0.7rem; }
+    #view-collect #collect-title {
+      width: 100%; min-height: 44px; padding: 0.45rem 0.7rem;
+      border: 0; border-bottom: 1px solid rgba(182, 138, 74, 0.3); border-radius: 0;
+      background: transparent; color: var(--collect-ink); font: inherit; font-size: 0.85rem;
+    }
+    #view-collect #collect-title:focus-visible { outline: 2px solid rgba(182, 138, 74, 0.5); outline-offset: 2px; }
     #view-collect .collect-notes-paper {
       position: relative;
       min-height: 9.4rem;
@@ -5263,6 +5271,10 @@
               <section class="collect-form-section" aria-labelledby="collect-notes-label">
                 <div id="collect-notes-label" class="collect-section-label">笔记<small>叁</small></div>
                 <div class="collect-section-content">
+                  <label class="collect-title-field" for="collect-title">
+                    <span>资料标题（选填）</span>
+                    <input id="collect-title" name="title" type="text" maxlength="120" placeholder="如：老巷门楣上的凤鸟纹" autocomplete="off">
+                  </label>
                   <div class="collect-notes-paper">
                     <textarea id="collect-description" name="description" placeholder="写下现场所见、纹样细节、人物口述或资料出处……" rows="4"></textarea>
                   </div>

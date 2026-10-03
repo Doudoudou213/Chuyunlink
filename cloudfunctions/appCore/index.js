@@ -599,7 +599,8 @@ function submissionView(item, includeOwnerDetails = false) {
     createdAt: item.createdAt || null,
     updatedAt: item.updatedAt || null,
     reviewedAt: item.reviewedAt || null,
-    reviewNote: item.reviewNote || '',
+    reviewNote: includeOwnerDetails && item.status === 'withdrawn'
+      ? item.withdrawalNote || item.reviewNote || '' : item.reviewNote || '',
     reviewPipelineVersion: Number(item.reviewPipelineVersion) || 1,
     aiReviewStatus: item.aiReviewStatus || 'not_requested',
     aiReviewDecision: item.aiReviewDecision || '',

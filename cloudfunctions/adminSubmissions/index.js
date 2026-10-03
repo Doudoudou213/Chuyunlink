@@ -18,6 +18,8 @@ const {
   GRAPH_LOG_COLLECTION: STORY_GRAPH_LOG_COLLECTION
 } = require('./domains/story-graph');
 const { buildResourceBindingCandidates, resourceBindingOption } = require('./domains/resource-binding');
+const { createSubmissionModerationService } = require('./domains/submission-moderation');
+const { createSubmissionResourceService } = require('./domains/submission-resources');
 
 const app = cloudbase.init({
   env: process.env.TCB_ENV || cloudbase.SYMBOL_CURRENT_ENV
@@ -53,6 +55,8 @@ const storyThemeProposalService = createStoryThemeProposalService({ db, aiAdapte
 const storyRevisionImpactService = createStoryRevisionImpactService({ db });
 const storyGapTaskService = createStoryGapTaskService({ db });
 const storyGraphService = createAdminStoryGraphService({ db });
+const submissionModerationService = createSubmissionModerationService({ db });
+const submissionResourceService = createSubmissionResourceService({ db });
 const storyAgentReviewService = require('./domains/story-agent-reviews').createStoryAgentReviewService({ db });
 const storyAgentGapService = require('./domains/story-agent-gaps').createStoryAgentGapService({ db });
 const storyAgentEvaluationService = require('./domains/story-agent-evaluations').createStoryAgentEvaluationService({ db });
@@ -82,7 +86,8 @@ const ALLOWED_LIST_STATUSES = new Set([
   'pending',
   'approved',
   'rejected',
-  'needs_revision'
+  'needs_revision',
+  'withdrawn'
 ]);
 const ALLOWED_REVIEW_STATUSES = new Set([
   'approved',
@@ -147,6 +152,9 @@ function serializeSubmission(item) {
     reviewedAt: item.reviewedAt || null,
     reviewerId: item.reviewerId || '',
     reviewNote: item.reviewNote || '',
+    withdrawnAt: item.withdrawnAt || null,
+    withdrawalNote: item.withdrawalNote || '',
+    sourceReviewPending: item.sourceReviewPending === true,
     title: item.title || '',
     assetType: item.assetType || 'image',
     mimeType: item.mimeType || '',
@@ -182,15 +190,28 @@ async function listSubmissions(event) {
   const limit = Number.isFinite(requestedLimit)
     ? Math.max(1, Math.min(Math.floor(requestedLimit), 50))
     : 20;
+  const requestedOffset = Number(event.offset);
+  const offset = Number.isSafeInteger(requestedOffset) && requestedOffset >= 0 ? requestedOffset : 0;
+  const search = cleanText(event.search, 120);
+  const filter = search ? db.command.and([
+    { status: requestedStatus },
+    db.command.or([
+      { _id: search },
+      { title: db.RegExp({ regexp: search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), options: 'i' }) }
+    ])
+  ]) : { status: requestedStatus };
 
   const result = await db
     .collection('submissions')
-    .where({ status: requestedStatus })
+    .where(filter)
     .orderBy('createdAt', 'desc')
-    .limit(limit)
+    .orderBy('_id', 'desc')
+    .skip(offset)
+    .limit(limit + 1)
     .get();
 
-  const rawItems = result.data || [];
+  const hasMore = (result.data || []).length > limit;
+  const rawItems = (result.data || []).slice(0, limit);
   const items = rawItems.map(serializeSubmission);
   let resources = [];
   try {
@@ -218,6 +239,11 @@ async function listSubmissions(event) {
     ok: true,
     action: 'list',
     status: requestedStatus,
+    search,
+    offset,
+    limit,
+    hasMore,
+    nextOffset: hasMore ? offset + limit : null,
     resourceOptions,
     items: items.map((item) => ({
       ...item,
@@ -1363,7 +1389,10 @@ exports.main = async (event = {}) => {
     if (action === 'rateAgentEvaluationSample') return await storyAgentEvaluationService.rateSample(event, callerUid);
     if (action === 'list') return await listSubmissions(event);
     if (action === 'review') return await reviewSubmission(event, callerUid);
+    if (action === 'withdrawSubmission') return await submissionModerationService.withdraw(event, callerUid);
     if (action === 'bindSubmissionResource') return await bindSubmissionResource(event, callerUid);
+    if (action === 'createResourceFromSubmission') return await submissionResourceService.create(event, callerUid);
+    if (action === 'searchSubmissionResources') return await submissionResourceService.search(event);
     if (action === 'listSupplements') return await listSupplements(event);
     if (action === 'reviewSupplement') return await reviewSupplement(event, callerUid);
     if (action === 'listComments') return await listComments(event);
@@ -1417,7 +1446,10 @@ exports.main = async (event = {}) => {
       ok: false,
       error: {
         code: error && error.code ? String(error.code) : 'OPERATION_FAILED',
-        message: error && error.message ? String(error.message) : '云函数执行失败'
+        message: error && error.message ? String(error.message) : '云函数执行失败',
+        ...(error && error.code === 'RESOURCE_ALREADY_EXISTS' ? {
+          resourceId: cleanText(error.resourceId, 128), resourceTitle: cleanText(error.resourceTitle, 120)
+        } : {})
       }
     };
   }

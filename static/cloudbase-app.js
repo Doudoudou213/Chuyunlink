@@ -70,7 +70,8 @@ let activeStoryGapTask = null;
       pending: '待审核',
       approved: '已通过',
       rejected: '已拒绝',
-      needs_revision: '需修改'
+      needs_revision: '需修改',
+      withdrawn: '已撤下'
     }[status] || status || '未知';
   }
 
@@ -79,7 +80,8 @@ let activeStoryGapTask = null;
       pending: 'border-amber-200 bg-amber-50 text-amber-700',
       approved: 'border-emerald-200 bg-emerald-50 text-emerald-700',
       rejected: 'border-red-200 bg-red-50 text-red-700',
-      needs_revision: 'border-blue-200 bg-blue-50 text-blue-700'
+      needs_revision: 'border-blue-200 bg-blue-50 text-blue-700',
+      withdrawn: 'border-stone-200 bg-stone-50 text-stone-600'
     }[status] || 'border-stone-200 bg-stone-50 text-stone-600';
   }
 
@@ -2033,7 +2035,8 @@ feedback_closed: '反馈处理',
       approved: 'profile-status-verified',
       pending: 'profile-status-gold',
       rejected: 'profile-status-attention',
-      needs_revision: 'profile-status-attention'
+      needs_revision: 'profile-status-attention',
+      withdrawn: 'profile-status-attention'
     }[status] || 'profile-status-gold';
   }
 
@@ -2042,7 +2045,8 @@ feedback_closed: '反馈处理',
       approved: '已入藏',
       pending: '待整理',
       rejected: '待补充',
-      needs_revision: '待补充'
+      needs_revision: '待补充',
+      withdrawn: '已撤下'
     }[status] || '整理中';
   }
 
@@ -2080,7 +2084,7 @@ feedback_closed: '反馈处理',
     const items = allItems.filter((item) => {
       if (activeSubmissionFilter === 'all') return true;
       if (activeSubmissionFilter === 'attention') {
-        return item.status === 'rejected' || item.status === 'needs_revision';
+        return item.status === 'rejected' || item.status === 'needs_revision' || item.status === 'withdrawn';
       }
       return item.status === activeSubmissionFilter;
     });
@@ -2178,7 +2182,7 @@ feedback_closed: '反馈处理',
     document.getElementById('cloud-stat-pending').textContent = Number(stats.pending || 0);
     document.getElementById('cloud-stat-approved').textContent = Number(stats.approved || 0);
     document.getElementById('cloud-stat-attention').textContent =
-      Number(stats.rejected || 0) + Number(stats.needs_revision || 0);
+      Number(stats.rejected || 0) + Number(stats.needs_revision || 0) + Number(stats.withdrawn || 0);
     const accountAction = document.getElementById('cloud-account-action');
     accountAction.querySelector('span').textContent = stable ? '退出账号' : '账号登录';
     accountAction.querySelector('svg, i')?.setAttribute('data-lucide', stable ? 'log-out' : 'log-in');
@@ -2233,6 +2237,7 @@ feedback_closed: '反馈处理',
 
   function resourceRegionText(region, separator = ' · ') {
     if (!region || typeof region !== 'object') return '';
+    if (region.label) return String(region.label).trim().slice(0, 80);
     return [region.city, region.district]
       .map((value) => String(value || '').trim())
       .filter(Boolean)
@@ -3204,7 +3209,8 @@ feedback_closed: '反馈处理',
         ...(window.ContentEffects?.fields()||{}),
         fileID: uploadedFileID,
         cloudPath,
-        title: selectedUploadFile.name || '未命名文化采集素材',
+        title: document.getElementById('collect-title')?.value.trim().slice(0, 120)
+          || selectedUploadFile.name || '未命名文化采集素材',
         description: typeof getCollectDescription === 'function' ? getCollectDescription() : '',
         assetType: typeof getSelectedAssetType === 'function' ? getSelectedAssetType() : 'image',
         mimeType: selectedUploadFile.type || '',
@@ -3233,6 +3239,8 @@ feedback_closed: '反馈处理',
       }
       const description = document.getElementById('collect-description');
       if (description) description.value = '';
+      const title = document.getElementById('collect-title');
+      if (title) title.value = '';
       const aiConsent = document.getElementById('collect-ai-consent');
       if (aiConsent) aiConsent.checked = false;
       for (const id of ['collect-material-consent','collect-material-research-consent','collect-material-excerpt-consent']) { const el=document.getElementById(id); if(el) el.checked=false; }

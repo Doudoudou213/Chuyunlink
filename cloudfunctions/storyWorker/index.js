@@ -634,6 +634,25 @@ async function ensureStoryDraftJob(config, adminUid, resourceId, input) {
   return { jobId, job: current };
 }
 
+async function assertStoryDraftSources(reader, resourceId, input, jobId) {
+  const job = firstDocument(await reader.collection(JOB_COLLECTION).doc(jobId).get());
+  if (!job || job.status !== 'processing' || job.needsSourceReview === true) {
+    throw Object.assign(new Error('任务或来源已停止，不能保存故事草稿'), { code: 'STORY_SOURCE_CHANGED' });
+  }
+  const sources = Array.isArray(input.sources) ? input.sources : [];
+  if (!sources.length) throw Object.assign(new Error('故事缺少来源'), { code: 'STORY_SOURCE_CHANGED' });
+  // Recheck every source sent to the model, including context omitted from its citations.
+  for (const source of sources) {
+    const link = firstDocument(await reader.collection(LINK_COLLECTION).doc(source.linkId).get());
+    const origin = link && firstDocument(await reader.collection(SUBMISSION_COLLECTION).doc(link.submissionId).get());
+    if (!link || link.status !== 'confirmed' || link.needsSourceReview === true ||
+        link.resourceId !== resourceId || !hasCurrentAiConsent(origin) ||
+        !await materialLinkValid(reader, link, origin)) {
+      throw Object.assign(new Error('模型使用的来源已变化，已停止保存故事草稿'), { code: 'STORY_SOURCE_CHANGED' });
+    }
+  }
+}
+
 async function runStoryDraft(config, adminUid, event) {
   if (!config.enabled) throw Object.assign(new Error('AI_ENABLED 仍为 false'), { code: 'AI_DISABLED' });
   if (!config.apiKey) throw Object.assign(new Error('尚未配置 TOKENHUB_API_KEY'), { code: 'AI_KEY_NOT_CONFIGURED' });
@@ -673,6 +692,7 @@ async function runStoryDraft(config, adminUid, event) {
     }
     const sourceLinkIds = [...new Set(result.output.chapters.flatMap((chapter) => chapter.sourceLinkIds))];
     await db.runTransaction(async (transaction) => {
+      await assertStoryDraftSources(transaction, resourceId, storyInput, jobId);
       const currentLinks = await Promise.all(sourceLinkIds.map(async (linkId) => ({
         linkId,
         record: firstDocument(await transaction.collection(LINK_COLLECTION).doc(linkId).get())
@@ -743,13 +763,13 @@ async function runStoryDraft(config, adminUid, event) {
       retryable: error && error.retryable === true
     };
     try {
-      await db.collection(JOB_COLLECTION).doc(jobId).update({
-        status: 'failed',
-        lastError: safeError,
-        lockedAt: null,
-        lockedBy: '',
-        finishedAt: db.serverDate(),
-        updatedAt: db.serverDate()
+      await db.runTransaction(async transaction => {
+        const jobRef = transaction.collection(JOB_COLLECTION).doc(jobId);
+        const latest = firstDocument(await jobRef.get());
+        if (latest && latest.status === 'processing') await jobRef.update({
+          status: 'failed', lastError: safeError, lockedAt: null, lockedBy: '',
+          finishedAt: db.serverDate(), updatedAt: db.serverDate()
+        });
       });
     } catch (_) {}
     throw Object.assign(new Error(safeError.message), { code: safeError.code });

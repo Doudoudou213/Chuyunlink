@@ -17,10 +17,10 @@ function memoryDb(seed) {
       }; },
       async add(value) { records.set('log_' + ++nextLog, structuredClone(value)); },
       limit(count) { return { async get() { return { data: [...records].slice(0, count).map(([key, value]) => ({ _id: key, ...structuredClone(value) })) }; } }; },
-      where(filter) { return { limit(count) { return { async get() {
+      where(filter) { let offset = 0; return { orderBy() { return this; }, skip(value) { offset = value; return this; }, limit(count) { return { async get() {
         return { data: [...records].filter(([, value]) =>
           Object.entries(filter).every(([key, expected]) => value[key] === expected))
-          .slice(0, count).map(([key, value]) => ({ _id: key, ...structuredClone(value) })) };
+          .sort(([left], [right]) => left.localeCompare(right)).slice(offset, offset + count).map(([key, value]) => ({ _id: key, ...structuredClone(value) })) };
       } }; } }; }
     };
   };

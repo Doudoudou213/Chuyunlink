@@ -53,12 +53,15 @@ function mockDb(records) {
           return { async get() { return { data: (records[name] || []).filter((item) => item._id === id) }; } };
         },
         where(filter) {
+          let offset = 0;
           return {
+            orderBy() { return this; },
+            skip(value) { offset = value; return this; },
             limit() {
               return {
                 async get() {
                   return { data: (records[name] || []).filter((item) =>
-                    Object.entries(filter).every(([key, value]) => item[key] === value)) };
+                    Object.entries(filter).every(([key, value]) => item[key] === value)).slice(offset) };
                 }
               };
             }

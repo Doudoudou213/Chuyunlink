@@ -84,7 +84,10 @@ function mockDatabase() {
     collection(name) {
       return {
         doc(id) {
-          return { async get() { return { data: records[name] && records[name][id] ? [records[name][id]] : [] }; } };
+          return { async get() {
+            const item = Array.isArray(records[name]) ? records[name].find(row => row._id === id) : records[name] && records[name][id];
+            return { data: item ? [item] : [] };
+          } };
         },
         where(filter) {
           return {
@@ -130,6 +133,49 @@ async function main() {
   assert.equal(JSON.stringify(result).includes('must-not-leak'), false, '公共响应不得泄露用户 UID');
   assert.equal(result.story.id, 'story_1');
   assert.equal(result.claims.length, 1);
+  db.records.submissions.gap_source = { _id: 'gap_source', status: 'approved' };
+  db.records.story_agent_candidates = { gap_candidate: { status: 'approved', submissionId: 'gap_source' } };
+  db.records.story_gap_tasks = [
+    { _id: 'manual_gap', status: 'published', storyId: 'story_1', storyVersion: 1,
+      resourceId: 'yellow-crane-tower', title: '人工征集', description: '补充现场照片' },
+    { _id: 'agent_gap', status: 'published', storyId: 'story_1', storyVersion: 1,
+      resourceId: 'yellow-crane-tower', title: '候选形成的征集', description: '补充题刻原文', sourceAgentCandidateId: 'gap_candidate' }
+  ];
+  assert.equal((await service.list({ resourceId: 'yellow-crane-tower' })).gapTasks.length, 2);
+  db.records.submissions.gap_source.status = 'withdrawn';
+  const safeTasks = await service.list({ resourceId: 'yellow-crane-tower' });
+  assert.equal(safeTasks.story.id, 'story_1', '撤下另一个来源不影响仍有效的故事');
+  assert.deepEqual(safeTasks.gapTasks.map(item => item.id), ['manual_gap'], '传播未完成时也不公开已撤下来源的征集任务');
+  db.records.submissions.gap_source.status = 'approved';
+  db.records.story_agent_candidates.gap_candidate.status = 'source_withdrawn';
+  assert.equal((await service.list({ resourceId: 'yellow-crane-tower' })).gapTasks.length, 1);
+  db.records.story_agent_candidates.gap_candidate = {
+    status: 'approved', submissionId: 'gap_source', jobId: 'gap_job', payload: { evidenceLinkIds: [] }
+  };
+  db.records.submissions.model_context = { _id: 'model_context', status: 'approved' };
+  db.records.story_evidence_links.push({ _id: 'context_link', status: 'confirmed',
+    resourceId: 'yellow-crane-tower', submissionId: 'model_context' });
+  db.records.story_agent_jobs = { gap_job: { status: 'awaiting_review', input: {
+    evidenceLinks: [{ id: 'context_link', resourceId: 'yellow-crane-tower' }]
+  } } };
+  assert.equal((await service.list({ resourceId: 'yellow-crane-tower' })).gapTasks.length, 2);
+  db.records.submissions.model_context.status = 'withdrawn';
+  db.records.submissions.model_context.sourceReviewPending = true;
+  const withdrawnContext = await service.list({ resourceId: 'yellow-crane-tower' });
+  assert.equal(withdrawnContext.story.id, 'story_1', '模型上下文来源下架不应隐藏独立有效的故事');
+  assert.deepEqual(withdrawnContext.gapTasks.map(item => item.id), ['manual_gap'],
+    '传播未完成时，候选主投稿有效且未引用下架资料，也须复核模型任务全部上下文');
+  assert.equal(db.records.story_agent_candidates.gap_candidate.status, 'approved');
+  assert.equal(db.records.story_agent_jobs.gap_job.status, 'awaiting_review');
+  db.records.submissions.model_context.status = 'approved';
+  assert.equal((await service.list({ resourceId: 'yellow-crane-tower' })).gapTasks.length, 2,
+    '来源缓存只在本次读取内有效');
+  db.records.story_agent_jobs.gap_job.status = 'source_invalid';
+  assert.equal((await service.list({ resourceId: 'yellow-crane-tower' })).gapTasks.length, 1);
+  delete db.records.story_agent_jobs.gap_job;
+  assert.equal((await service.list({ resourceId: 'yellow-crane-tower' })).gapTasks.length, 1);
+  db.records.story_evidence_links.pop();
+  db.records.story_gap_tasks = [];
   db.records.submissions.approved_1.aiConsentRevokedAt = '2026-09-07';
   const withdrawn = await service.list({ resourceId: 'yellow-crane-tower' });
   assert.equal(withdrawn.items.length, 1, '撤回 AI 授权不删除原公开投稿');

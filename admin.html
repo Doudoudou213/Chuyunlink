@@ -260,7 +260,7 @@
       --button-hover: #3d584e; --button-pressed: #324a41;
       box-shadow: 0 3px 8px #314b3d18, inset 0 1px #ffffff22 !important;
     }
-    #admin-panel button:is([data-status="rejected"], [data-supplement-status="rejected"], [data-ai-candidate-reject], [data-story-draft-archive], [data-story-link-archive], [data-comment-status="hidden"], [data-resolution="resolved"], [data-material-review="rejected"], [data-resource-seed-import]) {
+    #admin-panel button:is([data-status="rejected"], [data-supplement-status="rejected"], [data-ai-candidate-reject], [data-story-draft-archive], [data-story-link-archive], [data-comment-status="hidden"], [data-resolution="resolved"], [data-material-review="rejected"], [data-resource-seed-import], [data-withdraw-submit], [data-retry-withdraw]) {
       --button-fill: #f3e5de; --button-ink: var(--action-danger);
       --button-hover: #ebd4c9; --button-pressed: #e3c4b6;
       box-shadow: none !important;
@@ -535,6 +535,47 @@
       .admin-material-card > .admin-compact > .admin-compact-body { grid-template-columns: minmax(0, 1fr); }
       .admin-compact-state { max-width: 95px; white-space: normal; }
     }
+    .admin-submission-tools { display: grid; gap: 12px; min-width: 0; }
+    .admin-submission-tools[hidden], .admin-submission-notice[hidden], .admin-submission-tabs[hidden], [data-search-resources-more][hidden] { display: none !important; }
+    .admin-submission-tabs, .admin-submission-search, .admin-submission-pages, .admin-binding-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .admin-submission-tabs { border-bottom: 1px solid var(--admin-line); }
+    .admin-submission-tabs button { padding: 10px 14px; color: var(--admin-muted); border-bottom: 2px solid transparent; }
+    .admin-submission-tabs button[aria-pressed="true"] { color: var(--admin-ink); border-bottom-color: var(--admin-gold); font-weight: 600; }
+    #admin-panel #submission-tools .admin-submission-tabs button { --button-fill: transparent; box-shadow: none !important; }
+    #admin-panel #submission-tools .admin-submission-tabs button[aria-pressed="true"] { --button-fill: var(--admin-line); --button-ink: var(--admin-ink); box-shadow: inset 0 -2px var(--admin-gold) !important; }
+    .admin-submission-search input { flex: 1 1 220px; min-width: 0; padding: 10px 12px; border: 1px solid var(--admin-line); }
+    .admin-submission-tools button, .admin-submission-notice button, .admin-submission-card button { padding: 10px 14px; border-radius: 6px; }
+    .admin-submission-search button, .admin-submission-pages button, .admin-binding-actions button { background: var(--admin-surface); border: 1px solid var(--admin-line); color: var(--admin-ink); }
+    .admin-submission-pages { justify-content: flex-end; color: var(--admin-muted); font-size: 13px; }
+    .admin-submission-pages p { margin-right: auto; }
+    .admin-submission-notice { padding: 12px 16px; background: var(--admin-surface); border-left: 3px solid var(--admin-gold); color: var(--admin-ink); font-size: 14px; }
+    .admin-submission-notice button { margin-top: 8px; color: var(--admin-accent); border: 1px solid var(--admin-line); }
+    .admin-submission-card .admin-compact-copy strong, .admin-submission-card p { overflow-wrap: anywhere; }
+    .admin-submission-card .admin-compact-body { display: grid; gap: 16px; }
+    .admin-submission-card .admin-compact-body > p { margin: 0; }
+    .admin-submission-card .admin-submission-description { white-space: pre-wrap; }
+    .admin-submission-card .admin-submission-preview { width: 100%; max-height: 300px; object-fit: contain; background: var(--admin-paper); }
+    .admin-submission-card .admin-binding-panel { padding: 16px; background: var(--admin-paper); border: 1px solid var(--admin-line); border-radius: 6px; }
+    .admin-binding-actions { align-items: stretch; margin-top: 10px; }
+    .admin-binding-actions input, .admin-binding-actions select { flex: 1 1 240px; min-width: 0; width: auto; padding: 10px 12px; border: 1px solid var(--admin-line); }
+    .admin-submission-card [data-save-resource-binding], .admin-submission-card [data-create-resource-submit] { background: var(--admin-accent); border: 0; color: var(--admin-surface); }
+    .admin-resource-create, .admin-withdraw-panel { border-top: 1px solid var(--admin-line); padding-top: 4px; }
+    .admin-resource-create > summary, .admin-withdraw-panel > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-size: 14px; color: var(--admin-accent); }
+    .admin-resource-create > summary::before, .admin-withdraw-panel > summary::before { content: '＋'; margin-right: 8px; }
+    .admin-resource-create[open] > summary::before, .admin-withdraw-panel[open] > summary::before { content: '−'; }
+    .admin-resource-create form, .admin-withdraw-panel form { display: grid; gap: 12px; padding: 8px 0; }
+    .admin-resource-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .admin-resource-fields label:first-child { grid-column: 1 / -1; }
+    .admin-resource-fields label, .admin-withdraw-panel label { display: grid; gap: 6px; font-size: 13px; color: var(--admin-muted); min-width: 0; }
+    .admin-resource-fields input, .admin-resource-fields select, .admin-withdraw-panel textarea { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--admin-line); }
+    .admin-submission-card .admin-confirm-check { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; font-size: 13px; padding: 10px 0; cursor: pointer; }
+    #admin-panel .admin-confirm-check input { min-height: 20px; width: 20px; height: 20px; flex: 0 0 20px; margin-top: 3px; accent-color: var(--admin-accent); }
+    .admin-submission-card .admin-withdraw-panel > summary, .admin-submission-card [data-withdraw-submit], .admin-submission-card [data-retry-withdraw] { color: #8d3e34; }
+    .admin-submission-card [data-withdraw-submit], .admin-submission-card [data-retry-withdraw] { border: 1px solid var(--admin-line); background: var(--admin-surface); }
+    .admin-card-result { font-size: 13px; color: var(--admin-accent); }
+    .admin-card-result[data-error="true"] { color: #8d3e34; }
+    .admin-submission-card .admin-card-result:empty { display: none; }
+    @media(max-width:640px) { .admin-resource-fields { grid-template-columns: minmax(0, 1fr); } .admin-submission-search input { flex-basis: 100%; } .admin-submission-search button { flex: 1; white-space: nowrap; } .admin-submission-pages p { flex-basis: 100%; } .admin-submission-pages button { flex: 1; } .admin-binding-actions button { flex: 1; } }
   </style>
 <link rel="stylesheet" href="./static/admin-guide.css">
 <link rel="stylesheet" href="./static/admin-content-effects.css">
@@ -620,6 +661,24 @@
         <h2 id="view-title" class="text-sm font-bold text-stone-800">待审投稿</h2>
         <span id="view-count" class="text-xs text-stone-400"></span>
       </div>
+      <section id="submission-tools" class="admin-submission-tools" aria-label="投稿状态、搜索与翻页" hidden>
+        <div class="admin-submission-tabs" aria-label="投稿状态">
+          <button type="button" data-submission-status="pending" aria-pressed="true">待审核</button>
+          <button type="button" data-submission-status="approved" aria-pressed="false">已通过</button>
+          <button type="button" data-submission-status="withdrawn" aria-pressed="false">已撤回</button>
+        </div>
+        <form id="submission-search-form" class="admin-submission-search" role="search">
+          <input id="submission-search" type="search" maxlength="100" aria-label="搜索当前状态的全部投稿" placeholder="搜索投稿标题或完整编号">
+          <button type="submit">搜索投稿</button>
+          <button type="button" id="submission-search-clear">清除</button>
+        </form>
+        <div class="admin-submission-pages">
+          <p id="submission-page-info" role="status" aria-live="polite"></p>
+          <button type="button" id="submission-page-prev" disabled>上一页</button>
+          <button type="button" id="submission-page-next" disabled>下一页</button>
+        </div>
+      </section>
+      <div id="submission-notice" class="admin-submission-notice" role="status" aria-live="polite" hidden></div>
       <div id="comment-filters" class="hidden flex flex-wrap items-center gap-2 rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
         <label class="text-xs font-bold text-stone-600" for="comment-status-filter">状态</label>
         <select id="comment-status-filter" class="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs outline-none focus:border-[#123c3a]">
@@ -662,6 +721,13 @@
     const logoutButton = document.getElementById("logout");
     const viewTitle = document.getElementById("view-title");
     const viewCount = document.getElementById("view-count");
+    const submissionTools = document.getElementById("submission-tools");
+    const submissionNotice = document.getElementById("submission-notice");
+    const submissionPages = {
+      submissions: { status: "pending", search: "", offset: 0, previousOffsets: [], limit: 20, hasMore: false, nextOffset: 0 },
+      "resource-bindings": { status: "approved", search: "", offset: 0, previousOffsets: [], limit: 20, hasMore: false, nextOffset: 0 }
+    };
+    let submissionLoadVersion = 0;
 
     function escapeHtml(value) {
       return String(value == null ? "" : value)
@@ -682,6 +748,8 @@
         const error = result && result.error;
         const failure = new Error(error && error.message ? error.message : "云函数返回失败");
         failure.code = error && error.code ? error.code : "FUNCTION_FAILED";
+        if (error && error.resourceId) failure.resourceId = error.resourceId;
+        if (error && error.resourceTitle) failure.resourceTitle = error.resourceTitle;
         throw failure;
       }
       return result;
@@ -791,19 +859,54 @@
     }
 
     async function loadPending() {
-      setActiveView("submissions", "待审投稿");
+      Object.assign(submissionPages.submissions, { status: "pending", search: "", offset: 0, previousOffsets: [] });
+      await loadSubmissionPage("submissions");
+    }
+
+    function updateSubmissionTools(view, busy = false, count = 0) {
+      const state = submissionPages[view];
+      submissionTools.hidden = false;
+      submissionTools.querySelector(".admin-submission-tabs").hidden = view !== "submissions";
+      submissionTools.querySelectorAll("[data-submission-status]").forEach(button => {
+        button.setAttribute("aria-pressed", String(button.dataset.submissionStatus === state.status));
+      });
+      document.getElementById("submission-search").value = state.search;
+      submissionTools.querySelectorAll("button").forEach(button => { button.disabled = busy; });
+      document.getElementById("submission-page-prev").disabled = busy || state.previousOffsets.length === 0;
+      document.getElementById("submission-page-next").disabled = busy || !state.hasMore;
+      document.getElementById("submission-page-info").textContent = busy ? "正在读取投稿…" : count
+        ? `第 ${state.previousOffsets.length + 1} 页 · 本页 ${count} 条${state.search ? " · 搜索全部匹配记录" : ""}`
+        : state.search ? "没有匹配投稿，可调整关键词或清除搜索。" : "当前页没有投稿。";
+    }
+
+    async function loadSubmissionPage(view = adminPanel.dataset.view, focusId = "") {
+      const state = submissionPages[view];
+      if (!state) return;
+      setActiveView(view, view === "resource-bindings" ? "已通过投稿关联" : "投稿审核与管理");
+      const version = ++submissionLoadVersion;
+      updateSubmissionTools(view, true);
       message.className = "mt-2 text-xs text-stone-500";
-      message.textContent = "正在读取待审投稿...";
+      message.textContent = "正在读取投稿…";
+      list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在读取投稿…</div>';
       try {
-        const result = await callAdmin({ action: "list", status: "pending", limit: 50 });
+        const result = await callAdmin({ action: "list", status: state.status, limit: state.limit, offset: state.offset, search: state.search });
         const items = result.items || [];
         let urls = new Map();
         try { urls = await resolveUrls(items); } catch (_) {}
-        renderItems(items, urls, result.resourceOptions || []);
-        viewCount.textContent = `${items.length} 条`;
+        if (version !== submissionLoadVersion || adminPanel.dataset.view !== view) return;
+        state.hasMore = result.hasMore === true;
+        state.nextOffset = Number(result.nextOffset || state.offset + items.length);
+        if (state.status === "pending") renderItems(items, urls, result.resourceOptions || []);
+        else renderSubmissionManagementItems(items, result.resourceOptions || [], urls, state.status, focusId);
+        updateSubmissionTools(view, false, items.length);
+        viewCount.textContent = `本页 ${items.length} 条`;
         message.className = "mt-2 text-xs text-emerald-700";
-        message.textContent = `已读取 ${items.length} 条待审投稿。`;
+        message.textContent = state.status === "pending" ? "通过后可在“已通过”继续关联资源或撤回。" : state.status === "approved" ? "展开投稿管理资源关联，或撤回公开展示。" : "撤回记录和原审核记录会保留。";
       } catch (error) {
+        if (version !== submissionLoadVersion || adminPanel.dataset.view !== view) return;
+        updateSubmissionTools(view, false);
+        viewCount.textContent = "";
+        list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">投稿暂时无法读取，请点击搜索投稿重试。</div>';
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
       }
@@ -906,7 +1009,12 @@
     }
 
     function setActiveView(view, title) {
+      if (adminPanel.dataset.view !== view) {
+        submissionLoadVersion++;
+        submissionNotice.hidden = true;
+      }
       document.getElementById("admin-panel").dataset.view = view;
+      submissionTools.hidden = !submissionPages[view];
       viewTitle.textContent = title;
       const commentFilters = document.getElementById("comment-filters");
       if (commentFilters) commentFilters.classList.toggle("hidden", view !== "comments");
@@ -1419,7 +1527,7 @@
         .map((option) => `<option value="${escapeHtml(option.id)}" ${selectedId === option.id ? "selected" : ""}>${escapeHtml(option.regionName ? `${option.regionName}｜` : "")}${escapeHtml(option.title)}</option>`)
         .join("");
       return `
-        <select data-resource-binding-select class="${selectClass} w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-xs outline-none focus:border-[#123c3a]">
+        <select data-resource-binding-select aria-label="选择关联资源" class="${selectClass} w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-xs outline-none focus:border-[#123c3a]">
           <option value="" ${selectedId ? "" : "selected"}>暂不关联资源</option>
           ${selectedMissing ? `<option value="${escapeHtml(selectedId)}" selected>当前关联：${escapeHtml(selectedId)}</option>` : ""}
           ${candidateOptions}
@@ -1435,69 +1543,229 @@
     }
 
     async function loadResourceBindings() {
-      setActiveView("resource-bindings", "已通过投稿关联");
-      message.className = "mt-2 text-xs text-stone-500";
-      message.textContent = "正在读取已通过投稿和资源候选...";
-      list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在准备投稿关联工作台…</div>';
-      try {
-        const result = await callAdmin({ action: "list", status: "approved", limit: 50 });
-        const items = result.items || [];
-        renderResourceBindingItems(items, result.resourceOptions || []);
-        viewCount.textContent = `${items.length} 条`;
-        message.className = "mt-2 text-xs text-emerald-700";
-        message.textContent = "只保存管理员明确选择的资源；留空不会自动归类。";
-      } catch (error) {
-        message.className = "mt-2 text-xs text-red-600";
-        message.textContent = `${error.code || "ERROR"}：${error.message}`;
-      }
+      await loadSubmissionPage("resource-bindings");
     }
 
     function renderResourceBindingItems(items, resourceOptions) {
+      renderSubmissionManagementItems(items, resourceOptions, new Map(), "approved");
+    }
+
+    function submissionBindingPanelHtml(item, resourceOptions) {
+      return `<div class="admin-binding-panel">
+        <label class="text-xs font-bold text-stone-700">关联已有资源</label>
+        <p class="mt-1 text-xs text-stone-500">${escapeHtml(resourceCandidateHint(item))}</p>
+        <div class="admin-binding-actions">
+          <input type="search" data-resource-search maxlength="100" aria-label="搜索全部可关联资源" placeholder="输入资源名称，搜索全部资源">
+          <button type="button" data-search-resources>搜索资源</button>
+          <button type="button" data-search-resources-more hidden>更多匹配</button>
+        </div>
+        <p data-resource-search-result class="admin-card-result" role="status" aria-live="polite"></p>
+        <div class="admin-binding-actions">
+          ${resourceBindingSelectHtml(item, resourceOptions)}
+          <button type="button" data-save-resource-binding>保存关联</button>
+        </div>
+        <p class="mt-2 text-xs text-stone-500">选择资源后保存；留空并保存可取消关联。</p>
+      </div>`;
+    }
+
+    function resourceCreateHtml(item) {
+      return `<details class="admin-resource-create">
+        <summary>没有合适资源？新建并关联</summary>
+        <form data-create-resource-form>
+          <p class="text-xs text-stone-500">为这份已通过投稿建立新的文化资源。请先搜索已有名称，避免重复创建。</p>
+          <div class="admin-resource-fields">
+            <label>资源名称<input name="title" required maxlength="120" value="${escapeHtml(item.title || "")}" placeholder="填写核实后的文化对象名称"></label>
+            <label>资源类型<select name="resourceType"><option value="article">文化资料</option><option value="landmark">文化地点</option></select></label>
+            <label>所在地区（可选）<input name="regionName" maxlength="80" value="${escapeHtml(item.regionName || "")}" placeholder="例如：湖北省荆州市"></label>
+          </div>
+          <p class="text-xs text-stone-500">新资源会公开展示并关联当前投稿。地点类型也不会自动复制投稿坐标，暂不提供地图导航或路线。</p>
+          <label class="admin-confirm-check"><input type="checkbox" name="confirmCreate" required><span>我已核对名称、类型与地区，确认创建公开资源并关联这条投稿。</span></label>
+          <div><button type="submit" data-create-resource-submit>确认新建并关联</button></div>
+        </form>
+      </details>`;
+    }
+
+    function withdrawalHtml(item) {
+      if (item.status === "withdrawn") return `<div>
+        <p class="text-xs text-stone-500">撤回原因：${escapeHtml(item.withdrawalNote || item.reviewNote || "未记录")}</p>
+        <p class="text-xs text-stone-500">撤回时间：${escapeHtml(displayAdminDate(item.withdrawnAt))}。原投稿、审核记录和已发积分均保留。</p>
+        ${item.sourceReviewPending ? '<p class="mt-2 text-xs text-red-700">投稿已撤回；相关来源的复核标记尚未全部完成，请重试同步。</p><button type="button" data-retry-withdraw>重试同步撤回影响</button>' : ''}
+      </div>`;
+      return `<details class="admin-withdraw-panel">
+        <summary>撤回这条投稿</summary>
+        <form data-withdraw-submission-form>
+          <p class="text-xs text-stone-500">撤回后停止公开这条投稿，并停止把它作为公开来源使用；相关故事或链迹可能暂时隐藏。原始资料、审核记录和已发积分保留。</p>
+          <label>撤回原因（必填）<textarea name="reviewNote" rows="3" required maxlength="500" placeholder="说明需要撤回的具体原因"></textarea></label>
+          <div><button type="submit" data-withdraw-submit>确认撤回公开展示</button></div>
+        </form>
+      </details>`;
+    }
+
+    function renderSubmissionManagementItems(items, resourceOptions, urls, status, focusId = "") {
       if (!items.length) {
-        list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有已通过投稿。</div>';
+        list.innerHTML = `<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">${status === "withdrawn" ? "当前没有已撤回投稿。" : "当前没有已通过投稿。"}可调整搜索或翻页查看其他记录。</div>`;
         return;
       }
-      list.innerHTML = items.map((item) => `
-        <article data-binding-submission-id="${escapeHtml(item.id)}" class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2">
-                <h3 class="font-bold text-stone-900">${escapeHtml(item.title || "未命名投稿")}</h3>
-                <span class="rounded-full ${item.resourceId ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"} px-2 py-1 text-[10px] font-bold">${item.resourceId ? "已关联" : "待关联"}</span>
-              </div>
-              <p class="mt-1 text-xs leading-relaxed text-stone-500">${escapeHtml(item.description || "未填写说明")}</p>
-              <p class="mt-2 text-[10px] text-stone-400">投稿 ID：${escapeHtml(item.id)} · ${escapeHtml(item.regionName || "湖北")}</p>
+      list.innerHTML = items.map((source) => {
+        const item = { ...source, status: source.status || status };
+        const withdrawn = item.status === "withdrawn";
+        const preview = item.assetType === "image" && urls.get(item.imageFileID);
+        return `<article data-binding-submission-id="${escapeHtml(item.id)}" data-withdrawal-note="${escapeHtml(item.withdrawalNote || "")}" data-compact-ready="true" class="admin-submission-card admin-compact-shell rounded-2xl border border-stone-200 bg-white">
+          <details class="admin-compact" ${focusId === item.id ? "open" : ""}>
+            <summary><span class="admin-compact-copy"><strong>${escapeHtml(item.title || "未命名投稿")}</strong><small>${escapeHtml(item.regionName || "地区未填写")} · ${withdrawn ? "已撤回，保留审核记录" : "已通过，可管理资源与公开状态"}</small></span><span class="admin-compact-state" data-binding-state>${withdrawn ? "已撤回" : item.resourceId ? "已关联" : "待关联"}</span></summary>
+            <div class="admin-compact-body">
+              <h3 class="font-bold text-stone-900">${escapeHtml(item.title || "未命名投稿")}</h3>
+              ${preview ? `<img class="admin-submission-preview" src="${escapeHtml(preview)}" alt="投稿图片" loading="lazy">` : ""}
+              <p class="admin-submission-description text-sm text-stone-600">${escapeHtml(item.description || "未填写说明")}</p>
+              <details class="admin-technical"><summary>查看投稿与审核记录</summary><p class="text-xs text-stone-500">投稿编号：${escapeHtml(item.id)}<br>投稿人：${escapeHtml(item.contributorName || "未填写")}<br>提交时间：${escapeHtml(displayAdminDate(item.createdAt))}<br>审核时间：${escapeHtml(displayAdminDate(item.reviewedAt))}<br>审核说明：${escapeHtml(item.reviewNote || "未填写")}</p></details>
+              ${withdrawn ? "" : submissionBindingPanelHtml(item, resourceOptions) + resourceCreateHtml(item)}
+              ${withdrawalHtml(item)}
+              <p data-submission-result class="admin-card-result" role="status" aria-live="polite"></p>
             </div>
-          </div>
-          <div class="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
-            <p class="mb-2 text-[10px] leading-relaxed text-stone-500">${escapeHtml(resourceCandidateHint(item))}</p>
-            <div class="flex flex-col gap-2 sm:flex-row">
-              ${resourceBindingSelectHtml(item, resourceOptions, "flex-1")}
-              <button type="button" data-save-resource-binding class="shrink-0 rounded-xl bg-[#123c3a] px-4 py-2.5 text-xs font-bold text-[#d9ad52]">保存关联</button>
-            </div>
-          </div>
-        </article>
-      `).join("");
+          </details>
+        </article>`;
+      }).join("");
+      if (focusId) list.querySelector('details[open] > summary')?.focus();
+    }
+
+    function setSubmissionResult(card, text, failed = false) {
+      if (!card.isConnected) return;
+      const target = card.querySelector("[data-submission-result]");
+      if (target) {
+        target.textContent = text;
+        target.dataset.error = String(failed);
+      }
+      message.className = failed ? "mt-2 text-xs text-red-600" : "mt-2 text-xs text-emerald-700";
+      message.textContent = text;
+    }
+
+    function setSubmissionBusy(card, busy) {
+      card.dataset.mutationBusy = String(busy);
+      card.querySelectorAll("button, input, select, textarea").forEach(control => { control.disabled = busy; });
+    }
+
+    function applyResourceSelection(card, resourceId, resourceTitle) {
+      const select = card.querySelector("[data-resource-binding-select]");
+      if (select && resourceId && ![...select.options].some(option => option.value === resourceId)) select.add(new Option(resourceTitle || resourceId, resourceId));
+      if (select) select.value = resourceId || "";
+      const badge = card.querySelector("[data-binding-state]");
+      if (badge) badge.textContent = resourceId ? "已关联" : "待关联";
+    }
+
+    async function searchBindingResources(card, more = false) {
+      if (card.dataset.mutationBusy === "true") return;
+      const search = card.querySelector("[data-resource-search]");
+      const query = search.value.trim();
+      const offset = more && search.dataset.lastQuery === query ? Number(search.dataset.nextOffset || 0) : 0;
+      const version = Number(search.dataset.requestVersion || 0) + 1;
+      search.dataset.requestVersion = String(version);
+      const buttons = card.querySelectorAll("[data-search-resources], [data-search-resources-more]");
+      const feedback = card.querySelector("[data-resource-search-result]");
+      buttons.forEach(button => { button.disabled = true; });
+      feedback.textContent = "正在搜索全部可关联资源…";
+      feedback.dataset.error = "false";
+      try {
+        const result = await callAdmin({ action: "searchSubmissionResources", query, offset, limit: 20 });
+        if (!card.isConnected || Number(search.dataset.requestVersion) !== version) return;
+        const select = card.querySelector("[data-resource-binding-select]");
+        const selectedValue = select.value;
+        const selectedText = select.selectedOptions[0]?.textContent || selectedValue;
+        if (!offset) {
+          select.replaceChildren(new Option("暂不关联资源", ""));
+          if (selectedValue) select.add(new Option(selectedText, selectedValue));
+        }
+        (result.items || []).forEach(item => {
+          if (![...select.options].some(option => option.value === item.id)) select.add(new Option(`${item.regionName ? item.regionName + "｜" : ""}${item.title}`, item.id));
+        });
+        select.value = selectedValue;
+        search.dataset.lastQuery = query;
+        search.dataset.nextOffset = String(result.nextOffset || offset + (result.items || []).length);
+        card.querySelector("[data-search-resources-more]").hidden = !result.hasMore;
+        feedback.textContent = (result.items || []).length ? `已加载 ${offset + result.items.length} 条匹配资源，请在下方选择${card.dataset.id ? "后审核" : "并保存"}。` : card.dataset.id ? "没有匹配资源；可留空并审核，通过后新建并关联。" : "没有匹配资源；可调整名称，或展开“新建并关联”。";
+      } catch (error) {
+        if (!card.isConnected || Number(search.dataset.requestVersion) !== version) return;
+        feedback.dataset.error = "true";
+        feedback.textContent = `资源搜索失败：${error.message}。当前选择已保留。`;
+      } finally { if (Number(search.dataset.requestVersion) === version && card.dataset.mutationBusy !== "true") buttons.forEach(button => { button.disabled = false; }); }
     }
 
     async function saveResourceBinding(card, button) {
+      if (card.dataset.mutationBusy === "true") return;
       const submissionId = card.dataset.bindingSubmissionId;
       const select = card.querySelector("[data-resource-binding-select]");
       const resourceId = select ? select.value : "";
-      button.disabled = true;
+      setSubmissionBusy(card, true);
       try {
         const result = await callAdmin({ action: "bindSubmissionResource", submissionId, resourceId });
         const successMessage = result.resourceId
           ? `已将投稿关联到：${result.resourceTitle || result.resourceId}`
           : "已取消这条投稿的资源关联。";
-        await loadResourceBindings();
-        message.className = "mt-2 text-xs text-emerald-700";
-        message.textContent = successMessage;
+        applyResourceSelection(card, result.resourceId || "", result.resourceTitle);
+        setSubmissionResult(card, successMessage);
       } catch (error) {
-        button.disabled = false;
-        message.className = "mt-2 text-xs text-red-600";
-        message.textContent = `${error.code || "ERROR"}：${error.message}`;
+        setSubmissionResult(card, `${error.code || "ERROR"}：${error.message}`, true);
+      } finally { setSubmissionBusy(card, false); }
+    }
+
+    async function createResourceFromSubmission(event) {
+      event.preventDefault();
+      const form = event.target;
+      const card = form.closest("[data-binding-submission-id]");
+      if (card.dataset.mutationBusy === "true") return;
+      const fields = new FormData(form);
+      const title = String(fields.get("title") || "").trim();
+      if (!title) {
+        setSubmissionResult(card, "请填写核实后的资源名称。", true);
+        form.querySelector('[name="title"]').focus();
+        return;
       }
+      if (!fields.has("confirmCreate")) return;
+      setSubmissionBusy(card, true);
+      try {
+        const result = await callAdmin({ action: "createResourceFromSubmission", submissionId: card.dataset.bindingSubmissionId, title, resourceType: fields.get("resourceType"), regionName: String(fields.get("regionName") || "").trim(), confirmCreate: true });
+        applyResourceSelection(card, result.resourceId, result.resourceTitle);
+        form.querySelector('[name="confirmCreate"]').checked = false;
+        form.closest("details").open = false;
+        setSubmissionResult(card, `${result.cached ? "已读取创建结果" : "已新建公开资源"}：${result.resourceTitle || title}，并关联当前投稿。`);
+      } catch (error) {
+        setSubmissionResult(card, `${error.code || "ERROR"}：${error.message}${error.code === "RESOURCE_ALREADY_EXISTS" ? "。请搜索并选择已有资源，再保存关联。" : ""}`, true);
+      } finally { setSubmissionBusy(card, false); }
+    }
+
+    async function withdrawSubmission(event, retryCard = null) {
+      if (event) event.preventDefault();
+      const form = event && event.target;
+      const card = retryCard || form.closest("[data-binding-submission-id]");
+      if (card.dataset.mutationBusy === "true") return;
+      const reviewNote = form ? String(new FormData(form).get("reviewNote") || "").trim() : card.dataset.withdrawalNote || "";
+      if (!retryCard && !reviewNote) {
+        setSubmissionResult(card, "请填写具体的撤回原因。", true);
+        form.querySelector("textarea").focus();
+        return;
+      }
+      setSubmissionBusy(card, true);
+      try {
+        const result = await callAdmin({ action: "withdrawSubmission", submissionId: card.dataset.bindingSubmissionId, reviewNote });
+        const title = card.querySelector("h3").textContent;
+        const resultText = result.sourceReviewPending
+          ? `“${title}”已撤回；相关来源复核尚未全部同步，请在“已撤回”中重试。`
+          : `“${title}”已撤回，原投稿、审核记录和已发积分保留。`;
+        const view = adminPanel.dataset.view;
+        if (card.isConnected && submissionPages[view]) {
+          await loadSubmissionPage(view);
+          submissionNotice.hidden = false;
+          submissionNotice.replaceChildren(document.createTextNode(resultText));
+          if (view === "resource-bindings" || submissionPages[view].status !== "withdrawn") {
+            const open = document.createElement("button");
+            open.type = "button";
+            open.dataset.showWithdrawnSubmission = card.dataset.bindingSubmissionId;
+            open.textContent = "查看撤回记录";
+            submissionNotice.append(document.createElement("br"), open);
+          }
+        }
+      } catch (error) {
+        setSubmissionResult(card, `${error.code || "ERROR"}：${error.message}`, true);
+      } finally { setSubmissionBusy(card, false); }
     }
 
     function showResourceSeedConfirmation(button) {
@@ -2535,9 +2803,12 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
               <div class="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
                 <label class="text-xs font-bold text-stone-700">归入统一资源（可选）</label>
                 <p class="mt-1 text-[10px] leading-relaxed text-stone-500">${escapeHtml(resourceCandidateHint(item))}</p>
+                <div class="admin-binding-actions"><input type="search" data-resource-search maxlength="100" aria-label="搜索全部可关联资源" placeholder="输入资源名称，搜索全部资源"><button type="button" data-search-resources>搜索资源</button><button type="button" data-search-resources-more hidden>更多匹配</button></div>
+                <p data-resource-search-result class="admin-card-result" role="status" aria-live="polite"></p>
                 <div class="mt-2">${resourceBindingSelectHtml(item, resourceOptions)}</div>
+                <p class="mt-2 text-xs text-stone-500">没有合适资源可先留空并审核，通过后在“已通过”中新建并关联。</p>
               </div>
-              <textarea rows="3" placeholder="拒绝或要求修改时必须填写审核说明" class="mt-3 w-full rounded-xl border border-stone-200 p-3 text-xs outline-none focus:border-[#d9ad52]"></textarea>
+              <textarea rows="3" maxlength="500" placeholder="拒绝或要求修改时必须填写审核说明" class="mt-3 w-full rounded-xl border border-stone-200 p-3 text-xs outline-none focus:border-[#d9ad52]"></textarea>
               <div class="mt-3 flex flex-wrap gap-2">
                 <button data-status="approved" class="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white">通过并发积分</button>
                 <button data-status="needs_revision" class="rounded-lg bg-amber-600 px-4 py-2 text-xs font-bold text-white">要求修改</button>
@@ -2562,11 +2833,25 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       buttons.forEach((button) => { button.disabled = true; });
       try {
         const result = await callAdmin({ action: "review", submissionId, status, reviewNote, resourceId });
+        if (!card.isConnected || adminPanel.dataset.view !== "submissions" || submissionPages.submissions.status !== "pending") return;
         card.remove();
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = `审核完成：${submissionId} → ${status}${result.rewardPoints ? `，已发放 ${result.rewardPoints} 积分` : ""}${result.resourceId ? `，已关联 ${result.resourceTitle || result.resourceId}` : ""}`;
+        if (status === "approved") {
+          submissionNotice.hidden = false;
+          submissionNotice.replaceChildren(document.createTextNode(`“${card.querySelector("h3").textContent}”已通过${result.rewardPoints ? `，已发放 ${result.rewardPoints} 积分` : ""}。可继续关联资源或管理公开状态。`));
+          const manage = document.createElement("button");
+          manage.type = "button";
+          manage.dataset.manageSubmission = submissionId;
+          manage.textContent = "管理这条投稿";
+          submissionNotice.append(document.createElement("br"), manage);
+        }
+        const remaining = list.querySelectorAll("article[data-id]").length;
+        submissionPages.submissions.nextOffset = submissionPages.submissions.offset + remaining;
+        viewCount.textContent = `本页剩余 ${remaining} 条`;
+        updateSubmissionTools("submissions", false, remaining);
         if (!list.querySelector("article")) {
-          list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">当前没有待审投稿。</div>';
+          list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">本页投稿已处理完。可切换“已通过”继续管理，或点击下一页读取其他待审投稿。</div>';
         }
       } catch (error) {
         buttons.forEach((button) => { button.disabled = false; });
@@ -2589,7 +2874,57 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
     document.getElementById("ai-status-refresh").addEventListener("click", loadAiStatus);
     document.getElementById("material-analysis-refresh").addEventListener("click", loadMaterialAnalysis);
     document.getElementById("resource-preview-refresh").addEventListener("click", loadResourceSeedPreview);
+    submissionTools.addEventListener("click", event => {
+      const button = event.target.closest("[data-submission-status]");
+      if (!button) return;
+      Object.assign(submissionPages.submissions, { status: button.dataset.submissionStatus, search: "", offset: 0, previousOffsets: [] });
+      submissionNotice.hidden = true;
+      loadSubmissionPage("submissions");
+    });
+    document.getElementById("submission-search-form").addEventListener("submit", event => {
+      event.preventDefault();
+      const state = submissionPages[adminPanel.dataset.view];
+      if (!state) return;
+      state.search = document.getElementById("submission-search").value.trim();
+      state.offset = 0;
+      state.previousOffsets = [];
+      submissionNotice.hidden = true;
+      loadSubmissionPage();
+    });
+    document.getElementById("submission-search-clear").addEventListener("click", () => {
+      const state = submissionPages[adminPanel.dataset.view];
+      if (!state) return;
+      Object.assign(state, { search: "", offset: 0, previousOffsets: [] });
+      submissionNotice.hidden = true;
+      loadSubmissionPage();
+    });
+    document.getElementById("submission-page-prev").addEventListener("click", () => {
+      const state = submissionPages[adminPanel.dataset.view];
+      state.offset = state.previousOffsets.pop() || 0;
+      loadSubmissionPage();
+    });
+    document.getElementById("submission-page-next").addEventListener("click", () => {
+      const state = submissionPages[adminPanel.dataset.view];
+      state.previousOffsets.push(state.offset);
+      state.offset = state.nextOffset;
+      loadSubmissionPage();
+    });
+    submissionNotice.addEventListener("click", event => {
+      const button = event.target.closest("[data-manage-submission], [data-show-withdrawn-submission]");
+      if (!button) return;
+      const id = button.dataset.manageSubmission || button.dataset.showWithdrawnSubmission;
+      Object.assign(submissionPages.submissions, { status: button.dataset.manageSubmission ? "approved" : "withdrawn", search: id, offset: 0, previousOffsets: [] });
+      submissionNotice.hidden = true;
+      loadSubmissionPage("submissions", id);
+    });
+    document.getElementById("list").addEventListener("keydown", event => {
+      if (event.key !== "Enter" || !event.target.matches("[data-resource-search]")) return;
+      event.preventDefault();
+      searchBindingResources(event.target.closest("article"));
+    });
     document.getElementById("list").addEventListener("submit", (event) => {
+      if (event.target && event.target.matches("[data-create-resource-form]")) createResourceFromSubmission(event);
+      if (event.target && event.target.matches("[data-withdraw-submission-form]")) withdrawSubmission(event);
       if (event.target && event.target.id === "redemption-lookup-form") lookupRedemption(event);
       if (event.target && event.target.id === "story-link-form") saveStoryLink(event);
       if (event.target && event.target.id === "story-draft-generate-form") generateStoryDraft(event);
@@ -2613,6 +2948,9 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
       const resourceBindingButton = event.target.closest("button[data-save-resource-binding]");
       const resourceBindingCard = event.target.closest("article[data-binding-submission-id]");
       if (resourceBindingButton && resourceBindingCard) saveResourceBinding(resourceBindingCard, resourceBindingButton);
+      const resourceSearch = event.target.closest("[data-search-resources], [data-search-resources-more]");
+      if (resourceSearch) searchBindingResources(resourceBindingCard || card, resourceSearch.hasAttribute("data-search-resources-more"));
+      if (resourceBindingCard && event.target.closest("[data-retry-withdraw]")) withdrawSubmission(null, resourceBindingCard);
       const supplementButton = event.target.closest("button[data-supplement-status]");
       const supplementCard = event.target.closest("article[data-supplement-id]");
       if (supplementButton && supplementCard) {

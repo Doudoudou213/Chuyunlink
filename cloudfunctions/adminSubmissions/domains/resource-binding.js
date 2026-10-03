@@ -33,7 +33,7 @@ function resourceRegionLabel(resource) {
   const region = resource && resource.region && typeof resource.region === 'object'
     ? resource.region
     : {};
-  return [region.city, region.district].map((value) => cleanText(value, 40)).filter(Boolean).join(' · ');
+  return cleanText(region.label, 80) || [region.city, region.district].map((value) => cleanText(value, 40)).filter(Boolean).join(' · ');
 }
 
 function resourceBindingOption(resource) {
@@ -70,7 +70,7 @@ function scoreSubmissionResource(submission, resource) {
   }
 
   const region = resource && resource.region && typeof resource.region === 'object' ? resource.region : {};
-  const matchedRegions = [region.city, region.district]
+  const matchedRegions = [region.label, region.city, region.district]
     .map((value) => cleanText(value, 40))
     .filter((value) => value && submissionText.includes(compactText(value)));
   if (matchedRegions.length) {
