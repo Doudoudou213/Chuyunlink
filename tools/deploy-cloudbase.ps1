@@ -221,6 +221,8 @@ try {
         (Join-Path $staticDirectory 'paper-editorial.css'),
         (Join-Path $staticDirectory 'paper-editorial.js'),
         (Join-Path $staticDirectory 'paper-motion.js'),
+        (Join-Path $staticDirectory 'navigation-motion.js'),
+        (Join-Path $staticDirectory 'navigation-motion.css'),
         (Join-Path $staticDirectory 'logo.png'),
         (Join-Path $staticDirectory 'map-config.js')
       )

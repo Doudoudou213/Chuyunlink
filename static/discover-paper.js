@@ -156,12 +156,16 @@
           : element === navigation && desktop.matches ? 'navigation' : null;
         const fieldTarget = fieldPage && fieldSlot ? document.getElementById(`field-${fieldPage}-${fieldSlot}`) : null;
         const destination = useHome ? target : profileTarget || fieldTarget;
-        if (destination && element.parentElement !== destination) {
-          const themeLink = destination === menu ? document.getElementById('paper-home-theme-link') : null;
-          if (themeLink) destination.insertBefore(element, themeLink);
-          else destination.appendChild(element);
+        if (element === navigation && window.ChuNavMotion) {
+          window.ChuNavMotion.place(element, destination, anchor);
+        } else {
+          if (destination && element.parentElement !== destination) {
+            const themeLink = destination === menu ? document.getElementById('paper-home-theme-link') : null;
+            if (themeLink) destination.insertBefore(element, themeLink);
+            else destination.appendChild(element);
+          }
+          if (!destination && element.parentNode !== anchor.parentNode) anchor.after(element);
         }
-        if (!destination && element.parentNode !== anchor.parentNode) anchor.after(element);
         if (label) label.hidden = !destination;
       });
       updateDrift();

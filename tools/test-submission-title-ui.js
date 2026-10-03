@@ -33,6 +33,12 @@ async function main() {
       const url = route.request().url();
       if (url.startsWith('http://127.0.0.1:')) return route.continue();
       if (route.request().method() === 'GET' && /^https:\/\/(cdn\.tailwindcss\.com|unpkg\.com\/lucide)/.test(url)) {
+        const cached = url.includes('cdn.tailwindcss.com')
+          ? process.env.SUBMISSION_QA_TAILWIND_PATH : process.env.SUBMISSION_QA_LUCIDE_PATH;
+        if (cached) {
+          assert.ok(fs.existsSync(cached), 'configured visual dependency cache must exist');
+          return route.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(cached) });
+        }
         const response = await route.fetch({ timeout: 60000, maxRetries: 2 });
         assert.ok(response.ok(), 'visual dependency must load');
         return route.fulfill({ response });

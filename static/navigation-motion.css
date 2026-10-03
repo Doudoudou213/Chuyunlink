@@ -1,0 +1,30 @@
+/* Transient surface only: the resting positions and mobile dock are unchanged. */
+.paper-nav-flight {
+  position: fixed;
+  z-index: 55;
+  pointer-events: none;
+  isolation: isolate;
+  contain: layout style;
+}
+.paper-nav-film {
+  position: absolute;
+  inset: 2px 6%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 252, 240, .94) 20%, rgba(235, 227, 205, .64) 62%, transparent 76%);
+  box-shadow: 0 7px 24px -12px rgba(122, 102, 68, .2);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.paper-nav-placeholder { box-sizing: border-box; pointer-events: none; }
+.paper-nav-flight #app-navigation .nav-item { transition: color 180ms ease; }
+.paper-nav-flight #app-navigation .nav-item:focus-visible {
+  outline: 2px solid #9c7945;
+  outline-offset: -3px;
+}
+@media (max-width: 767px) {
+  #app-navigation .nav-item { transition: color 240ms ease, background-color 240ms ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .paper-nav-film { display: none; }
+  #app-navigation .nav-item { transition: none !important; }
+}

@@ -4449,6 +4449,7 @@
   <link rel="stylesheet" href="./static/map-paper-edge.css">
   <link rel="stylesheet" href="./static/paper-editorial.css">
   <link rel="stylesheet" href="./static/theme-float.css">
+  <link rel="stylesheet" href="./static/navigation-motion.css">
 </head>
 <body class="min-h-screen bg-parchment">
 
@@ -9030,7 +9031,7 @@
     // 1. TabBar 路由切换控制
     function switchTab(tabId) {
       const previousView = document.querySelector('.page-view:not(.hidden)');
-      window.dispatchEvent(new CustomEvent('chu:view-changing'));
+      window.dispatchEvent(new CustomEvent('chu:view-changing', { detail: { tabId } }));
       document.body.classList.toggle('profile-view-active', tabId === 'profile');
       document.querySelectorAll('.page-view').forEach(view => {
         view.classList.add('hidden');
@@ -12151,5 +12152,6 @@
 <script src="./static/guide-entry.js"></script>
 <script src="./static/assets/gsap-3.15.0.min.js"></script>
 <script src="./static/paper-motion.js"></script>
+<script src="./static/navigation-motion.js"></script>
 </body>
 </html>

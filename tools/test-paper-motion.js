@@ -333,6 +333,19 @@ test('rapid navigation cancels old frames and restores styles before the next vi
   h.assertRestored();
 });
 
+test('restoring the travelling navigation focus does not shorten the slow artwork entrance', () => {
+  const h = harness();
+  h.navigate('profile');
+  h.flush();
+  const target = [...h.views.profile.children.values()][1];
+  target.closest = selector => selector === '#app-navigation' ? h.navs[0] : null;
+  h.document.dispatchEvent({ type: 'focusin', target });
+  assert.equal(h.contexts[0].reverted, 0);
+  target.closest = () => null;
+  h.document.dispatchEvent({ type: 'focusin', target });
+  assert.equal(h.contexts[0].reverted, 1, 'real content focus still ends the entrance');
+});
+
 test('focus, hidden documents and page exit restore pending and playing animation', () => {
   for (const event of ['focus', 'visibility', 'pagehide']) for (const playing of [false, true]) {
     const h = harness();
