@@ -69,6 +69,8 @@
       more.setAttribute('aria-expanded', 'false');
       if (wasOpen && restoreFocus) more.focus({ preventScroll: true });
     }
+    const menuItems = () => [...menu.querySelectorAll('button:not(:disabled), a[href]')]
+      .filter(item => !item.hidden && !item.closest('.hidden') && item.getClientRects().length);
     more.addEventListener('click', () => {
       if (!menu.hidden) return closeMenu();
       menu.hidden = false;
@@ -88,15 +90,31 @@
         event.preventDefault();
         menu.hidden = false;
         more.setAttribute('aria-expanded', 'true');
-        menu.querySelector('button')?.focus();
+        menuItems()[0]?.focus();
       }
     });
     menu.addEventListener('click', event => {
-      const button = event.target.closest('button');
-      if (!button) return;
+      const button = event.target.closest('button, a[href]');
+      if (!button || !menu.contains(button)) return;
+      if (button.matches('a[href]')) {
+        pendingDialog = null;
+        closeMenu();
+        return;
+      }
+      if (button !== account && button !== help) return;
       pendingDialog = document.getElementById(button === help ? 'welcome-guide-modal' : 'cloud-login-modal');
       closeMenu(menu.contains(document.activeElement));
       focusOpenedDialog();
+    });
+    menu.addEventListener('keydown', event => {
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+      const items = menuItems();
+      if (!items.length) return;
+      const index = items.indexOf(document.activeElement);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
+        : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      event.preventDefault();
+      items[next].focus();
     });
     document.addEventListener('focusin', event => {
       if (!menu.contains(event.target) && !more.contains(event.target)) closeMenu();
@@ -138,7 +156,11 @@
           : element === navigation && desktop.matches ? 'navigation' : null;
         const fieldTarget = fieldPage && fieldSlot ? document.getElementById(`field-${fieldPage}-${fieldSlot}`) : null;
         const destination = useHome ? target : profileTarget || fieldTarget;
-        if (destination && element.parentElement !== destination) destination.appendChild(element);
+        if (destination && element.parentElement !== destination) {
+          const themeLink = destination === menu ? document.getElementById('paper-home-theme-link') : null;
+          if (themeLink) destination.insertBefore(element, themeLink);
+          else destination.appendChild(element);
+        }
         if (!destination && element.parentNode !== anchor.parentNode) anchor.after(element);
         if (label) label.hidden = !destination;
       });

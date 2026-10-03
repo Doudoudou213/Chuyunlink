@@ -692,15 +692,6 @@
     .chu-quick-entry:hover .chu-feature-icon {
       transform: translateY(-2px);
     }
-    .discover-theme-entry {
-      display: flex; align-items: center; justify-content: space-between; gap: 14px;
-      min-height: 56px; margin: 8px 0 18px; padding: 12px 16px;
-      border: 1px solid rgba(182, 138, 74, .36); border-radius: 8px;
-      background: #fffaf0; color: #532d25; text-decoration: none;
-    }
-    .discover-theme-entry strong { display: block; font: 700 13px/1.5 'Noto Serif SC', serif; }
-    .discover-theme-entry small { display: block; margin-top: 2px; color: #7a6c5b; font-size: 10px; line-height: 1.5; }
-    .discover-theme-entry:hover, .discover-theme-entry:focus-visible { border-color: #9e2f24; outline: 2px solid rgba(158, 47, 36, .18); }
     .discover-feed-heading {
       color: var(--chu-ink);
       font-family: 'Noto Serif SC', serif;
@@ -4457,6 +4448,7 @@
   <link rel="stylesheet" href="./static/field-paper.css">
   <link rel="stylesheet" href="./static/map-paper-edge.css">
   <link rel="stylesheet" href="./static/paper-editorial.css">
+  <link rel="stylesheet" href="./static/theme-float.css">
 </head>
 <body class="min-h-screen bg-parchment">
 
@@ -4520,10 +4512,12 @@
             <div id="paper-home-location"></div>
             <div class="paper-home-utility-right">
               <div id="paper-home-notifications"></div>
-              <button id="paper-home-more" type="button" aria-expanded="false" aria-controls="paper-home-menu" aria-label="更多：账号与使用帮助">
+              <button id="paper-home-more" type="button" aria-expanded="false" aria-controls="paper-home-menu" aria-label="更多：账号、使用帮助与主题故事">
                 <i data-lucide="ellipsis" aria-hidden="true"></i><span>更多</span>
               </button>
-              <div id="paper-home-menu" class="paper-home-menu" hidden aria-label="账号与使用帮助"></div>
+              <div id="paper-home-menu" class="paper-home-menu" hidden aria-label="账号、使用帮助与主题故事">
+                <a id="paper-home-theme-link" href="./themes.html"><i data-lucide="book-open" aria-hidden="true"></i><span>主题故事</span></a>
+              </div>
             </div>
           </div>
           <div class="paper-home-brand">
@@ -4584,10 +4578,6 @@
               <span>活动科普</span>
             </button>
           </nav>
-          <a class="discover-theme-entry" href="./themes.html">
-            <span><strong>阅读主题专题</strong><small>从多地已审核资料出发，故事优先，地图与链迹按需展开</small></span>
-            <span aria-hidden="true">→</span>
-          </a>
         </div>
         <div id="onboarding-card" class="hidden px-4">
           <div class="rounded-2xl border border-sandGold/20 bg-gradient-to-r from-[#17110f] via-[#4b1d19] to-[#241a17] p-4 text-white shadow-sm">
@@ -4691,7 +4681,7 @@
               <span class="text-xs text-sandGold flex items-center">
                 <i data-lucide="award" class="w-3.5 h-3.5 mr-1"></i> 打卡奖励 +150 流光值
               </span>
-              <span class="bg-sandGold text-deepTeal font-bold text-xs px-3 py-1.5 rounded-lg shadow flex items-center">
+              <span id="discover-hotspot-action" class="bg-sandGold text-deepTeal font-bold text-xs px-3 py-1.5 rounded-lg shadow flex items-center">
                 查看守护任务 <i data-lucide="arrow-right" class="ml-1 h-3.5 w-3.5"></i>
               </span>
             </div>
@@ -12129,6 +12119,13 @@
   <script src="./static/content-effects.js"></script>
   <script src="./static/guide-contribution.js"></script>
   <script src="./static/cloudbase-app.js"></script>
+  <aside id="theme-story-float" class="theme-story-float" aria-label="主题故事" hidden>
+    <button id="theme-story-dismiss" class="theme-story-dismiss" type="button" aria-label="关闭故事浮窗，仍可从更多阅读主题故事" title="关闭浮窗"><span aria-hidden="true">×</span></button>
+    <a id="theme-story-link" class="theme-story-link" href="./themes.html" aria-label="阅读主题故事">
+      <img class="theme-story-art" src="./static/assets/theme-phoenix-book-v1.png" alt="" width="1280" height="1280" decoding="async">
+      <span class="theme-story-label">读故事</span>
+    </a>
+  </aside>
   <aside id="paper-activity-note" class="paper-activity-note" aria-label="活动入口样式预览" hidden>
     <button type="button" class="paper-activity-dismiss" data-activity-note-dismiss aria-label="本次浏览不再显示活动签笺"><i data-lucide="x" aria-hidden="true"></i></button>
     <button type="button" class="paper-activity-toggle" data-activity-note-toggle aria-expanded="false" aria-controls="paper-activity-panel">
@@ -12147,6 +12144,7 @@
   <script src="./static/field-paper.js"></script>
   <script src="./static/map-paper-edge.js"></script>
   <script src="./static/paper-editorial.js"></script>
+  <script src="./static/theme-float.js"></script>
   
 <script src="./static/visit-engine.js"></script>
 <script src="./static/visit-planner.js"></script>

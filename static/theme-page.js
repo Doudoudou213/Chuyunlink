@@ -63,8 +63,8 @@
     const chapters = (theme.chapters || []).map((chapter, index) => {
       const sources = chapter.sourceLinkIds.map(id => sourceById.get(id)).filter(Boolean);
       const claims = chapter.claimIds.map(id => claimById.get(id)).filter(Boolean);
-      return `<article class="chapter">
-        <p class="chapter-number">第 ${index + 1} 章 · ${esc(chapter.nodeIds.map(id => nodeById.get(id)?.region?.province || '').filter(Boolean).join('、'))}</p>
+      return `<article class="chapter" id="theme-chapter-${index + 1}" tabindex="-1">
+        <p class="chapter-number"><span>第 ${index + 1} 章</span><span class="chapter-region">${esc([...new Set(chapter.nodeIds.map(id => nodeById.get(id)?.region?.province || '').filter(Boolean))].join('、'))}</span></p>
         <h2>${esc(chapter.title)}</h2>
         <p class="chapter-body">${esc(chapter.body)}</p>
         <div class="claim-list" aria-label="本章已确认事实">${claims.map((claim, claimIndex) => `
@@ -76,7 +76,7 @@
             </div></details>`).join('')}</div>
         <details class="chapter-source"><summary>查看本章来源 · ${sources.length} 份</summary>
           ${sources.map(source => sourceCard(source, (chapter.adoptedSourceLinkIds || []).includes(source.id))).join('')}</details>
-        <p>${contributionLinks(chapter,theme,nodeById)}</p>
+        <p class="chapter-contribute">${contributionLinks(chapter,theme,nodeById)}</p>
       </article>`;
     }).join('');
     const timeline = [...theme.nodes].sort((a, b) => {
@@ -86,13 +86,16 @@
       if (by == null) return -1;
       return Number(ay) - Number(by) || a.order - b.order;
     });
-    content.innerHTML = `<a class="back-link" href="./themes.html">← 返回专题列表</a>
+    content.innerHTML = `<a class="back-link" href="./themes.html">← 返回主题故事</a>
       <header class="theme-hero"><p class="eyebrow">已审核专题 · 第 ${Number(theme.version) || 1} 版</p>
         <h1>${esc(theme.title)}</h1><p class="intro">${esc(theme.introduction)}</p>
         <div class="theme-meta"><span>${theme.chapters.length} 章故事</span>
           <span>${theme.nodes.length} 个节点</span><span>${esc(regions.join(' · ') || '地区资料待补')}</span></div>
-        ${theme.questions && theme.questions.length ? `<p class="expand-help">继续寻找：${theme.questions.map(esc).join('；')}</p>` : ''}
+        ${theme.questions && theme.questions.length ? `<p class="theme-questions">继续寻找：${theme.questions.map(esc).join('；')}</p>` : ''}
       </header>
+      <nav class="chapter-directory" aria-label="章节目录"><h2>本篇目录</h2>
+        <ol>${theme.chapters.map((chapter, index) => `<li><a href="#theme-chapter-${index + 1}"><span>${String(index + 1).padStart(2, '0')}</span>${esc(chapter.title)}</a></li>`).join('')}</ol>
+      </nav>
       <div class="story" aria-label="专题故事">${chapters}</div>
       ${theme.closing ? `<p class="closing">${esc(theme.closing)}</p>` : ''}
       <div class="expand" aria-label="展开地图、时间线和链迹">
@@ -109,13 +112,13 @@
           <p class="expand-help">节点由管理员选定；下面只展示已确认且来源仍有效的正式关系。</p>
           <ol class="chain-list">${theme.nodes.map(node => `<li><strong>${esc(node.label)}</strong>
             <small>${esc(node.resourceTitle)} · ${esc(node.region.province || node.region.city || '地点待补')}</small></li>`).join('')}</ol>
-          <h3 style="margin-top:20px">正式关系</h3>
+          <h3 class="relation-heading">正式关系</h3>
           ${theme.relations.length ? theme.relations.map(relation => `<div class="relation-row">
             <strong>${esc(nodeById.get(relation.from)?.label || relation.from)} → ${esc(nodeById.get(relation.to)?.label || relation.to)}
               · ${esc(relationLabel[relation.type] || relation.type)}</strong>
             <p>${esc(relation.why)}</p><small>${relation.sourceLinkIds.length} 份已确认依据</small>
             <details class="chapter-source"><summary>查看关系来源</summary>
-              ${relation.sourceLinkIds.map(id => sourceById.get(id)).filter(Boolean).map(sourceCard).join('')}</details>
+              ${relation.sourceLinkIds.map(id => sourceById.get(id)).filter(Boolean).map(source => sourceCard(source)).join('')}</details>
           </div>`).join('') : '<p class="expand-help">当前节点间没有已确认的正式关系。</p>'}</div></details>
       </div>`;
     status.textContent = '';
@@ -124,15 +127,19 @@
   }
 
   function renderList(items) {
-    content.innerHTML = `<section><p class="eyebrow">CULTURAL THEMES</p><h1>主题专题</h1>
-      <p class="intro">沿着已确认的资源与资料，阅读跨地点、跨时间的文化故事。每章都能查看来源。</p></section>
+    content.innerHTML = `<section class="theme-list-heading"><h1>主题故事</h1>
+      <p class="intro">沿着地点与年代，读一段有来处的故事。<br>每章都能查看已确认的事实与来源。</p></section>
       ${items.length ? `<div class="theme-list">${items.map(item => `<article class="theme-card">
-        <a href="./themes.html?id=${encodeURIComponent(item.id)}"><p class="eyebrow">已审核专题 · 第 ${Number(item.version) || 1} 版</p>
-          <h2>${esc(item.title)}</h2><p>${esc(item.introduction)}</p>
-          <p class="theme-card-meta">${Number(item.chapterCount) || 0} 章 · ${esc((item.regions || []).join(' · ') || '地区待补')}</p></a>
-        </article>`).join('')}</div>` : '<div class="theme-card"><p>目前没有可以公开阅读的专题。管理员完成来源核对后会在这里发布。</p></div>'}`;
+        <a href="./themes.html?id=${encodeURIComponent(item.id)}"><div class="theme-entry-copy"><p class="eyebrow">已审核专题 · 第 ${Number(item.version) || 1} 版</p>
+          <h2>${esc(item.title)}</h2><p class="theme-card-intro">${esc(item.introduction)}</p>
+          <p class="theme-card-meta">${Number(item.chapterCount) || 0} 章 · ${esc((item.regions || []).join(' · ') || '地区待补')}</p></div>
+          <span class="theme-card-read">阅读故事 →</span></a>
+        </article>`).join('')}</div>` : `<section class="theme-empty">
+          <img class="theme-empty-art" src="./static/assets/theme-phoenix-book-v1.png" alt="" width="112" height="112">
+          <h2>故事正在整理</h2><p>目前没有可以公开阅读的专题。管理员完成来源核对后，会在这里发布。</p>
+          <div class="theme-empty-actions"><a href="./index.html">先去发现页看看 →</a></div></section>`}`;
     status.textContent = '';
-    document.title = '主题专题 · 楚韵链迹';
+    document.title = '主题故事 · 楚韵链迹';
   }
 
   async function callCore(data) {
@@ -157,6 +164,10 @@
   }
 
   async function start() {
+    status.dataset.state = 'loading';
+    status.textContent = '正在读取专题…';
+    content.innerHTML = '';
+    content.setAttribute('aria-busy', 'true');
     try {
       const themeId = new URLSearchParams(location.search).get('id');
       if (themeId) {
@@ -167,12 +178,19 @@
         renderList(result.items || []);
       }
     } catch (error) {
+      status.dataset.state = 'error';
       status.textContent = error.message || '专题暂时无法读取';
-      content.innerHTML = '<p class="intro">可以返回发现页，稍后再来查看。</p>';
+      content.innerHTML = '<section class="theme-empty"><h1>这篇故事暂时无法打开</h1><p>可以重新读取，或返回发现页稍后再来。</p><div class="theme-empty-actions"><button type="button" data-theme-retry>重新读取</button><a href="./index.html">返回发现页</a></div></section>';
+    } finally {
+      content.setAttribute('aria-busy', 'false');
     }
   }
+  const brandImage = document.querySelector('.brand img');
+  const showBrandFallback = () => { brandImage.hidden = true; document.querySelector('.brand-fallback').hidden = false; };
+  brandImage.addEventListener('error', showBrandFallback);
+  if (brandImage.complete && !brandImage.naturalWidth) showBrandFallback();
   window.ContentEffects?.configure(callCore);
   content.addEventListener('toggle',e=>{if(e.target.open&&(e.target.matches('.chapter-source')||e.target.matches('.claim-item')))window.ContentEffects?.emit('theme','source_open');else if(e.target.open&&e.target.closest('.expand'))window.ContentEffects?.emit('theme','explore');},true);
-  content.addEventListener('click',e=>{if(e.target.closest('.story-link'))window.ContentEffects?.emit('theme','explore');});
+  content.addEventListener('click',e=>{if(e.target.closest('[data-theme-retry]'))start();if(e.target.closest('.story-link'))window.ContentEffects?.emit('theme','explore');});
   start();
 })();

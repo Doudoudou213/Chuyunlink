@@ -16,6 +16,10 @@ const requiredFiles = [
   'static/admin-agent-review.js',
   'static/admin-story-themes.js',
   'static/theme-page.js',
+  'static/theme-paper.css',
+  'static/theme-float.css',
+  'static/theme-float.js',
+  'static/assets/theme-phoenix-book-v1.png',
   'cloudfunctions/adminSubmissions/domains/story-agent-reviews.js',
   'cloudfunctions/adminSubmissions/domains/story-agent-evaluations.js',
   'index.html',
@@ -94,6 +98,9 @@ const requiredFiles = [
   'docs/AI_INTERFACE_FOUNDATION.md'
 ];
 const productionTextFiles = [
+  'static/theme-paper.css',
+  'static/theme-float.css',
+  'static/theme-float.js',
   'cloudfunctions/appCore/lib/agent-provenance.js',
   'cloudfunctions/adminSubmissions/domains/submission-moderation.js',
   'cloudfunctions/adminSubmissions/domains/submission-resources.js',
@@ -151,6 +158,7 @@ const productionTextFiles = [
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const javascriptFiles = [
+  'static/theme-float.js',
   'cloudfunctions/appCore/lib/agent-provenance.js',
   'cloudfunctions/adminSubmissions/domains/submission-moderation.js',
   'cloudfunctions/adminSubmissions/domains/submission-resources.js',
