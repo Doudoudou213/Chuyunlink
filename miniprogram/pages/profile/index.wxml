@@ -1,0 +1,30 @@
+<scroll-view scroll-y class="page-shell profile-page">
+  <view wx:if="{{!stable}}" class="guest-panel">
+    <view class="seal">楚</view>
+    <text class="guest-title display-title">登录后，记录会一直跟着你</text>
+    <text class="guest-copy">查看审核结果、积分、徽章、兑换码和你留下的每一份资料。</text>
+    <button class="primary-button" bindtap="login">微信登录</button>
+    <text class="privacy-note">登录不会自动获取头像或昵称，需要时会单独征得你的同意。</text>
+  </view>
+
+  <view wx:else>
+    <view class="profile-hero">
+      <text class="eyebrow">MY FIELD NOTES</text>
+      <text class="profile-name display-title">{{profile.nickname || '楚韵守护者'}}</text>
+      <text class="profile-note">你留下的文化记录，正成为更多故事的起点。</text>
+      <view class="stats-row">
+        <view class="stat"><text class="stat-value">{{profile.points || 0}}</text><text class="stat-label">积分</text></view>
+        <view class="stat"><text class="stat-value">{{stats.total || 0}}</text><text class="stat-label">投稿</text></view>
+        <view class="stat"><text class="stat-value">{{stats.approved || 0}}</text><text class="stat-label">已收录</text></view>
+      </view>
+    </view>
+    <view class="section-head"><text class="section-title">我的记录</text><text class="section-note">{{submissions.length}} 份</text></view>
+    <view wx:for="{{submissions}}" wx:key="id" class="record paper-card">
+      <view><text class="record-title">{{item.title}}</text><text class="record-time">{{item.regionName || '湖北'}}</text></view>
+      <text class="record-status {{item.status}}">{{item.status === 'approved' ? '已收录' : item.status === 'rejected' ? '未通过' : '审核中'}}</text>
+    </view>
+    <view class="section-head"><text class="section-title">我的兑换</text><text class="section-note">{{redemptions.length}} 张</text></view>
+    <view class="paper-card empty-state" wx:if="{{!redemptions.length}}"><text class="empty-title">还没有兑换凭证</text><text class="empty-copy">积分可在反哺专区兑换真实权益。</text></view>
+  </view>
+  <view wx:if="{{message}}" class="status-strip error">{{message}}</view>
+</scroll-view>

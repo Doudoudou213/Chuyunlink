@@ -1,0 +1,10 @@
+{
+  "name": "chulink-material-worker",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "3.18.1",
+    "tencentcloud-sdk-nodejs-ocr": "4.1.292"
+  }
+}

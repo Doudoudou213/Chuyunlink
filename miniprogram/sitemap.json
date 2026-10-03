@@ -1,0 +1,8 @@
+{
+  "desc": "楚韵链迹小程序页面索引规则",
+  "rules": [
+    { "action": "allow", "page": "pages/explore/index" },
+    { "action": "allow", "page": "pages/resource-detail/index" },
+    { "action": "disallow", "page": "*" }
+  ]
+}

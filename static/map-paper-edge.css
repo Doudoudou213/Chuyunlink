@@ -1,0 +1,70 @@
+/* The map opens to the paper's edges; only its base tiles receive a soft margin. */
+.map-paper-active #app-viewport > #view-map {
+  width: 100%;
+  max-width: none;
+}
+
+.map-paper-active #view-map .field-map-stage,
+.map-paper-active #heritage-map {
+  background: var(--field-paper, #f8f4eb);
+}
+
+/* These pseudo-elements stay inside Leaflet's tile pane (z=200), below routes,
+   markers, tooltips, attribution and controls. They never intercept a gesture. */
+.map-paper-active #heritage-map.map-paper-edge-ready .leaflet-tile-pane::before,
+.map-paper-active #heritage-map.map-paper-edge-ready .leaflet-tile-pane::after {
+  content: '';
+  position: absolute;
+  z-index: 500;
+  left: var(--map-paper-edge-x, 0px);
+  top: var(--map-paper-edge-y, 0px);
+  width: var(--map-paper-edge-width, 0px);
+  height: var(--map-paper-edge-height, 0px);
+  pointer-events: none;
+}
+
+.map-paper-active #heritage-map.map-paper-edge-ready .leaflet-tile-pane::before {
+  background: linear-gradient(90deg,
+    var(--field-paper, #f8f4eb) 0,
+    #f8f4ebbf 8px,
+    #f8f4eb38 24px,
+    #f8f4eb00 56px,
+    #f8f4eb00 calc(100% - 56px),
+    #f8f4eb38 calc(100% - 24px),
+    #f8f4ebbf calc(100% - 8px),
+    var(--field-paper, #f8f4eb) 100%);
+}
+
+.map-paper-active #heritage-map.map-paper-edge-ready .leaflet-tile-pane::after {
+  background: linear-gradient(180deg,
+    var(--field-paper, #f8f4eb) 0,
+    #f8f4eb59 10px,
+    #f8f4eb00 28px,
+    #f8f4eb00 calc(100% - 22px),
+    #f8f4eb59 calc(100% - 8px),
+    var(--field-paper, #f8f4eb) 100%);
+}
+
+@media (max-width: 767px) {
+  .map-paper-active #heritage-map.map-paper-edge-ready .leaflet-tile-pane::before {
+    background: linear-gradient(90deg,
+      var(--field-paper, #f8f4eb) 0,
+      #f8f4eb8c 5px,
+      #f8f4eb00 22px,
+      #f8f4eb00 calc(100% - 22px),
+      #f8f4eb8c calc(100% - 5px),
+      var(--field-paper, #f8f4eb) 100%);
+  }
+  .map-paper-active #heritage-map.map-paper-edge-ready .leaflet-tile-pane::after {
+    background: linear-gradient(180deg,
+      var(--field-paper, #f8f4eb) 0,
+      #f8f4eb00 18px,
+      #f8f4eb00 calc(100% - 16px),
+      var(--field-paper, #f8f4eb) 100%);
+  }
+}
+
+@media (forced-colors: active) {
+  .map-paper-active #heritage-map.map-paper-edge-ready .leaflet-tile-pane::before,
+  .map-paper-active #heritage-map.map-paper-edge-ready .leaflet-tile-pane::after { display: none; }
+}

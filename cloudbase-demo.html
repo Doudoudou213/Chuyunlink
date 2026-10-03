@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>楚韵链迹 · CloudBase 上传试验</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #f4f1ea;
+      color: #1f2926;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px 16px; }
+    main {
+      width: min(720px, 100%);
+      margin: 0 auto;
+      padding: 26px;
+      border: 1px solid #d9d2c3;
+      border-radius: 18px;
+      background: #fffdf8;
+      box-shadow: 0 16px 45px rgba(38, 58, 52, .09);
+    }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    .intro { margin: 0 0 22px; color: #5f6c68; line-height: 1.7; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    label { display: block; font-size: 13px; font-weight: 700; color: #33443f; }
+    label span { display: block; margin-bottom: 7px; }
+    input, textarea, select, button {
+      width: 100%;
+      border: 1px solid #cbc4b5;
+      border-radius: 10px;
+      padding: 11px 12px;
+      font: inherit;
+      background: white;
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    .wide { grid-column: 1 / -1; }
+    .actions { display: flex; gap: 10px; margin-top: 16px; }
+    button {
+      cursor: pointer;
+      border-color: #1e5a4f;
+      background: #1e5a4f;
+      color: white;
+      font-weight: 800;
+    }
+    button.secondary { background: white; color: #1e5a4f; }
+    button:disabled { cursor: wait; opacity: .55; }
+    progress { width: 100%; height: 10px; margin-top: 14px; }
+    pre {
+      min-height: 96px;
+      margin: 16px 0 0;
+      padding: 14px;
+      overflow: auto;
+      border-radius: 12px;
+      background: #18221f;
+      color: #d9f5eb;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .note {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #fff5d8;
+      color: #705817;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    @media (max-width: 620px) {
+      .grid { grid-template-columns: 1fr; }
+      .wide { grid-column: auto; }
+      .actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CloudBase 最小上传试验</h1>
+    <p class="intro">
+      这个页面只验证一条链路：登录测试用户 → 上传图片 → 获取 fileID →
+      写入 <code>submissions</code>。暂时不调用 AI，也不自动发布。
+    </p>
+
+    <form id="upload-form">
+      <div class="grid">
+        <label>
+          <span>CloudBase 环境 ID</span>
+          <input id="env-id" autocomplete="off" placeholder="例如：cloud1-xxxx" required>
+        </label>
+        <label>
+          <span>环境地域</span>
+          <select id="region">
+            <option value="ap-shanghai">上海</option>
+            <option value="ap-guangzhou">广州</option>
+            <option value="ap-singapore">新加坡</option>
+          </select>
+        </label>
+        <label class="wide">
+          <span>测试图片（JPG / PNG / WEBP，最大 10MB）</span>
+          <input id="image-file" type="file" accept="image/jpeg,image/png,image/webp" required>
+        </label>
+        <label class="wide">
+          <span>描述</span>
+          <textarea id="description" maxlength="500" placeholder="例如：测试上传，拍摄于武汉某历史街区。"></textarea>
+        </label>
+        <label>
+          <span>经度</span>
+          <input id="longitude" type="number" step="0.000001" value="114.305393" required>
+        </label>
+        <label>
+          <span>纬度</span>
+          <input id="latitude" type="number" step="0.000001" value="30.593099" required>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="location-button" class="secondary" type="button">读取浏览器位置</button>
+        <button id="approved-button" class="secondary" type="button">查询审核通过记录</button>
+        <button id="submit-button" type="submit">上传并创建待审记录</button>
+      </div>
+      <progress id="progress" value="0" max="100" hidden></progress>
+    </form>
+
+    <pre id="output">等待开始。请先按配套说明完成控制台的 4 项准备。</pre>
+    <div class="note">
+      这里只能填写环境 ID。不要把 SecretId、SecretKey、管理员密钥或其他服务端密钥粘贴到网页中。
+    </div>
+  </main>
+
+  <script src="https://static.cloudbase.net/cloudbase-js-sdk/2.28.6/cloudbase.full.js"></script>
+  <script>
+    const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+    const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+    const form = document.getElementById("upload-form");
+    const output = document.getElementById("output");
+    const progress = document.getElementById("progress");
+    const submitButton = document.getElementById("submit-button");
+    const locationButton = document.getElementById("location-button");
+    const approvedButton = document.getElementById("approved-button");
+
+    function show(message, details) {
+      const detailText = details === undefined
+        ? ""
+        : "\n\n" + (typeof details === "string" ? details : JSON.stringify(details, null, 2));
+      output.textContent = message + detailText;
+    }
+
+    function describeError(error, step, context = {}) {
+      const details = {
+        step,
+        ...context,
+        name: error && error.name ? error.name : null,
+        message: error && error.message ? error.message : String(error),
+        code: error && error.code ? error.code : null
+      };
+
+      if (error && typeof error === "object") {
+        for (const key of Object.getOwnPropertyNames(error)) {
+          if (key === "stack" || key in details) continue;
+          const value = error[key];
+          if (value === null || ["string", "number", "boolean"].includes(typeof value)) {
+            details[key] = value;
+          } else {
+            try {
+              details[key] = JSON.parse(JSON.stringify(value));
+            } catch (_) {
+              details[key] = String(value);
+            }
+          }
+        }
+      }
+
+      return details;
+    }
+
+    function safeSegment(value) {
+      return String(value || "anonymous").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 100);
+    }
+
+    function fileExtension(file) {
+      const byType = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp"
+      };
+      return byType[file.type] || "jpg";
+    }
+
+    async function resolveAnonymousUser(auth) {
+      const signInResult = await auth.signInAnonymously();
+      if (signInResult && signInResult.error) throw signInResult.error;
+
+      const signedIn = (signInResult && signInResult.data) || signInResult || {};
+      if (signedIn.user && signedIn.user.uid) return signedIn.user;
+
+      const loginState = await auth.getLoginState();
+      if (loginState && loginState.user && loginState.user.uid) return loginState.user;
+      throw new Error("匿名登录成功但未取得用户 uid");
+    }
+
+    locationButton.addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        show("当前浏览器不支持定位，请手动填写经纬度。");
+        return;
+      }
+      locationButton.disabled = true;
+      show("正在读取浏览器位置……");
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          document.getElementById("longitude").value = position.coords.longitude.toFixed(6);
+          document.getElementById("latitude").value = position.coords.latitude.toFixed(6);
+          locationButton.disabled = false;
+          show("位置读取成功。");
+        },
+        (error) => {
+          locationButton.disabled = false;
+          show("位置读取失败，可继续使用手动坐标。", error.message);
+        },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      );
+    });
+
+    approvedButton.addEventListener("click", async () => {
+      const envId = document.getElementById("env-id").value.trim();
+      const region = document.getElementById("region").value;
+      if (!envId) return show("请填写完整的 CloudBase 环境 ID。");
+
+      approvedButton.disabled = true;
+      try {
+        show("正在查询 status = approved 的投稿……");
+        const app = cloudbase.init({ env: envId, region });
+        await resolveAnonymousUser(app.auth({ persistence: "local" }));
+        const result = await app.database()
+          .collection("submissions")
+          .where({ status: "approved" })
+          .orderBy("createdAt", "desc")
+          .limit(20)
+          .get();
+        const items = Array.isArray(result.data) ? result.data : [];
+        show(`查询成功：共返回 ${items.length} 条审核通过记录。`, items.map((item) => ({
+          id: item._id || item.id || null,
+          status: item.status,
+          description: item.description || "",
+          imageFileID: item.imageFileID || ""
+        })));
+      } catch (error) {
+        show(
+          "查询审核通过记录失败。",
+          describeError(error, "query_approved_submissions", { envId, region })
+        );
+      } finally {
+        approvedButton.disabled = false;
+      }
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const envId = document.getElementById("env-id").value.trim();
+      const region = document.getElementById("region").value;
+      const file = document.getElementById("image-file").files[0];
+      const description = document.getElementById("description").value.trim();
+      const longitude = Number(document.getElementById("longitude").value);
+      const latitude = Number(document.getElementById("latitude").value);
+
+      if (!window.cloudbase) return show("CloudBase SDK 加载失败，请检查网络。");
+      if (!envId) return show("请填写完整的 CloudBase 环境 ID。");
+      if (!file) return show("请选择一张测试图片。");
+      if (!ALLOWED_TYPES.has(file.type)) return show("仅支持 JPG、PNG、WEBP 图片。");
+      if (file.size > MAX_IMAGE_BYTES) return show("图片不能超过 10MB。");
+      if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) return show("经度不合法。");
+      if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) return show("纬度不合法。");
+
+      localStorage.setItem("chulink_cloudbase_env", envId);
+      localStorage.setItem("chulink_cloudbase_region", region);
+      submitButton.disabled = true;
+      progress.hidden = false;
+      progress.value = 0;
+      let uploadedFileID = "";
+      let cloudPath = "";
+      let currentStep = "initialize";
+
+      try {
+        show("1/3 正在初始化 CloudBase 并进行匿名测试登录……");
+        const app = cloudbase.init({ env: envId, region });
+        const auth = app.auth({ persistence: "local" });
+        currentStep = "anonymous_sign_in";
+        const user = await resolveAnonymousUser(auth);
+
+        cloudPath =
+          `submissions/${safeSegment(user.uid)}/${Date.now()}-` +
+          `${Math.random().toString(36).slice(2, 10)}.${fileExtension(file)}`;
+
+        currentStep = "storage_upload";
+        show("2/3 正在上传图片……", { uid: user.uid, cloudPath });
+        const uploadResult = await app.uploadFile({
+          cloudPath,
+          filePath: file,
+          onUploadProgress(event) {
+            if (event.total) progress.value = Math.round(event.loaded * 100 / event.total);
+          }
+        });
+        uploadedFileID = uploadResult.fileID;
+        if (!uploadedFileID) throw new Error("上传完成，但 CloudBase 没有返回 fileID");
+
+        currentStep = "database_insert";
+        show("3/3 图片已上传，正在写入 submissions……", { fileID: uploadedFileID });
+        const db = app.database();
+        const addResult = await db.collection("submissions").add({
+          userId: user.uid,
+          imageFileID: uploadedFileID,
+          imageCloudPath: cloudPath,
+          description,
+          location: new db.Geo.Point(longitude, latitude),
+          locationMeta: {
+            coordinateSystem: "wgs84-browser",
+            longitude,
+            latitude
+          },
+          mediaMeta: {
+            originalName: file.name,
+            mimeType: file.type,
+            size: file.size
+          },
+          status: "pending",
+          source: "cloudbase_web_demo",
+          createdAt: db.serverDate(),
+          updatedAt: db.serverDate()
+        });
+
+        progress.value = 100;
+        show("试验成功：图片和待审记录都已写入 CloudBase。", {
+          documentId: addResult._id || addResult.id || null,
+          fileID: uploadedFileID,
+          status: "pending",
+          cloudPath
+        });
+      } catch (error) {
+        if (uploadedFileID) {
+          try {
+            const cleanupApp = cloudbase.init({ env: envId, region });
+            await cleanupApp.deleteFile({ fileList: [uploadedFileID] });
+          } catch (cleanupError) {
+            console.warn("数据库写入失败，且清理已上传文件失败：", cleanupError);
+          }
+        }
+        show(
+          "试验失败。输出信息可以直接发给 Codex 排查。",
+          describeError(error, currentStep, { envId, region, cloudPath })
+        );
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    document.getElementById("env-id").value =
+      localStorage.getItem("chulink_cloudbase_env") || "chulink-legacy-d8god1687a5d60743";
+    document.getElementById("region").value =
+      localStorage.getItem("chulink_cloudbase_region") || "ap-shanghai";
+  </script>
+</body>
+</html>

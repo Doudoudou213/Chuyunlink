@@ -1,0 +1,31 @@
+'use strict';
+const assert=require('node:assert/strict'),{fakeDb}=require('./lib/fake-material-db'),m=require('./lib/material-evidence');
+const {createReviewService}=require('../cloudfunctions/materialWorker/lib/review-evidence');
+const {createAdminStoryChainService}=require('../cloudfunctions/adminSubmissions/domains/story-chains');
+const {createStoryEvidenceService}=require('../cloudfunctions/appCore/domains/story-evidence');
+const {createMaterialConsentService}=require('../cloudfunctions/appCore/domains/material-consent');
+const {createStoryAgentReviewService,candidateId}=require('../cloudfunctions/adminSubmissions/domains/story-agent-reviews');
+const {validateAgentOutput}=require('../cloudfunctions/storyAgentWorker/lib/contract');
+async function main(){
+const text='现场碑刻记录居民参与修缮，文字能够辨认，边缘仍留有旧刻痕。这份材料记录的是当地修缮活动，不能据此判断建筑最早的年代。';
+const s={_id:'s',userId:'owner',status:'approved',resourceId:'r',title:'修缮碑刻',description:'现场拍摄碑刻',fileID:'cloud://never-public',size:10,mimeType:'image/png',
+aiAnalysisConsent:true,aiConsentVersion:'ai-analysis-consent-v1',aiConsentScope:'approved_public_submission_text',materialAnalysisConsent:true,materialConsentVersion:'multimodal-material-consent-v1',materialConsentScope:'approved_original_file_extraction',materialResearchConsent:true,materialResearchConsentVersion:m.VERSION,materialResearchConsentScope:m.SCOPE,materialExcerptConsent:true};
+const db=fakeDb({submissions:{s},resources:{r:{status:'published',title:'地方碑刻',summary:text}},story_evidence_links:{base:{status:'confirmed',resourceId:'r',submissionId:'s',evidenceSummary:'现场记录'}},material_analyses:{a:{status:'needs_review',simulated:false,submissionId:'s',sourceFingerprint:m.fileFingerprint(s),blocks:[{text}],kind:'image_ocr'}}});
+const reviewed=await createReviewService({db}).review({analysisId:'a',decision:'approved',fragments:[{id:'fragment_0',text,usable:true,publicExcerpt:true}]},'admin');
+const linkId=reviewed.evidenceIds[0];
+const output=validateAgentOutput({summary:'从校对后的碑刻文字提出待核对线索',entities:[{temporaryId:'entity_1',name:'修缮碑刻',entityType:'text_or_archive',summary:'记录居民参与修缮的碑刻',aliases:[]}],relations:[{fromTemporaryId:'entity_1',toResourceId:'r',relationType:'documents',reason:'校对文字记录了当地居民参与修缮',evidenceLinkIds:[linkId],confidence:0.9}],missingEvidence:[]},{allowedResourceIds:['r'],allowedEvidenceIds:[linkId]});
+const entity=candidateId('j','entity_1');
+await db.collection('story_agent_jobs').doc('j').set({status:'awaiting_review',input:{submission:{boundResourceId:'r'},evidenceLinks:[{id:linkId,resourceId:'r'}]}});
+await db.collection('story_agent_candidates').doc(entity).set({jobId:'j',submissionId:'s',status:'pending_review',candidateType:'entity',risk:'medium',payload:output.entities[0]});
+await db.collection('story_agent_candidates').doc('relation').set({jobId:'j',submissionId:'s',status:'pending_review',candidateType:'relation',risk:'medium',payload:output.relations[0]});
+const reviews=createStoryAgentReviewService({db});
+assert.equal((await reviews.review({candidateId:entity,decision:'approve'},'admin')).results[0].ok,true);
+assert.equal((await reviews.review({candidateId:'relation',decision:'approve'},'admin')).results[0].ok,true);
+await db.collection('story_chains').doc('draft').set({status:'draft',resourceId:'r'});
+await createAdminStoryChainService({db}).publish({draftId:'draft',title:'碑刻上的修缮记录',introduction:'从现场碑刻的校对文字中，阅读居民参与修缮的记录。',chapters:[{title:'可辨认的刻痕',body:text,sourceLinkIds:[linkId]}],closing:'其他年代信息仍需补充资料。',qualityOverrideReason:'管理员已逐字对照碑刻材料确认本段文字'},'admin');
+let fileRequests=0;const publicService=createStoryEvidenceService({db,app:{getTempFileURL:async()=>{fileRequests++;return {fileList:[]};}}});
+const before=await publicService.list({resourceId:'r'});assert.ok(before.story);assert.equal(fileRequests,0);assert.equal(JSON.stringify(before).includes('cloud://'),false);
+await createMaterialConsentService({db}).change({action:'withdrawMaterialConsent',submissionId:'s'},'owner');
+const after=await publicService.list({resourceId:'r'});assert.equal(after.story,null);assert.equal(after.graph.edges.length,0);
+console.log('End-to-end local fixture: reviewed OCR → research candidates → administrator relation → story publish → private-file exclusion → withdrawal hiding passed.');
+}main().catch(e=>{console.error(e);process.exitCode=1;});
