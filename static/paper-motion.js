@@ -100,7 +100,9 @@
   });
   document.addEventListener('focusin', function (event) {
     // Keyboard users can start working without waiting for a fading control.
-    if (activeView && activeView.contains(event.target)) stop();
+    // The travelling navbar restores its own focus when it lands. That is not
+    // a request to interrupt the slower illustration entrance behind it.
+    if (activeView && activeView.contains(event.target) && !event.target.closest?.('#app-navigation')) stop();
   });
   if (media.addEventListener) media.addEventListener('change', stop);
   else if (media.addListener) media.addListener(stop);
