@@ -6,6 +6,7 @@
     const profile = document.getElementById('view-profile');
     const collect = document.getElementById('view-collect');
     const map = document.getElementById('view-map');
+    const community = document.getElementById('view-community');
     const hero = document.getElementById('paper-home-hero');
     const header = document.getElementById('platform-header');
     const menu = document.getElementById('paper-home-menu');
@@ -117,13 +118,15 @@
       const profileActive = Boolean(profile && !profile.classList.contains('hidden'));
       const collectActive = Boolean(collect && !collect.classList.contains('hidden'));
       const mapActive = Boolean(map && !map.classList.contains('hidden'));
-      const fieldPage = collectActive ? 'collect' : mapActive ? 'map' : null;
+      const communityActive = Boolean(community && !community.classList.contains('hidden'));
+      const fieldPage = collectActive ? 'collect' : mapActive ? 'map' : communityActive ? 'community' : null;
       if (!active) pendingDialog = null;
       document.body.classList.toggle('discover-paper-active', active);
       document.body.classList.toggle('profile-paper-active', profileActive);
       document.body.classList.toggle('field-paper-active', Boolean(fieldPage));
       document.body.classList.toggle('collect-paper-active', collectActive);
       document.body.classList.toggle('map-paper-active', mapActive);
+      document.body.classList.toggle('community-paper-active', communityActive);
       closeMenu();
       controls.forEach(({ element, target, anchor, label }) => {
         const useHome = active && (element !== navigation || desktop.matches);
@@ -143,7 +146,7 @@
     }
     new MutationObserver(synchronizeHome).observe(home, { attributes: true, attributeFilter: ['class'] });
     if (profile) new MutationObserver(synchronizeHome).observe(profile, { attributes: true, attributeFilter: ['class'] });
-    [collect, map].filter(Boolean).forEach(view => new MutationObserver(synchronizeHome).observe(view, { attributes: true, attributeFilter: ['class'] }));
+    [collect, map, community].filter(Boolean).forEach(view => new MutationObserver(synchronizeHome).observe(view, { attributes: true, attributeFilter: ['class'] }));
     desktop.addEventListener('change', synchronizeHome);
     reducedMotion.addEventListener('change', updateDrift);
     window.addEventListener('scroll', requestDrift, { passive: true });

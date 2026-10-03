@@ -3272,6 +3272,7 @@
       --collect-vermilion: #9e2f24;
       --collect-gold: #b68a4a;
       --collect-patina: #496a61;
+      --collect-note-hint: #9ca3af;
       max-width: 760px;
       min-height: calc(100vh - 122px);
       padding: 0 0 2rem !important;
@@ -3702,7 +3703,12 @@
       line-height: 1.55;
     }
     #view-collect .collect-title-field { display: block; margin-bottom: 0.8rem; }
-    #view-collect .collect-title-field > span { display: block; margin-bottom: 0.3rem; color: var(--collect-patina); font-size: 0.7rem; }
+    #view-collect .collect-title-field > span { display: block; margin-bottom: 0.3rem; line-height: 2rem; }
+    #view-collect .collect-title-field > span,
+    #view-collect #collect-description::placeholder {
+      color: var(--collect-note-hint); font-family: 'Noto Serif SC', serif;
+      font-size: 0.75rem; font-weight: 400; opacity: 1;
+    }
     #view-collect #collect-title {
       width: 100%; min-height: 44px; padding: 0.45rem 0.7rem;
       border: 0; border-bottom: 1px solid rgba(182, 138, 74, 0.3); border-radius: 0;
@@ -4522,7 +4528,7 @@
           </div>
           <div class="paper-home-brand">
             <h1 class="paper-home-wordmark" aria-label="楚韵链迹">
-              <img src="./static/assets/chulink-ink-wordmark-v1.webp" alt="楚韵链迹" width="800" height="220" decoding="async">
+              <img src="./static/assets/chulink-ink-wordmark-v2.png" alt="楚韵链迹" width="2078" height="757" decoding="async">
               <span class="paper-home-wordmark-fallback" aria-hidden="true">楚韵链迹</span>
               <span class="paper-signature-latin" aria-hidden="true">CHULINK</span>
             </h1>
@@ -4732,7 +4738,7 @@
         <header class="field-map-heading">
           <div class="field-map-ink" aria-hidden="true"><img src="./static/assets/map-landmark-east-lake-ink-v1.webp" alt="" width="1200" height="376" decoding="async"></div>
           <div class="field-paper-topline">
-            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v1.webp" alt="楚韵链迹" width="1000" height="264" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
+            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v2.png" alt="楚韵链迹" width="2078" height="757" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
             <div class="field-paper-utilities">
               <div id="field-map-notifications"></div>
               <button type="button" data-field-more aria-expanded="false" aria-controls="field-map-menu" aria-label="更多：账号与使用帮助"><i data-lucide="ellipsis" aria-hidden="true"></i><span>更多</span></button>
@@ -5158,7 +5164,7 @@
         <header class="collect-hero" aria-labelledby="collect-hero-title">
           <img src="./static/assets/collect-hero-shanshui-v1.webp" alt="云山江水与临水古亭构成的荆楚山水长卷" class="collect-hero-image">
           <div class="field-paper-topline">
-            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v1.webp" alt="楚韵链迹" width="1000" height="264" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
+            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v2.png" alt="楚韵链迹" width="2078" height="757" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
             <div class="field-paper-utilities">
               <div id="field-collect-notifications"></div>
               <button type="button" data-field-more aria-expanded="false" aria-controls="field-collect-menu" aria-label="更多：账号与使用帮助"><i data-lucide="ellipsis" aria-hidden="true"></i><span>更多</span></button>
@@ -5303,6 +5309,7 @@
                     <input id="collect-material-excerpt-consent" type="checkbox">
                     <span><strong>允许公开已确认的材料节选</strong><span>仅公开校对、脱敏并确认的节选与引用，不公开原始高清图片或完整录音。</span></span>
                   </label>
+                  <div id="collect-effects-preference"></div>
                   <p class="collect-cloud-note"><i data-lucide="cloud-check"></i>素材先进入 CloudBase 人工审核，再按你的授权范围进入后续整理流程。</p>
                 </div>
               </details>
@@ -5333,6 +5340,17 @@
       <!-- 页面 4：科普与实地活动 (COMMUNITY/LEARN) -->
       <section id="view-community" class="page-view hidden">
         <div class="community-illustrated-paper" aria-hidden="true"></div>
+        <header class="community-paper-heading" aria-label="活动科普页头">
+          <div class="field-paper-topline">
+            <div class="field-paper-utilities">
+              <div id="field-community-notifications"></div>
+              <button type="button" data-field-more aria-expanded="false" aria-controls="field-community-menu" aria-label="更多：账号与使用帮助"><i data-lucide="ellipsis" aria-hidden="true"></i><span>更多</span></button>
+              <div id="field-community-menu" data-field-menu hidden aria-label="账号与使用帮助"></div>
+            </div>
+            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v2.png" alt="楚韵链迹" width="2078" height="757" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
+          </div>
+          <div id="field-community-navigation" class="field-paper-navigation"></div>
+        </header>
         <div class="chu-page-watermark chu-page-watermark--ring" aria-hidden="true">
           <svg viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="160" cy="160" r="118" stroke="currentColor" stroke-width="18"/>
@@ -5454,7 +5472,7 @@
             <div id="paper-profile-settings-slot"></div>
           </div>
           <div class="paper-home-wordmark" role="img" aria-label="楚韵链迹">
-            <img src="./static/assets/chulink-ink-wordmark-v1.webp" alt="" width="1000" height="292">
+            <img src="./static/assets/chulink-ink-wordmark-v2.png" alt="" width="2078" height="757">
             <span class="paper-home-wordmark-fallback" aria-hidden="true">楚韵链迹</span>
             <span class="paper-signature-latin" aria-hidden="true">CHULINK</span>
           </div>

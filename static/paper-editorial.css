@@ -23,12 +23,12 @@
 }
 .paper-home-brand .paper-home-wordmark,
 #view-profile .paper-profile-hero .paper-home-wordmark {
-  width: 116px;
+  width: 124px;
   margin: 0 auto;
 }
 .paper-home-brand .paper-home-wordmark img,
 #view-profile .paper-profile-hero .paper-home-wordmark img {
-  height: 31px;
+  height: 44px;
   object-fit: contain;
 }
 .paper-home-brand .paper-home-wordmark-fallback,
@@ -37,25 +37,13 @@
 .paper-home-brand { margin-top: 0; }
 .paper-home-wordmark .paper-signature-latin { text-align: center; }
 .field-paper-topline .field-paper-wordmark {
-  width: 92px;
-  flex: 0 0 92px;
+  width: 124px;
+  flex: 0 0 124px;
 }
-.field-paper-topline .field-paper-wordmark img { height: 24px; }
+.field-paper-topline .field-paper-wordmark img { height: 44px; object-position: center; }
 .field-paper-topline .field-paper-wordmark-fallback { font-size: 16px; line-height: 1.5; }
-.field-paper-wordmark .paper-signature-latin { font-size: 8px; letter-spacing: .25em; margin-top: 1px; text-align: center; }
+.field-paper-wordmark .paper-signature-latin { font-size: 9px; letter-spacing: .28em; margin-top: 2px; text-align: center; }
 .map-paper-active .field-map-heading .field-paper-topline { min-height: 68px; padding-block: 8px; }
-body:has(#view-community:not(.hidden)) #platform-header h1 {
-  font: 500 16px/1.45 'Noto Serif SC', 'Songti SC', SimSun, serif;
-  letter-spacing: .055em;
-}
-body:has(#view-community:not(.hidden)) #platform-header h1 + .paper-signature-latin {
-  display: block;
-  font: 500 8px/1.3 Arial, sans-serif;
-  color: #666b57;
-  letter-spacing: .28em;
-  text-align: left;
-  margin-top: 2px;
-}
 
 /* Main titles may be handwritten; labels, numbers and form content may not. */
 .paper-home-heading,
@@ -170,9 +158,11 @@ body:has(#view-community:not(.hidden)) #platform-header h1 + .paper-signature-la
   .paper-home-intro { margin-top: 26px; }
   .paper-home-caption { font-size: 11px; margin-top: 12px; }
   .paper-home-brand .paper-home-wordmark,
-  #view-profile .paper-profile-hero .paper-home-wordmark { width: 106px; }
+  #view-profile .paper-profile-hero .paper-home-wordmark,
+  .field-paper-topline .field-paper-wordmark { width: 116px; flex-basis: 116px; }
   .paper-home-brand .paper-home-wordmark img,
-  #view-profile .paper-profile-hero .paper-home-wordmark img { height: 28px; }
+  #view-profile .paper-profile-hero .paper-home-wordmark img,
+  .field-paper-topline .field-paper-wordmark img { height: 42px; }
   #view-profile .paper-profile-hero { min-height: 190px; }
   .collect-paper-active #view-collect .collect-hero { min-height: clamp(326px, 83vw, 380px); }
   .collect-paper-active #view-collect .collect-hero-title { font-size: 34px; }

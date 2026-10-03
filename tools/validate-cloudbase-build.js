@@ -47,6 +47,7 @@ const requiredFiles = [
   'static/assets/profile-badge-fieldnotes-v1.webp',
   'static/assets/discover-botanical-paper-v1.webp',
   'static/assets/chulink-ink-wordmark-v1.webp',
+  'static/assets/chulink-ink-wordmark-v2.png',
   'static/logo.png',
   'static/map-config.js',
   'cloudfunctions/appCore/index.js',

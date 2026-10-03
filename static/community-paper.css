@@ -26,44 +26,17 @@
   opacity: .24;
 }
 
-/* Original controls stay in place; their existing home/profile relocation is untouched. */
+/* The shared coordinator moves the original controls into the paper heading. */
 body:has(#view-community:not(.hidden)),
 body:has(#view-community:not(.hidden)) #app-shell,
 body:has(#view-community:not(.hidden)) #app-viewport { background: #f8f4eb; }
-body:has(#view-community:not(.hidden)) #platform-header {
-  background: #f8f4eb !important;
-  border: 0 !important;
-  box-shadow: none;
-  padding: 8px max(18px, calc((100vw - 980px) / 2));
-  min-height: 64px;
-  gap: 8px;
-}
-body:has(#view-community:not(.hidden)) #platform-header > div:first-child > div:first-child,
-body:has(#view-community:not(.hidden)) #platform-header h1 + span { display: none; }
-body:has(#view-community:not(.hidden)) #platform-header h1 {
-  color: #30392e;
-  font-size: 18px;
-  letter-spacing: .06em;
-  font-weight: 600;
-}
-body:has(#view-community:not(.hidden)) #platform-header button {
-  border: 0 !important;
-  background: transparent !important;
-  color: #59624f !important;
-  min-width: 44px;
-  min-height: 44px;
-  border-radius: 4px;
-  box-shadow: none;
-}
-body:has(#view-community:not(.hidden)) #platform-header #current-gps { font-size: 11px; }
+.community-paper-heading { position: relative; z-index: 6; width: min(100%, 1040px); margin: 0 auto; }
+/* Keep the menu above the legacy page-child stacking rule and the cover below it. */
+#app-viewport > #view-community.page-view > header.community-paper-heading { z-index: 6; }
+.community-paper-heading .field-paper-topline { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; padding-bottom: 12px; }
+.community-paper-heading .field-paper-utilities { justify-self: end; }
+.community-paper-heading .field-paper-wordmark { justify-self: center; margin: 0; }
 body:has(#view-community:not(.hidden)) #header-notification-badge { background: #a7493d; color: #fff; }
-body:has(#view-community:not(.hidden)) #app-navigation {
-  background: #fffcf5;
-  border-color: #786d4e18;
-  box-shadow: 0 -2px 14px #61573d06;
-}
-body:has(#view-community:not(.hidden)) #app-navigation .nav-item { color: #756e5e; }
-body:has(#view-community:not(.hidden)) #app-navigation .nav-item.is-active { color: #a7493d; }
 #view-community::before,
 #view-community > .chu-page-watermark,
 #view-community .community-page-intro,
