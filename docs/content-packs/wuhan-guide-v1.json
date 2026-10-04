@@ -1,0 +1,538 @@
+{
+  "schema": "chulink-local-guide-content-pack-v1",
+  "version": 1,
+  "testBatchId": "TEST-GUIDE-CONTENT-20261004",
+  "createdOn": "2026-10-04",
+  "environment": "local_only",
+  "productionWrites": false,
+  "paidCalls": false,
+  "importedToApplication": false,
+  "notice": "官方公开资料整理及人工审核参考；不是生产导入文件，不伪造用户投稿、授权、审核或正式事实。参考稿由助手编写，未调用真实供应商，未经过真人朗读验收。",
+  "sources": [
+    {
+      "id": "official-hhl",
+      "publisher": "武汉市园林和林业局",
+      "title": "武汉市黄鹤楼公园管理处",
+      "url": "https://ylj.wuhan.gov.cn/zwgk/zwxxgkzl_12298/jggk_12304/xsdwszjzz_12308/202001/t20200110_726398.shtml",
+      "section": "单位简介",
+      "pageDate": "2025-12-24",
+      "accessedAt": "2026-10-04",
+      "retrievalMethod": "web_page_text",
+      "publicExcerptPermission": "not_reviewed",
+      "summaryType": "paraphrase_not_original_quote"
+    },
+    {
+      "id": "official-qcg",
+      "publisher": "武汉市文化和旅游局",
+      "title": "武汉市晴川阁管理处（武汉大禹文化博物馆）",
+      "url": "https://wlj.wuhan.gov.cn/zfxxgk/fdzdgknr/jgjj/zsdw/202008/t20200827_1437251.shtml",
+      "section": "单位介绍",
+      "pageDate": "2026-04-03",
+      "accessedAt": "2026-10-04",
+      "retrievalMethod": "web_page_text",
+      "publicExcerptPermission": "not_reviewed",
+      "summaryType": "paraphrase_not_original_quote"
+    },
+    {
+      "id": "official-bz",
+      "publisher": "湖北省博物馆",
+      "title": "曾侯乙编钟",
+      "url": "https://hbww.org.cn/zgzb/p/4695.html",
+      "retrievedUrl": "https://www.hbww.org.cn/zgzb/p/4695.html",
+      "retrievalNote": "本轮成功读取 www 页面；无 www 地址保留与既有隔离试跑适配器兼容，不代表本轮该地址连接通过。",
+      "section": "典藏／镇馆之宝／正文",
+      "pageDate": null,
+      "accessedAt": "2026-10-04",
+      "retrievalMethod": "web_page_text",
+      "publicExcerptPermission": "not_reviewed",
+      "summaryType": "paraphrase_not_original_quote"
+    }
+  ],
+  "records": [
+    {
+      "localSampleId": "hhl",
+      "testBatchId": "TEST-GUIDE-CONTENT-20261004",
+      "testOnly": true,
+      "status": "local_draft",
+      "publishAllowed": false,
+      "resourceName": "黄鹤楼",
+      "resourceId": null,
+      "resourceBindingCandidate": "yellow-crane-tower",
+      "officialSourceId": "official-hhl",
+      "interestVersions": [
+        "通用",
+        "建筑"
+      ],
+      "claimCandidates": [
+        {
+          "localId": "hhl-c1",
+          "text": "黄鹤楼位于武汉武昌蛇山。",
+          "sourceId": "official-hhl",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "单位简介",
+            "findText": "黄鹤楼"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "hhl-c2",
+          "text": "黄鹤楼的始建年代为公元223年。",
+          "sourceId": "official-hhl",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "单位简介",
+            "findText": "黄鹤楼"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "hhl-c3",
+          "text": "黄鹤楼公园于1985年6月重建开放。",
+          "sourceId": "official-hhl",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "单位简介",
+            "findText": "1985"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "hhl-c4",
+          "text": "黄鹤楼公园介绍将园区分为东、北、南、西四区。",
+          "sourceId": "official-hhl",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "单位简介",
+            "findText": "黄鹤楼"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "hhl-c5",
+          "text": "黄鹤楼公园介绍将西区的游览内容集中于黄鹤楼文化，列有黄鹤楼与胜像宝塔。",
+          "sourceId": "official-hhl",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "单位简介",
+            "findText": "黄鹤楼"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        }
+      ],
+      "boundaries": [
+        "始建年代与重建开放时间分开，不称现楼是三国原楼。",
+        "官方地址不能直接当作游客入口。",
+        "同在武汉不代表三站能在半日内走完。"
+      ],
+      "observationCandidates": [
+        {
+          "text": "到达后先按园区导览牌确认主楼及所在分区，再观察楼体；不提供未经现场核实的转弯和步数。",
+          "status": "needs_human_review",
+          "onSiteVerified": false,
+          "locator": null
+        }
+      ],
+      "visitInfo": {
+        "status": "needs_current_verification",
+        "openingHours": null,
+        "ticketPrice": null,
+        "entranceCoordinates": null,
+        "walkingMinutes": null,
+        "note": "当天开放、预约、入口、无障碍通行和道路耗时尚未核验。"
+      },
+      "gaps": [
+        "需核对游客入口、当天开放及可用观察位置。",
+        "建筑构件、材料、层数需要专门依据，不能凭照片补全。"
+      ],
+      "aiAnalysisConsent": false,
+      "materialAnalysisConsent": false,
+      "formalAdoption": false,
+      "rewardsEnabled": false,
+      "referenceDrafts": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_reference_not_provider_result",
+          "status": "needs_human_review",
+          "output": {
+            "title": "黄鹤楼 · 通用",
+            "sentences": [
+              {
+                "text": "了解黄鹤楼，可以先分清两个时间：黄鹤楼始建于公元223年，公园重建开放则在1985年6月。",
+                "claimIds": [
+                  "hhl-c2",
+                  "hhl-c3"
+                ]
+              },
+              {
+                "text": "地点在武汉武昌蛇山。园区分为四区，其中西区以黄鹤楼文化为主，包含主楼和胜像宝塔。",
+                "claimIds": [
+                  "hhl-c1",
+                  "hhl-c4",
+                  "hhl-c5"
+                ]
+              }
+            ],
+            "observations": [],
+            "gaps": [
+              "需核对游客入口、当天开放及可用观察位置。"
+            ]
+          }
+        },
+        {
+          "interest": "建筑",
+          "authorship": "assistant_written_reference_not_provider_result",
+          "status": "needs_human_review",
+          "output": {
+            "title": "黄鹤楼 · 建筑",
+            "sentences": [
+              {
+                "text": "如果你关心建筑，先把始建与重建分开看：黄鹤楼的历史始于公元223年，公园于1985年6月重建开放。",
+                "claimIds": [
+                  "hhl-c2",
+                  "hhl-c3"
+                ]
+              },
+              {
+                "text": "园区介绍在西区列出了黄鹤楼和胜像宝塔；这可以作为选看对象的线索，具体位置仍请核对现场导览。",
+                "claimIds": [
+                  "hhl-c5"
+                ]
+              }
+            ],
+            "observations": [],
+            "gaps": [
+              "需核对游客入口、当天开放及可用观察位置。"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "localSampleId": "qcg",
+      "testBatchId": "TEST-GUIDE-CONTENT-20261004",
+      "testOnly": true,
+      "status": "local_draft",
+      "publishAllowed": false,
+      "resourceName": "晴川阁",
+      "resourceId": null,
+      "resourceBindingCandidate": "qingchuan-pavilion",
+      "officialSourceId": "official-qcg",
+      "interestVersions": [
+        "通用",
+        "建筑"
+      ],
+      "claimCandidates": [
+        {
+          "localId": "qcg-c1",
+          "text": "晴川阁位于汉阳龟山东麓的长江边，与黄鹤楼隔江相望。",
+          "sourceId": "official-qcg",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "单位介绍",
+            "findText": "晴川阁"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "qcg-c2",
+          "text": "晴川阁景区于1986年10月正式开放。",
+          "sourceId": "official-qcg",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "单位介绍",
+            "findText": "1986"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "qcg-c3",
+          "text": "晴川阁景区主要建筑包括禹稷行宫、晴川阁和铁门关。",
+          "sourceId": "official-qcg",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "单位介绍",
+            "findText": "晴川阁"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "qcg-c4",
+          "text": "晴川阁管理处于2010年8月加挂武汉大禹文化博物馆牌子。",
+          "sourceId": "official-qcg",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "单位介绍",
+            "findText": "晴川阁"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "qcg-c5",
+          "text": "武汉大禹文化博物馆介绍列有《水与城——武汉治水史迹展》基本陈列。",
+          "sourceId": "official-qcg",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "单位介绍",
+            "findText": "晴川阁"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "qcg-c6",
+          "text": "晴川阁景区包含古建筑与仿古建筑，不能将所有建筑视为同年代原物。",
+          "sourceId": "official-qcg",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "单位介绍",
+            "findText": "晴川阁"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        }
+      ],
+      "boundaries": [
+        "管理机构、景区和某栋建筑不能混为同一主体。",
+        "1986年开放不代表所有建筑始建于1986年。",
+        "大禹传说作为文化表达介绍，不自动当作已考证事件。"
+      ],
+      "observationCandidates": [
+        {
+          "text": "根据现场标识辨认三座主要建筑，比较外观；当前材料不足以判断每一处构件的原建年代。",
+          "status": "needs_human_review",
+          "onSiteVerified": false,
+          "locator": null
+        }
+      ],
+      "visitInfo": {
+        "status": "needs_current_verification",
+        "openingHours": null,
+        "ticketPrice": null,
+        "entranceCoordinates": null,
+        "walkingMinutes": null,
+        "note": "当天开放、预约、入口、无障碍通行和道路耗时尚未核验。"
+      },
+      "gaps": [
+        "当天展览、入口与步行路径需现场或管理方复核。",
+        "不把隔江相望推导为历史传承、营造影响或直接步行可达。"
+      ],
+      "aiAnalysisConsent": false,
+      "materialAnalysisConsent": false,
+      "formalAdoption": false,
+      "rewardsEnabled": false,
+      "referenceDrafts": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_reference_not_provider_result",
+          "status": "needs_human_review",
+          "output": {
+            "title": "晴川阁 · 通用",
+            "sentences": [
+              {
+                "text": "晴川阁在汉阳龟山东麓的江边，与黄鹤楼隔江相望。这里的主要建筑包括禹稷行宫、晴川阁和铁门关。",
+                "claimIds": [
+                  "qcg-c1",
+                  "qcg-c3"
+                ]
+              },
+              {
+                "text": "管理处还加挂武汉大禹文化博物馆牌子，馆方介绍列有武汉治水史迹相关陈列，可以沿着水与城市的主题继续了解。",
+                "claimIds": [
+                  "qcg-c4",
+                  "qcg-c5"
+                ]
+              }
+            ],
+            "observations": [],
+            "gaps": [
+              "当天展览、入口与步行路径需现场或管理方复核。"
+            ]
+          }
+        },
+        {
+          "interest": "建筑",
+          "authorship": "assistant_written_reference_not_provider_result",
+          "status": "needs_human_review",
+          "output": {
+            "title": "晴川阁 · 建筑",
+            "sentences": [
+              {
+                "text": "关注建筑时，可以分别认识禹稷行宫、晴川阁和铁门关。景区同时包含古建筑和仿古建筑，不能把它们全部当作同年代留下的原物。",
+                "claimIds": [
+                  "qcg-c3",
+                  "qcg-c6"
+                ]
+              },
+              {
+                "text": "官方介绍中的1986年10月，是景区正式开放的时间，并不是这三座建筑共同的始建年代。",
+                "claimIds": [
+                  "qcg-c2",
+                  "qcg-c3"
+                ]
+              }
+            ],
+            "observations": [],
+            "gaps": [
+              "当天展览、入口与步行路径需现场或管理方复核。"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "localSampleId": "bells",
+      "testBatchId": "TEST-GUIDE-CONTENT-20261004",
+      "testOnly": true,
+      "status": "local_draft",
+      "publishAllowed": false,
+      "resourceName": "曾侯乙编钟",
+      "resourceId": null,
+      "resourceBindingCandidate": "hubei-museum",
+      "officialSourceId": "official-bz",
+      "interestVersions": [
+        "通用",
+        "碑刻"
+      ],
+      "claimCandidates": [
+        {
+          "localId": "bells-c1",
+          "text": "曾侯乙编钟于1978年出土于湖北随州曾侯乙墓，属战国早期。",
+          "sourceId": "official-bz",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "典藏／镇馆之宝／正文",
+            "findText": "曾侯乙编钟"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "bells-c2",
+          "text": "曾侯乙编钟全套65件，按三层八组悬挂于曲尺形铜木钟架。",
+          "sourceId": "official-bz",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "典藏／镇馆之宝／正文",
+            "findText": "曾侯乙编钟"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "bells-c3",
+          "text": "曾侯乙编钟的钟、架和钩上铭文合计3755字，涉及编号、记事、标音和乐律理论。",
+          "sourceId": "official-bz",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "典藏／镇馆之宝／正文",
+            "findText": "曾侯乙编钟"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        },
+        {
+          "localId": "bells-c4",
+          "text": "湖北省博物馆介绍指出，曾侯乙编钟每件钟可奏出呈三度音程的双音。",
+          "sourceId": "official-bz",
+          "status": "needs_human_review",
+          "sourceLocator": {
+            "section": "典藏／镇馆之宝／正文",
+            "findText": "曾侯乙编钟"
+          },
+          "locatorNote": "网页内查找提示，不是已审核的原文锚点或数据库证据编号"
+        }
+      ],
+      "boundaries": [
+        "游览站点是湖北省博物馆，编钟是讲解对象，随州是出土地。",
+        "3755字是钟、架和钩的合计，不能写成每口钟或仅钟体字数。",
+        "不保证当天原件展出、铭文肉眼可读或有现场演奏。"
+      ],
+      "observationCandidates": [
+        {
+          "text": "若对应展陈开放，可对照展签观察钟架的层次和排列；看不清铭文时阅读展签，不承诺可逐字辨认。",
+          "status": "needs_human_review",
+          "onSiteVerified": false,
+          "locator": null
+        }
+      ],
+      "visitInfo": {
+        "status": "needs_current_verification",
+        "openingHours": null,
+        "ticketPrice": null,
+        "entranceCoordinates": null,
+        "walkingMinutes": null,
+        "note": "当天开放、预约、入口、无障碍通行和道路耗时尚未核验。"
+      },
+      "gaps": [
+        "展厅、原件展出状态、预约与当日演奏均需重新核对。",
+        "碑刻兴趣在本样本仅用于现有系统的铭文选材，不将青铜钟称为石碑。"
+      ],
+      "aiAnalysisConsent": false,
+      "materialAnalysisConsent": false,
+      "formalAdoption": false,
+      "rewardsEnabled": false,
+      "referenceDrafts": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_reference_not_provider_result",
+          "status": "needs_human_review",
+          "output": {
+            "title": "曾侯乙编钟 · 通用",
+            "sentences": [
+              {
+                "text": "曾侯乙编钟来自1978年发掘的湖北随州曾侯乙墓，年代属战国早期。全套65件，分三层八组悬挂在曲尺形钟架上。",
+                "claimIds": [
+                  "bells-c1",
+                  "bells-c2"
+                ]
+              },
+              {
+                "text": "馆方介绍，每件钟能奏出呈三度音程的两个音。理解这套乐器，可以从排列和发音特点入手。",
+                "claimIds": [
+                  "bells-c4"
+                ]
+              }
+            ],
+            "observations": [],
+            "gaps": [
+              "展厅、原件展出状态、预约与当日演奏均需重新核对。"
+            ]
+          }
+        },
+        {
+          "interest": "碑刻",
+          "authorship": "assistant_written_reference_not_provider_result",
+          "status": "needs_human_review",
+          "output": {
+            "title": "曾侯乙编钟 · 碑刻",
+            "sentences": [
+              {
+                "text": "关注文字时，先分清铭文在哪里：馆方统计的3755字，合计来自钟、架和钩，不是单独一口钟。",
+                "claimIds": [
+                  "bells-c3"
+                ]
+              },
+              {
+                "text": "这些文字涉及编号、记事、标音和乐律理论，可以把它们看作理解这套乐器的线索。具体文字请以展签和释文为准。",
+                "claimIds": [
+                  "bells-c3"
+                ]
+              }
+            ],
+            "observations": [],
+            "gaps": [
+              "展厅、原件展出状态、预约与当日演奏均需重新核对。"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "route": {
+    "status": "not_planned",
+    "note": "三个独立讲解样本，不是一条已核实可行的路线；编钟绑定候选为博物馆。"
+  },
+  "evaluation": {
+    "split": "development",
+    "fixedAcceptanceSet": false,
+    "humanRatings": null,
+    "paidAuthorization": null,
+    "rule": "本包用于开发调试，不能兼作独立验收集；旧批次预算和输出保留。"
+  }
+}
