@@ -1,3 +1,5 @@
+> 2026-10-04 个人仓库迁移副本：当前个人开发目录为 D:/OneDrive/文档/ChatGPT/楚韵链迹/work/Chuyunlink，分支 doudoudou，远程 personal 指向 Doudoudou213/Chuyunlink。旧历史令牌仅在独立副本移除，161 条开发记录保留，当前代码文件树清理前后完全一致；旧目录未提交地图修改原样保留，后续以审查过的补丁迁入，禁止直接合并未清理旧历史。迁移说明与新旧提交编号对应见 PERSONAL_REPOSITORY_MIGRATION_20261004.md。
+
 > 2026-10-04 个人仓库地址已确认：用户提供 https://github.com/Doudoudou213/Chuyunlink；本地 remote personal 指向该地址，统一代码分支仍为 doudoudou。原 origin 仅保留历史参考，禁止推送。新仓库已有 main，保留不覆盖；后续地图视觉未提交内容属于进行中的工作，不混入已测试 checkpoint 的迁移。推送是否成功以 personal/doudoudou 与远程引用实际核对为准；本次迁移不授权部署。
 
 > 2026-10-04 稳定性续修（仅本地）：已修复外部图标失败阻断初始化、空坐标虚假距离、后台列表乱序及并发撤回显示、专题章节直达；关键 UI 依赖改为固定版本本地托管，图案保持原设计并压缩。发布入口改为手动且仅 doudoudou，未上传/部署。用户决定改用个人 GitHub 仓库，地址尚未提供；禁止再向原 cgygygg/ChuLink-Legacy 推送。当前分支默认推送指向尚待配置的 personal。完整状态与测试见 STABILITY_FIXES_20261004.md。

@@ -8,7 +8,8 @@ Before changing this repository, read:
 
 ## Source of truth
 
-- The current integrated development baseline is `ChuLink-Legacy-doudoudou-20261004` on branch `doudoudou`. Preserve the separate backend and UI worktrees.
+- The personal development checkout is `D:/OneDrive/文档/ChatGPT/楚韵链迹/work/Chuyunlink`, branch `doudoudou`. Preserve the older backend/UI/integration worktrees and their unfinished work.
+- This checkout retains the development history after removing a legacy credential from historical blobs. Never merge the unsanitized old Git history back into this repository. Transfer later legacy-worktree changes as reviewed patches or selected file changes, with tests. The original-to-clean commit mapping is in `docs/HISTORY_MIGRATION_COMMIT_MAP_20261004.txt`.
 - The personal repository is `https://github.com/Doudoudou213/Chuyunlink.git`, configured as remote `personal`. Use `doudoudou` for the integrated code. Never push to the former shared repository (`cgygygg/ChuLink-Legacy`, remote `origin`). Preserve any existing `main` branch and uncommitted work; do not force-push or deploy without current authorization.
 - Do not mix changes with the older `ChuLink-Legacy` worktree on branch `shan`.
 - Preserve all existing commits and user changes. Never discard, reset, or overwrite unrelated work.
