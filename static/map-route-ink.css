@@ -1,0 +1,51 @@
+/* Small lacquer-headed pins. The needle tip, not the head, anchors the coordinate. */
+#heritage-map { --route-paper: #f8f4eb; --pin-red: #9e2f24; --pin-green: #496a61; --pin-gold: #b68a4a; }
+#heritage-map .chu-map-pin-marker { background: none; border: 0; }
+.chu-map-pin-marker { --pin-color: var(--pin-gold); --pin-shade: #6c4b23; --pin-glint: #fff1c9; }
+.chu-map-pin-marker.pin-red { --pin-color: var(--pin-red); --pin-shade: #541d19; --pin-glint: #ffd7c9; }
+.chu-map-pin-marker.pin-green { --pin-color: var(--pin-green); --pin-shade: #233c35; --pin-glint: #d8e7d9; }
+.chu-map-pin-marker.pin-location { --pin-color: #7b7770; --pin-shade: #424541; --pin-glint: #f1ece1; }
+.chu-map-pin { position: absolute; inset: 0; pointer-events: none; }
+.chu-map-pin::before {
+  content: ''; position: absolute; left: 21px; top: 17px; width: 2px; height: 20px;
+  transform: rotate(18deg); transform-origin: 50% 100%;
+  background: linear-gradient(90deg,#777365,#faf3df 46%,#716859);
+  clip-path: polygon(0 0,100% 0,100% 76%,50% 100%,0 76%);
+  filter: drop-shadow(1px 1px 1px #302b2433);
+}
+.chu-map-pin::after {
+  content: ''; position: absolute; left: 19px; top: 35px; width: 9px; height: 3px;
+  border-radius: 50%; background: radial-gradient(ellipse,#31282055,transparent 70%);
+}
+.chu-pin-head {
+  position: absolute; left: 21px; top: 6px; width: 14px; height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 24%,var(--pin-glint) 0%,var(--pin-color) 42%,var(--pin-shade) 100%);
+  box-shadow: inset -.7px -1px 1.3px #17110f55, inset .4px .4px .8px #fff5df88, 1.5px 2px 2px #352a2733;
+}
+.chu-pin-head::before {
+  content: ''; position: absolute; left: 3px; top: 2px; width: 4px; height: 2px;
+  border-radius: 50%; transform: rotate(-28deg); background: #fffaf199;
+}
+.pin-muted .chu-map-pin { opacity: .7; }
+.chu-map-pin-marker:hover .chu-pin-head { filter: brightness(1.1); }
+#heritage-map .chu-map-pin-marker:focus-visible { outline: 2px solid #a17f47; outline-offset: -2px; border-radius: 4px; }
+.map-point-legend > div:nth-child(1) > span { background: #9e2f24; }
+.map-point-legend > div:nth-child(2) > span { background: #b68a4a; }
+.map-point-legend > div:nth-child(3) > span { background: #496a61; }
+#heritage-map .chu-clue-tooltip { background: #fcf7eb; color: #59462d; border-color: #d8c7a6; padding: 8px 12px; box-shadow: 0 5px 18px #58432418; font-size: 12px; }
+.chu-clue-tooltip small { display: block; color: #7b6e58; font-size: 11px; margin-top: 3px; }
+#heritage-map .chu-route-replay-control { margin: 0 10px 2px 0; background: none; border: 0; box-shadow: none; }
+.chu-route-replay-control button {
+  display: grid; place-items: center; width: 44px; height: 44px; padding: 0;
+  color: #79684d; background: #f8f4ebba; border: 0; border-radius: 3px;
+  cursor: pointer; transition: color .18s, background .18s;
+}
+.chu-route-replay-control button:hover { color: #453524; background: #f8f4eb; }
+.chu-route-replay-control button:focus-visible { outline: 2px solid #a17f47; outline-offset: -3px; }
+.chu-route-replay-control button:active svg { transform: translateX(-1px); }
+/* Keep the existing legend; replay no longer occupies its corner. */
+.landmark-ticket-reward[hidden] { display: none !important; }
+.map-point-provenance { margin-top: 8px; font-size: 11px; line-height: 1.7; color: #786a56; }
+.map-point-provenance a { text-decoration: underline; text-underline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .chu-route-replay-control button { transition: none; } }

@@ -20,7 +20,8 @@ const scripts = [
   'test-ai-consent-withdrawal.js',
   'test-reward-security.js',
   'test-navigation-motion.js',
-  'test-paper-motion.js'
+  'test-paper-motion.js',
+  'test-map-route-ink.js'
 ];
 for (const script of scripts) {
   const result = spawnSync(process.execPath, [path.join(__dirname, script)], { stdio: 'inherit' });

@@ -111,6 +111,8 @@
   <link rel="stylesheet" href="./static/assets/vendor/leaflet-1.9.4/leaflet.css">
   <script src="./static/assets/vendor/leaflet-1.9.4/leaflet.js"></script>
   <script src="./static/map-config.js"></script>
+  <script src="./static/map-exploration-points.js"></script>
+  <script src="./static/map-route-ink.js"></script>
   <script>
     window.tailwind && (window.tailwind.config = {
       theme: {
@@ -4447,6 +4449,7 @@
   <link rel="stylesheet" href="./static/community-paper.css">
   <link rel="stylesheet" href="./static/field-paper.css">
   <link rel="stylesheet" href="./static/map-paper-edge.css">
+  <link rel="stylesheet" href="./static/map-route-ink.css">
   <link rel="stylesheet" href="./static/paper-editorial.css">
   <link rel="stylesheet" href="./static/theme-float.css">
   <link rel="stylesheet" href="./static/navigation-motion.css">
@@ -4874,7 +4877,7 @@
           </svg>
 
           <!-- 对照图示说明 -->
-          <div class="absolute bottom-4 left-4 bg-white/95 p-2 rounded-xl shadow-md text-[10px] space-y-1 text-stone-600 border border-stone-200">
+          <div class="map-point-legend absolute bottom-4 left-4 bg-white/95 p-2 rounded-xl shadow-md text-[10px] space-y-1 text-stone-600 border border-stone-200">
             <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-cinnabarRed mr-1.5 inline-block"></span>待核验/急需采集点</div>
             <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-sandGold mr-1.5 inline-block"></span>待用户探索点</div>
             <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 mr-1.5 inline-block"></span>文博认证数字点</div>
@@ -6707,6 +6710,10 @@
       return getMapLatLng(coords, heritageMapConfig.dataCoordinateSystem || 'gcj02');
     }
 
+    function getLandmarkMapLatLng(item) {
+      return getMapLatLng(item.coords, item.coordinateSystem || heritageMapConfig.dataCoordinateSystem || 'gcj02');
+    }
+
     function getMapBounds(bounds) {
       if (!Array.isArray(bounds)) return bounds;
       return bounds.map(point => getStaticMapLatLng(point));
@@ -6957,8 +6964,16 @@
       }
     };
     const MAP_PLANNER_STORAGE_KEY = 'chulink-map-planner-v1';
+    (window.CHULINK_EXPLORATION_POINTS || []).forEach(point => {
+      if (heritageLandmarks.some(item => item.id === point.id)) return;
+      const { detail, ...landmark } = point;
+      heritageLandmarks.push(landmark);
+      mapPlannerDetails[point.id] = detail;
+    });
     let heritageMap = null;
     let heritageMarkerLayerGroup = null;
+    const mapPlannerRenderedIds = new Set();
+    const mapActivityRenderedIds = new Set();
     let userLocationMarker = null;
     let mapRouteLayerGroup = null;
     let mapPlannerLayerGroup = null;
@@ -6971,6 +6986,13 @@
     let mapPlannerMode = 'transit';
     let mapPlannerDraggingId = null;
     let mapPlannerRouteRequestId = 0;
+    let mapPlannerInk = null;
+    window.addEventListener('chu:view-changing', event => {
+      if (event.detail?.tabId !== 'map') {
+        mapPlannerRouteRequestId += 1;
+        mapPlannerInk?.finish();
+      }
+    });
     let mapPlannerPreferences = { duration: 240, intensity: 'balanced', interests: ['architecture', 'museum'] };
     let mapPlannerRecommendationReasons = new Map();
 
@@ -7165,11 +7187,13 @@
     };
 
     function createHeritageIcon(status, label) {
+      const kind = status === 'verified' ? 'green' : ['pending', 'urgent'].includes(status) ? 'red'
+        : status === 'user' ? 'location' : 'gold';
       return L.divIcon({
-        className: '',
-        html: `<div class="heritage-marker ${status}">${label.slice(0, 1)}</div>`,
-        iconSize: [28, 28],
-        iconAnchor: [14, 14]
+        className: `chu-map-pin-marker pin-${kind}`,
+        html: '<span class="chu-map-pin" aria-hidden="true"><span class="chu-pin-head"></span></span>',
+        iconSize: [44, 44], iconAnchor: [22, 37],
+        tooltipAnchor: [5, -30], popupAnchor: [0, -31]
       });
     }
 
@@ -8374,8 +8398,9 @@
             <h4 class="cultural-font mt-1.5 text-sm font-bold text-stone-800">${escapeHtml(item.title)}</h4>
             <p class="mt-1 text-[10px] leading-relaxed text-stone-500">${escapeHtml(item.desc)}</p>
           </div>
-          <span class="shrink-0 rounded-lg bg-sandGold/15 px-2 py-1 text-[9px] font-black text-deepTeal">+${Number(item.points || 0)} 积分</span>
+          ${item.points > 0 ? `<span class="shrink-0 rounded-lg bg-sandGold/15 px-2 py-1 text-[9px] font-black text-deepTeal">+${Number(item.points)} 积分</span>` : ''}
         </div>
+        ${item.sourceUrl ? `<p class="map-point-provenance">公开地点线索 · 未计入到访<br><a href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">核对高德位置</a>${item.infoUrl ? ` · <a href="${escapeHtml(item.infoUrl)}" target="_blank" rel="noopener noreferrer">查看公开说明</a>` : ''}</p>` : ''}
 
         <div class="mt-3 grid grid-cols-2 gap-2">
           <div class="rounded-xl border border-stone-200 bg-white p-2.5">
@@ -8580,7 +8605,7 @@
         showToast('请至少选择一项兴趣', 'alert-circle');
         return;
       }
-      const ranked = heritageLandmarks.map(scoreMapPlannerRecommendation);
+      const ranked = heritageLandmarks.filter(item => item.recommendationEligible !== false).map(scoreMapPlannerRecommendation);
       const cityGroups = new Map();
       ranked.forEach(entry => {
         const city = getMapPlannerCity(entry.item);
@@ -8631,7 +8656,7 @@
       saveMapPlannerState();
       renderMapPlanner();
       if (heritageMap && options.focusMap !== false) {
-        heritageMap.setView(getStaticMapLatLng(item.coords), Math.max(heritageMap.getZoom(), 12), { animate: true });
+        heritageMap.setView(getLandmarkMapLatLng(item), Math.max(heritageMap.getZoom(), 12), { animate: true });
       }
     }
 
@@ -8675,6 +8700,7 @@
       saveMapPlannerState();
       renderMapPlanner();
       showToast('已加入我的探索路线', 'map-pin-plus');
+      previewMapPlannerRoute({ fitBounds: false, silent: true });
     }
 
     function removeMapPlannerPoint(id) {
@@ -8691,6 +8717,7 @@
       saveMapPlannerState();
       clearMapPlannerPreview();
       renderMapPlanner();
+      setMapPlannerRouteStatus('行程篮已清空；加入点位后可重新预览路线。');
     }
 
     function moveMapPlannerPoint(id, direction) {
@@ -8738,10 +8765,17 @@
       saveMapPlannerState();
       renderMapPlannerModeOptions();
       if (window.lucide) window.lucide?.createIcons?.();
+      clearMapPlannerPreview();
+      setMapPlannerRouteStatus('出行方式已更新；点击“地图预览”重新计算道路路线。');
     }
 
-    function clearMapPlannerPreview() {
+    function clearMapPlannerPreview(invalidate = true) {
+      if (invalidate) mapPlannerRouteRequestId += 1;
+      mapPlannerInk?.destroy();
+      mapPlannerInk = null;
       if (mapPlannerLayerGroup) mapPlannerLayerGroup.clearLayers();
+      mapPlannerRenderedIds.clear();
+      renderHeritageMapMarkers();
     }
 
     function setMapPlannerRouteStatus(content, tone = 'muted') {
@@ -8773,20 +8807,24 @@
       }
       items.forEach(item => points.push({
         title: item.title,
-        latitude: item.coords[0],
-        longitude: item.coords[1],
+        latitude: getLandmarkMapLatLng(item)[0],
+        longitude: getLandmarkMapLatLng(item)[1],
         city: getMapPlannerCity(item)
       }));
       return points;
     }
 
     function drawMapPlannerPoints(items) {
+      items.forEach(item => mapPlannerRenderedIds.add(item.id));
+      renderHeritageMapMarkers();
       items.forEach((item, index) => {
-        L.marker(getStaticMapLatLng(item.coords), {
-          icon: createRoutePointIcon(String(index + 1)),
+        L.marker(getLandmarkMapLatLng(item), {
+          icon: createRoutePointIcon(String(index + 1), 'target', false, item.status),
+          title: `${index + 1}. ${item.title}`,
           zIndexOffset: 920
         })
         .addTo(mapPlannerLayerGroup)
+        .bindTooltip(`${index + 1}. ${escapeHtml(item.title)}`, { direction: 'top' })
         .bindPopup(`<div><div class="map-popup-title">${index + 1}. ${escapeHtml(item.title)}</div><div class="map-popup-desc">${escapeHtml(getMapPlannerDetail(item.id).stay)} · ${escapeHtml(getMapPlannerDetail(item.id).area)}</div><button class="map-popup-nav" onclick="openMapPlannerNavigation('${escapeJsString(item.id)}')">按偏好导航到此站</button></div>`);
       });
     }
@@ -8804,8 +8842,8 @@
       heritageMap.fitBounds(L.latLngBounds(latLngs), {
         paddingTopLeft: [28, 68],
         paddingBottomRight: desktopPlannerOpen ? [390, 42] : [28, 42],
-        maxZoom: 13,
-        animate: true
+        maxZoom: 15,
+        animate: options.animate !== false
       });
     }
 
@@ -8830,12 +8868,13 @@
       closeMapRoutePanel();
       if (!mapPlannerLayerGroup) mapPlannerLayerGroup = L.layerGroup().addTo(heritageMap);
       clearMapPlannerPreview();
+      const requestId = mapPlannerRouteRequestId;
       const items = mapPlannerSelectedIds.map(id => heritageLandmarks.find(item => item.id === id)).filter(Boolean);
       if (!items.length) {
         if (!options.silent) showToast('请先选择至少一个点位', 'route');
         return;
       }
-      const latLngs = items.map(item => getStaticMapLatLng(item.coords));
+      const latLngs = items.map(item => getLandmarkMapLatLng(item));
       if (latLngs.length > 1) {
         L.polyline(latLngs, {
           color: '#2C4C4E',
@@ -8865,26 +8904,33 @@
         return;
       }
 
-      const requestId = ++mapPlannerRouteRequestId;
       setMapPlannerRouteStatus('<span class="font-bold">正在通过高德计算真实道路路线…</span>');
       showToast('正在计算真实道路路线', 'route');
       try {
         const result = await window.planCloudRoute({ mode: mapPlannerMode, points: routePoints });
         if (requestId !== mapPlannerRouteRequestId) return;
-        const routeLatLngs = (result.polyline || []).map(coords => getStaticMapLatLng(coords));
-        if (routeLatLngs.length < 2) throw new Error('高德未返回可绘制的道路路线');
-        clearMapPlannerPreview();
-        L.polyline(routeLatLngs, {
-          color: '#2C4C4E',
-          weight: 5,
-          opacity: 0.94,
-          lineCap: 'round',
-          lineJoin: 'round'
-        }).addTo(mapPlannerLayerGroup);
+        // Amap returns GCJ-02, irrespective of the static POI configuration.
+        if (heritageMapConfig.coordinateSystem !== 'gcj02') throw new Error('当前底图坐标系与高德道路不一致');
+        const geometry = ChuRouteInk.routeSegments(result, coords => getMapLatLng(coords, 'gcj02'));
+        const routeLatLngs = geometry.segments.flat();
+        clearMapPlannerPreview(false);
+        fitMapPlannerBounds(routeLatLngs, { ...options, animate: false });
+        if (geometry.animatable) {
+          mapPlannerInk = ChuRouteInk.draw({ map: heritageMap, group: mapPlannerLayerGroup,
+            segments: geometry.segments, L });
+        } else {
+          geometry.segments.forEach(path => L.polyline(path, {
+            color: '#a7493d', weight: 3, opacity: .8, dashArray: '7 7',
+            lineCap: 'round', smoothFactor: 0
+          }).addTo(mapPlannerLayerGroup));
+        }
         drawMapPlannerPoints(items);
-        fitMapPlannerBounds(routeLatLngs, options);
         renderPlannedRouteStatus(result);
-        showToast('真实道路路线已生成', 'route');
+        if (!geometry.animatable) {
+          const status = document.getElementById('map-planner-route-status');
+          if (status) status.insertAdjacentHTML('beforeend', '<p class="mt-2">虚线为交通概览；公交换乘或精度不足的线段不播放道路描线，请按高德导航核对。</p>');
+        }
+        showToast(geometry.animatable ? '真实道路路线已生成' : '交通概览已生成，请核对导航', 'route');
       } catch (error) {
         if (requestId !== mapPlannerRouteRequestId) return;
         setMapPlannerRouteStatus(`${escapeHtml(error.message || '路线服务暂时不可用')}；已保留虚线顺序图，你仍可逐站打开导航。`, 'error');
@@ -8911,13 +8957,17 @@
       if (!heritageMap || typeof L === 'undefined') return;
       if (!heritageMarkerLayerGroup) heritageMarkerLayerGroup = L.layerGroup().addTo(heritageMap);
       heritageMarkerLayerGroup.clearLayers();
-      heritageLandmarks.filter(item => Array.isArray(item.coords)).forEach(item => {
-        L.marker(getStaticMapLatLng(item.coords), {
+      heritageLandmarks.filter(item => Array.isArray(item.coords)
+        && !mapPlannerRenderedIds.has(item.id) && !mapActivityRenderedIds.has(item.id)).forEach(item => {
+        L.marker(getLandmarkMapLatLng(item), {
           icon: createHeritageIcon(item.status, item.label),
           title: item.title
         })
         .addTo(heritageMarkerLayerGroup)
-        .bindTooltip(item.title, { direction: 'top', offset: [0, -10] })
+        .bindTooltip(item.status === 'explore'
+          ? `<strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.clue || '一处待你寻访的文化线索')} · 未计入到访</small>`
+          : escapeHtml(item.title), { direction: 'top', offset: [0, -16],
+            className: item.status === 'explore' ? 'chu-clue-tooltip' : '' })
         .on('click', () => {
           focusLandmark(item);
           selectMapPlannerPoint(item.id, { focusMap: false });
@@ -8989,12 +9039,7 @@
 
       if (!userLocationMarker) {
         userLocationMarker = L.marker(latLng, {
-          icon: L.divIcon({
-            className: '',
-            html: '<div class="heritage-marker user">我</div>',
-            iconSize: [28, 28],
-            iconAnchor: [14, 14]
-          }),
+          icon: createHeritageIcon('user', '我'),
           title: '我的真实定位'
         }).addTo(heritageMap);
       } else {
@@ -9116,6 +9161,7 @@
       document.getElementById('drawer-title').innerText = item.title;
       document.getElementById('drawer-desc').innerText = item.desc;
       document.getElementById('drawer-points').innerText = item.points;
+      document.getElementById('drawer-points').closest('.landmark-ticket-reward').hidden = !(item.points > 0);
       const drawer = document.getElementById('landmark-drawer');
       const titleSlip = document.getElementById('drawer-title-slip');
       const statusLabel = document.getElementById('drawer-status');
@@ -9146,7 +9192,7 @@
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
 
       const label = encodeURIComponent(item.title || '目的地');
-      const [mapLatitude, mapLongitude] = getStaticMapLatLng(item.coords);
+      const [mapLatitude, mapLongitude] = getLandmarkMapLatLng(item);
       const requestedMode = item.navigationMode || 'car';
       const amapMode = requestedMode === 'transit' ? 'bus' : requestedMode;
       const appleMode = requestedMode === 'transit' ? 'r' : requestedMode === 'walk' ? 'w' : 'd';
@@ -9503,14 +9549,10 @@
       return ['#C5A880', '#8A7B66', '#962D2D'][index % 3];
     }
 
-    function createRoutePointIcon(label, type = 'target', muted = false) {
-      const className = type === 'origin' ? 'route-marker origin' : `route-marker${muted ? ' muted' : ''}`;
-      return L.divIcon({
-        className: '',
-        html: `<div class="${className}">${escapeHtml(label)}</div>`,
-        iconSize: muted ? [22, 22] : [28, 28],
-        iconAnchor: muted ? [11, 11] : [14, 14]
-      });
+    function createRoutePointIcon(label, type = 'target', muted = false, status = 'explore') {
+      const icon = createHeritageIcon(type === 'origin' ? 'user' : status);
+      icon.options.className += muted ? ' pin-muted' : ' pin-route';
+      return icon;
     }
 
     function createRouteArrowIcon(color, bearing) {
@@ -9649,6 +9691,8 @@
       if (mapRouteLayerGroup) {
         mapRouteLayerGroup.clearLayers();
       }
+      mapActivityRenderedIds.clear();
+      renderHeritageMapMarkers();
     }
 
     function renderMapRoutePanel(routeOptions, selectedRouteId, origin) {
@@ -9702,6 +9746,7 @@
       addRouteDirectionMarkers(pathCoords, color, isSelected);
 
       nodes.forEach((node, nodeIndex) => {
+        if (node.landmarkId) mapActivityRenderedIds.add(node.landmarkId);
         if (node.type === 'origin') {
           if (!isSelected) return;
           L.marker(getStaticMapLatLng(node.displayCoords || node.coords), {
@@ -9714,7 +9759,9 @@
         }
 
         const marker = L.marker(getStaticMapLatLng(node.displayCoords || node.coords), {
-          icon: createRoutePointIcon(String(node.order), 'target', !isSelected),
+          icon: createRoutePointIcon(String(node.order), 'target', !isSelected,
+            heritageLandmarks.find(item => item.id === node.landmarkId)?.status || 'explore'),
+          title: `${node.order}. ${node.title}`,
           zIndexOffset: isSelected ? 850 : 650
         }).addTo(mapRouteLayerGroup);
 
@@ -9722,7 +9769,7 @@
           const previousNode = nodes[nodeIndex - 1] || nodes[0];
           marker
             .bindPopup(createRouteStepPopup(route, node, node.order - 1, origin.coords, previousNode.coords))
-            .bindTooltip(node.title, { direction: 'top', offset: [0, -10] });
+            .bindTooltip(`${node.order}. ${escapeHtml(node.title)}`, { direction: 'top' });
           marker.on('click', () => {
             closeLandmarkDrawer();
             marker.openPopup();
@@ -9761,6 +9808,7 @@
         const latLngs = drawCommunityRouteOnMap(item.route, index, selectedRoute.route.id, origin);
         if (latLngs) selectedLatLngs = latLngs;
       });
+      renderHeritageMapMarkers();
 
       renderMapRoutePanel(routeOptions, selectedRoute.route.id, origin);
       if (selectedLatLngs && selectedLatLngs.length > 1) {
@@ -10150,7 +10198,7 @@
       setTimeout(() => {
         initHeritageMap();
         if (heritageMap) {
-          heritageMap.setView(getStaticMapLatLng(item.coords), Math.max(heritageMap.getZoom(), 12), { animate: true });
+          heritageMap.setView(getLandmarkMapLatLng(item), Math.max(heritageMap.getZoom(), 12), { animate: true });
         }
         focusLandmark(item);
       }, 120);
