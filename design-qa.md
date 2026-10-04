@@ -1,3 +1,84 @@
+# 纸面材质与状态色收敛 · 2026-10-04 本地验收
+
+## Scope and decisions
+
+- Worktree: `ChuLink-Legacy-integration-20261001`, branch `codex/integrate-ui-backend-20261001`, starting HEAD `436fa7443eb3f809f5ae6929f99c395cd395b736`. Existing uncommitted twelve-badge work is preserved. No commit, push, merge or deployment in this pass; no backend worktree, cloud function, admin page or `static/cloudbase-app.js` edits.
+- User requested paper wear, soft shadows and creases instead of new card frames; keep existing palette and selectively use the PDF's ideas, not its example code. `frontend-design` guided restraint: retain page-specific artwork, selective handwritten headings and the approved five-button motion. New material is used only on route/study sheets, profile records/identity/contribution and the collection scroll; not over photos or map tiles.
+- Corrected the old emerald-to-gold override. Verified/success remains sage, pending organisation remains gold, attention/error/urgent collection remains red. Green and gold tinted backgrounds were lightened after numerical contrast review; no new hue was introduced.
+- Collection notes now use 16px text and 36px ruled lines that scroll with the textarea; narrow-screen label gutter reduced. Mobile map planner and place details explicitly close each other at <=767px without clearing selections. Desktop parallel-panel behaviour retained.
+- Route services now use one column inside the route leaf, avoiding desktop actions being squeezed into half a column. Hover wash remains translucent. Backend-rendered contribution section's old enclosing border/dark seal is visually subdued without changing its markup or data.
+
+## Verification and limitations
+
+- `tools/test-paper-material.js`: 11/11 source-contract checks, including declared colour composition contrast over #f8f4eb: sage 4.570:1, gold 4.687:1, red 4.619:1. These are not per-pixel texture contrast measurements or a full accessibility audit.
+- `test-map-panel-exclusion.js`: 11/11; map personalization 11/11; visit planner passed; badge catalog 33/33; reward security 21/21. Paper motion 18/18 and navigation motion 18/18 passed. Existing business flows are tested only to those suites' scope.
+- Final build validation passed: 159 required files, 103 JavaScript files, 5 inline scripts, 8 sticky modal headers. `git diff --check` passed; only Windows line-ending advisories. New asset included in build validation and existing recursive assets deployment copy, but deployment script was not executed.
+- Browser at localhost:4193: CSS widths320/390/1440 checked (the IAB viewport override required compensating for host pixel ratio; widths verified with DOM). At320, homepage/community/profile body widths310, no document-wide overflow, five navigation buttons. Collection field font16px, line36px, local scrolling background confirmed; dummy text was cleared without submission.
+- At390, viewed community expanded route, collection form, profile/badge/empty state and map; actual point detail -> planner sequence confirmed aria-hidden flips from true/false to false/true. At1440, reviewed expanded community route and checked collection texture URL/profile contribution border via computed styles. Desktop simultaneous map panels are covered by the isolated function test, not a new desktop interactive screenshot.
+- A texture URL issue was caught in review: variables containing relative URLs must be consumed from the appropriate stylesheet directory. The collection sheet material rule is in `static/field-paper.css`; browser resolves it to `/static/assets/paper-fibres-soft-v1.webp`.
+- Evidence: `C:/Users/lenovo/.codex/worktrees/0d3d/楚韵链迹/output/paper-material-20261004/`. `community-desktop-final.jpg` shows final desktop layout. Earlier mobile screenshots are intermediate evidence (the route hover wash and contribution seal were adjusted afterwards; collection texture path was subsequently corrected).
+- Browser approval/loading calls were occasionally slow, and one startup-hidden wait timed out before the page later completed naturally. No loading-performance claim. No authenticated upload, registration, comments, reward issuance, microphone or geolocation request was performed; anonymous app initialization was not intercepted. No real-device Safari check.
+
+## Texture provenance
+
+- Generated with the built-in ImageGen tool (not CLI). Original: `C:/Users/lenovo/.codex/generated_images/01a104d9-8c17-7fb1-a213-d654e242c7cf/exec-7f838f35-5e69-46d0-9657-6ad452c28ecf.png`.
+- Final project asset: `static/assets/paper-fibres-soft-v1.webp`, 1024x1024, 69,030 bytes. Only resized/encoded with Sharp; artwork unchanged. A light paper-colour CSS wash keeps the text surface quiet.
+- Final generation prompt:
+
+> Use case: photorealistic-natural. Asset type: a quiet background material texture for the ChuLink Jingchu cultural field-notes web interface. Create one square, top-down, full-bleed close-up of gently aged Chinese xuan paper, photorealistic fibers and very shallow natural wrinkles. Warm ivory near #fffcf5 and #f8f4eb, with only the faintest warm-gray shadows from existing ink tone #756e5e. Broad empty clean center for readable UI text, fine random fibers, a few very soft short diagonal creases mostly near the outer margins. The entire frame is paper surface, not a sheet photographed on a desk, no visible outside border. Soft diffuse raking daylight, restrained relief, pale high-key exposure. Quiet, carefully conserved archival paper, not damaged parchment. No tea stains, no brown spots, no burnt edges, no ripped holes, no grid, no patterns, no calligraphy, no text, no objects, no logo, no watermark. Almost smooth center, tactile paper near the edges. Seamless color at margins, low contrast suitable for placing body copy directly on the surface.
+
+---
+
+# 十二枚荆楚徽章 · 2026-10-04 本地验收
+
+## Scope and evidence
+
+- Scope: approved twelve-badge art collection integrated into the existing paper profile, with public artwork/rule previews and a disconnected eligibility seam. This is not an earned-badge/award workflow release.
+- Source visual truth: `C:/Users/lenovo/.codex/generated_images/01a00ab7-53c2-7fa2-90fc-8ce8f20bf7a8/exec-1008a8f4-3a58-40e9-baab-39612f06aa56.png` (1410×1116 design sheet, not an app viewport).
+- Browser implementation evidence directory: `D:/OneDrive/文档/ChatGPT/楚韵链迹/output/badge-collection-20261004/`.
+- Final desktop: `gallery-desktop-final.png` (1429×920 returned screenshot pixels; browser-reported CSS viewport1440×1200). Gallery is fully visible. The in-app capture excludes its scrollbar and is bounded by the visible browser surface; do not treat it as a full1200px-height screenshot.
+- Mobile: `gallery-mobile-390.png` (379×820 returned pixels; CSS390×844), `detail-mobile-390.png` (390×844), `detail-mobile-320.png` (320×567; CSS320×568). Tablet: `gallery-tablet-769.png` (758×914; CSS769×1000; before final desktop-only136→124px art reduction).
+- `browser-checks.json` records12 detail inspections,5 navigation switches and4 responsive widths. New code does not send network requests, store qualification locally, or award anything. Existing app anonymous initialization was not intercepted; no actual business writes were tested.
+- Compared source sheet and final rendered desktop screenshot together in one tool input, with focused390/320 detail and tablet captures alongside. Comparison targets are all12 motifs, family outlines, colour and visual sizes—not a pixel clone of the poster's headings or original4-column layout on a phone. Existing3-item profile preview is preserved; phone gallery deliberately reflows to3columns.
+- The first attempted `gallery-desktop.png` clip used mismatched capture coordinates and is excluded from QA/handoff. Only the `-final` capture is used for desktop evidence.
+
+## Findings and comparison history
+
+- [P2, resolved] Individual cutouts had different alpha margins: phoenix-pattern frame was larger than river-journey frame. Measured alpha bounds without editing the artwork; added per-asset optical scale to equalize visible frames. Final screenshot shows complete, consistently sized frames, no clipping; original PNG pixels retained.
+- [P2, resolved before browser handoff] Native detail must open from the small preview while the full gallery is collapsed. Moved the dialog node to body during initialization, retaining its IDs and semantic native-modal behavior. Browser verified preview opening, close/Escape and return focus.
+- Early reload clicks occurred while existing `#chu-startup` still covered the page, so they did not open the gallery. They are not counted as successful interaction tests. Rechecked after the normal startup layer disappeared: original disclosure handler opens correctly. A speculative alternate disclosure handler was removed; no loading logic or original feature handler is changed.
+- Final restrained polish: desktop artwork max width124px, leaving sufficient breathing room around all12 labels and the preview-status footer. Mobile image slots remain narrower and unchanged. Recaptured desktop after this change and compared against source again.
+- [P3] Built-in generative background extraction is not pixel-lossless: some fine lines, book/phoenix details and gold fills are stronger than in the poster. All12 identities, palette family and flower-window frames remain. This limitation is documented in the asset handoff; no claim of identical pixels or historical reconstruction.
+
+## Five required fidelity surfaces
+
+1. **Typography:** reuses existing `--home-heading` for titles/names; names13px phone/15px desktop and readable body rules14px. Artwork has no raster caption; original Chinese badge names are selectable text. No decorative brush font for long rules.
+2. **Spacing/layout:** initial3-item miniature preview kept; full gallery3columns at320/390,4columns at769/1440. All four widths have no horizontal page overflow, minimum gallery targets75×133px. Native dialog stays within320px short screen, with vertical scrolling and sticky44px close control.
+3. **Colours/tokens:** inherited paper/surface/ink/muted/sage tokens, no new dark banner, reward-green false states or dense red controls. Transparent edges integrate into the paper; hover uses a quiet sage-paper wash.
+4. **Images:** twelve standalone alpha PNGs1254×1254 and512×512 WebPs, all decoded. Total WebP bytes988784. Transparent corners verified, no sheet labels/neighbouring art/white rectangles. Mechanical resize/encoding only after ImageGen, no code-drawn substitutes. Source and final motifs compared at readable sizes; optical scales normalize the frame, not subjective subject size.
+5. **Copy/content:** every detail includes agreed threshold(s), source/deduplication cautions and explicit preview/not-open status. Learning is5different topics AND5different correct questions; heritage is10contributions AND3categories AND2accepted supplements. No fake progress, zero-filled eligibility, dates, points or earned labels.
+
+## Verification and limits
+
+- 33 badge contract/asset tests passed; build158files/103JS/5inline/8sticky-modal checks passed; navigation-motion18, paper-motion18 and existing reward-security21 passed. Whitespace diff check passed. All original index DOM IDs and3 inline business script bodies preserved.
+- All12 visible detail buttons opened correct name/image/conditions and returned to grid. Closing via button and Escape returns focus. Native dialog constrains interaction, background scrolling is restored on close; full screen-reader testing not performed.
+- Original five page buttons still navigate to exactly one visible view and retain one navigation row. Old badge demo remains hidden. Final browser error log query returned no error entries; existing Tailwind CDN production-use warning remains.
+- Reduced-motion branch checked in source; this browser session did not emulate the OS preference. Image failure fallback implemented but not exercised by failing a real network resource. No actual qualification, server ledger, authentication/write workflow, Safari device or system-font200% verification claimed.
+- Final user-facing preview stays local. No commit, push, merge, cloud function change or deployment.
+
+## Implementation checklist
+
+- [x] Twelve separate assets, same named identities and normalized optical size.
+- [x] Small preview + expandable gallery + detailed conditions.
+- [x] Unknown-by-default eligibility seam; no awarding or fake unlocked state.
+- [x] Mobile/tablet/desktop, current interactions and regression checks.
+- [x] Integration contract, source prompts and next-stage boundaries documented in `docs/BADGE_COLLECTION_20261004.md`.
+- [ ] Later phase: authenticated backend eligibility and audited idempotent award flow (deliberately not implemented).
+
+final result: passed
+
+---
+
 # 楚韵链迹采集页 Design QA
 
 ## Evidence

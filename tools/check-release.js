@@ -21,7 +21,11 @@ const scripts = [
   'test-reward-security.js',
   'test-navigation-motion.js',
   'test-paper-motion.js',
-  'test-map-route-ink.js'
+  'test-map-route-ink.js',
+  'test-map-panel-exclusion.js',
+  'test-paper-material.js',
+  'test-badge-catalog.js',
+  'check-guide-content-pack.js'
 ];
 for (const script of scripts) {
   const result = spawnSync(process.execPath, [path.join(__dirname, script)], { stdio: 'inherit' });

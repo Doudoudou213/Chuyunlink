@@ -1,13 +1,13 @@
 /* Home-only paper composition. Existing pages keep their own visual contracts. */
 .discover-paper-active,
 .profile-paper-active {
-  --home-paper: #f8f4eb;
-  --home-ink: #30392e;
-  --home-muted: #756e5e;
-  --home-red: #a7493d;
-  --home-sage: #6c8170;
-  --home-gold: #b38c45;
-  --home-surface: #fffcf5;
+  --home-paper: var(--editorial-paper);
+  --home-ink: var(--editorial-ink);
+  --home-muted: var(--editorial-muted);
+  --home-red: var(--editorial-red);
+  --home-sage: var(--editorial-sage);
+  --home-gold: var(--editorial-ochre);
+  --home-surface: var(--editorial-surface);
   --home-heading: 'Noto Serif SC', 'Songti SC', SimSun, serif;
   background: var(--home-paper);
 }

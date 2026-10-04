@@ -1,11 +1,11 @@
 /* A paper edge, not another title bar. Preserve the painted scroll and real map. */
 .field-paper-active {
-  --field-paper: #f8f4eb;
-  --field-surface: #fffcf5;
-  --field-ink: #30392e;
-  --field-muted: #756e5e;
-  --field-red: #a7493d;
-  --field-sage: #58725f;
+  --field-paper: var(--editorial-paper);
+  --field-surface: var(--editorial-surface);
+  --field-ink: var(--editorial-ink);
+  --field-muted: var(--editorial-muted);
+  --field-red: var(--editorial-red);
+  --field-sage: var(--editorial-sage);
   --field-heading: 'Noto Serif SC', 'Songti SC', SimSun, serif;
   background: var(--field-paper);
 }
@@ -77,9 +77,18 @@
 .collect-paper-active #view-collect.collect-field-page {
   --collect-paper: var(--field-paper);
   --collect-paper-light: var(--field-surface);
+  --collect-ink: var(--field-ink);
+  --collect-vermilion: var(--field-red);
+  --collect-patina: var(--field-sage);
+  --collect-gold: var(--editorial-ochre);
   min-height: 100svh;
 }
 .collect-paper-active #view-collect .collect-hero { min-height: 448px; }
+/* Keep this material rule beside the asset-relative token's stylesheet. */
+.collect-paper-active #view-collect .collect-scroll-sheet {
+  background: var(--editorial-leaf-background) center top / 100% auto repeat-y;
+  box-shadow: var(--editorial-leaf-shadow);
+}
 .collect-paper-active #view-collect .collect-hero-image { pointer-events: none; }
 .collect-paper-active #view-collect .collect-hero::after { background: linear-gradient(180deg, #f8f4ebc7 0%, #f8f4ebb3 26%, #f8f4eb00 58%, var(--field-paper) 100%); }
 .collect-paper-active #view-collect .collect-hero-copy { padding: 24px 32px 40px; width: min(90%, 34rem); }

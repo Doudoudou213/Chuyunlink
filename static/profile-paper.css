@@ -61,8 +61,8 @@
 .profile-paper-active #cloud-profile-card {
   margin: -22px auto 0; padding: 23px 25px 0;
   border: 0; border-radius: 12px;
-  background: var(--home-surface);
-  box-shadow: 0 5px 22px #61573e09;
+  background: var(--editorial-leaf-background) center / cover no-repeat;
+  box-shadow: var(--editorial-leaf-shadow);
 }
 .profile-paper-active .profile-gallery-titlebar { display: none; }
 .profile-paper-active .profile-identity { grid-template-columns: 62px minmax(0,1fr); align-items: center; gap: 16px; margin: 0; }
@@ -123,20 +123,35 @@
 .profile-paper-active .profile-record-filters button[aria-pressed='true'] { color: var(--home-red); }
 .profile-paper-active .profile-record-filters button[aria-pressed='true']::after { background: var(--home-red); }
 .profile-paper-active .profile-submission-gallery { gap: 14px; margin-top: 16px; }
-.profile-paper-active .profile-submission-card { background: var(--home-surface); box-shadow: 0 4px 16px #61573e08; }
-.profile-paper-active .profile-submission-meta { color: var(--home-muted); font-size: 10px; flex-wrap: wrap; gap: 3px; }
+.profile-paper-active .profile-submission-card { background: var(--editorial-leaf-background) center / cover no-repeat; box-shadow: var(--editorial-leaf-shadow); }
+.profile-paper-active .profile-submission-meta { color: var(--home-muted); font-size: 11px; flex-wrap: wrap; gap: 3px; }
 .profile-paper-active .profile-submission-caption h4 { color: var(--home-ink); font-size: 13px; font-weight: 500; line-height: 1.7; }
-.profile-paper-active .profile-status-tag { font-size: 10px; font-weight: 500; }
+.profile-paper-active .profile-status-tag { font-size: 11px; font-weight: 500; }
 .profile-paper-active .profile-review-note,
-.profile-paper-active .profile-reward-note { font-size: 10px; line-height: 1.7; }
+.profile-paper-active .profile-reward-note { font-size: 11px; line-height: 1.7; }
 .profile-paper-active .profile-review-note summary { min-height: 44px; padding-top: 12px; }
 .profile-paper-active .profile-submission-cover--icon { background: #eee8d7; color: #78664b; }
-.profile-paper-active .profile-gallery-empty { background: var(--home-surface); border: 0; box-shadow: none; }
+.profile-paper-active .profile-gallery-empty { background: var(--editorial-leaf-background) center / cover no-repeat; border: 0; box-shadow: var(--editorial-leaf-shadow); }
 .profile-paper-active .profile-gallery-empty-kicker { display: none; }
 .profile-paper-active .profile-gallery-empty-copy h4 { color: var(--home-ink); font-size: 17px; font-weight: 500; }
 .profile-paper-active .profile-gallery-empty-copy > p { color: var(--home-muted); font-size: 12px; }
 .profile-paper-active .profile-gallery-empty-action { background: #eee8d7; color: var(--home-ink); box-shadow: none; font-size: 12px; }
 .profile-paper-active #view-profile button:focus-visible { outline: 2px solid var(--home-sage) !important; outline-offset: 3px; }
+/* Backend-added contribution content follows the same quiet paper treatment. */
+.profile-paper-active #cloud-contribution-impact {
+  border: 0;
+  border-radius: 4px;
+  background: var(--editorial-leaf-background) center / cover no-repeat;
+  box-shadow: var(--editorial-leaf-shadow);
+  color: var(--home-ink);
+}
+.profile-paper-active #cloud-contribution-impact .profile-contribution-seal {
+  background: transparent;
+  color: var(--home-sage);
+  box-shadow: none;
+}
+.profile-paper-active #cloud-contribution-impact .profile-contribution-heading h4 { color: var(--home-ink); font-weight: 500; }
+.profile-paper-active #cloud-contribution-impact .profile-contribution-heading > strong { color: var(--home-red); }
 @media (max-width: 767px) {
   .profile-paper-active #app-viewport > #view-profile { padding: 0 18px 32px; }
   #view-profile .paper-profile-hero { min-height: 164px; margin: 0 -18px; padding: max(12px, env(safe-area-inset-top)) 18px 25px; }

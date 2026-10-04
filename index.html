@@ -1046,7 +1046,7 @@
       color: #f8ead3 !important;
       box-shadow: 0 7px 16px rgba(89, 38, 32, 0.13) !important;
     }
-    #view-map .heritage-marker.verified { background: #715f4c; }
+    #view-map .heritage-marker.verified { background: #58725f; }
     #view-map .heritage-marker.pending,
     #view-map .route-marker.origin { background: var(--chu-raspberry); }
     #view-map .heritage-marker.user,
@@ -1140,18 +1140,20 @@
     #view-community [class*="bg-emerald"],
     #view-map [class*="bg-emerald"] {
       border-color: transparent !important;
-      background-color: rgba(169, 135, 79, 0.16) !important;
+      background-color: rgba(88, 114, 95, 0.04) !important;
     }
     #view-collect [class*="text-emerald"],
     #view-community [class*="text-emerald"],
     #view-map [class*="text-emerald"] {
-      color: #6d5737 !important;
+      color: #58725f !important;
     }
     #view-collect [class*="border-emerald"],
     #view-community [class*="border-emerald"],
     #view-map [class*="border-emerald"] {
-      border-color: rgba(169, 135, 79, 0.2) !important;
+      border-color: rgba(88, 114, 95, 0.2) !important;
     }
+    /* The certification legend is a solid map key, not a tinted status card. */
+    #view-map .bg-emerald-600 { background-color: #58725f !important; }
     #view-community .bg-deepTeal {
       background: var(--chu-camel) !important;
       color: #f1d8a8 !important;
@@ -2322,9 +2324,9 @@
       font-weight: 800;
       letter-spacing: 0.05em;
     }
-    .profile-status-verified { background: rgba(73, 106, 97, 0.13); color: #3f6158; }
-    .profile-status-gold { background: rgba(182, 138, 74, 0.15); color: #84612e; }
-    .profile-status-attention { background: rgba(172, 31, 24, 0.09); color: #8f3c36; }
+    .profile-status-verified { background: rgba(88, 114, 95, 0.04); color: #58725f; }
+    .profile-status-gold { background: rgba(179, 140, 69, 0.10); color: #84612e; }
+    .profile-status-attention { background: rgba(167, 73, 61, 0.09); color: #a7493d; }
     .profile-review-note {
       margin-top: 0.55rem;
       color: #76685d;
@@ -3711,10 +3713,9 @@
     #view-collect .collect-notes-paper {
       position: relative;
       min-height: 9.4rem;
-      overflow: hidden;
+      overflow: visible;
       border-radius: 0.35rem;
-      background:
-        repeating-linear-gradient(180deg, transparent 0, transparent 2rem, rgba(182, 138, 74, 0.22) 2rem, rgba(182, 138, 74, 0.22) calc(2rem + 1px));
+      background: transparent;
     }
     #view-collect #collect-description {
       width: 100%;
@@ -3723,11 +3724,12 @@
       padding: 0.45rem 0.7rem !important;
       border: 0 !important;
       border-radius: 0 !important;
-      background: transparent !important;
+      /* Rules travel with the text when the field scrolls. */
+      background: repeating-linear-gradient(180deg, transparent 0, transparent calc(2.25rem - 1px), rgba(179, 140, 69, 0.17) calc(2.25rem - 1px), rgba(179, 140, 69, 0.17) 2.25rem) left 0.45rem / 100% 2.25rem local !important;
       color: var(--collect-ink) !important;
       font-family: 'Noto Serif SC', serif;
-      font-size: 0.75rem;
-      line-height: 2rem;
+      font-size: 1rem;
+      line-height: 2.25rem;
       box-shadow: none !important;
     }
     #view-collect #collect-description:focus-visible {
@@ -3903,10 +3905,10 @@
       #view-collect .collect-scroll-sheet { padding-right: 1rem; padding-left: 1rem; }
     }
     @media (max-width: 420px) {
-      #view-collect .collect-form-section { grid-template-columns: 3.7rem minmax(0, 1fr); gap: 0.72rem; }
-      #view-collect .collect-section-label { padding-right: 0.55rem; font-size: 1.08rem; }
-      #view-collect .collect-form-intro { margin-left: 4.42rem; }
-      #view-collect #collect-form > button[type="submit"] { width: calc(100% - 4.42rem); margin-left: 4.42rem !important; }
+      #view-collect .collect-form-section { grid-template-columns: 2.65rem minmax(0, 1fr); gap: 0.7rem; }
+      #view-collect .collect-section-label { padding-right: 0.45rem; font-size: 1.04rem; }
+      #view-collect .collect-form-intro { margin-left: 3.35rem; }
+      #view-collect #collect-form > button[type="submit"] { width: calc(100% - 3.35rem); margin-left: 3.35rem !important; }
       #view-collect .collect-type-option { gap: 0.22rem; }
       #view-collect .collect-type-option svg { width: 1.08rem; height: 1.08rem; }
       #view-collect .collect-type-option span { font-size: 0.68rem !important; }
@@ -3949,13 +3951,13 @@
 
     /* 地图路线手记：与地点题签共享宣纸、漆色题签和淡墨图语言 */
     #map-planner-panel.map-planner-ticket {
-      --planner-paper: #fbf7ef;
+      --planner-paper: var(--editorial-surface);
       --planner-paper-deep: #eee3d2;
-      --planner-ink: #4b2e2b;
+      --planner-ink: var(--editorial-ink);
       --planner-lacquer: #592620;
-      --planner-vermilion: #9e2f24;
-      --planner-gold: #b68a4a;
-      --planner-patina: #496a61;
+      --planner-vermilion: #a7493d;
+      --planner-gold: var(--editorial-ochre);
+      --planner-patina: #58725f;
       border: 0;
       border-radius: 0.55rem 1.25rem 0.55rem 1.25rem;
       background-color: rgba(251, 247, 239, 0.98);
@@ -4209,13 +4211,13 @@
 
     /* 地图地点题签：保留地图主导，用低矮宣纸抽屉承接地点与采集动作 */
     #landmark-drawer.landmark-ticket-drawer {
-      --map-ticket-paper: #fbf7ef;
+      --map-ticket-paper: var(--editorial-surface);
       --map-ticket-paper-deep: #eee3d2;
-      --map-ticket-ink: #4b2e2b;
+      --map-ticket-ink: var(--editorial-ink);
       --map-ticket-lacquer: #592620;
-      --map-ticket-vermilion: #9e2f24;
-      --map-ticket-gold: #b68a4a;
-      --map-ticket-patina: #496a61;
+      --map-ticket-vermilion: #a7493d;
+      --map-ticket-gold: var(--editorial-ochre);
+      --map-ticket-patina: #58725f;
       position: absolute;
       bottom: 0.7rem;
       left: 0.7rem;
@@ -4446,6 +4448,7 @@
     </style>
   <link rel="stylesheet" href="./static/discover-paper.css">
   <link rel="stylesheet" href="./static/profile-paper.css">
+  <link rel="stylesheet" href="./static/profile-badges.css">
   <link rel="stylesheet" href="./static/community-paper.css">
   <link rel="stylesheet" href="./static/field-paper.css">
   <link rel="stylesheet" href="./static/map-paper-edge.css">
@@ -5475,7 +5478,7 @@
         <section id="paper-profile-badges" aria-labelledby="paper-profile-badges-title">
           <div class="paper-profile-section-heading">
             <h2 id="paper-profile-badges-title">我的徽章</h2>
-            <button type="button" data-profile-feature="profile-badges-section" aria-controls="profile-badges-section" aria-expanded="false">图样预览 <i data-lucide="chevron-right" aria-hidden="true"></i></button>
+            <button type="button" data-profile-feature="profile-badges-section" aria-controls="profile-badges-section" aria-expanded="false">十二枚图样 <i data-lucide="chevron-right" aria-hidden="true"></i></button>
           </div>
           <div class="paper-profile-badge-row" aria-label="徽章设计预览，不代表已获得">
             <figure><img src="./static/assets/profile-badge-architecture-v1.webp" alt="古建、流水与枝叶线描" width="256" height="256"><figcaption>古建寻迹</figcaption></figure>
@@ -5505,14 +5508,23 @@
         <!-- 数字化守护者多宝阁 -->
         <div id="profile-badges-section" class="hidden space-y-2">
           <div class="paper-badge-detail">
-            <h3>徽章图样</h3>
-            <p>古建、器物与采集手记，收进三枚小小的图样。</p>
-            <div class="paper-badge-detail-gallery">
-              <img src="./static/assets/profile-badge-architecture-v1.webp" alt="古建寻迹图样" width="256" height="256" loading="lazy">
-              <img src="./static/assets/profile-badge-bronze-v1.webp" alt="编钟知音图样" width="256" height="256" loading="lazy">
-              <img src="./static/assets/profile-badge-fieldnotes-v1.webp" alt="楚地拾遗图样" width="256" height="256" loading="lazy">
-            </div>
-            <p class="paper-badge-preview-note">当前仅展示设计图样，不代表已获得的成就。</p>
+            <div class="paper-badge-catalog-heading"><h3>荆楚徽章图谱</h3><span>同系列 · 十二枚</span></div>
+            <p>把寻访、求证与共建，收进一枚枚小小的图样。轻点徽章，看看它的故事与获取条件。</p>
+            <div id="paper-badge-catalog" aria-label="十二枚徽章图样"><p>徽章图样正在载入。</p></div>
+            <p class="paper-badge-preview-note">图样预览，不代表已获得。获取功能尚未开放，之后将以审核与采纳记录为准。</p>
+            <dialog id="paper-badge-dialog" aria-labelledby="paper-badge-dialog-title" aria-describedby="paper-badge-dialog-status">
+              <div class="paper-badge-dialog-toolbar"><span>荆楚徽章图谱</span><button type="button" id="paper-badge-dialog-close" autofocus>关闭</button></div>
+              <div class="paper-badge-dialog-content">
+                <div id="paper-badge-dialog-art"></div>
+                <h2 id="paper-badge-dialog-title"></h2>
+                <p id="paper-badge-dialog-theme"></p>
+                <p id="paper-badge-dialog-story"></p>
+                <h3 class="paper-badge-rule-heading">获取条件</h3>
+                <ul id="paper-badge-dialog-rules"></ul>
+                <p id="paper-badge-dialog-note"></p>
+                <p id="paper-badge-dialog-status" role="status">图样预览 · 获取功能尚未开放</p>
+              </div>
+            </dialog>
           </div>
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
@@ -8336,6 +8348,9 @@
       const panel = document.getElementById('map-planner-panel');
       if (!panel) return;
       const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : panel.classList.contains('is-collapsed');
+      // On small screens both panels occupy the same bottom sheet space.
+      // Close the other sheet explicitly so its hidden content is not left open.
+      if (shouldOpen && window.matchMedia('(max-width: 767px)').matches) closeLandmarkDrawer();
       panel.classList.toggle('is-collapsed', !shouldOpen);
       panel.setAttribute('aria-hidden', String(!shouldOpen));
       document.body.classList.toggle('map-planner-visible', shouldOpen);
@@ -9157,6 +9172,7 @@
 
     function focusLandmark(titleOrItem, desc, points) {
       const item = normalizeLandmark(titleOrItem, desc, points);
+      if (window.matchMedia('(max-width: 767px)').matches) toggleMapPlanner(false);
       activeLandmark = item;
       document.getElementById('drawer-title').innerText = item.title;
       document.getElementById('drawer-desc').innerText = item.desc;
@@ -12190,6 +12206,8 @@
   </aside>
   <script src="./static/discover-paper.js"></script>
   <script src="./static/profile-paper.js"></script>
+  <script src="./static/badge-catalog.js"></script>
+  <script src="./static/profile-badges.js"></script>
   <script src="./static/field-paper.js"></script>
   <script src="./static/map-paper-edge.js"></script>
   <script src="./static/paper-editorial.js"></script>

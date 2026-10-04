@@ -62,6 +62,7 @@ const requiredFiles = [
   'static/navigation-motion.css',
   'static/assets/gsap-3.15.0.min.js',
   'static/assets/longcang-editorial-v1.woff2',
+  'static/assets/paper-fibres-soft-v1.webp',
   'static/assets/longcang-OFL.txt',
   'static/assets/community-river-collage-v3.webp',
   'static/assets/community-fieldnotes-cover-v1.webp',
@@ -304,6 +305,15 @@ const forbiddenPatterns = [
   { label: 'legacy API variable', pattern: /\bLOCAL_API_BASE_URL\b/ },
   { label: 'legacy API mode', pattern: /\blocalApiMode\b/ }
 ];
+
+const badgeFiles = ['static/badge-catalog.js', 'static/profile-badges.js', 'static/profile-badges.css'];
+for (const file of badgeFiles) {
+  requiredFiles.push(file);
+  productionTextFiles.push(file);
+  if (file.endsWith('.js')) javascriptFiles.push(file);
+  if (!read('tools/deploy-cloudbase.ps1').includes("'" + path.basename(file) + "'")) throw Error('徽章部署清单缺少：' + file);
+}
+for (const badge of require('../static/badge-catalog.js').catalog) requiredFiles.push(badge.image.replace(/^\.\//, ''));
 
 function read(relativePath) {
   return fs.readFileSync(path.join(projectRoot, relativePath), 'utf8');

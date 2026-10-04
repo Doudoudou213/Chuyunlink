@@ -8,9 +8,15 @@
 }
 :root {
   --editorial-paper: #f8f4eb;
+  --editorial-surface: #fffcf5;
   --editorial-ink: #30392e;
+  --editorial-muted: #756e5e;
+  --editorial-red: #a7493d;
   --editorial-sage: #58725f;
   --editorial-ochre: #b38c45;
+  /* Material belongs to selected paper leaves, never to the map or artwork. */
+  --editorial-leaf-background: linear-gradient(#fffcf559, #fffcf559), url('./assets/paper-fibres-soft-v1.webp');
+  --editorial-leaf-shadow: 0 2px 3px #756e5e08, 0 9px 25px -16px #756e5e47;
   --editorial-hand: 'Chu Hand', 'Kaiti SC', KaiTi, 'Noto Serif SC', serif;
 }
 .paper-signature-latin {

@@ -1,0 +1,67 @@
+/* One ink-and-wash collection; leave the surrounding paper profile intact. */
+#paper-profile-badges img,
+#paper-badge-catalog img,
+#paper-badge-dialog-art img { transform: scale(var(--badge-art-scale, 1)); }
+#paper-profile-badges .paper-badge-preview-item {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  min-width: 0; min-height: 88px; padding: 4px;
+  border: 0; border-radius: 6px; background: transparent; box-shadow: none;
+  color: var(--home-ink); cursor: pointer;
+}
+#paper-profile-badges .paper-badge-name { font: 400 12px/1.7 var(--home-heading); }
+#paper-badge-catalog {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px 12px; margin-top: 22px;
+}
+#paper-badge-catalog .paper-badge-item {
+  display: flex; flex-direction: column; align-items: center; min-width: 0;
+  padding: 8px 2px 10px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--home-ink); box-shadow: none; cursor: pointer;
+}
+#paper-badge-catalog img { display: block; width: 100%; max-width: 124px; height: auto; aspect-ratio: 1; object-fit: contain; }
+#paper-badge-catalog .paper-badge-name { margin-top: 6px; font: 500 15px/1.6 var(--home-heading); letter-spacing: .06em; }
+#paper-badge-catalog .paper-badge-group { margin-top: 3px; font-size: 11px; line-height: 1.5; color: var(--home-muted); }
+.paper-badge-catalog-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.paper-badge-catalog-heading > span { color: var(--home-muted); font-size: 12px; white-space: nowrap; }
+#profile-badges-section .paper-badge-preview-note { padding-top: 12px; border-top: 1px solid #e9e4d7; }
+.badge-image-fallback { display: flex; align-items: center; justify-content: center; min-height: 66px; color: var(--home-muted); font: 12px/1.6 system-ui, sans-serif; }
+#paper-badge-dialog {
+  width: min(520px, calc(100vw - 32px)); max-width: none;
+  max-height: calc(100dvh - 40px); margin: auto; padding: 0;
+  border: 0; border-radius: 16px; overflow: auto; overscroll-behavior: contain;
+  color: var(--home-ink); background: var(--home-surface);
+  box-shadow: 0 20px 80px #30392e30;
+}
+#paper-badge-dialog::backdrop { background: #30392e66; }
+#paper-badge-dialog[open] { animation: badge-sheet-in 260ms ease-out both; }
+.paper-badge-dialog-toolbar { position: sticky; top: 0; z-index: 1; background: var(--home-surface); display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px 0 24px; }
+.paper-badge-dialog-toolbar > span { font-size: 12px; color: var(--home-muted); letter-spacing: .1em; }
+#paper-badge-dialog-close { min-width: 52px; min-height: 44px; border: 0; background: transparent; color: var(--home-ink); font: 14px/1.5 system-ui, sans-serif; cursor: pointer; }
+.paper-badge-dialog-content { padding: 0 28px 28px; }
+#paper-badge-dialog-art { width: 184px; max-width: 58%; margin: 0 auto 10px; }
+#paper-badge-dialog-art img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
+#paper-badge-dialog-title { font: 500 26px/1.5 var(--home-heading); text-align: center; letter-spacing: .14em; }
+#paper-badge-dialog-theme { font-size: 12px; line-height: 1.8; text-align: center; color: var(--home-muted); margin-top: 4px; }
+#paper-badge-dialog-story { font: 400 14px/1.85 var(--home-heading); margin: 20px 0; }
+.paper-badge-rule-heading { font: 500 15px/1.6 var(--home-heading); margin: 0 0 8px; }
+#paper-badge-dialog-rules { list-style: disc; padding-left: 20px; margin: 0; font-size: 14px; line-height: 1.85; }
+#paper-badge-dialog-rules li + li { margin-top: 6px; }
+#paper-badge-dialog-note { margin-top: 14px; color: var(--home-muted); font-size: 12px; line-height: 1.85; }
+#paper-badge-dialog-status { margin-top: 20px; padding: 12px 0 0; border-top: 1px solid #e9e4d7; color: var(--home-muted); font-size: 12px; line-height: 1.8; }
+#paper-badge-dialog button:focus-visible { outline: 2px solid var(--home-sage); outline-offset: 2px; border-radius: 4px; }
+@media (hover: hover) {
+  #paper-profile-badges .paper-badge-preview-item:hover,
+  #paper-badge-catalog .paper-badge-item:hover { background: #eeeddf; }
+  #paper-badge-dialog-close:hover { color: var(--home-red); }
+}
+@media (max-width: 767px) {
+  #paper-badge-catalog { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 6px; }
+  #paper-badge-catalog .paper-badge-name { font-size: 13px; letter-spacing: 0; }
+  #paper-badge-catalog .paper-badge-group { font-size: 10px; }
+  #paper-badge-dialog-art { width: 156px; }
+  .paper-badge-dialog-content { padding: 0 22px 24px; }
+  #paper-badge-dialog-title { font-size: 24px; }
+}
+@media (max-height: 640px) { #paper-badge-dialog-art { width: 112px; } }
+@media (prefers-reduced-motion: reduce) { #paper-badge-dialog[open] { animation: none; } }
+@keyframes badge-sheet-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

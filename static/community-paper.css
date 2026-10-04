@@ -66,8 +66,8 @@ body:has(#view-community:not(.hidden)) #header-notification-badge { background: 
   padding: 3px 9px;
   border: 0;
   border-radius: 2px 4px 2px 3px;
-  background: #a45443;
-  color: #fffaf0;
+  background: var(--community-vermilion);
+  color: var(--community-paper-light);
   font-size: 12px;
   line-height: 1.6;
   font-weight: 600;
@@ -179,11 +179,11 @@ body:has(#view-community:not(.hidden)) #header-notification-badge { background: 
 #view-community .chu-knowledge-panel,
 #view-community #quick-learning-list {
   border: 0 !important;
-  border-radius: 7px 14px 7px 7px !important;
-  background: #fffcf5f7 !important;
-  box-shadow: var(--community-shadow) !important;
+  border-radius: 4px !important;
+  background: var(--editorial-leaf-background) center / cover no-repeat !important;
+  box-shadow: var(--editorial-leaf-shadow) !important;
 }
-#view-community #community-route-card { position: relative; padding: 21px 16px 0 !important; background: #fffcf5c9 !important; }
+#view-community #community-route-card { position: relative; padding: 21px 16px 0 !important; }
 #view-community .community-route-heading { gap: 8px; min-height: 30px; }
 #view-community .community-route-heading h4,
 #view-community .community-quiz-preview-copy h4,
@@ -251,7 +251,7 @@ body:has(#view-community:not(.hidden)) #header-notification-badge { background: 
   margin: 0 -16px;
   padding: 0 16px;
   border-top: 1px solid #786d4e18 !important;
-  background: #ede5d626 !important;
+  background: transparent !important;
   color: var(--community-muted);
   font-family: inherit;
   font-size: 13px;
@@ -260,7 +260,7 @@ body:has(#view-community:not(.hidden)) #header-notification-badge { background: 
 }
 #view-community .community-route-services-toggle::before { display: none; }
 #view-community .community-route-services-toggle span svg { width: 17px; height: 17px; color: var(--community-muted); }
-#view-community .community-route-services { margin: 0 -16px; padding: 0 16px 12px; background: #ede5d626; }
+#view-community .community-route-services { grid-template-columns: minmax(0, 1fr); margin: 0 -16px; padding: 0 16px 12px; background: transparent; }
 #view-community .community-route-action,
 #view-community .community-route-action--primary { color: var(--community-patina); min-height: 44px; font-size: 12px; font-weight: 500; }
 #view-community .community-service-panel { border-color: #786d4e18; }
@@ -306,8 +306,8 @@ body:has(#view-community:not(.hidden)) #header-notification-badge { background: 
 #view-community .community-quiz-icon { background: #e9eddf; color: var(--community-patina); box-shadow: none; }
 #view-community .community-daily-tag { background: #e9eddf; color: #405844; font-weight: 500; }
 #view-community button[id^="quiz-option"] { min-height: 48px; padding: 12px 14px; border-radius: 5px !important; background: #f2eee4 !important; color: var(--community-ink) !important; border: 1px solid transparent !important; box-shadow: none !important; font-size: 13px; line-height: 1.75; }
-#view-community button[id^="quiz-option"].is-correct { background: #e8eee2 !important; color: #3b5e48 !important; border-color: #748e7150 !important; }
-#view-community button[id^="quiz-option"].is-wrong { background: #f5e6df !important; color: #914136 !important; border-color: #a7493d38 !important; }
+#view-community button[id^="quiz-option"].is-correct { background: rgba(88, 114, 95, .04) !important; color: var(--community-patina) !important; border-color: rgba(88, 114, 95, .2) !important; }
+#view-community button[id^="quiz-option"].is-wrong { background: rgba(167, 73, 61, .09) !important; color: var(--community-vermilion) !important; border-color: rgba(167, 73, 61, .2) !important; }
 #view-community .community-quiz-feedback { background: #f2eee4 !important; border: 0 !important; color: var(--community-muted); font-size: 13px; line-height: 1.85; }
 
 /* Avoid the legacy dual-ID card rule: these are flat, readable learning rows. */
@@ -344,8 +344,8 @@ body:has(#view-community:not(.hidden)) #platform-header button:focus-visible {
 #view-community button:disabled { cursor: default; }
 @media (hover: hover) {
   #view-community .community-hero-secondary:hover,
-  #view-community .community-route-services-toggle:hover,
   #view-community .community-learning-refresh:hover { background: #eae8dc !important; }
+  #view-community .community-route-services-toggle:hover { background: #756e5e08 !important; color: var(--community-ink); }
   #view-community .community-route-stop:hover { background: #eee8da45; }
   #view-community #quick-learning-list > .community-learning-card:hover { background: #f5f0e5 !important; }
 }
