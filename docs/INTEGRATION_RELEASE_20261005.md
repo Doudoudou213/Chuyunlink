@@ -32,6 +32,14 @@
 
 ## 发布状态
 
-待推送及云端哈希、配置复核后补充。计划仅更新有代码变化的 `adminSubmissions`，其余函数保留；静态资源全量部署。五个生产函数发布前为 Active，配置只留哈希指纹，不记录密钥明文。
+- 已推送个人仓库 `personal/doudoudou`，业务发布提交 `ac0e471a4ebe8ce6517958bb9d276f02926fce56`。远程引用已实查一致；无强推，未动 `main`。
+- 腾讯云环境 `chulink-legacy-d8god1687a5d60743`：仅 `adminSubmissions` 有新增后端代码，使用 code update 成功；其余函数未重复部署。静态 120/120 上传成功，公网逐文件 SHA-256 与实际发布工作树字节 120/120 一致。
+- `appCore`、`adminSubmissions`、`storyWorker`、`storyAgentWorker`、`materialWorker` 均为 Active，发布前后环境变量/运行时/内存/超时/入口/触发器配置指纹完全一致。仅保存指纹，未记录密钥明文。第一次读取 storyWorker 失败，重试后全部通过。
+- 本地响应式检查已完成；公网浏览器到达腾讯云测试域名提示，随后浏览器连接反复超时，未完成公网交互复验。不要将文件哈希一致等同公网完整业务测试。
+- CLI 只读鉴权检查存在上下文不确定性：最初 `appCore.listVisitSessions` 返回 `ok:true, items:[]`，后续复测 appCore/adminSubmissions/storyWorker 三个只读接口均返回 `UNAUTHENTICATED`。未有私人记录返回，也未执行写入。不能将管理 CLI 身份等同浏览器无登录身份；本项需使用隔离浏览器/客户端独立复核，尚不能宣称完整权限验收通过。此次未改变 appCore 代码或生产配置。
+- 未新增付费调用、数据库迁移、自动发奖、官方候选包导入。
+
+访问：`https://chulink-legacy-d8god1687a5d60743-1458884983.tcloudbaseapp.com/?release=ac0e471`。
+后续开发基线为个人仓库 `work/Chuyunlink` 的 `doudoudou`，请勿再用旧工作树整文件覆盖。
 
 回退应使用清理后的个人仓库历史创建 revert 提交并重新发布，禁止 reset/强推或接回旧历史。数据库不在本轮发布/回退范围内。
