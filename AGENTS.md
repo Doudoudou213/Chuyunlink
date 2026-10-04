@@ -9,7 +9,7 @@ Before changing this repository, read:
 ## Source of truth
 
 - The current integrated development baseline is `ChuLink-Legacy-doudoudou-20261004` on branch `doudoudou`. Preserve the separate backend and UI worktrees.
-- The user is moving development to a personal GitHub repository. Its URL is not yet provided. Do not push to the former shared repository (`cgygygg/ChuLink-Legacy`); keep work local until the personal destination is explicitly provided and authorized.
+- The personal repository is `https://github.com/Doudoudou213/Chuyunlink.git`, configured as remote `personal`. Use `doudoudou` for the integrated code. Never push to the former shared repository (`cgygygg/ChuLink-Legacy`, remote `origin`). Preserve any existing `main` branch and uncommitted work; do not force-push or deploy without current authorization.
 - Do not mix changes with the older `ChuLink-Legacy` worktree on branch `shan`.
 - Preserve all existing commits and user changes. Never discard, reset, or overwrite unrelated work.
 
