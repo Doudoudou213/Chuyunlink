@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>楚韵链迹 · 内容管理</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="./static/assets/vendor/tailwind-3.4.17.js"></script>
   <style>
     :root { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
     body { background: #f3eee4; color: #403931; }
@@ -728,6 +728,7 @@
       "resource-bindings": { status: "approved", search: "", offset: 0, previousOffsets: [], limit: 20, hasMore: false, nextOffset: 0 }
     };
     let submissionLoadVersion = 0;
+    let adminViewVersion = 0;
 
     function escapeHtml(value) {
       return String(value == null ? "" : value)
@@ -913,17 +914,19 @@
     }
 
     async function loadSupplements() {
-      setActiveView("supplements", "待审补充资料");
+      const isCurrent = setActiveView("supplements", "待审补充资料");
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在读取待审补充资料...";
       try {
         const result = await callAdmin({ action: "listSupplements", limit: 50 });
+        if (!isCurrent()) return;
         const items = result.items || [];
         renderSupplements(items);
         viewCount.textContent = `${items.length} 条`;
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = `已读取 ${items.length} 条待审补充资料。`;
       } catch (error) {
+        if (!isCurrent()) return;
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
       }
@@ -1009,6 +1012,7 @@
     }
 
     function setActiveView(view, title) {
+      const version = ++adminViewVersion;
       if (adminPanel.dataset.view !== view) {
         submissionLoadVersion++;
         submissionNotice.hidden = true;
@@ -1025,6 +1029,8 @@
           ? "rounded-lg bg-[#123c3a] px-4 py-2 text-xs font-bold text-[#d9ad52]"
           : "rounded-lg border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-600";
       });
+      // Both switching views and refreshing the same view invalidate older reads.
+      return () => version === adminViewVersion && adminPanel.dataset.view === view;
     }
 
     const commentStatusLabels = {
@@ -1048,19 +1054,21 @@
     }
 
     async function loadComments() {
-      setActiveView("comments", "评论管理");
+      const isCurrent = setActiveView("comments", "评论管理");
       const status = document.getElementById("comment-status-filter").value;
       const targetType = document.getElementById("comment-target-filter").value;
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在读取评论...";
       try {
         const result = await callAdmin({ action: "listComments", status, targetType, limit: 100 });
+        if (!isCurrent()) return;
         const items = result.items || [];
         renderComments(items);
         viewCount.textContent = `${items.length} 条`;
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = `已读取 ${items.length} 条评论。`;
       } catch (error) {
+        if (!isCurrent()) return;
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
       }
@@ -1138,17 +1146,19 @@
     };
 
     async function loadReports() {
-      setActiveView("reports", "内容举报");
+      const isCurrent = setActiveView("reports", "内容举报");
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在读取待处理举报...";
       try {
         const result = await callAdmin({ action: "listReports", limit: 50 });
+        if (!isCurrent()) return;
         const items = result.items || [];
         renderReports(items);
         viewCount.textContent = `${items.length} 条`;
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = `已读取 ${items.length} 条待处理举报。`;
       } catch (error) {
+        if (!isCurrent()) return;
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
       }
@@ -1224,17 +1234,19 @@
     };
 
     async function loadFeedback() {
-      setActiveView("feedback", "用户反馈");
+      const isCurrent = setActiveView("feedback", "用户反馈");
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在读取待处理反馈...";
       try {
         const result = await callAdmin({ action: "listFeedback", limit: 50 });
+        if (!isCurrent()) return;
         const items = result.items || [];
         renderFeedback(items);
         viewCount.textContent = `${items.length} 条`;
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = `已读取 ${items.length} 条待处理反馈。`;
       } catch (error) {
+        if (!isCurrent()) return;
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
       }
@@ -1315,18 +1327,20 @@
     }
 
     async function loadRedemptions() {
-      setActiveView("redemptions", "兑换码核销");
+      const isCurrent = setActiveView("redemptions", "兑换码核销");
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在读取兑换记录...";
       list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在加载核销工作台…</div>';
       try {
         const result = await callAdmin({ action: "listRedemptions", status: "all", limit: 50 });
+        if (!isCurrent()) return;
         const items = result.items || [];
         renderRedemptionWorkbench(items);
         viewCount.textContent = `${items.length} 条`;
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = "核销工作台已就绪。";
       } catch (error) {
+        if (!isCurrent()) return;
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
         list.innerHTML = '<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">核销工作台暂不可用。</div>';
@@ -1751,8 +1765,9 @@
           ? `“${title}”已撤回；相关来源复核尚未全部同步，请在“已撤回”中重试。`
           : `“${title}”已撤回，原投稿、审核记录和已发积分保留。`;
         const view = adminPanel.dataset.view;
-        if (card.isConnected && submissionPages[view]) {
+        if (submissionPages[view]) {
           await loadSubmissionPage(view);
+          if (adminPanel.dataset.view !== view) return;
           submissionNotice.hidden = false;
           submissionNotice.replaceChildren(document.createTextNode(resultText));
           if (view === "resource-bindings" || submissionPages[view].status !== "withdrawn") {
@@ -1905,18 +1920,20 @@
     }
 
     async function loadStoryLinks() {
-      setActiveView("story-links", "链迹关联");
+      const isCurrent = setActiveView("story-links", "链迹关联");
       viewCount.textContent = "正在读取";
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在读取已审核投稿、文化资源和链迹关系...";
       list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在准备链迹工作台...</div>';
       try {
         const result = await callAdmin({ action: "getStoryLinkWorkspace" });
+        if (!isCurrent()) return;
         renderStoryLinkWorkspace(result);
         viewCount.textContent = `${Number(result.counts && result.counts.confirmedLinks || 0)} 条关系`;
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = "链迹工作台已同步。";
       } catch (error) {
+        if (!isCurrent()) return;
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
         list.innerHTML = '<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">链迹工作台暂不可用，没有修改任何投稿或资源。</div>';
@@ -2110,7 +2127,7 @@
     }
 
     async function loadStoryDrafts() {
-      setActiveView("story-drafts", "故事草稿");
+      const isCurrent = setActiveView("story-drafts", "故事草稿");
       viewCount.textContent = "正在读取";
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在读取已确认链迹和故事版本，不会调用模型...";
@@ -2122,6 +2139,7 @@
           callAdmin({ action: "getStoryRevisionImpactWorkspace" }).catch(() => ({ stories: [], counts: {} })),
           callAdmin({ action: "getStoryGapTaskWorkspace" }).catch(() => ({ tasks: [], count: 0 }))
         ]);
+        if (!isCurrent()) return;
         result.claimWorkspace = claimWorkspace;
         result.impactWorkspace = impactWorkspace;
         result.gapTaskWorkspace = gapTaskWorkspace;
@@ -2130,6 +2148,7 @@
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = "故事工作台已同步，本次没有调用模型。";
       } catch (error) {
+        if (!isCurrent()) return;
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
       }
@@ -2413,7 +2432,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
     }
 
     async function loadAiStatus() {
-      setActiveView("ai-status", "AI 接口");
+      const isCurrent = setActiveView("ai-status", "AI 接口");
       viewCount.textContent = "安全状态";
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在读取 AI 云函数状态，不会调用模型...";
@@ -2423,10 +2442,12 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
           callAiWorker({ action: "status" }),
           callAiWorker({ action: "getSubmissionWorkspace" })
         ]);
+        if (!isCurrent()) return;
         renderAiStatus(result, workspace);
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = "状态读取完成，本次没有产生模型费用。";
       } catch (error) {
+        if (!isCurrent()) return;
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
         list.innerHTML = '<div class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm leading-relaxed text-amber-800"><strong>storyWorker 尚未初始化。</strong><br>现有业务不受影响。完成首次云函数部署后，这里会显示模型开关、密钥配置状态和每日用量。</div>';
@@ -2530,18 +2551,20 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
     }
 
     async function loadResourceSeedPreview() {
-      setActiveView("resource-preview", "资源迁移预览");
+      const isCurrent = setActiveView("resource-preview", "资源迁移预览");
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在进行只读比较...";
       viewCount.textContent = "只读";
       list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">正在读取资源种子和云端状态…</div>';
       try {
         const result = await callAdmin({ action: "previewResourceSeed" });
+        if (!isCurrent()) return;
         renderResourceSeedPreview(result);
         viewCount.textContent = `${Number(result.total || 0)} 项资源`;
         message.className = "mt-2 text-xs text-emerald-700";
         message.textContent = `预览完成：待新增 ${Number(result.missing || 0)}，已存在 ${Number(result.existing || 0)}，差异 ${Number(result.differing || 0)}。没有写入业务数据。`;
       } catch (error) {
+        if (!isCurrent()) return;
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
         list.innerHTML = '<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">资源迁移预览暂不可用，未执行任何导入。</div>';
@@ -2700,12 +2723,13 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
     }
 
     async function loadMaterialAnalysis() {
-      setActiveView("material-analysis", "材料识别");
+      const isCurrent = setActiveView("material-analysis", "材料识别");
       viewCount.textContent = "正在读取";
       message.className = "mt-2 text-xs text-stone-500";
       message.textContent = "正在读取材料识别任务...";
       try {
         const result = await callMaterialWorker({ action: "getWorkspace" });
+        if (!isCurrent()) return;
         renderMaterialWorkspace(result);
         viewCount.textContent = `${Number(result.eligibleCount || 0)} 条真实材料`;
         message.className = "mt-2 text-xs text-emerald-700";
@@ -2713,6 +2737,7 @@ TOKENHUB_API_KEY=你在 TokenHub 创建的独立 API Key</pre>
           ? "真实图片 OCR 已就绪；只有点击具体投稿的识别按钮才会产生调用。"
           : "材料识别工作台已就绪；真实 OCR 尚未启用，不会产生接口费用。";
       } catch (error) {
+        if (!isCurrent()) return;
         message.className = "mt-2 text-xs text-red-600";
         message.textContent = `${error.code || "ERROR"}：${error.message}`;
         list.innerHTML = '<div class="rounded-2xl border border-red-200 bg-white p-6 text-sm text-red-700">材料识别云函数尚未就绪。部署 materialWorker 后刷新本页即可。</div>';

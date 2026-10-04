@@ -166,6 +166,15 @@ async function main() {
     many.story_evidence_links[`old_link_${String(i).padStart(3, '0')}`] = { submissionId: 's1', status: 'confirmed' };
   }
   const manyDb = fakeDb(many), manyAdmin = loadAdmin(manyDb);
+  const unknown = fakeDb({
+    submissions: { unknown: { status: 'approved', title: '无地点原稿', latitude: null, longitude: null } },
+    resources: { unrelated: { status: 'published', title: '另一份资料', type: 'article', location: null } }
+  });
+  const unknownList = await loadAdmin(unknown)({ action: 'list', status: 'approved' });
+  assert.equal(unknownList.ok, true);
+  assert.equal(unknownList.items[0].latitude, null);
+  assert.equal(unknownList.items[0].longitude, null);
+  assert.equal(unknownList.items[0].resourceCandidates.length, 0);
   const pages = []; let offset = 0;
   do { const page = await manyAdmin({ action: 'list', status: 'approved', limit: 50, offset }); assert(page.ok); pages.push(...page.items); offset = page.nextOffset; } while (offset !== null);
   assert.equal(pages.length, 127); assert.equal(new Set(pages.map(item => item.id)).size, 127);

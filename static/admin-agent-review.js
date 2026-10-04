@@ -198,7 +198,7 @@
   }
   async function load() {
     const token = ++generation;
-    setActiveView('agent-review', '研究建议');
+    const isCurrent = setActiveView('agent-review', '研究建议');
     viewCount.textContent = '';
     list.innerHTML = '<p class="text-sm text-stone-500">正在整理建议和来源…</p>';
     try {
@@ -206,7 +206,7 @@
         callAdmin({ action: 'getAgentReviewWorkspace', offset, status }),
         callAdmin({ action: 'getAgentEvaluationWorkspace', setId: evaluationSetId })
       ]);
-      if (token !== generation) return;
+      if (token !== generation || !isCurrent()) return;
       workspace = result;
       evaluation = evaluationResult;
       evaluationSetId = evaluation.selectedSet?.id || '';
@@ -250,7 +250,7 @@
         list.querySelector(`[data-batch-${decision}]`)?.addEventListener('click', () => review([...list.querySelectorAll('[data-select]:checked')].map(e => e.closest('[data-candidate]')), decision));
         list.querySelectorAll(`[data-${decision}]`).forEach(b => b.onclick = () => review([b.closest('[data-candidate]')], decision));
       }
-    } catch (e) { if (token === generation) list.innerHTML = `<p role="alert" class="text-sm text-red-700">${esc(e.message)}</p>`; }
+    } catch (e) { if (token === generation && isCurrent()) list.innerHTML = `<p role="alert" class="text-sm text-red-700">${esc(e.message)}</p>`; }
   }
   document.getElementById('admin-navigation').addEventListener('click', e => {
     if (e.target.closest('[data-admin-view]')?.dataset.adminView !== 'agent-review') generation++;

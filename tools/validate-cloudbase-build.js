@@ -6,6 +6,20 @@ const vm = require('node:vm');
 
 const projectRoot = path.resolve(__dirname, '..');
 const requiredFiles = [
+  'static/assets/vendor/tailwind-3.4.17.js',
+  'static/assets/vendor/tailwind-LICENSE',
+  'static/assets/vendor/lucide-1.51.0.min.js',
+  'static/assets/vendor/lucide-LICENSE',
+  'static/assets/vendor/leaflet-1.9.4/leaflet.js',
+  'static/assets/vendor/leaflet-1.9.4/leaflet.css',
+  'static/assets/vendor/leaflet-1.9.4/LICENSE',
+  'static/assets/vendor/leaflet-1.9.4/images/marker-icon.png',
+  'static/assets/vendor/leaflet-1.9.4/images/marker-icon-2x.png',
+  'static/assets/vendor/leaflet-1.9.4/images/marker-shadow.png',
+  'static/assets/vendor/leaflet-1.9.4/images/layers.png',
+  'static/assets/vendor/leaflet-1.9.4/images/layers-2x.png',
+  'static/assets/theme-phoenix-book-v1.webp',
+  'static/assets/chulink-ink-wordmark-v2.webp',
   'cloudfunctions/appCore/lib/agent-provenance.js',
   'cloudfunctions/adminSubmissions/domains/submission-moderation.js',
   'cloudfunctions/adminSubmissions/domains/submission-resources.js',

@@ -135,7 +135,7 @@
           <p class="theme-card-meta">${Number(item.chapterCount) || 0} 章 · ${esc((item.regions || []).join(' · ') || '地区待补')}</p></div>
           <span class="theme-card-read">阅读故事 →</span></a>
         </article>`).join('')}</div>` : `<section class="theme-empty">
-          <img class="theme-empty-art" src="./static/assets/theme-phoenix-book-v1.png" alt="" width="112" height="112">
+          <img class="theme-empty-art" src="./static/assets/theme-phoenix-book-v1.webp" alt="" width="112" height="112">
           <h2>故事正在整理</h2><p>目前没有可以公开阅读的专题。管理员完成来源核对后，会在这里发布。</p>
           <div class="theme-empty-actions"><a href="./index.html">先去发现页看看 →</a></div></section>`}`;
     status.textContent = '';
@@ -173,6 +173,10 @@
       if (themeId) {
         const result = await callCore({ action: 'getStoryTheme', themeId });
         renderTheme(result.theme);
+        // The chapter did not exist when the browser first resolved the URL hash.
+        if (/^#theme-chapter-[1-9]\d*$/.test(location.hash)) {
+          document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'instant', block: 'start' });
+        }
       } else {
         const result = await callCore({ action: 'listStoryThemes' });
         renderList(result.items || []);

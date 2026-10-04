@@ -102,17 +102,17 @@
     })();
   </script>
   <!-- Tailwind CSS 引入 -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="./static/assets/vendor/tailwind-3.4.17.js"></script>
   <!-- Lucide 图标库引入 -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="./static/assets/vendor/lucide-1.51.0.min.js"></script>
   <!-- CryptoJS 引入用于前端安全签名计算 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <!-- Leaflet 真实地图引擎 -->
-  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/leaflet/1.9.4/leaflet.css">
-  <script src="https://cdn.bootcdn.net/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <link rel="stylesheet" href="./static/assets/vendor/leaflet-1.9.4/leaflet.css">
+  <script src="./static/assets/vendor/leaflet-1.9.4/leaflet.js"></script>
   <script src="./static/map-config.js"></script>
   <script>
-    tailwind.config = {
+    window.tailwind && (window.tailwind.config = {
       theme: {
         extend: {
           colors: {
@@ -123,7 +123,7 @@
           }
         }
       }
-    }
+    });
   </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
@@ -4523,7 +4523,7 @@
           </div>
           <div class="paper-home-brand">
             <h1 class="paper-home-wordmark" aria-label="楚韵链迹">
-              <img src="./static/assets/chulink-ink-wordmark-v2.png" alt="楚韵链迹" width="2078" height="757" decoding="async">
+              <img src="./static/assets/chulink-ink-wordmark-v2.webp" alt="楚韵链迹" width="2078" height="757" decoding="async">
               <span class="paper-home-wordmark-fallback" aria-hidden="true">楚韵链迹</span>
               <span class="paper-signature-latin" aria-hidden="true">CHULINK</span>
             </h1>
@@ -4729,7 +4729,7 @@
         <header class="field-map-heading">
           <div class="field-map-ink" aria-hidden="true"><img src="./static/assets/map-landmark-east-lake-ink-v1.webp" alt="" width="1200" height="376" decoding="async"></div>
           <div class="field-paper-topline">
-            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v2.png" alt="楚韵链迹" width="2078" height="757" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
+            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v2.webp" alt="楚韵链迹" width="2078" height="757" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
             <div class="field-paper-utilities">
               <div id="field-map-notifications"></div>
               <button type="button" data-field-more aria-expanded="false" aria-controls="field-map-menu" aria-label="更多：账号与使用帮助"><i data-lucide="ellipsis" aria-hidden="true"></i><span>更多</span></button>
@@ -5155,7 +5155,7 @@
         <header class="collect-hero" aria-labelledby="collect-hero-title">
           <img src="./static/assets/collect-hero-shanshui-v1.webp" alt="云山江水与临水古亭构成的荆楚山水长卷" class="collect-hero-image">
           <div class="field-paper-topline">
-            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v2.png" alt="楚韵链迹" width="2078" height="757" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
+            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v2.webp" alt="楚韵链迹" width="2078" height="757" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
             <div class="field-paper-utilities">
               <div id="field-collect-notifications"></div>
               <button type="button" data-field-more aria-expanded="false" aria-controls="field-collect-menu" aria-label="更多：账号与使用帮助"><i data-lucide="ellipsis" aria-hidden="true"></i><span>更多</span></button>
@@ -5338,7 +5338,7 @@
               <button type="button" data-field-more aria-expanded="false" aria-controls="field-community-menu" aria-label="更多：账号与使用帮助"><i data-lucide="ellipsis" aria-hidden="true"></i><span>更多</span></button>
               <div id="field-community-menu" data-field-menu hidden aria-label="账号与使用帮助"></div>
             </div>
-            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v2.png" alt="楚韵链迹" width="2078" height="757" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
+            <h1 class="field-paper-wordmark" aria-label="楚韵链迹"><img src="./static/assets/chulink-ink-wordmark-v2.webp" alt="楚韵链迹" width="2078" height="757" decoding="async"><span class="field-paper-wordmark-fallback" aria-hidden="true">楚韵链迹</span><span class="paper-signature-latin" aria-hidden="true">CHULINK</span></h1>
           </div>
           <div id="field-community-navigation" class="field-paper-navigation"></div>
         </header>
@@ -5463,7 +5463,7 @@
             <div id="paper-profile-settings-slot"></div>
           </div>
           <div class="paper-home-wordmark" role="img" aria-label="楚韵链迹">
-            <img src="./static/assets/chulink-ink-wordmark-v2.png" alt="" width="2078" height="757">
+            <img src="./static/assets/chulink-ink-wordmark-v2.webp" alt="" width="2078" height="757">
             <span class="paper-home-wordmark-fallback" aria-hidden="true">楚韵链迹</span>
             <span class="paper-signature-latin" aria-hidden="true">CHULINK</span>
           </div>
@@ -6288,7 +6288,7 @@
         }
       });
 
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function showOnboardingModal(force = false) {
@@ -6561,7 +6561,7 @@
       }
       feedback.classList.remove('hidden');
       updateCommunityQuizCompleteCount();
-      if (window.lucide) lucide.createIcons();
+      if (window.lucide) window.lucide?.createIcons?.();
     }
 
     function updateCommunityQuizCompleteCount() {
@@ -6620,7 +6620,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
       loadOnboardingState();
       updateTaskProgressUI();
       initializeDailyCommunityQuiz();
@@ -7592,7 +7592,7 @@
           : 'min-h-11 rounded-xl border border-[#b68a4a]/25 bg-[#fffaf1] px-3 py-2 text-xs font-bold text-[#68584c] shadow-sm';
       }
       renderDiscoverFeed();
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function renderPhotoReviewPlaceholder(region) {
@@ -7755,7 +7755,7 @@
           </div>
         `;
       }).join('');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function prepareDiscoverRelatedResources(item) {
@@ -7813,7 +7813,7 @@
           </button>
         `;
       }).join('');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function openUnifiedResource(resourceId) {
@@ -7874,7 +7874,7 @@
       renderSupplementSlots(item);
       prepareDiscoverRelatedResources(item);
       document.getElementById('discover-detail-modal').classList.remove('hidden');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function closeDiscoverDetailModal() {
@@ -8237,7 +8237,7 @@
       needsFeed.innerHTML = needsItems.length
         ? needsItems.map(item => item.feedId ? renderApprovedSubmissionCard(item) : renderLiveSubmissionCard(item)).join('')
         : '<div class="rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-500">当前搜索下暂无待补充采集内容。</div>';
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function toggleSubmissionLike(id) {
@@ -8620,7 +8620,7 @@
       renderMapPlannerRouteList();
       renderMapPlannerModeOptions();
       renderMapPlannerPreferenceControls();
-      if (window.lucide) lucide.createIcons();
+      if (window.lucide) window.lucide?.createIcons?.();
     }
 
     function selectMapPlannerPoint(id, options = {}) {
@@ -8640,7 +8640,7 @@
       const modal = document.getElementById('endangered-hotspot-modal');
       if (!modal) return;
       modal.classList.remove('hidden');
-      if (window.lucide) lucide.createIcons();
+      if (window.lucide) window.lucide?.createIcons?.();
     }
 
     function closeEndangeredHotspot() {
@@ -8737,7 +8737,7 @@
       mapPlannerMode = mode;
       saveMapPlannerState();
       renderMapPlannerModeOptions();
-      if (window.lucide) lucide.createIcons();
+      if (window.lucide) window.lucide?.createIcons?.();
     }
 
     function clearMapPlannerPreview() {
@@ -9092,7 +9092,7 @@
         btn.classList.remove('bg-cinnabarRed', 'text-white');
         btn.innerHTML = `<i data-lucide="play" class="w-5 h-5 ml-0.5"></i>`;
       }
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     // 3. 寻迹地图地标焦点展示
@@ -9130,7 +9130,7 @@
       drawer.classList.remove('translate-y-[200px]');
       drawer.classList.add('is-open');
       drawer.setAttribute('aria-hidden', 'false');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function closeLandmarkDrawer() {
@@ -9444,7 +9444,7 @@
         ${renderActivityRouteGraphList(route)}
       `;
       modal.classList.remove('hidden');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function closeActivityRouteGraphModal() {
@@ -9681,7 +9681,7 @@
       }).join('');
       panel.classList.remove('hidden');
       mapRoutePanelActive = true;
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function drawCommunityRouteOnMap(route, routeIndex, selectedRouteId, origin) {
@@ -10058,7 +10058,7 @@
           ${renderRouteServicePanel('hotel', route.services.hotel, 'bed')}
         </div>
       `;
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function toggleCommunityRouteServices(forceExpanded) {
@@ -10109,7 +10109,7 @@
         modal.classList.remove('hidden');
       }
       if (window.lucide) {
-        lucide.createIcons();
+        window.lucide?.createIcons?.();
       }
     }
 
@@ -10661,7 +10661,7 @@
           </button>
         `;
       }).join('');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function openLearningTip(moduleIdOrTitle) {
@@ -10709,7 +10709,7 @@
         </li>
       `).join('');
       document.getElementById('learning-complete-btn').innerText = hasClaimedToday ? '学会了，关闭' : `学会了 · 今日+${activeLearningModule.reward}积分`;
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function goLearningStep(direction) {
@@ -11077,7 +11077,7 @@
           </div>
         </div>
       `).join('');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function updateGraphPerspectiveTabs() {
@@ -11130,7 +11130,7 @@
       modal.classList.remove('hidden');
       const panel = modal.querySelector('.phone-scroll');
       if (panel) panel.scrollTop = 0;
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function closeGraphModal() {
@@ -11312,7 +11312,7 @@
       document.getElementById('audio-summary-card').classList.add('hidden');
       document.getElementById('record-audio-status').innerText = '口述采集待开始';
       document.getElementById('record-audio-time').innerText = '00:00';
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function resetFilePreview(event) {
@@ -11365,7 +11365,7 @@
           previewMediaIcon.querySelector('i').setAttribute('data-lucide', config.previewIcon);
         }
         document.getElementById('preview-file-name').innerText = '已选择现场素材';
-        lucide.createIcons();
+        window.lucide?.createIcons?.();
       }
       if (mediaType === 'image') {
         reader.readAsDataURL(file);
@@ -11391,7 +11391,7 @@
         : 'bg-deepTeal text-sandGold w-12 h-12 rounded-full flex items-center justify-center shadow';
       btn.querySelector('i').setAttribute('data-lucide', isRecording ? 'square' : 'mic');
       status.innerText = isRecording ? '正在采集口述' : '口述采集已生成';
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function generateAudioSummary(seconds) {
@@ -11421,7 +11421,7 @@
       document.getElementById('audio-summary-text').innerText = generateAudioSummary(audioRecordSeconds);
       document.getElementById('audio-summary-card').classList.remove('hidden');
       showToast('口述音频已生成识别梗概', 'list-checks');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     async function toggleAudioRecording(event) {
@@ -11487,7 +11487,7 @@
       btn.className = "flex-1 bg-cinnabarRed text-white py-2 rounded-xl text-xs font-bold w-full";
       btn.innerText = '重新回到采集区';
       btn.setAttribute('onclick', 'closeAiModalWithError()');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function getSelectedAssetType() {
@@ -11647,7 +11647,7 @@
       `;
       resultEl.classList.remove('hidden');
       setAiCloseButton("flex-1 bg-cinnabarRed text-white py-2 rounded-xl text-xs font-bold w-full", '重新回到采集区');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function submitBlockedForManualReview() {
@@ -11661,7 +11661,7 @@
         btn.disabled = true;
         btn.className = "mt-2 w-full bg-stone-300 text-stone-500 py-2 rounded-lg text-xs font-bold flex items-center justify-center";
         btn.innerHTML = '<i data-lucide="loader" class="w-3.5 h-3.5 mr-1 animate-spin"></i> 正在提交人工复核...';
-        lucide.createIcons();
+        window.lucide?.createIcons?.();
       }
 
       updateStepStatus('step-watermark', 'loading', '正在保存被拦截素材到人工复核池...');
@@ -11704,7 +11704,7 @@
         `;
       resultEl.classList.remove('hidden');
       setAiCloseButton("flex-1 bg-stone-800 text-white py-2 rounded-xl text-xs font-bold w-full", '关闭调试窗口');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function finishReviewSubmission(regionData, qualityData, savedData = null) {
@@ -11737,7 +11737,7 @@
         <p class="text-[10px] text-amber-700 pl-5">积分状态: <strong class="font-bold">人工通过后发放</strong></p>
       `;
       resultEl.classList.remove('hidden');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
 
       setAiCloseButton("flex-1 bg-stone-800 text-white py-2 rounded-xl text-xs font-bold w-full", '知道了，返回采集区', 'closePendingSubmissionModal()');
     }
@@ -11757,7 +11757,7 @@
       `;
       resultEl.classList.remove('hidden');
       setAiCloseButton("flex-1 bg-cinnabarRed text-white py-2 rounded-xl text-xs font-bold w-full", '重新回到采集区');
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function finishApprovedSubmission(regionData, qualityData) {
@@ -11789,7 +11789,7 @@
             <p class="text-[10px] text-emerald-600 pl-5">积分奖励: <strong class="font-bold">+100 流光值已发放</strong></p>
           `;
           resultEl.classList.remove('hidden');
-          lucide.createIcons();
+          window.lucide?.createIcons?.();
           
           setAiCloseButton("flex-1 bg-deepTeal text-sandGold py-2 rounded-xl text-xs font-bold w-full", '确认并领取流光值', 'closeAiModal()');
           updateUserPoints(100);
@@ -11915,7 +11915,7 @@
                 <p class="text-[10px] text-red-500 pl-5">💡 提示：${errorTip}</p>
               `;
               resultEl.classList.remove('hidden');
-              lucide.createIcons();
+              window.lucide?.createIcons?.();
               
               const btn = document.getElementById('ai-btn-close');
               btn.disabled = false;
@@ -11940,7 +11940,7 @@
               <p class="text-[10px] text-stone-500 pl-5">错误信息: ${(err && err.message) || 'cloud_service_unavailable'}</p>
             `;
             resultEl.classList.remove('hidden');
-            lucide.createIcons();
+            window.lucide?.createIcons?.();
             
             const btn = document.getElementById('ai-btn-close');
             btn.disabled = false;
@@ -12008,7 +12008,7 @@
         el.className = "flex justify-between items-center text-xs text-stone-400";
         el.innerHTML = `<span class="flex items-center"><i data-lucide="circle-dashed" class="w-3.5 h-3.5 mr-2"></i> ${text}</span> <span class="text-[10px]">排队中</span>`;
       }
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
     }
 
     function closeAiModal() {
@@ -12074,7 +12074,7 @@
 
       toastMsg.innerText = message;
       toastIcon.setAttribute('data-lucide', iconName);
-      lucide.createIcons();
+      window.lucide?.createIcons?.();
 
       toast.classList.remove('toast-visible', 'toast-hidden');
       void toast.offsetWidth; // 触发 reflow 重新触发过渡动画
@@ -12123,7 +12123,7 @@
   <aside id="theme-story-float" class="theme-story-float" aria-label="主题故事" hidden>
     <button id="theme-story-dismiss" class="theme-story-dismiss" type="button" aria-label="关闭故事浮窗，仍可从更多阅读主题故事" title="关闭浮窗"><span aria-hidden="true">×</span></button>
     <a id="theme-story-link" class="theme-story-link" href="./themes.html" aria-label="阅读主题故事">
-      <img class="theme-story-art" src="./static/assets/theme-phoenix-book-v1.png" alt="" width="1280" height="1280" decoding="async">
+      <img class="theme-story-art" src="./static/assets/theme-phoenix-book-v1.webp" alt="" width="1280" height="1280" decoding="async">
       <span class="theme-story-label">读故事</span>
     </a>
   </aside>

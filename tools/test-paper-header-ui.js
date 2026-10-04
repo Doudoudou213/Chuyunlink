@@ -88,7 +88,7 @@ const dependencies = [
               .filter(node => node.getClientRects().length).map(node => { const rect = node.getBoundingClientRect(); return [rect.width, rect.height]; })
           };
         }, { view, width, slot: slots[view] });
-        assert(metrics.imageLoaded && metrics.imageSrc.endsWith('chulink-ink-wordmark-v2.png'), JSON.stringify(metrics));
+        assert(metrics.imageLoaded && metrics.imageSrc.endsWith('chulink-ink-wordmark-v2.webp'), JSON.stringify(metrics));
         assert(metrics.logoWidth >= 115 && metrics.logoWidth <= 125 && metrics.logoHeight >= 40, JSON.stringify(metrics));
         assert(metrics.headerHidden && metrics.navigationCorrect && metrics.uniqueControls && metrics.noOverflow, JSON.stringify(metrics));
         assert(metrics.buttonSizes.every(([w, h]) => w >= 44 && h >= 44), JSON.stringify(metrics));

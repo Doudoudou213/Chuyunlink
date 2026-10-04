@@ -8,7 +8,8 @@ Before changing this repository, read:
 
 ## Source of truth
 
-- The active development worktree is `ChuLink-Legacy-resource-model` on branch `refactor/resource-model-v1` unless the user explicitly selects another branch.
+- The current integrated development baseline is `ChuLink-Legacy-doudoudou-20261004` on branch `doudoudou`. Preserve the separate backend and UI worktrees.
+- The user is moving development to a personal GitHub repository. Its URL is not yet provided. Do not push to the former shared repository (`cgygygg/ChuLink-Legacy`); keep work local until the personal destination is explicitly provided and authorized.
 - Do not mix changes with the older `ChuLink-Legacy` worktree on branch `shan`.
 - Preserve all existing commits and user changes. Never discard, reset, or overwrite unrelated work.
 

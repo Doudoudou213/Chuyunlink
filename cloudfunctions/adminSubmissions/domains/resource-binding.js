@@ -10,15 +10,17 @@ function compactText(value) {
     .replace(/[\s·•，。！？、：；（）()《》【】\-_/]+/g, '');
 }
 
-function finiteCoordinate(value) {
+function finiteCoordinate(value, limit = 180) {
+  if (value == null || (typeof value !== 'number' && typeof value !== 'string') ||
+      (typeof value === 'string' && !value.trim())) return null;
   const number = Number(value);
-  return Number.isFinite(number) ? number : null;
+  return Number.isFinite(number) && Math.abs(number) <= limit ? number : null;
 }
 
 function distanceKm(left, right) {
-  const lat1 = finiteCoordinate(left && left.latitude);
+  const lat1 = finiteCoordinate(left && left.latitude, 90);
   const lon1 = finiteCoordinate(left && left.longitude);
-  const lat2 = finiteCoordinate(right && right.latitude);
+  const lat2 = finiteCoordinate(right && right.latitude, 90);
   const lon2 = finiteCoordinate(right && right.longitude);
   if ([lat1, lon1, lat2, lon2].some((value) => value === null)) return null;
   const radians = (degrees) => degrees * Math.PI / 180;
@@ -123,6 +125,7 @@ function buildResourceBindingCandidates(submission, resources, limit = 6) {
 }
 
 module.exports = {
+  finiteCoordinate,
   buildResourceBindingCandidates,
   distanceKm,
   resourceBindingOption,

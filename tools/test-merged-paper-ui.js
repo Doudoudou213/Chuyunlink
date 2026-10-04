@@ -103,7 +103,7 @@ async function settled(page, tab, width, label) {
     };
   }, { tab, width, slot: slots[tab] });
   assert(state.active && state.correctSlot && state.original && state.restoredStyles && state.singleNav && state.noOverflow, label + ': ' + JSON.stringify(state));
-  assert(state.logo.loaded && state.logo.source.endsWith('chulink-ink-wordmark-v2.png') && state.logo.width >= 115 && state.logo.height >= 40, JSON.stringify(state));
+  assert(state.logo.loaded && state.logo.source.endsWith('chulink-ink-wordmark-v2.webp') && state.logo.width >= 115 && state.logo.height >= 40, JSON.stringify(state));
   assert(state.navSizes.every(([w, h]) => w >= 44 && h >= 44), 'Navigation hit targets ' + JSON.stringify(state.navSizes));
   assert.deepEqual(state.frameProblems, []);
   if (tab === 'discover') assert.equal(state.menuOrder.at(-1), 'paper-home-theme-link');
@@ -197,7 +197,7 @@ async function retainedFlows(page, origin) {
   await page.locator('.chapter-source > summary').first().click();
   assert.match(await page.locator('.chapter-source').first().innerText(), /匿名贡献者/);
   assert.match(await page.locator('.chapter-source').first().innerText(), /正式采用/);
-  assert.equal(await page.locator('.brand img').getAttribute('src'), './static/assets/chulink-ink-wordmark-v2.png');
+  assert.equal(await page.locator('.brand img').getAttribute('src'), './static/assets/chulink-ink-wordmark-v2.webp');
   for (const width of [390, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.screenshot({ path: path.join(output, `merged-theme-reader-${width}.png`), fullPage: true });

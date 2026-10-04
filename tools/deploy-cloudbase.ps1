@@ -15,6 +15,11 @@ if ($StaticOnly -and $FullFunctionDeploy) {
 }
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+# Keep production releases on the unified branch; changing remotes never deploys.
+$releaseBranch = git -C $projectRoot branch --show-current
+if ($LASTEXITCODE -ne 0 -or $releaseBranch -ne 'doudoudou') {
+  throw 'Deploy only from the unified doudoudou branch after reviewing both UI and backend changes.'
+}
 $cloudbaseConfigPath = Join-Path $projectRoot 'cloudbaserc.json'
 $cloudbaseConfig = Get-Content -LiteralPath $cloudbaseConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $environmentId = if ($env:TCB_ENV_ID) {
@@ -110,7 +115,7 @@ function Test-JavaScriptSyntax {
 
 Push-Location $projectRoot
 try {
-  $validateScript = Join-Path $PSScriptRoot 'validate-cloudbase-build.js'
+  $validateScript = Join-Path $PSScriptRoot 'check-release.js'
   & $nodeCommand.Source $validateScript
   if ($LASTEXITCODE -ne 0) {
     throw 'CloudBase pre-deployment validation failed.'

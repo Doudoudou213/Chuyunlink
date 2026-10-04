@@ -6,6 +6,7 @@ const path = require('path');
 const {
   buildResourceBindingCandidates,
   distanceKm,
+  finiteCoordinate,
   scoreSubmissionResource
 } = require('../cloudfunctions/adminSubmissions/domains/resource-binding');
 
@@ -56,6 +57,18 @@ const nearDistance = distanceKm(
 assert(nearDistance !== null && nearDistance < 0.1);
 console.log('PASS 点位距离计算使用有限坐标');
 
+for (const value of [null, undefined, '', '   ', false, [], {}, 'not-a-coordinate', Infinity]) {
+  assert.equal(finiteCoordinate(value), null);
+  assert.equal(distanceKm({ latitude: value, longitude: value }, { latitude: 0, longitude: 0 }), null);
+  assert.equal(buildResourceBindingCandidates({ title: '无地点资料', latitude: value, longitude: value },
+    [{ id: 'unrelated', title: '完全无关', location: null }]).length, 0);
+}
+assert.equal(distanceKm(null, null), null);
+assert.equal(distanceKm({ latitude: 91, longitude: 0 }, { latitude: 0, longitude: 0 }), null);
+assert.equal(distanceKm({ latitude: 0, longitude: -181 }, { latitude: 0, longitude: 0 }), null);
+assert.equal(distanceKm({ latitude: '0', longitude: 0 }, { latitude: 0, longitude: '0' }), 0);
+console.log('PASS 空值与越界坐标不产生虚假距离，真实零坐标仍有效');
+
 assert(adminSource.includes("action === 'bindSubmissionResource'"));
 assert(adminSource.includes("selectedResource.status !== 'published'"));
 assert(adminSource.includes("action: 'submission_resource_binding'"));
@@ -76,4 +89,4 @@ assert(clientSource.includes('...item'));
 assert(clientSource.includes('loadUnifiedRelatedResources(itemId)'));
 console.log('PASS 公开投稿携带资源 ID 并复用现有相关内容入口');
 
-console.log('Submission resource binding validation passed (7 checks).');
+console.log('Submission resource binding validation passed (8 checks).');

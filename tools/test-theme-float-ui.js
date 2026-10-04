@@ -219,7 +219,7 @@ async function verifyHotspotClearance(page, origin) {
         assert(metrics.controlsUnique && metrics.menuLinkRetained && metrics.noOverflow, JSON.stringify(metrics));
         assert(view === 'discover' ? metrics.visible || metrics.collisionFallback : !metrics.visible, JSON.stringify(metrics));
         if (view === 'discover') {
-          assert(metrics.imageLoaded && metrics.imageSrc.endsWith('/theme-phoenix-book-v1.png'), JSON.stringify(metrics));
+          assert(metrics.imageLoaded && metrics.imageSrc.endsWith('/theme-phoenix-book-v1.webp'), JSON.stringify(metrics));
           assert.equal(metrics.imageWidth, 72, 'Approved illustration is rendered at 72 px');
           assert.equal(metrics.label, '读故事');
           assert.equal(metrics.href, './themes.html');

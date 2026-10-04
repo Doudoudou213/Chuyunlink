@@ -205,22 +205,26 @@
   }
 
   async function load(openId) {
-    setActiveView('story-themes', '主题专题');
+    const isCurrent = setActiveView('story-themes', '主题专题');
     list.innerHTML = '<div class="rounded-2xl border border-stone-200 bg-white p-5 text-sm text-stone-500">正在读取专题资料…</div>';
     try {
-      workspace = await callAdmin({ action: 'getStoryThemeWorkspace' });
+      const result = await callAdmin({ action: 'getStoryThemeWorkspace' });
+      if (!isCurrent()) return;
+      workspace = result;
       const pickedTheme = workspace.themes.find(item => item.id === openId);
       if (pickedTheme) {
         themeId = pickedTheme.id; revision = pickedTheme.revision; proposal = pickedTheme.proposal;
         draft = { ...pickedTheme, nodes: structuredClone(pickedTheme.nodes),
           relationIds: [...pickedTheme.relationIds], chapters: structuredClone(pickedTheme.chapters) };
-        adoptionWorkspace = pickedTheme.publishedVersion ? await callAdmin({
+        const adoptionResult = pickedTheme.publishedVersion ? await callAdmin({
           action: 'getStoryThemeContributionWorkspace', themeId }) : null;
+        if (!isCurrent()) return;
+        adoptionWorkspace = adoptionResult;
       } else { themeId = ''; revision = 0; proposal = null; adoptionWorkspace = null; draft = empty(); }
       savedState = stateKey(draft);
       viewCount.textContent = workspace.themes.length + ' 个专题';
       render();
-    } catch (error) { notice(error.message || '专题资料读取失败', true); }
+    } catch (error) { if (isCurrent()) notice(error.message || '专题资料读取失败', true); }
   }
 
   const move = (items, index, delta) => {

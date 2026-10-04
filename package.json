@@ -1,5 +1,7 @@
 {
   "scripts": {
+    "check:release": "node tools/check-release.js",
+    "test:stability:browser": "node tools/test-stability-browser.js",
     "test:paper-motion": "node tools/test-paper-motion.js",
     "test:navigation-motion": "node tools/test-navigation-motion.js",
     "check:cloudbase": "node tools/validate-cloudbase-build.js",

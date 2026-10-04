@@ -17,7 +17,7 @@ const {
   RELATION_COLLECTION: STORY_RELATION_COLLECTION,
   GRAPH_LOG_COLLECTION: STORY_GRAPH_LOG_COLLECTION
 } = require('./domains/story-graph');
-const { buildResourceBindingCandidates, resourceBindingOption } = require('./domains/resource-binding');
+const { buildResourceBindingCandidates, resourceBindingOption, finiteCoordinate } = require('./domains/resource-binding');
 const { createSubmissionModerationService } = require('./domains/submission-moderation');
 const { createSubmissionResourceService } = require('./domains/submission-resources');
 
@@ -161,8 +161,8 @@ function serializeSubmission(item) {
     size: Number(item.size) || 0,
     contributorName: item.contributorName || '',
     rewardPoints: Number(item.rewardPoints) || 100,
-    longitude: Number.isFinite(Number(item.longitude)) ? Number(item.longitude) : null,
-    latitude: Number.isFinite(Number(item.latitude)) ? Number(item.latitude) : null,
+    longitude: finiteCoordinate(item.longitude),
+    latitude: finiteCoordinate(item.latitude, 90),
     regionName: item.regionName || '湖北',
     reviewPipelineVersion: Number(item.reviewPipelineVersion) || 1,
     aiReviewStatus: item.aiReviewStatus || 'not_requested',
