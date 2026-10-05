@@ -516,3 +516,16 @@
 - 35 项向导脚本（含构建）、11 项本地浏览器脚本、5 项内容效果回归通过。现有管理员与用户向导流程保持兼容。最初浏览器沙箱启动与临时文件改名受限，改用正常本机测试权限后通过，没有修改测试断言来绕过。
 - 待集中部署内容：`adminSubmissions`、`appCore`、同步共享检查文件的 `storyWorker`；管理员 HTML、新讲解包脚本、讲解样式、用户讲解和记录脚本。部署清单已补齐，**本轮未执行部署/推送/合并**。
 - 真实验收仍需：云端管理员登录和集合的服务端专属读写权限（客户端不可直接读写这两个新集合）、实际资源匹配、事务与重试、来源人工核对、正式发布后手机读取、跨账号私人记录、7天后复核。不得把本地测试发布记录导入生产。
+
+### 2026-10-05 文字讲解包定向部署（数据导入待登录）
+
+- 当次授权范围：部署文字包，音频不接入。业务基线 `038a8c2`，仅在个人工作树 `doudoudou` 操作；无 Git 推送、合并、付费模型或语音调用。
+- 发布前核对：旧发布工作树 `Chuyunlink-release-20261004` 干净；线上 `index.html`、`admin.html`、`static/cloudbase-app.js` 三项哈希与该视觉基线一致。本次没有用旧页面覆盖新视觉。
+- 三个云函数 `appCore / adminSubmissions / storyWorker` 仅 code update；五个相关函数仍 Active，环境变量、运行时、内存、超时、入口、触发器等配置指纹前后相同。未输出或记录密钥明文。
+- 仅上传 `admin.html`、`static/admin-guide-packs.js`、`static/admin-guide.css`、`static/guide-content.js`、`static/guide-record.js`，5/5成功。发布后这5项及未更新的首页和主业务脚本7/7公网字节与当前工作树一致；没有上传本地音频或其他资料目录。
+- 新集合 `guide_content_packages / guide_reference_sources` 原返回 PRIVATE；已通过腾讯云 ModifyDatabaseACL 改为 ADMINONLY，并以 DescribeSafeRule 逐一验证。该权限禁止普通客户端直接读写，业务管理员仍须经过云函数身份校验；其他集合未改。权限取值依据：https://cloud.tencent.com/document/api/876/34819 。尚未完成跨账号客户端实测。
+- 本轮重跑 `node tools/check-release.js` 通过；既有35项向导脚本、11项本地浏览器脚本、5项内容效果回归结果见上一节。本轮没有业务代码修改，没有将本地模拟替代云端验收。
+- 导入尚未完成：后台代码已携带13个资料齐备点位的26篇候选短稿，6个不足/对象未明点位仍禁止导入。未将本地测试数据库或模拟审核记录写入生产。实际点位匹配、待审写入、事务和重复导入仍需真实管理员会话。
+- 阻塞证据：应用内浏览器连接超时；云端 `adminSubmissions.getGuidePackCatalog` 只读调用返回 UNAUTHENTICATED，未返回目录或私人资料。没有伪造审核人或绕过管理员入口。已请用户打开后台并登录；这影响草稿导入，不影响上述代码部署成功。
+- 后续操作：登录管理员端 → 讲解包导入 → 预览匹配与讲解 → 导入待审核草稿；另行人工核对出处、事实及公开范围后才可发布。不能将本条“已部署”解释为游客已经可以阅读全部新讲解。
+- 管理入口：https://chulink-legacy-d8god1687a5d60743-1458884983.tcloudbaseapp.com/admin.html?release=038a8c2 。真实手机读取、来源停用传播与跨账号私人记录仍待发布后验收。

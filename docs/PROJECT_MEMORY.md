@@ -1,3 +1,5 @@
+> 2026-10-05 文字讲解包部署：按本次授权部署业务提交 `038a8c2` 的三个相关云函数及5个页面文件；公网7个文件字节核对通过，原首页视觉未覆盖，五个函数配置指纹未变。两个新集合权限已验证为 ADMINONLY。13个点位的26篇候选文字随后台代码上线，但尚未导入数据库或审核发布：浏览器连接超时，管理员只读接口返回未登录。音频不上传、不接入，无付费调用、Git推送或合并。后续登录后台“讲解包导入”继续；详情见 `CULTURAL_TRAVEL_GUIDE_PLAN.md` 末节。
+
 > 2026-10-04 个人仓库迁移副本：当前个人开发目录为 D:/OneDrive/文档/ChatGPT/楚韵链迹/work/Chuyunlink，分支 doudoudou，远程 personal 指向 Doudoudou213/Chuyunlink。旧历史令牌仅在独立副本移除，161 条开发记录保留，当前代码文件树清理前后完全一致；旧目录未提交地图修改原样保留，后续以审查过的补丁迁入，禁止直接合并未清理旧历史。迁移说明与新旧提交编号对应见 PERSONAL_REPOSITORY_MIGRATION_20261004.md。
 
 > 2026-10-04 个人仓库地址已确认：用户提供 https://github.com/Doudoudou213/Chuyunlink；本地 remote personal 指向该地址，统一代码分支仍为 doudoudou。原 origin 仅保留历史参考，禁止推送。新仓库已有 main，保留不覆盖；后续地图视觉未提交内容属于进行中的工作，不混入已测试 checkpoint 的迁移。推送是否成功以 personal/doudoudou 与远程引用实际核对为准；本次迁移不授权部署。
