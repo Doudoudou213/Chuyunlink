@@ -1,0 +1,2397 @@
+{
+  "schemaVersion": 1,
+  "packId": "all-local-points-guide-v1",
+  "preparedAt": "2026-10-05",
+  "baseline": "9b3ecb4",
+  "environment": "local_only",
+  "productionWrites": false,
+  "paidCalls": false,
+  "importedToApplication": false,
+  "publishAllowed": false,
+  "purpose": "按现有本地点位统一准备官方资料与待审核讲解；不是生产证据、真实模型结果或已发布讲解。",
+  "coverage": {
+    "resourceSeed": "cloudfunctions/adminSubmissions/data/resources.v1.json",
+    "extraMapCatalog": "static/map-exploration-points.js",
+    "pointCount": 19,
+    "cloudInventoryVerified": false,
+    "excludedResources": [
+      {
+        "id": "jingchu-pattern-week",
+        "type": "activity",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "wuhan-eastlake",
+        "type": "route",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "yichang-three-gorges",
+        "type": "route",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "route-shennongjia-muyu",
+        "type": "route",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "enshi-pengjiazhai",
+        "type": "route",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "suizhou-zenghou",
+        "type": "route",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "article-yellow-crane-tower",
+        "type": "article",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "article-wudang-ancient-buildings",
+        "type": "article",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "article-mingxianling",
+        "type": "article",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "article-hubei-museum-bells",
+        "type": "article",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "article-jingzhou-city-wall",
+        "type": "article",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "article-jingzhou-inscription",
+        "type": "article",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "article-enshi-door",
+        "type": "article",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "article-wudang-stone",
+        "type": "article",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      },
+      {
+        "id": "article-suizhou-pattern",
+        "type": "article",
+        "reason": "路线、文章或活动，不另计为实体点位"
+      }
+    ]
+  },
+  "limits": [
+    "官方网页是候选来源，不自动代表逐句判断已获人工确认。",
+    "不复制官方全文或配图；本包为自行整理的短摘要与草稿，节选公开许可仍待审核。",
+    "资料有多少写多少，不以凑足一分钟为目标；没有音频、模型耗时或播放效果验收。",
+    "所有坐标、游客入口、道路、开放安排与门票均未作为当日出行信息验证。",
+    "公开网络资料不会被伪装成用户投稿，也不补填 AI 或材料分析授权。",
+    "原三点位试跑包保留；本批多来源包尚未接入数据库或旧试跑适配器，不修改生产检索白名单。",
+    "即使是可整理讲解的点位，来源与当前状态仍需在入库、审核及读取时重新检查。"
+  ],
+  "evaluation": {
+    "fixedAcceptanceSet": false,
+    "paidAuthorization": null,
+    "humanReviewCompleted": false
+  },
+  "sources": [
+    {
+      "id": "official-hhl",
+      "publisher": "武汉市园林和林业局",
+      "title": "武汉市黄鹤楼公园管理处",
+      "url": "https://ylj.wuhan.gov.cn/zwgk/zwxxgkzl_12298/jggk_12304/xsdwszjzz_12308/202001/t20200110_726398.shtml",
+      "section": "单位简介",
+      "pageDate": "2025-12-24",
+      "accessedAt": "2026-10-05",
+      "retrievalMethod": "web_page_text",
+      "publicExcerptPermission": "not_reviewed",
+      "summaryType": "paraphrase_not_original_quote",
+      "checkedOn": "2026-10-05",
+      "readStatus": "body_read",
+      "sourceKind": "government_department",
+      "excerptPermission": "needs_review"
+    },
+    {
+      "id": "official-qcg",
+      "publisher": "武汉市文化和旅游局",
+      "title": "武汉市晴川阁管理处（武汉大禹文化博物馆）",
+      "url": "https://wlj.wuhan.gov.cn/zfxxgk/fdzdgknr/jgjj/zsdw/202008/t20200827_1437251.shtml",
+      "section": "单位介绍",
+      "pageDate": "2026-04-03",
+      "accessedAt": "2026-10-05",
+      "retrievalMethod": "web_page_text",
+      "publicExcerptPermission": "not_reviewed",
+      "summaryType": "paraphrase_not_original_quote",
+      "checkedOn": "2026-10-05",
+      "readStatus": "body_read",
+      "sourceKind": "government_department",
+      "excerptPermission": "needs_review"
+    },
+    {
+      "id": "official-bz",
+      "publisher": "湖北省博物馆",
+      "title": "曾侯乙编钟",
+      "url": "https://www.hbww.org.cn/zgzb/p/4695.html",
+      "retrievedUrl": "https://www.hbww.org.cn/zgzb/p/4695.html",
+      "retrievalNote": "本包使用本轮成功读取的 www 页面；不改动旧试跑包及其独立域名白名单。",
+      "section": "典藏／镇馆之宝／正文",
+      "pageDate": null,
+      "accessedAt": "2026-10-05",
+      "retrievalMethod": "web_page_text",
+      "publicExcerptPermission": "not_reviewed",
+      "summaryType": "paraphrase_not_original_quote",
+      "checkedOn": "2026-10-05",
+      "readStatus": "body_read",
+      "sourceKind": "museum",
+      "excerptPermission": "needs_review"
+    },
+    {
+      "id": "peng",
+      "title": "彭家寨旅游景区报道（仅使用末段背景）",
+      "publisher": "湖北省文化和旅游厅",
+      "url": "https://wlt.hubei.gov.cn/bmdt/szyw/es/202206/t20220628_4194601.shtml",
+      "pageDate": "2022-06-28",
+      "checkedOn": "2026-10-05",
+      "section": "介绍景区位置、吊脚楼群及土家文化的段落",
+      "origin": "湖北日报客户端",
+      "sourceKind": "official_republication",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "customs",
+      "title": "江汉关100岁 依然鲜活！",
+      "publisher": "武汉市人民政府",
+      "url": "https://www.wuhan.gov.cn/sy/tswh/202211/t20221105_2087541.shtml",
+      "pageDate": "2022-11-05",
+      "checkedOn": "2026-10-05",
+      "section": "大楼始建、竣工、博物馆开放段落",
+      "origin": "长江日报",
+      "sourceKind": "official_republication",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "gude",
+      "title": "汉口古德寺：见证武汉近代发展的传奇寺庙",
+      "publisher": "武汉市档案馆",
+      "url": "https://www.whda.org.cn/dawh/whjy/202512/t20251223_2699330.shtml",
+      "pageDate": "2018-08-14",
+      "checkedOn": "2026-10-05",
+      "section": "融会中西的建筑风格",
+      "origin": null,
+      "sourceKind": "government_department",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "panlong",
+      "title": "盘龙城遗址博物院",
+      "publisher": "武汉市文化和旅游局",
+      "url": "https://wlj.wuhan.gov.cn/zfxxgk/fdzdgknr/jgjj/zsdw/202008/t20200827_1437236.shtml",
+      "pageDate": "2026-04-03",
+      "checkedOn": "2026-10-05",
+      "section": "遗址与文物陈列介绍",
+      "origin": null,
+      "sourceKind": "government_department",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "xinhai",
+      "title": "辛亥革命博物院（辛亥革命武昌起义纪念馆）",
+      "publisher": "武汉市文化和旅游局",
+      "url": "https://wlj.wuhan.gov.cn/zfxxgk/fdzdgknr/jgjj/zsdw/202302/t20230215_2153253.shtml",
+      "pageDate": "2026-04-03",
+      "checkedOn": "2026-10-05",
+      "section": "组建、分区、基本陈列与开放时间",
+      "origin": null,
+      "sourceKind": "government_department",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "whmuseum",
+      "title": "武汉博物馆（武汉市文物交流中心）",
+      "publisher": "武汉市文化和旅游局",
+      "url": "https://wlj.wuhan.gov.cn/zfxxgk/fdzdgknr/jgjj/zsdw/202008/t20200827_1437246.shtml",
+      "pageDate": "2026-04-03",
+      "checkedOn": "2026-10-05",
+      "section": "文物藏品、陈列展览",
+      "origin": null,
+      "sourceKind": "government_department",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "ming",
+      "title": "世界文化遗产 明清皇家陵寝·明显陵",
+      "publisher": "湖北省文化和旅游厅",
+      "url": "https://wlt.hubei.gov.cn/bmdt/ztzl/lszt/sjwhyc/sjyzcd/mxl/201911/t20191121_1366118.shtml",
+      "pageDate": "2017-12-13",
+      "checkedOn": "2026-10-05",
+      "section": "陵主与布局介绍",
+      "origin": "湖北省文化厅",
+      "sourceKind": "official_republication",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "chibi",
+      "title": "忆赤壁之战，访三国战场",
+      "publisher": "咸宁市自然资源和规划局",
+      "url": "https://zrzyhghj.xianning.gov.cn/zwdt/gtyw/202010/t20201026_2204734.shtml",
+      "pageDate": "2020-10-26",
+      "checkedOn": "2026-10-05",
+      "section": "参访地点介绍",
+      "origin": null,
+      "sourceKind": "government_department",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "dam",
+      "title": "三峡大坝研学基地简介",
+      "publisher": "湖北省文化和旅游厅",
+      "url": "https://wlt.hubei.gov.cn/bmdt/ztzl/wltztzyhhdxjc/wltztzyhbdxjcyxzyd/wltztzyhbdxjczh/202609/t20260903_6007165.shtml",
+      "pageDate": "2026-09-03",
+      "checkedOn": "2026-10-05",
+      "section": "室内外场地与研学主题",
+      "origin": null,
+      "sourceKind": "government_department",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "muyu",
+      "title": "神农架林区木鱼镇创建国家级旅游度假区速写",
+      "publisher": "湖北省文化和旅游厅",
+      "url": "https://wlt.hubei.gov.cn/bmdt/xydt/202009/t20200930_2937622.shtml",
+      "pageDate": "2020-09-30",
+      "checkedOn": "2026-10-05",
+      "section": "木鱼旅游度假区位置与集散功能",
+      "origin": "湖北日报",
+      "sourceKind": "official_republication",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "wudang",
+      "title": "世界文化遗产·武当山古建筑群",
+      "publisher": "湖北省文化和旅游厅",
+      "url": "https://wlt.hubei.gov.cn/bmdt/ztzl/lszt/sjwhyc/sjyzcd/wdsgjzq/201911/t20191121_1366117.shtml",
+      "pageDate": "2017-04-13",
+      "checkedOn": "2026-10-05",
+      "section": "古建筑群所在地与列入遗产名录",
+      "origin": "湖北省文化厅",
+      "sourceKind": "official_republication",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "qintai",
+      "title": "古琴台升级归来 武汉打卡新地标+1",
+      "publisher": "武汉市人民政府",
+      "url": "https://www.wuhan.gov.cn/sy/whyw/202405/t20240502_2396502.shtml",
+      "pageDate": "2024-05-02",
+      "checkedOn": "2026-10-05",
+      "section": "伯牙台名称与修缮后展陈",
+      "origin": "长江日报",
+      "sourceKind": "official_republication",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "guiyuan",
+      "title": "实况！初五财神到，武汉接好了",
+      "publisher": "武汉市汉阳区人民政府",
+      "url": "https://www.hanyang.gov.cn/xwdt_38/hyyw/202402/t20240218_2360071.shtml",
+      "pageDate": "2024-02-14",
+      "checkedOn": "2026-10-05",
+      "section": "归元禅寺始建、山门及庙会的段落",
+      "origin": "汉阳知音",
+      "sourceKind": "official_republication",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "art",
+      "title": "武汉美术馆",
+      "publisher": "武汉市文化和旅游局",
+      "url": "https://wlj.wuhan.gov.cn/zfxxgk/fdzdgknr/jgjj/zsdw/202310/t20231017_2281350.shtml",
+      "pageDate": "2026-04-03",
+      "checkedOn": "2026-10-05",
+      "section": "汉口馆建筑介绍",
+      "origin": null,
+      "sourceKind": "government_department",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    },
+    {
+      "id": "art-closure",
+      "title": "武汉美术馆，今起闭馆",
+      "publisher": "武汉市人民政府",
+      "url": "https://www.wuhan.gov.cn/zwgk/tzgg/202608/t20260829_2840574.shtml",
+      "pageDate": "2026-08-29",
+      "checkedOn": "2026-10-05",
+      "section": "闭馆公告",
+      "origin": "武汉美术馆公众号",
+      "sourceKind": "official_republication",
+      "readStatus": "body_read",
+      "excerptPermission": "needs_review",
+      "accessedAt": "2026-10-05"
+    }
+  ],
+  "records": [
+    {
+      "id": "yellow-crane-tower",
+      "title": "武汉黄鹤楼",
+      "catalogType": "landmark",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "黄鹤楼公园总体；未确认具体碑刻",
+      "sourceIds": [
+        "official-hhl"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "yellow-crane-tower-f1",
+          "text": "黄鹤楼位于武汉武昌蛇山。",
+          "sourceIds": [
+            "official-hhl"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "单位简介"
+        },
+        {
+          "id": "yellow-crane-tower-f2",
+          "text": "黄鹤楼的始建年代为公元223年。",
+          "sourceIds": [
+            "official-hhl"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "单位简介"
+        },
+        {
+          "id": "yellow-crane-tower-f3",
+          "text": "黄鹤楼公园于1985年6月重建开放。",
+          "sourceIds": [
+            "official-hhl"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "单位简介"
+        },
+        {
+          "id": "yellow-crane-tower-f4",
+          "text": "黄鹤楼公园介绍将园区分为东、北、南、西四区。",
+          "sourceIds": [
+            "official-hhl"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "单位简介"
+        },
+        {
+          "id": "yellow-crane-tower-f5",
+          "text": "黄鹤楼公园介绍将西区的游览内容集中于黄鹤楼文化，列有黄鹤楼与胜像宝塔。",
+          "sourceIds": [
+            "official-hhl"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "单位简介"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "了解黄鹤楼，可以先分清两个时间：黄鹤楼始建于公元223年，公园重建开放则在1985年6月。",
+              "claimIds": [
+                "yellow-crane-tower-f2",
+                "yellow-crane-tower-f3"
+              ]
+            },
+            {
+              "text": "地点在武汉武昌蛇山。园区分为四区，其中西区以黄鹤楼文化为主，包含主楼和胜像宝塔。",
+              "claimIds": [
+                "yellow-crane-tower-f1",
+                "yellow-crane-tower-f4",
+                "yellow-crane-tower-f5"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "建筑",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "如果你关心建筑，先把始建与重建分开看：黄鹤楼的历史始于公元223年，公园于1985年6月重建开放。",
+              "claimIds": [
+                "yellow-crane-tower-f2",
+                "yellow-crane-tower-f3"
+              ]
+            },
+            {
+              "text": "园区介绍在西区列出了黄鹤楼和胜像宝塔；这可以作为选看对象的线索，具体位置仍请核对现场导览。",
+              "claimIds": [
+                "yellow-crane-tower-f5"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "到达后先按园区导览牌确认主楼及所在分区，再观察楼体；不提供未经现场核实的转弯和步数。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "这是三国时期一直保存下来的楼吗？",
+          "answer": "不能这样说。资料分别记录始建与重建开放，二者不能混为一谈。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "yellow-crane-tower-f1",
+            "yellow-crane-tower-f2",
+            "yellow-crane-tower-f3",
+            "yellow-crane-tower-f4",
+            "yellow-crane-tower-f5"
+          ]
+        }
+      ],
+      "boundaries": [
+        "始建年代与重建开放时间分开，不称现楼是三国原楼。",
+        "官方地址不能直接当作游客入口。",
+        "同在武汉不代表三站能在半日内走完。"
+      ],
+      "gaps": [
+        "需核对游客入口、当天开放及可用观察位置。",
+        "建筑构件、材料、层数需要专门依据，不能凭照片补全。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "qingchuan-pavilion",
+      "title": "晴川阁（武汉大禹文化博物馆）",
+      "catalogType": "landmark",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "晴川阁景区总体",
+      "sourceIds": [
+        "official-qcg"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "qingchuan-pavilion-f1",
+          "text": "晴川阁位于汉阳龟山东麓的长江边，与黄鹤楼隔江相望。",
+          "sourceIds": [
+            "official-qcg"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "单位介绍"
+        },
+        {
+          "id": "qingchuan-pavilion-f2",
+          "text": "晴川阁景区于1986年10月正式开放。",
+          "sourceIds": [
+            "official-qcg"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "单位介绍"
+        },
+        {
+          "id": "qingchuan-pavilion-f3",
+          "text": "晴川阁景区主要建筑包括禹稷行宫、晴川阁和铁门关。",
+          "sourceIds": [
+            "official-qcg"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "单位介绍"
+        },
+        {
+          "id": "qingchuan-pavilion-f4",
+          "text": "晴川阁管理处于2010年8月加挂武汉大禹文化博物馆牌子。",
+          "sourceIds": [
+            "official-qcg"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "单位介绍"
+        },
+        {
+          "id": "qingchuan-pavilion-f5",
+          "text": "武汉大禹文化博物馆介绍列有《水与城——武汉治水史迹展》基本陈列。",
+          "sourceIds": [
+            "official-qcg"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "单位介绍"
+        },
+        {
+          "id": "qingchuan-pavilion-f6",
+          "text": "晴川阁景区包含古建筑与仿古建筑，不能将所有建筑视为同年代原物。",
+          "sourceIds": [
+            "official-qcg"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "单位介绍"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "晴川阁在汉阳龟山东麓的江边，与黄鹤楼隔江相望。这里的主要建筑包括禹稷行宫、晴川阁和铁门关。",
+              "claimIds": [
+                "qingchuan-pavilion-f1",
+                "qingchuan-pavilion-f3"
+              ]
+            },
+            {
+              "text": "管理处还加挂武汉大禹文化博物馆牌子，馆方介绍列有武汉治水史迹相关陈列，可以沿着水与城市的主题继续了解。",
+              "claimIds": [
+                "qingchuan-pavilion-f4",
+                "qingchuan-pavilion-f5"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "建筑",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "关注建筑时，可以分别认识禹稷行宫、晴川阁和铁门关。景区同时包含古建筑和仿古建筑，不能把它们全部当作同年代留下的原物。",
+              "claimIds": [
+                "qingchuan-pavilion-f3",
+                "qingchuan-pavilion-f6"
+              ]
+            },
+            {
+              "text": "官方介绍中的1986年10月，是景区正式开放的时间，并不是这三座建筑共同的始建年代。",
+              "claimIds": [
+                "qingchuan-pavilion-f2",
+                "qingchuan-pavilion-f3"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "根据现场标识辨认三座主要建筑，比较外观；当前材料不足以判断每一处构件的原建年代。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "这里都是1986年建的吗？",
+          "answer": "1986年10月说的是景区正式开放，不是所有建筑的始建时间。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "qingchuan-pavilion-f1",
+            "qingchuan-pavilion-f2",
+            "qingchuan-pavilion-f3",
+            "qingchuan-pavilion-f4",
+            "qingchuan-pavilion-f5",
+            "qingchuan-pavilion-f6"
+          ]
+        }
+      ],
+      "boundaries": [
+        "管理机构、景区和某栋建筑不能混为同一主体。",
+        "1986年开放不代表所有建筑始建于1986年。",
+        "大禹传说作为文化表达介绍，不自动当作已考证事件。"
+      ],
+      "gaps": [
+        "当天展览、入口与步行路径需现场或管理方复核。",
+        "不把隔江相望推导为历史传承、营造影响或直接步行可达。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "hubei-museum",
+      "title": "湖北省博物馆东湖片区",
+      "catalogType": "landmark",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "博物馆内编钟专题；不覆盖东湖片区所有设施",
+      "sourceIds": [
+        "official-bz"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "hubei-museum-f1",
+          "text": "曾侯乙编钟于1978年出土于湖北随州曾侯乙墓，属战国早期。",
+          "sourceIds": [
+            "official-bz"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "典藏／镇馆之宝／正文"
+        },
+        {
+          "id": "hubei-museum-f2",
+          "text": "曾侯乙编钟全套65件，按三层八组悬挂于曲尺形铜木钟架。",
+          "sourceIds": [
+            "official-bz"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "典藏／镇馆之宝／正文"
+        },
+        {
+          "id": "hubei-museum-f3",
+          "text": "曾侯乙编钟的钟、架和钩上铭文合计3755字，涉及编号、记事、标音和乐律理论。",
+          "sourceIds": [
+            "official-bz"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "典藏／镇馆之宝／正文"
+        },
+        {
+          "id": "hubei-museum-f4",
+          "text": "湖北省博物馆介绍指出，曾侯乙编钟每件钟可奏出呈三度音程的双音。",
+          "sourceIds": [
+            "official-bz"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "典藏／镇馆之宝／正文"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "曾侯乙编钟来自1978年发掘的湖北随州曾侯乙墓，年代属战国早期。全套65件，分三层八组悬挂在曲尺形钟架上。",
+              "claimIds": [
+                "hubei-museum-f1",
+                "hubei-museum-f2"
+              ]
+            },
+            {
+              "text": "馆方介绍，每件钟能奏出呈三度音程的两个音。理解这套乐器，可以从排列和发音特点入手。",
+              "claimIds": [
+                "hubei-museum-f4"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "碑刻",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "关注文字时，先分清铭文在哪里：馆方统计的3755字，合计来自钟、架和钩，不是单独一口钟。",
+              "claimIds": [
+                "hubei-museum-f3"
+              ]
+            },
+            {
+              "text": "这些文字涉及编号、记事、标音和乐律理论，可以把它们看作理解这套乐器的线索。具体文字请以展签和释文为准。",
+              "claimIds": [
+                "hubei-museum-f3"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "若对应展陈开放，可对照展签观察钟架的层次和排列；看不清铭文时阅读展签，不承诺可逐字辨认。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "为什么资料写随州，我们却在武汉看？",
+          "answer": "随州是出土地；本包把编钟作为湖北省博物馆的讲解对象，当日展陈还须核实。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "hubei-museum-f1",
+            "hubei-museum-f2",
+            "hubei-museum-f3",
+            "hubei-museum-f4"
+          ]
+        }
+      ],
+      "boundaries": [
+        "游览站点是湖北省博物馆，编钟是讲解对象，随州是出土地。",
+        "3755字是钟、架和钩的合计，不能写成每口钟或仅钟体字数。",
+        "不保证当天原件展出、铭文肉眼可读或有现场演奏。"
+      ],
+      "gaps": [
+        "展厅、原件展出状态、预约与当日演奏均需重新核对。",
+        "碑刻兴趣在本样本仅用于现有系统的铭文选材，不将青铜钟称为石碑。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "pengjiazhai-stilt-house",
+      "title": "恩施宣恩彭家寨",
+      "catalogType": "landmark",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "彭家寨吊脚楼群与景区总体，不落实到某户房屋",
+      "sourceIds": [
+        "peng"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "pengjiazhai-stilt-house-f1",
+          "text": "彭家寨旅游景区位于湖北恩施州宣恩县。",
+          "sourceIds": [
+            "peng"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "介绍景区位置、吊脚楼群及土家文化的段落"
+        },
+        {
+          "id": "pengjiazhai-stilt-house-f2",
+          "text": "彭家寨旅游景区以彭家寨吊脚楼群为核心，介绍主题包括建筑艺术与土家文化。",
+          "sourceIds": [
+            "peng"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "介绍景区位置、吊脚楼群及土家文化的段落"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "在彭家寨，理解这个地方可以从村落整体开始。它位于宣恩县，景区以吊脚楼群为核心，把建筑艺术与土家文化放在同一个空间中展示。",
+              "claimIds": [
+                "pengjiazhai-stilt-house-f1",
+                "pengjiazhai-stilt-house-f2"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "建筑",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "如果你喜欢看建筑，可以先关注吊脚楼群的整体关系。彭家寨的介绍以这组建筑为核心；至于某一栋的建造年代和构件做法，还需要它自己的资料。",
+              "claimIds": [
+                "pengjiazhai-stilt-house-f2"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "在允许停留的公共区域比较屋舍与地形的关系，不进入住户房屋，不从一张照片判断榫卯形式。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "每栋吊脚楼都一样古老吗？",
+          "answer": "当前资料没有逐栋年代，不能把景区中的所有建筑统一称为同年代原物。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "pengjiazhai-stilt-house-f1",
+            "pengjiazhai-stilt-house-f2"
+          ]
+        }
+      ],
+      "boundaries": [
+        "景区范围不等于全部建筑均为国保本体。",
+        "不引用2022年活动安排作为今天的演出或开放承诺。"
+      ],
+      "gaps": [
+        "补村落正式导览图、单体名称与现状照片。",
+        "入口及现有地图坐标需要管理方或地图服务复核。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "jianghanguan-museum",
+      "title": "江汉关博物馆",
+      "catalogType": "landmark",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "江汉关大楼与博物馆",
+      "sourceIds": [
+        "customs"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "jianghanguan-museum-f1",
+          "text": "江汉关设立于1862年。",
+          "sourceIds": [
+            "customs"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "大楼始建、竣工、博物馆开放段落"
+        },
+        {
+          "id": "jianghanguan-museum-f2",
+          "text": "江汉关大楼于1922年开建、1924年竣工，最初用于海关办公。",
+          "sourceIds": [
+            "customs"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "大楼始建、竣工、博物馆开放段落"
+        },
+        {
+          "id": "jianghanguan-museum-f3",
+          "text": "江汉关博物馆于2015年12月28日对外开放。",
+          "sourceIds": [
+            "customs"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "大楼始建、竣工、博物馆开放段落"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "江汉关可以从三个时间来认识：1862年设关，1924年大楼竣工，2015年博物馆开放。从海关办公楼到博物馆，这里保存着了解汉口的线索。",
+              "claimIds": [
+                "jianghanguan-museum-f1",
+                "jianghanguan-museum-f2",
+                "jianghanguan-museum-f3"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "建筑",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "看江汉关时，先区分机构和建筑：海关1862年已经设立，大楼则是1922年开建、1924年竣工。最初的办公用途，是读懂这座建筑的一个起点。",
+              "claimIds": [
+                "jianghanguan-museum-f1",
+                "jianghanguan-museum-f2"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "从公共区域观察主楼与钟楼的关系；具体构件名称以现场展签为准，不承诺实时钟声。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "1862年就是这栋楼建好的时间吗？",
+          "answer": "不是。那是设关时间；现有资料记载大楼1924年竣工。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "jianghanguan-museum-f1",
+            "jianghanguan-museum-f2",
+            "jianghanguan-museum-f3"
+          ]
+        }
+      ],
+      "boundaries": [
+        "不将报道中的相对周年数照搬到今天。"
+      ],
+      "gaps": [
+        "补最新展陈与入口信息、现场构件依据。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "gude-temple",
+      "title": "古德寺建筑群",
+      "catalogType": "landmark",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "古德寺圆通宝殿外观，不涉及宗教仪式指导",
+      "sourceIds": [
+        "gude"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "gude-temple-f1",
+          "text": "武汉市档案馆介绍，古德寺前身为1877年建立的古德茅蓬。",
+          "sourceIds": [
+            "gude"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "融会中西的建筑风格"
+        },
+        {
+          "id": "gude-temple-f2",
+          "text": "古德寺圆通宝殿主体建于1921年至1934年的改扩建阶段。",
+          "sourceIds": [
+            "gude"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "融会中西的建筑风格"
+        },
+        {
+          "id": "gude-temple-f3",
+          "text": "档案馆对圆通宝殿的介绍包括圆形花窗、尖形长窗和多元建筑风格。",
+          "sourceIds": [
+            "gude"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "融会中西的建筑风格"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "古德寺的历史与近代武汉相连。档案馆介绍，它的前身是1877年的古德茅蓬；圆通宝殿主体则来自后来1921年至1934年的改扩建。",
+              "claimIds": [
+                "gude-temple-f1",
+                "gude-temple-f2"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "建筑",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "这次可以把注意力放在圆通宝殿的窗形上：资料记载了圆形花窗与尖形长窗。多元的建筑细节值得比较，但仅凭外观，不能自行推断具体宗教含义。",
+              "claimIds": [
+                "gude-temple-f3"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "在获准参访和拍摄的范围内观察窗形与建筑轮廓，避开礼佛者和正在进行的活动。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "看到不同风格，就能认定是另一宗教的建筑吗？",
+          "answer": "不能；外观相似不等于用途、信仰或历史来源相同。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "gude-temple-f1",
+            "gude-temple-f2",
+            "gude-temple-f3"
+          ]
+        }
+      ],
+      "boundaries": [
+        "不把风格相似自动讲成有确定影响关系。"
+      ],
+      "gaps": [
+        "核对当前外观可见范围及拍摄规则。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "panlongcheng-museum",
+      "title": "盘龙城遗址博物院",
+      "catalogType": "landmark",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "遗址博物院与遗址总体",
+      "sourceIds": [
+        "panlong"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "panlongcheng-museum-f1",
+          "text": "盘龙城是位于武汉北郊的商代前期遗址，官方介绍其历史约3500年。",
+          "sourceIds": [
+            "panlong"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "遗址与文物陈列介绍"
+        },
+        {
+          "id": "panlongcheng-museum-f2",
+          "text": "盘龙城宫城区发现有大型宫殿建筑基址，遗址还有城垣、墓葬等遗存。",
+          "sourceIds": [
+            "panlong"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "遗址与文物陈列介绍"
+        },
+        {
+          "id": "panlongcheng-museum-f3",
+          "text": "盘龙城遗址出土文物包括青铜器和玉器，博物院与遗址现场承担不同展示内容。",
+          "sourceIds": [
+            "panlong"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "遗址与文物陈列介绍"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "盘龙城把武汉的城市记忆带到约3500年前的商代前期。这里既有宫殿基址、城垣等遗存，也有出土的青铜器和玉器；建筑留下的痕迹与文物可以对照着看。",
+              "claimIds": [
+                "panlongcheng-museum-f1",
+                "panlongcheng-museum-f2",
+                "panlongcheng-museum-f3"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "建筑",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "在盘龙城，值得看的不只是一件器物，也有建筑留下的基址。宫城区发现过大型宫殿基址；读现场说明时，请分清原有遗存、保护展示和复原示意。",
+              "claimIds": [
+                "panlongcheng-museum-f2"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "按开放游线阅读基址说明和展签，不将复原模型当作完整保存的商代建筑。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "为什么遗址看起来不像完整宫殿？",
+          "answer": "这里的关键对象是建筑基址等遗存；完整外观往往需要通过复原展示理解。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "panlongcheng-museum-f1",
+            "panlongcheng-museum-f2",
+            "panlongcheng-museum-f3"
+          ]
+        }
+      ],
+      "boundaries": [
+        "不把约3500年写成精确建成年份。"
+      ],
+      "gaps": [
+        "核对当日开放的遗址区段及复原设施说明。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "xinhai-revolution-museum",
+      "title": "辛亥革命博物院",
+      "catalogType": "landmark",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "辛亥革命博物院南北两区，具体入口未核验",
+      "sourceIds": [
+        "xinhai"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "xinhai-revolution-museum-f1",
+          "text": "辛亥革命博物院于2022年3月由原纪念馆与原博物馆整合组建。",
+          "sourceIds": [
+            "xinhai"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "组建、分区、基本陈列与开放时间"
+        },
+        {
+          "id": "xinhai-revolution-museum-f2",
+          "text": "辛亥革命博物院分南、北两区。",
+          "sourceIds": [
+            "xinhai"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "组建、分区、基本陈列与开放时间"
+        },
+        {
+          "id": "xinhai-revolution-museum-f3",
+          "text": "官方介绍列有鄂军都督府旧址复原陈列和辛亥革命武昌起义史迹陈列等展览。",
+          "sourceIds": [
+            "xinhai"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "组建、分区、基本陈列与开放时间"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "辛亥革命博物院由原纪念馆与原博物馆在2022年整合组建，分南北两区。了解武昌起义，可以从旧址复原陈列和史迹陈列这两类内容入手。",
+              "claimIds": [
+                "xinhai-revolution-museum-f1",
+                "xinhai-revolution-museum-f2",
+                "xinhai-revolution-museum-f3"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "历史",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "看旧址复原陈列时，可以先了解它要呈现什么历史空间，再与武昌起义史迹陈列中的材料对照。复原场景是帮助理解的展示方式，不等于每一件陈设都是原物。",
+              "claimIds": [
+                "xinhai-revolution-museum-f3"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "先确认所在区和展览名称；区分原件、复制件与场景复原，按展签记录。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "是不是南北区每天同时开放？",
+          "answer": "不能这样安排。官方介绍给出的闭馆日不同，出行当天仍须分别查询。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "xinhai-revolution-museum-f1",
+            "xinhai-revolution-museum-f2",
+            "xinhai-revolution-museum-f3"
+          ]
+        }
+      ],
+      "boundaries": [
+        "2022年是机构组建时间，不是武昌起义或所有建筑年代。"
+      ],
+      "gaps": [
+        "官方常规安排：南区周一闭馆、北区周二闭馆；节假日及特殊调整另核对。",
+        "必须区分两区入口，不能用同一个地图点概括。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "wuhan-museum",
+      "title": "武汉博物馆",
+      "catalogType": "landmark",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "武汉博物馆，不是湖北省博物馆",
+      "sourceIds": [
+        "whmuseum"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "wuhan-museum-f1",
+          "text": "武汉博物馆位于江汉区青年路373号。",
+          "sourceIds": [
+            "whmuseum"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "文物藏品、陈列展览"
+        },
+        {
+          "id": "wuhan-museum-f2",
+          "text": "武汉博物馆的馆藏类别包括陶瓷、青铜器、书画与玉器等。",
+          "sourceIds": [
+            "whmuseum"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "文物藏品、陈列展览"
+        },
+        {
+          "id": "wuhan-museum-f3",
+          "text": "武汉博物馆介绍列有武汉古代历史基本陈列与馆藏古代陶瓷专题陈列。",
+          "sourceIds": [
+            "whmuseum"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "文物藏品、陈列展览"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "这站是武汉博物馆，位于青年路，别与湖北省博物馆混淆。馆方介绍中有武汉古代历史基本陈列，也有陶瓷专题陈列，适合从城市历史走进具体器物。",
+              "claimIds": [
+                "wuhan-museum-f1",
+                "wuhan-museum-f3"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "器物",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "喜欢器物的话，可以先从陶瓷专题陈列入手。馆藏还包括青铜器、书画与玉器；看展时对照名称、年代和用途，比只记住一件珍品更容易建立线索。",
+              "claimIds": [
+                "wuhan-museum-f2",
+                "wuhan-museum-f3"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "选一件实际展出的器物，阅读名称、年代和来源；不保证某件馆藏当天出展。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "看曾侯乙编钟也来这里吗？",
+          "answer": "不能把武汉博物馆与湖北省博物馆混为一处；应核对目标文物对应场馆及展出安排。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "wuhan-museum-f1",
+            "wuhan-museum-f2",
+            "wuhan-museum-f3"
+          ]
+        }
+      ],
+      "boundaries": [
+        "官方介绍的常规闭馆日为周二，不套用其他博物馆的周一规则。"
+      ],
+      "gaps": [
+        "确认最新展陈、门票领取或预约与当日闭馆安排。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "mingxianling",
+      "title": "钟祥明显陵",
+      "catalogType": "landmark",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "明显陵整体历史与布局，不提供墓室参观路线",
+      "sourceIds": [
+        "ming"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "mingxianling-f1",
+          "text": "明显陵位于湖北钟祥，是明世宗嘉靖皇帝父母的合葬陵。",
+          "sourceIds": [
+            "ming"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "陵主与布局介绍"
+        },
+        {
+          "id": "mingxianling-f2",
+          "text": "陵区利用山地地形布局，相关介绍列有下马碑、石像生、明楼和宝城等组成部分。",
+          "sourceIds": [
+            "ming"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "陵主与布局介绍"
+        },
+        {
+          "id": "mingxianling-f3",
+          "text": "明显陵于2000年列入世界文化遗产名录。",
+          "sourceIds": [
+            "ming"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "陵主与布局介绍"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "在钟祥看明显陵，先记住陵主：这里是嘉靖皇帝父母的合葬陵，不是嘉靖自己的陵墓。",
+              "claimIds": [
+                "mingxianling-f1"
+              ]
+            },
+            {
+              "text": "它于2000年列入世界文化遗产名录。认识这处遗产，可以从陵主身份和建筑布局两条线索入手。",
+              "claimIds": [
+                "mingxianling-f1",
+                "mingxianling-f3"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "建筑",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "明显陵的建筑利用山地地形组织布局。官方介绍列出下马碑、石像生、明楼和宝城等组成部分。",
+              "claimIds": [
+                "mingxianling-f2"
+              ]
+            },
+            {
+              "text": "看建筑时，可以先对照现场导览图辨认这些名称，再理解它们在陵区中的位置；实际开放范围以现场说明为准。",
+              "claimIds": [
+                "mingxianling-f2"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "对照导览牌辨认石像生、明楼等对象；不进入未开放区域，也不把名录中的所有建筑都当作可入内参观。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "这是嘉靖皇帝本人的陵墓吗？",
+          "answer": "不是。官方介绍明确为嘉靖皇帝父母的合葬陵。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "mingxianling-f1",
+            "mingxianling-f2",
+            "mingxianling-f3"
+          ]
+        }
+      ],
+      "boundaries": [
+        "不把两座地宫写成可进入的游览项目。",
+        "不按种子坐标推导游客入口。"
+      ],
+      "gaps": [
+        "需核对入口、当日开放范围及可观察对象。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "chibi-ancient-battlefield",
+      "title": "赤壁古战场摩崖题刻",
+      "catalogType": "landmark",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "赤壁景区中有公开文字依据的题刻与地点名称；材料较薄，只做短介绍",
+      "sourceIds": [
+        "chibi"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "chibi-ancient-battlefield-f1",
+          "text": "咸宁市自然资源和规划局的参访文章提到崖壁上的“赤壁”二字。",
+          "sourceIds": [
+            "chibi"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "参访地点介绍"
+        },
+        {
+          "id": "chibi-ancient-battlefield-f2",
+          "text": "该文章还提到拜风台、凤雏庵与翼江亭等参访地点。",
+          "sourceIds": [
+            "chibi"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "参访地点介绍"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "来到赤壁，可以先把注意力放在可辨认的题刻上。咸宁官方发布的参访文章提到崖壁上的“赤壁”二字，也提到拜风台、凤雏庵和翼江亭。",
+              "claimIds": [
+                "chibi-ancient-battlefield-f1",
+                "chibi-ancient-battlefield-f2"
+              ]
+            },
+            {
+              "text": "这些是查找现场对象的线索；具体位置和开放区域，请以景区导览为准。",
+              "claimIds": [
+                "chibi-ancient-battlefield-f1",
+                "chibi-ancient-battlefield-f2"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "碑刻",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "如果关注碑刻，这一站先看“赤壁”二字。现有官方参访材料能够支持这处题刻的存在，却不足以在本稿中确认刻字年代或题写者。",
+              "claimIds": [
+                "chibi-ancient-battlefield-f1"
+              ]
+            },
+            {
+              "text": "因此讲解先停留在对象识别；关于书写者和形成时间，还需要专门的题刻说明或文物研究资料。",
+              "claimIds": [
+                "chibi-ancient-battlefield-f1"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "只在允许通行的观景区域辨认题刻，查看有无题刻说明牌；不沿崖寻找拍摄位置。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "“赤壁”二字一定是周瑜题写的吗？",
+          "answer": "本轮读到的材料不足以确认题写者，暂不采用这一说法。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "chibi-ancient-battlefield-f1",
+            "chibi-ancient-battlefield-f2"
+          ]
+        }
+      ],
+      "boundaries": [
+        "不把历史故事或题写者传说当作经核实的事实。",
+        "不把现存景区设施都写成三国原物。"
+      ],
+      "gaps": [
+        "需补充题刻专门资料，确认年代、题写者及保护说明。",
+        "当前只能形成短介绍，尚不足支撑一分钟深入讲解。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "guqintai-public",
+      "title": "古琴台 · 月湖知音线索",
+      "catalogType": "map_exploration",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "古琴台名称与知音文化展陈",
+      "sourceIds": [
+        "qintai"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "guqintai-public-f1",
+          "text": "古琴台又称伯牙台，官方报道记载其始建于北宋，并曾于清嘉庆元年重建。",
+          "sourceIds": [
+            "qintai"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "伯牙台名称与修缮后展陈"
+        },
+        {
+          "id": "guqintai-public-f2",
+          "text": "2024年的官方转载报道介绍了修缮后的知音文化和古琴文化展陈。",
+          "sourceIds": [
+            "qintai"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "伯牙台名称与修缮后展陈"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "古琴台又称伯牙台，官方报道把它的始建追溯到北宋，也记录了清嘉庆元年的重建。",
+              "claimIds": [
+                "guqintai-public-f1"
+              ]
+            },
+            {
+              "text": "2024年的修缮报道介绍了知音文化与古琴文化展陈。游览时，可以把建筑历史和这里讲述的知音主题分开了解。",
+              "claimIds": [
+                "guqintai-public-f1",
+                "guqintai-public-f2"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "地方故事",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "如果你对知音故事感兴趣，可以先从古琴台的另一个名字——伯牙台——进入。这里的修缮报道介绍了知音文化和古琴文化展陈。",
+              "claimIds": [
+                "guqintai-public-f1",
+                "guqintai-public-f2"
+              ]
+            },
+            {
+              "text": "展陈提供理解故事的入口，但讲述传统与确认故事具体发生位置，是两件需要区分的事。",
+              "claimIds": [
+                "guqintai-public-f2"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "如展陈开放，可核对知音文化与古琴文化的展板；不预告固定演出或指导用户触碰乐器。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "知音故事能证明这里就是故事发生的准确位置吗？",
+          "answer": "本轮资料支持名称和展陈主题，不能据此断言传说发生的准确位置。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "guqintai-public-f1",
+            "guqintai-public-f2"
+          ]
+        }
+      ],
+      "boundaries": [
+        "保留传说与可考历史的区别。",
+        "2024年报道不等同于当日展览或演出安排。"
+      ],
+      "gaps": [
+        "需核对当前开放与展陈安排。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "wuhan-art-hankou-exterior",
+      "title": "武汉美术馆 · 汉口馆外观",
+      "catalogType": "map_exploration",
+      "status": "draft_ready",
+      "statusMeaning": "已有出处的待审核讲解",
+      "scope": "武汉美术馆汉口馆建筑背景；不推荐入馆",
+      "sourceIds": [
+        "art",
+        "art-closure"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "wuhan-art-hankou-exterior-f1",
+          "text": "武汉美术馆汉口馆位于保华街2号，其建筑前身为建于1930年的汉口金城银行大楼。",
+          "sourceIds": [
+            "art"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "汉口馆建筑介绍"
+        },
+        {
+          "id": "wuhan-art-hankou-exterior-f2",
+          "text": "官方介绍将该建筑风格归为欧洲古典复兴风格，设计者为庄俊。",
+          "sourceIds": [
+            "art"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "汉口馆建筑介绍"
+        },
+        {
+          "id": "wuhan-art-hankou-exterior-f3",
+          "text": "2026年8月29日官方公告武汉美术馆汉口馆、琴台馆闭馆，恢复时间另行通知。",
+          "sourceIds": [
+            "art-closure"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "闭馆公告"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "通用",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "武汉美术馆汉口馆的建筑，前身是1930年的汉口金城银行大楼。它的历史身份为理解今天的美术馆提供了另一条线索。",
+              "claimIds": [
+                "wuhan-art-hankou-exterior-f1"
+              ]
+            },
+            {
+              "text": "这一版先介绍建筑背景，不承诺入馆。馆方曾发布闭馆公告，出发前仍需核对最新通知。",
+              "claimIds": [
+                "wuhan-art-hankou-exterior-f3"
+              ]
+            }
+          ]
+        },
+        {
+          "interest": "建筑",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "关注建筑时，可以先记住两个线索：汉口金城银行大楼的历史身份，以及官方介绍中的欧洲古典复兴风格。该建筑由庄俊设计。",
+              "claimIds": [
+                "wuhan-art-hankou-exterior-f1",
+                "wuhan-art-hankou-exterior-f2"
+              ]
+            },
+            {
+              "text": "这些信息帮助我们选择观察重点；具体构件与可接近位置，仍需以现场说明和管理要求为准。",
+              "claimIds": [
+                "wuhan-art-hankou-exterior-f2"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "仅在允许通行的公共区域观察外观，不跨越围挡；没有现场核实，不指定站位。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "现在能直接进去看展吗？",
+          "answer": "不能由本资料包确认。2026年8月29日官方公告两馆闭馆，本轮尚未找到恢复开放的官方通知，请另查当日安排。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "wuhan-art-hankou-exterior-f3"
+          ]
+        }
+      ],
+      "boundaries": [
+        "汉口馆和琴台馆的建筑介绍不能混用。",
+        "不沿用来源中关于两馆相对地理位置的笼统表述。",
+        "闭馆公告不能推导外部公共空间一定可以通行。"
+      ],
+      "gaps": [
+        "需补充恢复开放公告与当前展览信息。"
+      ],
+      "visit": {
+        "status": "needs_reopening_confirmation",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本轮未找到恢复开放的官方公告；保留闭馆提醒，不作可入馆推荐。",
+        "closureSourceId": "art-closure"
+      }
+    },
+    {
+      "id": "wudang-stone-niche",
+      "title": "武当山道家石龛",
+      "catalogType": "landmark",
+      "status": "background_only",
+      "statusMeaning": "仅有背景，点位范围待核实",
+      "scope": "仅武当山古建筑群背景，不能代替具体石龛介绍",
+      "sourceIds": [
+        "wudang"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "wudang-stone-niche-f1",
+          "text": "武当山古建筑群位于湖北十堰，1994年列入世界文化遗产名录。",
+          "sourceIds": [
+            "wudang"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "古建筑群所在地与列入遗产名录"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "区域背景",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "武当山古建筑群位于湖北十堰，于1994年列入世界文化遗产名录。",
+              "claimIds": [
+                "wudang-stone-niche-f1"
+              ]
+            },
+            {
+              "text": "这段资料只介绍古建筑群，不能据此确认地图所称“道家石龛”的身份、年代或具体位置。",
+              "claimIds": [
+                "wudang-stone-niche-f1"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "后续先取得石龛正面、周边环境和说明牌资料，再决定可以指引用户看什么。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "可以先把武当山的历史当成这个石龛的讲解吗？",
+          "answer": "不可以。区域背景不等于这件具体实物的经历。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "wudang-stone-niche-f1"
+          ]
+        }
+      ],
+      "boundaries": [
+        "不得给石龛补写年代、人物或宗教用途。"
+      ],
+      "gaps": [
+        "需要石龛的准确名称、所在建筑、说明牌或可核对资料。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "three-gorges-dam",
+      "title": "宜昌三峡坝区文化节点",
+      "catalogType": "landmark",
+      "status": "background_only",
+      "statusMeaning": "仅有背景，点位范围待核实",
+      "scope": "三峡大坝研学区域背景，尚未绑定具体文化节点",
+      "sourceIds": [
+        "dam"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "three-gorges-dam-f1",
+          "text": "官方研学基地介绍列有坛子岭、185平台、截流纪念园等室外场地。",
+          "sourceIds": [
+            "dam"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "室内外场地与研学主题"
+        },
+        {
+          "id": "three-gorges-dam-f2",
+          "text": "同一介绍列有三峡工程展览馆、三峡工程博物馆等室内场地。",
+          "sourceIds": [
+            "dam"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "室内外场地与研学主题"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "区域背景",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "三峡大坝研学基地的官方介绍，同时列出了室外场地和室内展陈：如坛子岭、185平台，以及三峡工程展览馆和博物馆。",
+              "claimIds": [
+                "three-gorges-dam-f1",
+                "three-gorges-dam-f2"
+              ]
+            },
+            {
+              "text": "它们提供不同的理解入口，但地图中的“坝区文化节点”仍需明确对应哪一处，才能写成具体的一站。",
+              "claimIds": [
+                "three-gorges-dam-f1",
+                "three-gorges-dam-f2"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "先确认选择的是哪个场地，再核对其预约和开放条件；不要把坝区名称视为进入工程设施的许可。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "地图上这个点等于整个坝区都能走吗？",
+          "answer": "不等于。现有点位名称范围宽泛，各场地需要分别核对。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "three-gorges-dam-f1",
+            "three-gorges-dam-f2"
+          ]
+        }
+      ],
+      "boundaries": [
+        "不推导生产设施开放或内部通行权限。",
+        "不补写未核对的工程数值与交通时长。"
+      ],
+      "gaps": [
+        "需要明确节点名称、游客入口与真实参观范围。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "shennongjia-muyu",
+      "title": "神农架木鱼镇民俗点",
+      "catalogType": "landmark",
+      "status": "background_only",
+      "statusMeaning": "仅有背景，点位范围待核实",
+      "scope": "木鱼镇旅游集散背景，未确认具体民俗点",
+      "sourceIds": [
+        "muyu"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "shennongjia-muyu-f1",
+          "text": "官方介绍将木鱼旅游度假区定位为神农架重要的旅游集散区域。",
+          "sourceIds": [
+            "muyu"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "木鱼旅游度假区位置与集散功能"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "区域背景",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "了解木鱼，可以先从它在神农架游览中的集散作用入手，官方介绍也强调了这一功能。",
+              "claimIds": [
+                "shennongjia-muyu-f1"
+              ]
+            },
+            {
+              "text": "但“木鱼镇民俗点”还不是足够具体的地点名称，当前资料无法支持某一处民俗场所的专属讲解。",
+              "claimIds": [
+                "shennongjia-muyu-f1"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "后续补充具体场所名称和展示内容，优先核对现场牌示，不把镇域名称写成已确认的民俗展示场所。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "现在能讲某个具体民俗或神农传说吗？",
+          "answer": "这批资料还不足以绑定具体场所；补齐来源后才能区分历史、民俗与传说。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "shennongjia-muyu-f1"
+          ]
+        }
+      ],
+      "boundaries": [
+        "不把地域传说写成科学或历史结论。"
+      ],
+      "gaps": [
+        "需明确具体民俗点、其管理方及公开说明。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "guiyuan-gate-public",
+      "title": "归元禅寺 · 一门建筑线索",
+      "catalogType": "map_exploration",
+      "status": "background_only",
+      "statusMeaning": "仅有背景，点位范围待核实",
+      "scope": "归元禅寺背景；“一门建筑线索”尚未确认具体门体",
+      "sourceIds": [
+        "guiyuan"
+      ],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [
+        {
+          "id": "guiyuan-gate-public-f1",
+          "text": "汉阳区官方转载资料记载归元禅寺始建于1658年。",
+          "sourceIds": [
+            "guiyuan"
+          ],
+          "reviewStatus": "needs_human_review",
+          "locatorHint": "归元禅寺始建、山门及庙会的段落"
+        }
+      ],
+      "narrations": [
+        {
+          "interest": "区域背景",
+          "authorship": "assistant_written_not_provider_trial",
+          "reviewStatus": "needs_human_review",
+          "sentences": [
+            {
+              "text": "归元禅寺的官方转载资料记载，它始建于1658年。这个年代可以帮助理解寺院的历史背景。",
+              "claimIds": [
+                "guiyuan-gate-public-f1"
+              ]
+            },
+            {
+              "text": "地图中的“一门建筑线索”尚未对应到经核实的门体，因此不能把寺院始建年代直接当作眼前这座门的建造年代。",
+              "claimIds": [
+                "guiyuan-gate-public-f1"
+              ]
+            }
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "text": "先辨认门体名称与说明牌，再补充建筑描述；遵守场所参观和拍摄要求。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "寺院的始建时间就是这座门的建造时间吗？",
+          "answer": "不一定。寺院与具体门体需要分别核对。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": [
+            "guiyuan-gate-public-f1"
+          ]
+        }
+      ],
+      "boundaries": [
+        "不将节庆报道中的限时安排作为日常规则。",
+        "不把祈福或传说效果写成事实承诺。"
+      ],
+      "gaps": [
+        "需确认门体身份、建造修缮资料及现场可见特征。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "suizhou-window-carving",
+      "title": "濒危守护热点 · 随州窗花",
+      "catalogType": "hotspot",
+      "status": "identity_unresolved",
+      "statusMeaning": "具体对象未确认",
+      "scope": "随州窗花征集主题，暂不能绑定具体实物",
+      "sourceIds": [],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [],
+      "narrations": [],
+      "observations": [
+        {
+          "text": "需要先明确这里指剪纸窗花还是建筑窗饰，并取得实物或说明牌资料。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "为什么这次没有直接写历史讲解？",
+          "answer": "名称同时可能指向剪纸或建筑装饰，当前没有足以确认对象的官方资料；不能选一种猜写。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": []
+        }
+      ],
+      "boundaries": [
+        "不从“濒危守护热点”标签推断已经认定的濒危等级。",
+        "不将搜索不到等同于实物不存在。"
+      ],
+      "gaps": [
+        "需明确对象类型、位置、照片与可公开出处。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    },
+    {
+      "id": "zenghou-archway",
+      "title": "曾侯遗韵牌楼",
+      "catalogType": "landmark",
+      "status": "identity_unresolved",
+      "statusMeaning": "具体对象未确认",
+      "scope": "“曾侯遗韵牌楼”名称未能对应到可核对的具体实物",
+      "sourceIds": [],
+      "identityReview": "needs_human_review",
+      "coordinateReview": "not_verified_as_entrance",
+      "productionWrites": false,
+      "publishAllowed": false,
+      "aiAnalysisConsent": false,
+      "rewardsEnabled": false,
+      "claims": [],
+      "narrations": [],
+      "observations": [
+        {
+          "text": "先确认牌楼的正式名称、所在地点与说明牌，再判断是否有可讲述内容。",
+          "kind": "editorial_advice",
+          "onSiteVerified": false,
+          "preciseDirectionsAllowed": false
+        }
+      ],
+      "qa": [
+        {
+          "question": "可以直接套用曾侯乙或编钟的历史吗？",
+          "answer": "不可以。名称中有“曾侯”不能证明这座牌楼与曾侯乙存在已确认的历史联系。",
+          "kind": "editorial_answer_needs_review",
+          "claimIds": []
+        }
+      ],
+      "boundaries": [
+        "不将牌楼推断为曾国时期遗存。",
+        "不因名称相似自动建立与曾侯乙墓或编钟的关系。"
+      ],
+      "gaps": [
+        "需提供正式名称或可识别位置，再查对应文保或管理方资料。"
+      ],
+      "visit": {
+        "status": "needs_current_verification",
+        "routeEligible": false,
+        "openingHours": null,
+        "ticketPrice": null,
+        "entrance": null,
+        "reason": "本包只整理内容；任何点位均未在本轮做真实道路、入口与当天开放核验。"
+      }
+    }
+  ],
+  "searchNotes": [
+    {
+      "scope": "曾侯遗韵牌楼、随州窗花、武当山道家石龛",
+      "result": "本轮精确名称与官方站点检索未得到足以确认具体对象的材料；不等于这些对象不存在。"
+    },
+    {
+      "scope": "武汉美术馆",
+      "result": "找到2026年8月29日闭馆公告；本轮未找到恢复公告，保持不作入馆推荐。"
+    }
+  ],
+  "retrievalFailures": [
+    {
+      "url": "https://www.hbda.gov.cn/info/535.jspx",
+      "result": "403，未采用为事实依据"
+    },
+    {
+      "url": "https://www.gov.cn/guoqing/2014-07/21/dqpqgzdwwbhdwmd.pdf",
+      "result": "读取失败，未依据搜索摘要确认题刻年代"
+    },
+    {
+      "url": "https://wlt.hubei.gov.cn/bmdt/dtyw/202210/t20221012_4342435.shtml",
+      "result": "读取超时，未作为已读来源"
+    },
+    {
+      "url": "https://www.hanyang.gov.cn/mlhy/fjms/",
+      "result": "未取得有效正文；改查另一篇可读官方转载"
+    }
+  ]
+}
