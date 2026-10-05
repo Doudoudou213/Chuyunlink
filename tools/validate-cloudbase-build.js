@@ -276,6 +276,10 @@ const guideFiles = [
   'cloudfunctions/appCore/lib/official-source-registry.js',
   'cloudfunctions/appCore/lib/guide-official-evidence.js',
   "static/admin-guide-trial.js",
+  "static/admin-guide-packs.js",
+  "cloudfunctions/adminSubmissions/domains/guide-packs.js",
+  "cloudfunctions/adminSubmissions/data/guide-pack.v1.json",
+  ...["appCore","adminSubmissions","storyWorker"].map(f=>"cloudfunctions/"+f+"/lib/guide-pack-evidence.js"),
   "cloudfunctions/storyWorker/lib/guide-trial-budget.js",
   "cloudfunctions/storyWorker/lib/guide-diagnostics.js",
   "cloudfunctions/appCore/lib/visit-engine.js",
@@ -292,8 +296,8 @@ for (const file of guideFiles) { if (!requiredFiles.includes(file)) requiredFile
 for (const file of ["visit-engine.js","visit-route.js"]) { if (fs.readFileSync(path.join(projectRoot,"static",file),"utf8") !== fs.readFileSync(path.join(projectRoot,"cloudfunctions/appCore/lib",file),"utf8")) throw Error("向导规则副本不同步: "+file); }
 if (fs.readFileSync(path.join(projectRoot,"cloudfunctions/appCore/lib/guide-evidence.js"),"utf8") !== fs.readFileSync(path.join(projectRoot,"cloudfunctions/adminSubmissions/lib/guide-evidence.js"),"utf8")) throw Error("讲解来源检查副本不同步");
 for (const file of guideFiles.filter(f=>f.startsWith("static/")||f==="guide.html")) { if (!fs.readFileSync(path.join(projectRoot,"tools/deploy-cloudbase.ps1"),"utf8").includes("'"+path.basename(file)+"'")) throw Error("发布文件清单缺少："+file); }
-for (const name of ['guide-content-plan.js','guide-grounding.js','guide-source-context.js','guide-generation-evidence.js','guide-contract.js','guide-evidence.js']) {if(fs.readFileSync(path.join(projectRoot,'cloudfunctions/storyWorker/lib',name),'utf8')!==fs.readFileSync(path.join(projectRoot,'cloudfunctions/adminSubmissions/lib',name),'utf8'))throw Error('讲解智能体共享副本不同步：'+name);}
-for(const name of ['guide-official-evidence.js','official-source-registry.js']){if(read('cloudfunctions/appCore/lib/'+name)!==read('cloudfunctions/adminSubmissions/lib/'+name))throw Error('官网来源公开读取副本不同步：'+name);}
+for (const name of ['guide-content-plan.js','guide-grounding.js','guide-source-context.js','guide-generation-evidence.js','guide-contract.js','guide-evidence.js','guide-pack-evidence.js']) {if(fs.readFileSync(path.join(projectRoot,'cloudfunctions/storyWorker/lib',name),'utf8')!==fs.readFileSync(path.join(projectRoot,'cloudfunctions/adminSubmissions/lib',name),'utf8'))throw Error('讲解智能体共享副本不同步：'+name);}
+for(const name of ['guide-official-evidence.js','official-source-registry.js','guide-pack-evidence.js']){if(read('cloudfunctions/appCore/lib/'+name)!==read('cloudfunctions/adminSubmissions/lib/'+name))throw Error('官网来源公开读取副本不同步：'+name);}
 for(const name of ['guide-grounding.js','guide-source-context.js','guide-contract.js']){if(read('cloudfunctions/appCore/lib/'+name)!==read('cloudfunctions/storyWorker/lib/'+name))throw Error('讲解公开读取副本不同步：'+name);}
 for(const name of ['content-effect-contract.js','content-effect-store.js']){if(fs.readFileSync(path.join(projectRoot,'cloudfunctions/appCore/lib',name),'utf8')!==fs.readFileSync(path.join(projectRoot,'cloudfunctions/adminSubmissions/lib',name),'utf8'))throw Error('内容效果规则副本不同步：'+name);}
 const forbiddenPatterns = [

@@ -25,7 +25,9 @@ const scripts = [
   'test-map-panel-exclusion.js',
   'test-paper-material.js',
   'test-badge-catalog.js',
-  'check-guide-content-pack.js'
+  'check-guide-content-pack.js',
+  'check-all-point-guide-packs.js',
+  'test-guide-pack-import.js'
 ];
 for (const script of scripts) {
   const result = spawnSync(process.execPath, [path.join(__dirname, script)], { stdio: 'inherit' });
