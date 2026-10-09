@@ -2023,6 +2023,16 @@ exports.main = async (event = {}) => {
     if (action === 'getGuideRoute') return await require('./domains/guide-route').createGuideRouteService({db}).get(event);
     if (action === 'getGuideAudio') return await require('./domains/cultural-guide').createCulturalGuideService({db}).audio(event);
     if (action === 'getGuideStation') return await require('./domains/cultural-guide').createCulturalGuideService({db}).station(event);
+    if (['getGuideQuestionContext','askGuideQuestion'].includes(action)) {
+      try {
+        if(action==='askGuideQuestion')requireStableAccount(userInfo);
+        const qa=require('./domains/guide-questions').createGuideQuestionService({db});
+        return await (action==='askGuideQuestion'?qa.ask(event,uid):qa.context(event));
+      } catch(e) {
+        const messages={QA_SOURCE:'资料状态已变化，请重新打开后再问',QA_INPUT:'请选择地点并用400字以内描述问题',QA_LIMIT:'问答额度暂时用完了，已有介绍仍可阅读',QA_BUSY:'上一条问题仍在处理中，请稍后再试',QA_DUPLICATE:'问题已提交，请稍后重新提问',QA_REQUEST_CHANGED:'问题状态已变化，请重新发送',STABLE_ACCOUNT_REQUIRED:'请登录后使用问答',UNAUTHENTICATED:'请登录后使用问答'};
+        return {ok:false,error:{code:messages[e.code]?e.code:'QA_UNAVAILABLE',message:messages[e.code]||'问答暂不可用，请稍后再试'}};
+      }
+    }
     if (action === 'getResources') return await resourceService.list(event);
     if (action === 'getResourceDetail') return await resourceService.detail(event);
     if (action === 'searchResources') return await resourceService.search(event);
