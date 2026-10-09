@@ -11,7 +11,7 @@ function createGuideQuestionService({db,config=configFromEnv(),client=createClie
  if(!caches.has(db))caches.set(db,new Map());
  const cache=caches.get(db);
  const permitted=id=>config.mode==='real'&&config.pilotIds.includes(id)&&config.model&&config.apiKey;
- async function context(event){const c=await loadEvidence(db,event.resourceId);return {ok:true,resourceId:c.resourceId,title:c.title,fingerprint:c.fingerprint,ready:Boolean(permitted(c.resourceId)&&c.pieces.length),reason:!c.pieces.length?'insufficient':'off',introduction:c.pieces.slice(0,3).map(p=>p.text).join(''),sources:c.sources};}
+ async function context(event){const c=await loadEvidence(db,event.resourceId),ready=Boolean(permitted(c.resourceId)&&c.pieces.length&&config.budgetCny>0&&config.inputPrice>0&&config.outputPrice>0&&config.dailyRequests>0&&config.userDailyRequests>0);return {ok:true,resourceId:c.resourceId,title:c.title,fingerprint:c.fingerprint,ready,reason:ready?'ready':!c.pieces.length?'insufficient':'off',introduction:c.pieces.slice(0,3).map(p=>p.text).join(''),sources:c.sources};}
  async function ask(event,uid) {
   if(!uid)fail('UNAUTHENTICATED','请登录后提问');
   const e=input(event);let c=await loadEvidence(db,e.resourceId);
@@ -36,20 +36,20 @@ function createGuideQuestionService({db,config=configFromEnv(),client=createClie
    if(actor.lockUntil>at)fail('QA_BUSY','上一条问题还在处理中');
    if((budget.reservedMicros||0)+reserve>Math.floor(config.budgetCny*1e6)||(daily.requests||0)>=config.dailyRequests||(actor.requests||0)>=config.userDailyRequests)fail('QA_LIMIT','今天的问答额度暂时用完了');
    await tx.collection(COLLECTION).doc(budgetId).set({...budget,reservedMicros:(budget.reservedMicros||0)+reserve});
-   await tx.collection(COLLECTION).doc(dailyId).set({...daily,requests:(daily.requests||0)+1});
+   await tx.collection(COLLECTION).doc(dailyId).set({...daily,requests:(daily.requests||0)+1,expiresAt:at+86400000*7});
    await tx.collection(COLLECTION).doc(actorId).set({requests:(actor.requests||0)+1,lockUntil:at+60000,token,expiresAt:at+86400000*2});
    await tx.collection(COLLECTION).doc(requestKey).set({signature,status:'processing',token,startedAt:at,expiresAt:at+86400000*7,version});
   });
   async function fresh(){const latest=await loadEvidence(db,e.resourceId);if(latest.fingerprint!==c.fingerprint)fail('QA_SOURCE','来源已变化');if(clock()-at>55000)fail('QA_TIMEOUT','问答已超时');return latest;}
-  let outcome='failed',usage=[],answer;
+  let outcome='failed',usage=[],answer,calls=0;
   try {
    await fresh();
    const payload={resource:c.title,question:e.question,previousQuestions:e.history,evidence:c.pieces,sources:c.sources.map(({id,excerpt})=>({id,excerpt}))};
-   const draft=await client.run('answer',payload);usage.push(draft.usage);
+   calls++;const draft=await client.run('answer',payload);usage.push(draft.usage);
    const checked=checkAnswer(draft.output,c);
    if(checked.outcome==='insufficient'){await fresh();outcome='insufficient';return staticReply('insufficient',c);}
    await fresh();
-   const verified=await client.run('verify',{...payload,answer:checked.sentences});usage.push(verified.usage);
+   calls++;const verified=await client.run('verify',{...payload,answer:checked.sentences});usage.push(verified.usage);
    checkVerification(verified.output,checked);c=await fresh();
    const used=new Set(checked.sentences.flatMap(s=>s.pieceIds).flatMap(id=>c.pieces.find(p=>p.id===id).sourceIds));
    answer={ok:true,outcome:'answer',resourceId:c.resourceId,title:c.title,fingerprint:c.fingerprint,text:checked.sentences.map(s=>s.text).join('\n'),sentences:checked.sentences.map(s=>({text:s.text,sourceIds:[...new Set(s.pieceIds.flatMap(id=>c.pieces.find(p=>p.id===id).sourceIds))]})),sources:c.sources.filter(s=>used.has(s.id)),aiGenerated:true,version};
@@ -60,8 +60,8 @@ function createGuideQuestionService({db,config=configFromEnv(),client=createClie
    await db.runTransaction(async tx=>{
     const row=await read(tx,COLLECTION,requestKey),actor=await read(tx,COLLECTION,actorId);
     if(row?.token!==token)fail('QA_REQUEST_CHANGED','请求状态已变化');
-    const known=usage.length>0&&usage.every(u=>u&&Number.isSafeInteger(u.prompt_tokens)&&u.prompt_tokens>=0&&u.prompt_tokens<=64000&&Number.isSafeInteger(u.completion_tokens)&&u.completion_tokens>=0&&u.completion_tokens<=1000);
-    await tx.collection(COLLECTION).doc(requestKey).update({status:outcome,elapsedMs:clock()-at,calls:usage.length,usageKnown:known,estimatedMicros:known?Math.ceil(usage.reduce((n,u)=>n+u.prompt_tokens*config.inputPrice+u.completion_tokens*config.outputPrice,0)):null,reservedMicros:reserve});
+    const known=usage.length===calls&&calls>0&&usage.every(u=>u&&Number.isSafeInteger(u.prompt_tokens)&&u.prompt_tokens>=0&&u.prompt_tokens<=64000&&Number.isSafeInteger(u.completion_tokens)&&u.completion_tokens>=0&&u.completion_tokens<=1000);
+    await tx.collection(COLLECTION).doc(requestKey).update({status:outcome,elapsedMs:clock()-at,calls,usageKnown:known,estimatedMicros:known?Math.ceil(usage.reduce((n,u)=>n+u.prompt_tokens*config.inputPrice+u.completion_tokens*config.outputPrice,0)):null,reservedMicros:reserve});
     if(actor?.token===token)await tx.collection(COLLECTION).doc(actorId).update({lockUntil:0});
    });
   }
