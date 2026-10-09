@@ -6,6 +6,8 @@ const vm = require('node:vm');
 
 const projectRoot = path.resolve(__dirname, '..');
 const requiredFiles = [
+  'static/guide-question-state.js','static/guide-question-transport.js','static/guide-question.js','static/guide-question.css',
+  'cloudfunctions/appCore/lib/guide-question-evidence.js','cloudfunctions/appCore/lib/guide-question-client.js','cloudfunctions/appCore/lib/guide-question-contract.js','cloudfunctions/appCore/domains/guide-questions.js',
   'static/assets/vendor/tailwind-3.4.17.js',
   'static/assets/vendor/tailwind-LICENSE',
   'static/assets/vendor/lucide-1.51.0.min.js',
@@ -62,6 +64,7 @@ const requiredFiles = [
   'static/navigation-motion.css',
   'static/assets/gsap-3.15.0.min.js',
   'static/assets/longcang-editorial-v1.woff2',
+  'static/assets/longcang-theme-v2.woff2',
   'static/assets/paper-fibres-soft-v1.webp',
   'static/assets/longcang-OFL.txt',
   'static/assets/community-river-collage-v3.webp',
@@ -232,6 +235,8 @@ const javascriptFiles = [
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const guideFiles = [
+  'static/guide-question-state.js','static/guide-question-transport.js','static/guide-question.js','static/guide-question.css',
+  'cloudfunctions/appCore/lib/guide-question-evidence.js','cloudfunctions/appCore/lib/guide-question-client.js','cloudfunctions/appCore/lib/guide-question-contract.js','cloudfunctions/appCore/domains/guide-questions.js',
  ...['storyWorker','adminSubmissions'].flatMap(f=>['guide-content-plan.js','guide-grounding.js','guide-source-context.js'].map(n=>'cloudfunctions/'+f+'/lib/'+n)),
  'cloudfunctions/appCore/lib/guide-grounding.js',
  'cloudfunctions/appCore/lib/guide-source-context.js',

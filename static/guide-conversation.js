@@ -40,7 +40,7 @@ async function propose(intent){
    if(!s)throw Error('先安排一程，再打开本站讲解。');
    await GuideApp.openCurrent();
    reply('已打开本站讲解和来源。有待核实的内容会保留提示。');return;
-  }else{reply(s?'可以说“少走一点”“只剩一小时”“跳过这一站”，也可以点下方选项。历史问题请展开本站的故事与来源。':'告诉我城市和时间，例如“武汉，两小时”。也可以直接选择上面的城市。');return;}
+  }else if(s&&window.GuideQuestion&&/历史|建筑|年代|为什么|故事|它|这里/.test(intent.question||'')){const stop=s.stops.find(x=>x.state==='arrived')||s.stops.find(x=>x.state==='pending');if(stop)await GuideQuestion.ask(stop.resourceId,stop.title,intent.question);return;}else{reply(s?'可以说“少走一点”“只剩一小时”“跳过这一站”，也可以点下方选项。历史问题请展开本站的故事与来源。':'告诉我城市和时间，例如“武汉，两小时”。也可以直接选择上面的城市。');return;}
   if(token!==epoch||before!==signature())throw Error('行程刚刚变化，请重新说一次需求。');
   proposal={...p,signature:before};reply('先看看这个安排，确认后才会修改。');
  }catch(e){reply(e.message);}finally{busy=false;draw();show();}
@@ -62,7 +62,7 @@ window.GuideConversation={
  invalidate(){epoch++;proposal=null;turns=[];if(box())box().textContent='';},
  reset(){epoch++;proposal=null;turns=[];draw();}
 };
-document.addEventListener('submit',e=>{if(e.target.id!=='guide-chat-form')return;e.preventDefault();if(busy)return;const input=document.getElementById('guide-chat-input').value;reply(input,'user');propose(VisitPlanner.parse(input,GuideApp.getCatalog(),GuideApp.getSession()));});
+document.addEventListener('submit',e=>{if(e.target.id!=='guide-chat-form')return;e.preventDefault();if(busy)return;const input=document.getElementById('guide-chat-input').value;reply(input,'user');propose({...VisitPlanner.parse(input,GuideApp.getCatalog(),GuideApp.getSession()),question:input});});
 document.addEventListener('click',e=>{const button=e.target.closest('[data-chat],[data-chat-apply],[data-chat-cancel]');if(!button||busy)return;if(button.hasAttribute('data-chat-apply'))apply();else if(button.hasAttribute('data-chat-cancel')){proposal=null;reply('保留原来的安排。');}else {reply(button.dataset.chat,'user');propose(VisitPlanner.parse(button.dataset.chat,GuideApp.getCatalog(),GuideApp.getSession()));}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){epoch++;proposal=null;}});
 })();

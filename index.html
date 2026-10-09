@@ -8433,6 +8433,7 @@
           <ul class="mt-1.5 space-y-1">${detail.collect.map(content => `<li class="flex gap-1.5 text-[9px] leading-relaxed text-stone-600"><span class="mt-1 h-1 w-1 shrink-0 rounded-full bg-sandGold"></span>${escapeHtml(content)}</li>`).join('')}</ul>
         </div>
         <p class="mt-2 rounded-lg bg-sandGold/10 px-2.5 py-2 text-[9px] leading-relaxed text-stone-600"><span class="font-black text-deepTeal">到达提示：</span>${escapeHtml(detail.arrival)}</p>
+        <button type="button" class="qa-entry" data-qa-resource="${escapeHtml(item.resourceId || item.id)}" data-qa-title="${escapeHtml(item.title)}">✦ 问问这里的故事</button>
 
         <div class="mt-3 grid grid-cols-2 gap-2">
           <button type="button" onclick="openMapPlannerNavigation('${escapeJsString(item.id)}')" class="rounded-lg border border-deepTeal bg-white py-2 text-[10px] font-black text-deepTeal">直接导航</button>
@@ -12216,6 +12217,10 @@
 <script src="./static/visit-engine.js"></script>
 <script src="./static/visit-planner.js"></script>
 <script src="./static/guide-entry.js"></script>
+<link rel="stylesheet" href="./static/guide-question.css">
+<script src="./static/guide-question-state.js"></script>
+<script src="./static/guide-question-transport.js"></script>
+<script src="./static/guide-question.js"></script>
 <script src="./static/assets/gsap-3.15.0.min.js"></script>
 <script src="./static/paper-motion.js"></script>
 <script src="./static/navigation-motion.js"></script>

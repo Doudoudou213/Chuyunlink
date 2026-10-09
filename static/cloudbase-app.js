@@ -295,6 +295,13 @@ feedback_closed: '反馈处理',
     return result;
   }
 
+  // Narrow bridge for the replaceable visitor question component.
+  window.ChuGuideQuestionApi = data => {
+    if (!['getGuideQuestionContext','askGuideQuestion'].includes(data.action)) throw Error('不支持的向导请求');
+    return callCore(data);
+  };
+  window.ChuGuideQuestionIdentity = async () => { const user=await ensureCloudUser(); return String(user.uid || user.id); };
+
   async function planCloudRoute(payload = {}) {
     return callCore({
       action: 'planRoute',
@@ -1407,6 +1414,7 @@ feedback_closed: '反馈处理',
       await ensureCloudUser();
       const result = await callCore({ action: 'getStoryEvidence', resourceId });
       renderStoryEvidence(result);
+      if(result.story){const entry=document.createElement('button');entry.type='button';entry.className='qa-entry';entry.dataset.qaResource=resourceId;entry.dataset.qaTitle=resourceTitle;entry.textContent='✦ 问问这里的故事';content.prepend(entry);}
       if(result.story)window.ContentEffects?.open('story',{kind:'story',id:result.story.id,version:String(result.story.version)});
     } catch (error) {
       content.innerHTML = `<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">${safeText(error.message || '链迹资料暂时无法读取')}</div>`;
@@ -1632,6 +1640,7 @@ feedback_closed: '反馈处理',
 
   async function loginCloudAccount(event) {
     event.preventDefault();
+    window.GuideQuestion?.close();
     const username = document.getElementById('cloud-login-username').value.trim();
     const password = document.getElementById('cloud-login-password').value;
     const message = document.getElementById('cloud-login-message');
@@ -1655,6 +1664,7 @@ feedback_closed: '反馈处理',
 
   async function signOutCloudAccount() {
     if (!confirm('退出当前云端账号并切换为游客身份？')) return;
+    window.GuideQuestion?.close();
     await cloudAuth.signOut();
     await cloudAuth.anonymousAuthProvider().signIn();
     location.reload();
@@ -2361,6 +2371,7 @@ feedback_closed: '反馈处理',
         ${resourceAliasId(resource, 'activity') ? '<button type="button" data-resource-route class="min-h-11 rounded-xl border border-[#9e2f24]/20 bg-white px-4 text-xs font-bold text-[#8f302b]">在地图规划路线</button>' : ''}
       </div>
       <p class="mt-4 text-center text-[9px] leading-relaxed text-stone-400">开放时间、票务和道路状态可能变化，请以场馆及地图服务当天信息为准。</p>`;
+    const questionEntry=document.createElement('button');questionEntry.type='button';questionEntry.className='qa-entry';questionEntry.dataset.qaResource=resource.id;questionEntry.dataset.qaTitle=resource.title;questionEntry.textContent='✦ 问问这里的故事';content.prepend(questionEntry);
     content.querySelector('[data-resource-story]')?.addEventListener('click', () => {
       closeUnifiedResourceDetail();
       window.openStoryEvidence?.(resource.id, resource.title, 'story');
