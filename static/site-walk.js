@@ -5,7 +5,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 let walk=null,session=null,owner='',key='',records=[],busy=false,epoch=0,sourceReady=false;
 function safeUrl(value){try{const u=new URL(value,location.href);return u.protocol==='https:'&&!u.username&&!u.password?u.href:'';}catch{return '';}}
 function tell(text){message.textContent=text;}
-async function connect(){if(window.SiteWalkAdapter)return SiteWalkAdapter;if(!window.cloudbase)await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://static.cloudbase.net/cloudbase-js-sdk/2.28.6/cloudbase.full.js';s.onload=resolve;s.onerror=()=>reject(Error('网络暂时连接不上，请稍后重试'));document.head.append(s);});return {async identity(){return String((await GuideCloud.identity())?.uid||'guest');},get:id=>GuideCloud.call({action:'getSiteWalk',resourceId:id})};}
+async function connect(){if(window.SiteWalkAdapter)return SiteWalkAdapter;if(!window.cloudbase)await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://static.cloudbase.net/cloudbase-js-sdk/2.28.6/cloudbase.full.js';s.onload=resolve;s.onerror=()=>reject(Error('网络暂时连接不上，请稍后重试'));document.head.append(s);});return {async identity(){let u=await GuideCloud.identity();if(!u){await GuideCloud.call({action:'getSiteWalk',resourceId});u=await GuideCloud.identity();}if(!u?.uid)throw Error('暂时无法建立访问身份，请重试');return String(u.uid);},get:id=>GuideCloud.call({action:'getSiteWalk',resourceId:id})};}
 async function identityKey(value){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('site-walk:'+value));return 'chulink-site-walk-v1:'+Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('');}
 function loadRecords(){try{const data=JSON.parse(localStorage.getItem(key)||'[]');records=Array.isArray(data)?data.filter(s=>s&&typeof s.id==='string'&&Array.isArray(s.stops)&&s.stops.length<=12&&s.stops.every(p=>p&&typeof p.resourceId==='string'&&['pending','arrived','visited','skipped'].includes(p.state))).slice(-10):[];}catch{records=[];tell('本机旧记录无法读取，可以重新开始');}}
 function save(){records=records.filter(s=>s.id!==session.id);records.push(E.snapshot(session));records=records.slice(-10);try{localStorage.setItem(key,JSON.stringify(records));}catch{tell('浏览器未允许保存记录，本次进度只保留到页面关闭');}}
@@ -27,7 +27,7 @@ async function action(type,recordId){if(busy)return;busy=true;const token=epoch;
  if(type==='refresh'){loadRecords();session=records.findLast(s=>s.resourceId===resourceId&&s.status!=='ended')||session;}
  else if(type==='load'){session=records.find(s=>s.id===recordId)||null;}
  else if(type==='start'){session=E.create(walk,crypto.randomUUID());save();}
- else{if(!session)throw Error('请先开始导览');session=E.act(session,walk,type);save();}
+ else{if(!session)throw Error('请先开始导览');if(!E.compatible(session,walk))return;session=E.act(session,walk,type);save();}
  }catch(e){if(token===epoch){sourceReady=false;tell(e.message||'暂时无法核对来源，请稍后再试');}}finally{if(token===epoch){busy=false;render();}}}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action],[data-load]');if(b)action(b.dataset.action||'load',b.dataset.load);});
 document.getElementById('sw-clear').onclick=()=>{if(!key||busy)return;if(!confirm('清除这个浏览器中当前身份的景点内部导览记录？'))return;try{localStorage.removeItem(key);}catch{}records=[];session=null;render();tell('已清除本机导览记录');};
