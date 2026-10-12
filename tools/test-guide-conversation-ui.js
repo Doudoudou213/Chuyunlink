@@ -7,7 +7,7 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),
  try{
   browser=await chromium.launch({channel:'msedge',headless:true});const page=await browser.newPage(),errors=[],actions=[];page.on('pageerror',e=>errors.push(e.message));let offline=false,closed=false;
   await page.route('https://**/*',r=>r.abort());
-  await page.exposeFunction('localGuide',async e=>{actions.push(e);if(e.action==='beginContentEffect')return {ok:true,enabled:false};if(e.action==='getResources')return {ok:true,items:catalog.map(r=>({...r,visitInfo:{status:closed?'closed':'unknown'}}))};if(e.action==='planRoute'){if(offline)throw Error('fixed offline');return {ok:true,provider:'amap-web-service',duration:600,distance:600,walkingDistance:600,simulated:true};}if(e.action==='getGuideStation'||e.action==='getGuideRoute')return {ok:true,items:[]};throw Error('Unexpected API: '+e.action);});
+  await page.exposeFunction('localGuide',async e=>{actions.push(e);if(e.action==='beginContentEffect')return {ok:true,enabled:false};if(e.action==='getResources')return {ok:true,items:catalog.map(r=>({...r,visitInfo:{status:closed?'closed':'unknown'}}))};if(e.action==='planRoute'){if(offline)throw Error('fixed offline');return {ok:true,provider:'amap-web-service',duration:600,distance:600,walkingDistance:600,simulated:true};}if(e.action==='getSiteWalk')return {ok:true,available:false};if(e.action==='getGuideStation'||e.action==='getGuideRoute')return {ok:true,items:[]};throw Error('Unexpected API: '+e.action);});
   await page.route('**/static/guide-cloud.js',r=>r.fulfill({contentType:'application/javascript',body:'window.GuideCloud={identity:async()=>null,call:window.localGuide};'}));
   const base='http://127.0.0.1:'+server.address().port;
   await page.goto(base+'/guide.html');await page.locator('#guide-city option').waitFor({state:'attached'});await page.locator('#guide-duration').selectOption('240');
@@ -37,7 +37,7 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),
   const out=path.join(os.tmpdir(),'chulink-guide-conversation-qa');fs.mkdirSync(out,{recursive:true});
   await page.locator('[data-act=new-plan]').click();await page.locator('#guide-duration').selectOption('240');await page.locator('[data-act=recommend]').click();await page.locator('[data-chat-apply]').waitFor();
   for(const width of [390,768,1440]){await page.setViewportSize({width,height:1000});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:path.join(out,'conversation-'+width+'.png'),fullPage:true});}
-  assert.deepEqual(errors,[]);assert(actions.every(e=>['getResources','planRoute','getGuideStation','getGuideRoute','beginContentEffect'].includes(e.action)));
+  assert.equal(await page.locator('[data-site-walk]').count(),0);assert.deepEqual(errors,[]);assert(actions.every(e=>['getResources','planRoute','getGuideStation','getGuideRoute','getSiteWalk','beginContentEffect'].includes(e.action)));
   assert(actions.every(e=>!('prompt' in e)&&!('messages' in e)));
   console.log('Guide conversation UI passed: no-basket start, preview/apply, real mutation, stale/locked protections, explicit arrival/end, local history, closed source and network failure, no model API, 3 viewports. '+out);
  }finally{await browser?.close();await new Promise(r=>server.close(r));}

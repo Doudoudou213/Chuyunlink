@@ -1,0 +1,17 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{chromium}=require('playwright');
+const {start}=require('./lib/site-walk-preview');
+(async()=>{const fixture=await start();let browser;try{
+ browser=await chromium.launch({channel:'msedge',headless:true});const page=await browser.newPage(),errors=[],external=[];page.on('pageerror',e=>errors.push(e.message));await page.route('https://**/*',r=>{external.push(r.request().url());return r.abort();});await page.goto(fixture.url);await page.getByRole('button',{name:'开始看看',exact:true}).click();
+ await page.getByRole('heading',{name:'先认清正在看的对象'}).waitFor();assert.equal(await page.locator('.sw-primary').count(),1);await page.getByRole('button',{name:'我已到这里',exact:true}).click();await page.getByRole('button',{name:'看完了，下一处',exact:true}).click();await page.getByRole('heading',{name:'停下来，看看细节'}).waitFor();
+ await page.reload();await page.getByRole('heading',{name:'停下来，看看细节'}).waitFor();await page.getByRole('button',{name:'跳过这一处'}).click();await page.getByRole('heading',{name:'留下一点自己的发现'}).waitFor();await page.getByRole('button',{name:'今天先到这里'}).click();await page.getByText('处由你确认看完',{exact:true}).waitFor();assert.equal(await page.locator('.sw-count').innerText(),'1');await page.getByText('1处已跳过，不能算到访').count();assert.match(await page.locator('#sw-content').innerText(),/1处跳过 · 1处仍未到访/);assert.equal(await page.locator('a[href*="guideResourceId"]').count(),0);
+ const out=path.join(os.tmpdir(),'chulink-site-walk-ui');fs.mkdirSync(out,{recursive:true});await page.screenshot({path:path.join(out,'summary.png'),fullPage:true});
+ await page.getByRole('button',{name:'再看一遍'}).click();for(const width of [390,768,1440]){await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:path.join(out,'walk-'+width+'.png'),fullPage:true});}
+ // Stale sources cannot be displayed or advance the trip.
+ fixture.withdraw();await page.locator('.sw-sources summary').click();await page.getByRole('button',{name:'重新核对'}).waitFor();assert.equal(await page.getByRole('button',{name:'我已到这里'}).count(),0);
+ fixture.restore();await page.getByRole('button',{name:'重新核对'}).click();await page.getByRole('heading',{name:'先认清正在看的对象'}).waitFor();
+ // Network failure hides directions, while the record remains stored.
+ await page.route('**/__sitewalk',r=>r.abort());await page.getByRole('button',{name:'我已到这里'}).click();await page.getByRole('button',{name:'重新核对'}).waitFor();await page.unroute('**/__sitewalk');await page.getByRole('button',{name:'重新核对'}).click();await page.getByRole('button',{name:'我已到这里'}).waitFor();
+ const stored=await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith('chulink-site-walk-v1:')).map(k=>localStorage.getItem(k)).join(''));assert(!stored.includes('正式导览'));assert(!stored.includes('latitude'));assert(!stored.includes('local-demo'));
+ await page.locator('.sw-history summary').click();page.once('dialog',d=>d.accept());await page.locator('#sw-clear').click();await page.getByText('还没有本机记录。',{exact:true}).waitFor();assert.deepEqual(errors,[]);assert.deepEqual(external,[]);console.log('Site walk UI passed: local example, explicit arrival, skip/end distinction, restore, source invalidation, offline, minimal storage, clear, 3 viewports, no external requests. '+out);
+ }finally{await browser?.close();await fixture.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

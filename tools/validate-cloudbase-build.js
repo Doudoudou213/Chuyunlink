@@ -235,6 +235,7 @@ const javascriptFiles = [
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const guideFiles = [
+  'onsite.html','static/site-walk-engine.js','static/site-walk.js','static/site-walk-entry.js','static/site-walk.css','cloudfunctions/appCore/domains/site-walks.js',
   'static/guide-question-state.js','static/guide-question-transport.js','static/guide-question.js','static/guide-question.css',
   'cloudfunctions/appCore/lib/guide-question-evidence.js','cloudfunctions/appCore/lib/guide-question-client.js','cloudfunctions/appCore/lib/guide-question-contract.js','cloudfunctions/appCore/domains/guide-questions.js',
  ...['storyWorker','adminSubmissions'].flatMap(f=>['guide-content-plan.js','guide-grounding.js','guide-source-context.js'].map(n=>'cloudfunctions/'+f+'/lib/'+n)),
