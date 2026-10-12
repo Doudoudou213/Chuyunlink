@@ -2033,6 +2033,7 @@ exports.main = async (event = {}) => {
         return {ok:false,error:{code:messages[e.code]?e.code:'QA_UNAVAILABLE',message:messages[e.code]||'问答暂不可用，请稍后再试'}};
       }
     }
+    if (action === 'getSiteWalk') return await require('./domains/site-walks').createSiteWalkService({db}).get(event);
     if (action === 'getResources') return await resourceService.list(event);
     if (action === 'getResourceDetail') return await resourceService.detail(event);
     if (action === 'searchResources') return await resourceService.search(event);
