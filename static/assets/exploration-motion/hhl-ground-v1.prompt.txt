@@ -1,0 +1,19 @@
+Generated using built-in imagegen on 2026-10-13.
+Reference: exec-423ae2c1-5638-46d2-8a72-cdbb867080de.png
+This is an original AI illustrated schematic for a local animation prototype, not a surveyed navigation map or on-site architectural reconstruction.
+
+Use case: precise-object-edit / game background extraction.
+Input image 1 is the exact visual style and landscape reference. Create ONE polished raster background plate for a layered interactive illustrated Yellow Crane Tower park map, PORTRAIT 2:3, ideally 1024x1536. Do not create a phone screenshot or UI. A single full-bleed painting, dark warm lacquer-brown handmade paper, fine golden dry-brush linework, mineral teal and moss-green foliage, cream sandstone flagstone paths. Hand-painted, premium intricate illustration, not SVG/vector/3D.
+
+CRITICAL COMPOSITION FOR OVERLAY ASSETS, positions are fractions of entire OUTPUT:
+- Reserve the principal Yellow Crane Tower site around x25%,y35%, with EMPTY sandstone platform centered x25%,y47%. REMOVE the tall Yellow Crane Tower itself entirely; empty upper area stays unobstructed so a separately rendered tower can be overlaid. Keep its stepped stone base/courtyard, softly shaded with no building shadow.
+- At x57%,y56% create small empty circular stone plinth with NO bronze finial/object.
+- At x84%,y62% create an empty square stone terrace/plinth, with NO tall Baiyun Pavilion building.
+- OPEN TURQUOISE GOOSE POND centered around x50%,y70%, width about60%, with irregular elegant shore and visible shimmering teal water. Preserve the lovely waterside miniature Chinese pavilion at the pond's east bank (small, located x71%,y76%). No other dominant buildings. Pond must feel transparent, jewel-like, broad and uncluttered; sparse lilies only at edges.
+- Broad light cream stone flagstone walkways run clearly between these EMPTY platforms and around the pond, widely visible and unoccluded. Thin and remove many trees compared with reference; tree clusters are punctuation, leave pavement readable, no dense hedge barrier.
+- Background in top 15%-25% shows very subtle misty distant MODERN WUHAN-LIKE CITY SKYLINE at small scale, decorative soft sepia, harmonious with painting. No bridge, no geographical heading, no invented giant mountains.
+- Fine dark green trees and delicate flowering trees around the margins and low rock banks, limited numbers. Bottom 10% continues the painted terrain and paper, NOT a cream UI panel.
+- No interface bar, no title, no Chinese/English lettering, no labels, no compass, no controls, no border/card, no gold rings or selection halos, no flying cranes or birds (these will be independent layers), no people, no watermark.
+- Preserve rich tactile dark-paper texture and gold-blue-green color harmony of input. Similar oblique/isometric illustrated perspective as reference. Road relationships are artistic schematic, avoid exact navigational map symbols.
+
+Output ONLY the standalone illustrated ground/backdrop. This is a split-layer asset; the three removed large subjects MUST NOT remain in the painting, even as faint silhouettes. The POOL and small pond pavilion MUST remain.

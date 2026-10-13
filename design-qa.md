@@ -583,3 +583,46 @@ final result: passed for the approved local visual scope. No release performed.
 - Detailed file inventory and the four conflict-file instructions are in `docs/VISUAL_CHECKPOINT_INTEGRATION_20261001.md`. Treat this as a preserved local UI baseline, not a deployment-ready replacement for newer backend business code. After checkpoint commit, freeze visual edits pending integration-baseline confirmation.
 
 final result: passed
+
+---
+
+# 黄鹤楼分层动画样板 · 2026-10-13
+
+## Evidence and normalization
+
+- Source visual truth: `C:/Users/lenovo/.codex/generated_images/01a0b3ee-7643-7bc1-82c0-b948e1934afb/exec-423ae2c1-5638-46d2-8a72-cdbb867080de.png`, revised from the selected second demo in accordance with the user's pond/path/highlight/city/crane feedback.
+- Source pixels: 853 × 1844. Normalized proportionally to 390 × 843; one-pixel height difference is not a layout finding.
+- Implementation: `http://127.0.0.1:4207/explore-motion-demo.html`, captured in actual Edge at CSS viewport 390 × 844, deviceScaleFactor 1, after the opening settles, tower selected, no question entered and no dialog open.
+- Implementation screenshot: `artifacts/exploration-motion-demo/initial-390.png`, 390 × 844. Screenshots are local ignored test outputs and are reproducible with `npm run test:exploration:motion`.
+- Combined full-view comparison, opened and inspected after final corrections: `artifacts/exploration-motion-demo/comparison-final.png`; reference left, implementation right, equal CSS width, no device frame or browser chrome.
+- Focus comparisons: `selected-tower-comparison.png`, `pond-paths-comparison.png`, `reading-panel-comparison.png` in the same directory. Actual selected-tower 2x browser detail is also saved as `tower-halo-detail-2x.png`. The matching regions show the subject, material and typography differences rather than pretending independently generated art is pixel-identical.
+- Motion evidence: real browser screenshots `replay-120ms-390.png`, `replay-500ms-390.png`, `replay-1100ms-390.png`, `replay-1900ms-390.png`. The buildings visibly emerge independently while the readable map and controls remain available. The contact sheet is `motion-frame-contact.png`.
+- Other states: `map/pond/sources-390.png`, corresponding 768/1440 screenshots, and `missing-artwork-390.png`. The standard interaction-test map captures include a fixed demonstration answer; they are not used as the initial-state visual comparison.
+
+## Findings and iteration history
+
+1. First rendered review found a P2 clash: a crane passed too close to the red title seal. Moved the bird layer right, slightly down and reduced its width. Final combined comparison shows clear space between birds and heading.
+2. First review found P2 emphasis drift: whole-tower glow looked too yellow while the fine ring was subdued. Reduced tower brightness/drop-shadow and raised the gold ring above art. Final tower detail shows a thin visible arc, warm points and legible eaves, with no rectangular transparency background.
+3. First review found P2 density differences: broad paper labels covered too much of the buildings; the lower texture looked cold white. Reduced label lettering by about 10%, moved Baiyun's label, and multiplied the existing paper texture with the warm paper token. Enlarged the lower handwritten heading modestly. Final map, pool and reading comparisons verify those changes.
+4. Functional responsive checking found P2 issues: labels shrank below 44px at minimum zoom and Baiyun's label extended 2.8px beyond a 320px screen. Kept transparent hit areas at least 44px through inverse compensation and moved the Baiyun anchor from 94% to 92%. Final 320px bounds checks pass.
+5. Image-failure checking found a P1 recovery defect: a failed detail image stayed hidden after switching to a valid one. Restore visibility on load; a real failed-tower-to-valid-Baiyun browser scenario passes.
+
+No actionable P0/P1/P2 finding remains in the local sample's tested scope.
+
+## Required fidelity surfaces
+
+- Fonts/typography: existing local Long Cang display font preserves handwritten titles and labels; Chinese reading text uses the existing serif family approach. Labels and main controls are intentionally slightly larger than the raster concept for actual touch use. The compact brand stays on one line.
+- Spacing/layout: portrait composition, western tower/eastern pavilion/southern pond, a single paper reading region and one input remain. Map height is 72svh at the mobile breakpoint so the 390 × 844 initial view includes the footer. Desktop/tablet intentionally center the same portrait art instead of inventing another layout.
+- Colors/tokens: dark lacquer-paper ground, mineral green pond/trees, red accents, warm selected gold and parchment reading panel. Selected glow remains visible against foliage. Reading text is dark on light paper; keyboard focus is visible.
+- Asset fidelity: five original raster layers generated with the built-in tool, genuine alpha on the four foreground assets, WebP used in the browser. The pool is open, the pale paths can be followed visually, and both city and cranes are present. Background/building variants are deliberately newly painted separate assets; not a screenshot stretched into an animation. Architecture and roads still require field verification before use as a real route.
+- Copy/content: original short headline and description retained. Sources are progressively disclosed; the question result visibly says it is a local sample without a model call. The raster concept's compass is deliberately omitted because this artwork is not georeferenced. Map controls and source affordance are functional additions for an operable sample.
+
+## Verification and follow-up
+
+- 112 local browser checks passed, including 320/390/768/1440, direct object/water taps, labels, drag, pinch, keyboard, zoom bounds, dialog focus/Escape, rapid switching, record reload/clear, denied storage, image failure recovery, reduced motion and background pause. No external requests or page exceptions occurred in the isolated test contexts.
+- Existing 6 exploration business/build scripts, 4 exploration browser groups and offline release checks passed. New files are separate from the deployed interface and business data.
+- P3 follow-up: white-crane feather detail and small-screen ink stroke character can receive an additional art pass if requested; current silhouettes, contrast and identity remain clear.
+- Not measured: real mobile Safari/GPU/frame rate/power, physical-device pinch feel, real cloud/model/audio/navigation. Optional WebM recording was not available because the local Playwright recording executable is absent; no video was fabricated from interpolated test frames.
+- Existing contents of this QA document and the unrelated theme visual changes were preserved. No push, merge or deployment.
+
+final result: passed

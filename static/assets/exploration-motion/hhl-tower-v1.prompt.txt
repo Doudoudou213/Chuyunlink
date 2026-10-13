@@ -1,0 +1,11 @@
+Generated with built-in image_gen, transparent_background=true, 2026-10-13.
+Visual artwork for local motion prototype; not a measured architectural survey.
+
+Use case: stylized-concept.
+Asset type: transparent architectural sprite for a hand-painted interactive Yellow Crane Tower park map. This is ONE isolated building layer, not a map or poster.
+Reference image role: the supplied image is a STYLE AND CAMERA reference only. Match the warm gold-roof/red-pillar Yellow Crane Tower at the upper-left of its map; do not include any other parts of the reference.
+Subject: the actual visual silhouette of modern Huanghelou / Yellow Crane Tower, Wuhan: a substantial broad five-level pavilion tower, exactly FIVE major stacked golden upturned roof tiers, each gradually wider toward the base, broad layered wings and visible red timber columns, a small gold finial. It must look like Yellow Crane Tower, not a thin Buddhist pagoda. Include its complete base and a tightly fitted small pale stone terrace and short frontal stair, with no landscape spilling outside the terrace.
+Style/medium: exquisitely detailed traditional Chinese mineral-pigment and fine ink-line hand painting, antique dark-paper map color language; golden glazed ceramic roofs with luminous warm edges, vermilion pillars, dark green-and-gold underside accents, delicate stone balustrade, textured yet crisp. Slightly elevated near-frontal three-quarter camera like the reference, front facade faces viewer, subtly visible right flank.
+Framing: one centered isolated tower fully visible with comfortable transparent margin on all sides; portrait canvas approximately 1024 by 1536; tower fills most of height; no cropping of finial, flying eaves, terrace or steps. Make the roof edges vivid and richly golden so later selection glow can be applied in code.
+Transparency: genuine transparent RGBA background outside the building and tightly fitted terrace. Clean alpha around fine eaves. No painted checkerboard, white/black backdrop, paper rectangle, atmospheric fog, opaque shadow plate, forest, trees, flowers, sky, skyline, cranes, title, UI, label, circles, rays or halo. No legible text and no invented Chinese inscriptions: any tiny plaque is a plain dark ink rectangle.
+The output must be only the full building and its small connected terrace on transparency.

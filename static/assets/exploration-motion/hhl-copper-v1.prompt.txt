@@ -1,0 +1,11 @@
+Generated with built-in image_gen, transparent_background=true, 2026-10-13.
+Reference: hhl-copper-ref.jpg local research photograph; generated artistic illustration, not a measured survey or source photograph.
+
+Use case: stylized-concept.
+Asset type: one isolated transparent hand-painted copper roof finial sprite for an interactive Yellow Crane Tower map.
+Image 1 is the SHAPE REFERENCE: depict only the historical dark green bronze gourd-shaped finial on the RIGHT side of this photograph. Do not depict the red bell pavilion, bell, staircase, people, trees, railing or surrounding scenery.
+Image 2 is the STYLE REFERENCE: match this isolated hand-painted Yellow Crane Tower asset's detailed mineral-pigment illustration, fine dark ink contours, antique warm light and crisp painted stone.
+Subject: precisely a tall ancient oxidized bronze roof finial made of THREE vertically stacked rounded bulbous lobes: broad nearly-spherical bottom, smaller rounded middle, and upper rounded pear-shaped lobe tapering into a long narrow rounded tip. The top pear is one lobe; do not add a fourth ball. Preserve the physical silhouette from photo. At the bottom is the actual low flared, folded copper skirt with uplifted edges, standing on a small low round gray-stone plinth. No roof eaves or building.
+Rendering: gentle elevated near-frontal view appropriate for a hand-drawn isometric scenic map; verdigris dark teal-green and aged muted bronze with subtle warmer highlights, finely engraved horizontal aging marks, hand-made ink-line detail. Stone plinth in warm gray-beige, simple complete elliptical base. This is NOT shiny gold and NOT a generic two-lobed bottle.
+Composition: portrait approximately 1024x1536, single object centered, complete pointed top and whole small plinth visible; comfortable transparent margins, usable as a clean separable animation layer.
+Genuine transparent RGBA background. No landscape, paper rectangle, black backdrop, checkerboard, trees, pavilion, lettering, labels, halos, light rings or dramatic glow. Show only the real three-lobed copper object and its low connected stone plinth.

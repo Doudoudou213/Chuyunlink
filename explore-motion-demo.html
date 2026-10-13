@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>黄鹤楼 · 手绘探索样板｜楚韵链迹</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="static/exploration-motion-demo.css">
+  <script defer src="static/assets/vendor/lucide-1.51.0.min.js"></script>
+  <script defer src="static/exploration-motion-scene.js"></script>
+  <script defer src="static/exploration-motion-demo.js"></script>
+</head>
+<body>
+<main id="motion-demo" data-phase="ready" data-selected="tower" data-reduced="false" data-paused="false">
+  <section class="map-shell" aria-label="黄鹤楼手绘探索">
+    <div id="motion-stage" tabindex="0" role="region" aria-label="黄鹤楼手绘探索地图" aria-describedby="motion-map-help">
+      <div id="motion-map-transform" data-scale="1">
+        <img class="ground" src="static/assets/exploration-motion/hhl-ground-v1.webp" alt="手绘布局：黄鹤楼居西，古铜顶与白云阁在东侧，鹅池位于南侧；远处城市为艺术装饰" draggable="false" fetchpriority="high">
+        <div class="pond-shimmer" aria-hidden="true"></div>
+        <img class="cranes" src="static/assets/exploration-motion/hhl-cranes-v1.webp" alt="" draggable="false">
+        <div class="landmark tower" data-art="tower"><img src="static/assets/exploration-motion/hhl-tower-v1.webp" alt="" draggable="false"></div>
+        <div class="landmark copper" data-art="copper"><img src="static/assets/exploration-motion/hhl-copper-v1.webp" alt="" draggable="false"></div>
+        <div class="landmark baiyun" data-art="baiyun"><img src="static/assets/exploration-motion/hhl-baiyun-v1.webp" alt="" draggable="false"></div>
+        <div id="motion-halo" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <button type="button" class="point-label point-tower" data-point="tower" aria-pressed="true" aria-label="探索黄鹤楼"><span>黄鹤楼</span></button>
+        <button type="button" class="point-label point-copper" data-point="copper" aria-pressed="false" aria-label="探索古铜顶"><span>古铜顶</span></button>
+        <button type="button" class="point-label point-baiyun" data-point="baiyun" aria-pressed="false" aria-label="探索白云阁"><span>白云阁</span></button>
+        <button type="button" class="point-label point-pond" data-point="pond" aria-pressed="false" aria-label="探索鹅池"><span>鹅池</span></button>
+      </div>
+    </div>
+    <header class="map-header">
+      <button id="motion-reset" class="icon-button" type="button" aria-label="回到整幅画卷" title="回到整幅画卷"><i data-lucide="chevron-left"></i></button>
+      <span class="brand">楚韵链迹</span>
+      <button id="motion-notebook" class="icon-button" type="button" aria-label="打开本机看过的景物"><i data-lucide="notebook-pen"></i></button>
+    </header>
+    <div class="map-heading"><h1>黄鹤楼</h1><span class="seal">探索</span></div>
+    <div class="map-tools" aria-label="地图缩放">
+      <button id="motion-zoom-in" class="icon-button" type="button" aria-label="放大地图"><i data-lucide="plus"></i></button>
+      <button id="motion-zoom-out" class="icon-button" type="button" aria-label="缩小地图"><i data-lucide="minus"></i></button>
+    </div>
+    <div class="map-caption"><span id="motion-map-help">拖动画卷，看看四周</span><button id="motion-replay" class="icon-button" type="button" aria-label="重播画卷动画" title="重播动画"><i data-lucide="rotate-ccw"></i></button></div>
+  </section>
+
+  <section class="reading-panel" aria-labelledby="motion-title">
+    <p class="eyebrow" id="motion-kicker">眼前这座楼</p>
+    <h2 id="motion-title">黄鹤楼</h2>
+    <p id="motion-description">抬头看看飞檐，再读一段楼的故事。</p>
+    <button id="motion-details" class="text-button" type="button">看看细节 <i data-lucide="arrow-right"></i></button>
+    <form id="motion-question-form" autocomplete="off">
+      <label class="sr-only" for="motion-question">问问当前景物，本地固定内容演示</label>
+      <input id="motion-question" name="question" maxlength="300" placeholder="想问点什么…" enterkeyhint="send">
+      <button id="motion-send" class="icon-button" type="submit" aria-label="发送问题，查看本地示例"><i data-lucide="send"></i></button>
+    </form>
+    <p id="motion-answer" role="status" hidden></p>
+    <footer><button id="motion-sources" type="button" class="source-button">资料与画卷说明</button><span>手绘布局示意 · 非导航</span></footer>
+    <p id="motion-status" class="sr-only" role="status" aria-live="polite">本地动画样板。可直接选择景物。</p>
+    <noscript><p>请启用 JavaScript 以切换景物和缩放。图片仅为布局示意，不可用于实地导航。</p></noscript>
+  </section>
+
+  <dialog id="motion-dialog" aria-labelledby="detail-title">
+    <button id="motion-close" class="icon-button dialog-close" type="button" aria-label="关闭景物细节"><i data-lucide="x"></i></button>
+    <div class="detail-art"><img id="detail-image" src="static/assets/exploration-motion/hhl-tower-v1.webp" alt="黄鹤楼手绘形象"></div>
+    <div class="dialog-copy"><p class="eyebrow">慢一点，发现一处细节</p><h2 id="detail-title">黄鹤楼</h2><p id="detail-observation"></p><p id="detail-story"></p><p class="fine-print">画中细节经过艺术处理。现场展陈和通行请以景区为准。</p></div>
+  </dialog>
+
+  <dialog id="motion-sources-dialog" aria-labelledby="sources-title">
+    <button id="motion-sources-close" class="icon-button dialog-close" type="button" aria-label="关闭资料说明"><i data-lucide="x"></i></button>
+    <div class="dialog-copy"><p class="eyebrow">每一处，都留有来路</p><h2 id="sources-title">资料与画卷</h2>
+      <p>画卷参考景区的相对布局：主楼在西，白云阁在东，鹅池在南。建筑被放大，石路经过简化，远景城市是艺术装饰。</p>
+      <ul class="source-list">
+        <li><a href="https://ylj.wuhan.gov.cn/zwgk/zwxxgkzl_12298/jggk_12304/xsdwszjzz_12308/202001/t20200110_726398.shtml" target="_blank" rel="noopener noreferrer">武汉市园林和林业局 · 黄鹤楼公园 <i data-lucide="arrow-up-right"></i></a><small>用于核对景区基本介绍；不代表今天的通行和开放状态。</small></li>
+        <li><a href="https://hhl.cnkgraph.com/Picture/%E9%BB%84%E9%B9%A4%E6%A5%BC%E8%AE%BE%E8%AE%A1%E7%BA%AA%E4%BA%8B" target="_blank" rel="noopener noreferrer">《黄鹤楼设计纪事》图集 <i data-lucide="arrow-up-right"></i></a><small>用于辨认古铜顶、白云阁及相对布局；本页没有转载原图。</small></li>
+        <li><a href="https://www.wuhan.gov.cn/sy/whyw/202406/t20240611_2414052.shtml" target="_blank" rel="noopener noreferrer">武汉市人民政府 · 黄鹤楼相关介绍 <i data-lucide="arrow-up-right"></i></a><small>作为白云阁观察主楼的背景资料。</small></li>
+      </ul>
+      <p class="fine-print">当前为独立本地动画样板。插画由 AI 辅助绘制，尚未现场校准，不提供实地路线、实时定位或到访认证。问答为固定内容，没有调用模型或语音服务。</p>
+    </div>
+  </dialog>
+
+  <dialog id="motion-notebook-dialog" aria-labelledby="notebook-title">
+    <button id="motion-notebook-close" class="icon-button dialog-close" type="button" aria-label="关闭本机记录"><i data-lucide="x"></i></button>
+    <div class="dialog-copy"><p class="eyebrow">这幅画里，你看过</p><h2 id="notebook-title">画卷拾记</h2><ul id="motion-viewed"></ul><p class="fine-print">仅保存在这台设备。不代表实际到访，也不会上传你的行踪。</p><button id="motion-clear-notebook" class="text-button" type="button">清空本机记录</button></div>
+  </dialog>
+</main>
+</body>
+</html>

@@ -1,0 +1,5 @@
+Production brief for the original Baiyun Pavilion sprite, generated 2026-10-13 with the built-in imagegen tool.
+
+Create a single isolated original hand-painted Baiyun Pavilion architectural sprite for a layered Yellow Crane Tower park exploration map. Use the existing approved dark mineral-jade, warm vermilion and muted gold hand-painted palette. Refer to the researched photograph of Baiyun Pavilion for its substantial multilevel form: elegant projecting dark-jade eaves, red columns, open upper pavilion, tall pale masonry base and complete footing. Warm light, fine ink outlines, textured pigments, a slightly elevated three-quarter view consistent with the park map. Transparent background. No trees, landscape, words, labels, UI, halo or other buildings. Keep the complete building and its base inside the canvas.
+
+PNG original: 1024x1536 RGBA. WebP is a format conversion preserving alpha. This is AI-assisted illustration, not a measured survey or a photo of the present site.

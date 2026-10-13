@@ -1,0 +1,29 @@
+{
+  "id": "hhl-motion-art-v1",
+  "date": "2026-10-13",
+  "purpose": "isolated local animation prototype",
+  "generatedWith": "built-in imagegen",
+  "illustrationOnly": true,
+  "fieldVerified": false,
+  "navigationReady": false,
+  "coordinateSystem": "artwork percentage, not geographic coordinates",
+  "files": [
+    {"file":"hhl-ground-v1.webp","source":"hhl-ground-v1.png","width":1024,"height":1536,"layer":"ground, simplified paths, pond, artistic city background"},
+    {"file":"hhl-tower-v1.webp","source":"hhl-tower-v1.png","width":1024,"height":1536,"layer":"tower, transparent"},
+    {"file":"hhl-copper-v1.webp","source":"hhl-copper-v1.png","width":1024,"height":1536,"layer":"bronze roof finial, transparent"},
+    {"file":"hhl-baiyun-v1.webp","source":"hhl-baiyun-v1.png","width":1024,"height":1536,"layer":"Baiyun pavilion, transparent"},
+    {"file":"hhl-cranes-v1.webp","source":"hhl-cranes-v1.png","width":1536,"height":1024,"layer":"decorative white cranes, transparent"}
+  ],
+  "referenceUse": "Reference material was used to distinguish subjects and relative layout. Original research photographs are not bundled or republished. Typography, labels and interaction controls are separate from artwork.",
+  "references": [
+    "https://ylj.wuhan.gov.cn/zwgk/zwxxgkzl_12298/jggk_12304/xsdwszjzz_12308/202001/t20200110_726398.shtml",
+    "https://hhl.cnkgraph.com/Picture/%E9%BB%84%E9%B9%A4%E6%A5%BC%E8%AE%BE%E8%AE%A1%E7%BA%AA%E4%BA%8B",
+    "https://www.wuhan.gov.cn/sy/whyw/202406/t20240611_2414052.shtml"
+  ],
+  "limitations": [
+    "Building scale, water, planting, cranes and distant city are artistic choices.",
+    "Stone paths do not constitute verified walkable routes; no compass or navigation promise is presented.",
+    "Local fixed responses are separate from authenticated evidence, cloud records and paid model APIs.",
+    "The source video informed reveal timing and layered movement only; no video frames or characters are used as site assets."
+  ]
+}

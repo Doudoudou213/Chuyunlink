@@ -1,0 +1,7 @@
+Generated using built-in imagegen on 2026-10-13. transparent_background=true.
+Original AI illustration for local animation prototype. PNG alpha range 0..254; 78.15% fully transparent pixels. WebP alpha preserved.
+
+Use case: stylized-concept. Asset type: transparent paired crane sprite for an elegant Chinese hand-painted interactive map.
+Create ONE independent image with TWO elegant flying white red-crowned cranes in a loose diagonal pair, oriented generally toward the RIGHT. Bird at left lower has wings uplifted; bird at right upper has wings extended, asymmetrical natural flight poses. Gracefully stretched long necks, delicate beaks, trailing legs, softly painted ivory-white feathers, subtle warm-gold feather accents, black wingtips and small red crowns. Birds should be beautiful, slender and calm, not cartoon, not hyperrealistic. Delicate fine brushwork and tactile painted-feather details inspired by mineral-pigment illustration on traditional Chinese paper, harmonious with dark warm-brown, muted jade, and gold map artwork.
+Composition: landscape 3:2 or 2:1 sprite canvas, ample clear gap between birds, both birds completely visible, no clipping, about 10% clear margins. Use restrained cream and muted gold, enough pale edges to read on dark backdrop. Each bird anatomically credible with exactly two wings.
+BACKGROUND MUST BE GENUINELY TRANSPARENT ALPHA. Only the two birds, nothing else. No paper sheet, no scenery, no clouds, no shadows, no selection glow, no gold ring, no border, no text, no black/white/checkerboard painted background.
