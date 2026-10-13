@@ -2037,6 +2037,8 @@ exports.main = async (event = {}) => {
         return {ok:false,error:{code:messages[e.code]?e.code:'QA_UNAVAILABLE',message:messages[e.code]||'问答暂不可用，请稍后再试'}};
       }
     }
+    if (action === 'askSiteExploration') { requireStableAccount(userInfo); return await require('./domains/exploration-questions').createExplorationQuestionService({db}).ask(event,uid); }
+    if (action === 'recognizeSiteExploration') { requireStableAccount(userInfo); return await require('./domains/exploration-recognition').createExplorationRecognitionService({db}).recognize(event,uid); }
     if (action === 'getSiteExploration') return await require('./lib/exploration-core').get(db,event.resourceId);
     if (action === 'getSiteWalk') return await require('./domains/site-walks').createSiteWalkService({db}).get(event);
     if (action === 'getResources') return await resourceService.list(event);

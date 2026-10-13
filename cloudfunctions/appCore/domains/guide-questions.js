@@ -7,14 +7,14 @@ const caches = new WeakMap();
 const now = () => Date.now();
 const SCHEMA_VERSION='visitor-qa-v1';
 const COLLECTION='guide_question_usage';
-function createGuideQuestionService({db,config=configFromEnv(),client=createClient(config),clock=now}) {
+function createGuideQuestionService({db,config=configFromEnv(),client=createClient(config),clock=now,evidenceLoader=loadEvidence}) {
  if(!caches.has(db))caches.set(db,new Map());
  const cache=caches.get(db);
  const permitted=id=>config.mode==='real'&&config.pilotIds.includes(id)&&config.model&&config.apiKey;
- async function context(event){const c=await loadEvidence(db,event.resourceId),ready=Boolean(permitted(c.resourceId)&&c.pieces.length&&config.budgetCny>0&&config.inputPrice>0&&config.outputPrice>0&&config.dailyRequests>0&&config.userDailyRequests>0);return {ok:true,resourceId:c.resourceId,title:c.title,fingerprint:c.fingerprint,ready,reason:ready?'ready':!c.pieces.length?'insufficient':'off',introduction:c.pieces.slice(0,3).map(p=>p.text).join(''),sources:c.sources};}
+ async function context(event){const c=await evidenceLoader(db,event.resourceId),ready=Boolean(permitted(c.resourceId)&&c.pieces.length&&config.budgetCny>0&&config.inputPrice>0&&config.outputPrice>0&&config.dailyRequests>0&&config.userDailyRequests>0);return {ok:true,resourceId:c.resourceId,title:c.title,fingerprint:c.fingerprint,ready,reason:ready?'ready':!c.pieces.length?'insufficient':'off',introduction:c.pieces.slice(0,3).map(p=>p.text).join(''),sources:c.sources};}
  async function ask(event,uid) {
   if(!uid)fail('UNAUTHENTICATED','请登录后提问');
-  const e=input(event);let c=await loadEvidence(db,e.resourceId);
+  const e=input(event);let c=await evidenceLoader(db,e.resourceId);
   if(!c.pieces.length)return staticReply('insufficient',c);
   if(/门票|票价|预约|开放时间|几点开|几点关|今天.*(?:开|关)|现在.*(?:开|关)|往[左右]|怎么走|导航|实时|公交|地铁/.test(e.question))return staticReply('practical',c);
   if(!permitted(e.resourceId))return staticReply('off',c);
@@ -40,7 +40,7 @@ function createGuideQuestionService({db,config=configFromEnv(),client=createClie
    await tx.collection(COLLECTION).doc(actorId).set({requests:(actor.requests||0)+1,lockUntil:at+60000,token,expiresAt:at+86400000*2});
    await tx.collection(COLLECTION).doc(requestKey).set({signature,status:'processing',token,startedAt:at,expiresAt:at+86400000*7,version});
   });
-  async function fresh(){const latest=await loadEvidence(db,e.resourceId);if(latest.fingerprint!==c.fingerprint)fail('QA_SOURCE','来源已变化');if(clock()-at>55000)fail('QA_TIMEOUT','问答已超时');return latest;}
+  async function fresh(){const latest=await evidenceLoader(db,e.resourceId);if(latest.fingerprint!==c.fingerprint)fail('QA_SOURCE','来源已变化');if(clock()-at>55000)fail('QA_TIMEOUT','问答已超时');return latest;}
   let outcome='failed',usage=[],answer,calls=0;
   try {
    await fresh();
