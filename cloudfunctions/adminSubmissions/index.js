@@ -1379,6 +1379,7 @@ exports.main = async (event = {}) => {
     if (['getGuideOfficialSources','searchGuideOfficialSources','refreshGuideOfficialSources'].includes(action)) return await require('./domains/guide-official-sources').createOfficialSourceService({db}).handle(event,callerUid);
     if (require('./domains/guide-packs').actions.includes(action)) return await require('./domains/guide-packs').createGuidePackService({db}).handle(event,callerUid);
     if (['getGuideEvaluations','selectGuideEvaluation'].includes(action)) return await require('./domains/guide-evaluations').createGuideEvaluationService({db}).handle(event,callerUid);
+    if (require('./domains/site-walks').actions.includes(action)) return await require('./domains/site-walks').createSiteWalkAdminService({db}).handle(event,callerUid);
     if (['saveGuideSourceContext','rejectGuideFragment','previewGuideGeneration','getGuideWorkspace','getGuideFragmentDraft','saveGuideFragment','publishGuideFragment','archiveGuideFragment','saveGuideVisitInfo'].includes(action)) return await require('./domains/guide-fragments').createGuideFragmentService({db}).handle(event,callerUid);
     if (action === 'getAgentReviewWorkspace') return await storyAgentReviewService.workspace(event);
     if (action === 'reviewAgentCandidates') return await storyAgentReviewService.review(event, callerUid);

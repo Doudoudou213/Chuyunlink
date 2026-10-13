@@ -6,6 +6,8 @@ const {hash}=require('../lib/guide-question-evidence');
 function createSiteWalkService({db,clock=Date.now}){
  async function get(e){
   if(typeof e.resourceId!=='string'||! /^[\w-]{1,128}$/.test(e.resourceId))throw Error('请选择地点');
+  const managed=await require('../lib/site-walk-core').publicWalk(db,e.resourceId,clock());
+  if(managed)return managed;
   const r=await read(db,'resources',e.resourceId),empty={ok:true,available:false,reason:'本站内部导览尚待现场核实，可继续阅读已有介绍。'};
   if(!r||r.status!=='published'||r.disabledAt||r.withdrawnAt||r.needsSourceReview||r.sourceUnavailable||['closed','unavailable'].includes(r.visitInfo?.status))return empty;
   const w=r.siteWalk,at=clock();
