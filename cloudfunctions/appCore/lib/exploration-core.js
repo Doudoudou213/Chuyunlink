@@ -19,9 +19,11 @@ async function get(db,resourceId,now=Date.now()){
  const C=require('./site-walk-core'),live=await C.publicWalk(db,resourceId,now);
  const empty={ok:true,available:false,reason:'探索地图尚未核实，先阅读已有介绍。'};
  if(!live?.available)return live||empty;
- const root=await read(db,'site_walks',C.rootId(resourceId)),v=await read(db,'site_walk_versions',root.publishedVersionId);
+ const root=await read(db,'site_walks',C.rootId(resourceId));if(!root||root.paused||!root.publishedVersionId)return empty;const v=await read(db,'site_walk_versions',root.publishedVersionId);
  // Re-read the root to catch a publication change during the source projection.
  if(v?.version!==live.walk.version||!v?.exploration)return empty;
  const map=project(v.exploration,live.walk.points);try{map.assets=await require('./exploration-assets').resolve(db,v.exploration,live.walk.points,now);}catch(e){if(e.code==='WALK_SOURCE')return empty;throw e;}return {...live,map,walk:{...live.walk,fingerprint:hash([live.walk.fingerprint,map])}};
 }
-module.exports={normalize,project,get,hash};
+function exportLayout(map,points){const m=normalize(map,points);if(!m)fail('先配置并保存地图');return {schema:'exploration-layout-v1',slots:points.map(p=>m.objects.find(o=>o.pointId===p.id)).filter(Boolean).map(({symbol,x,y})=>({symbol,x,y}))};}
+function importLayout(value,points){if(!value||value.schema!=='exploration-layout-v1'||!Array.isArray(value.slots)||value.slots.length!==points.length||JSON.stringify(value).length>16000)fail('布局包需与当前观察点数量一致，最大 16KB');return normalize({schemaVersion:1,coordinateType:'schematic',objects:value.slots.map((o,i)=>({id:'object_'+i,pointId:points[i].id,symbol:o.symbol,x:o.x,y:o.y})),edges:[]},points);}
+module.exports={normalize,project,get,hash,exportLayout,importLayout};

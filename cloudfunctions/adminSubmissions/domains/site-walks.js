@@ -1,6 +1,6 @@
 'use strict';
 const C=require('../lib/site-walk-core');
-const actions=['saveExplorationAsset','revokeExplorationAsset','getExplorationAssets','getSiteWalkWorkspace','getSiteWalkDraft','saveSiteWalkDraft','previewSiteWalk','publishSiteWalk','pauseSiteWalk'];
+const actions=['exportExplorationLayout','importExplorationLayout','saveExplorationAsset','revokeExplorationAsset','getExplorationAssets','getSiteWalkWorkspace','getSiteWalkDraft','saveSiteWalkDraft','previewSiteWalk','publishSiteWalk','pauseSiteWalk'];
 function createSiteWalkAdminService({db,clock=Date.now}) {
  async function prepare(){for(const name of ['site_walks','site_walk_versions','site_walk_logs','exploration_assets']) await db.createCollection(name).catch(e=>{if(!/exist/i.test(String(e.code)+e.message))throw e;});}
  async function catalog(resourceId){
@@ -19,6 +19,7 @@ function createSiteWalkAdminService({db,clock=Date.now}) {
    return {ok:true,items,nextOffset:rows.length>30?offset+30:null};
   }
   const resourceId=C.id(e.resourceId),key=C.rootId(resourceId);
+  if(e.action==='exportExplorationLayout'){const root=await C.read(db,'site_walks',key),value=root?.draft||(root?.publishedVersionId?await C.read(db,'site_walk_versions',root.publishedVersionId):null);if(!value)C.fail('WALK_STATE','请先保存地图草稿');return {ok:true,package:require('../lib/exploration-core').exportLayout(value.exploration,value.points)};}
   if(e.action==='getExplorationAssets')return {ok:true,items:(await db.collection('exploration_assets').where({resourceId}).limit(100).get()).data||[]};
   if(e.action==='getSiteWalkDraft'){const root=await C.read(db,'site_walks',key),versions=(await db.collection('site_walk_versions').where({resourceId}).limit(100).get()).data||[];const published=root?.publishedVersionId?await C.read(db,'site_walk_versions',root.publishedVersionId):null;return {ok:true,root,publishedDraft:published?{title:published.title,points:published.points,...(published.exploration?{exploration:published.exploration}:{})}:null,options:await catalog(resourceId),versions:versions.map(v=>({version:v.version,versionId:v.versionId,publishedAt:v.publishedAt,validUntil:v.review.validUntil}))};}
   if(e.action==='previewSiteWalk'){const root=await C.read(db,'site_walks',key);if(!root?.draft)C.fail('WALK_STATE','请先保存草稿');const result=await C.resolve(db,resourceId,root.draft);return {ok:true,revision:root.revision,previewFingerprint:C.hash([root.revision,root.draft,result.sourceFingerprint]),preview:result};}
@@ -38,8 +39,9 @@ function createSiteWalkAdminService({db,clock=Date.now}) {
    const ref=tx.collection('site_walks').doc(key),old=await C.read(tx,'site_walks',key);
    if((old?.revision||0)!==Number(e.revision))C.fail('WALK_CONFLICT','另一窗口已修改，请重新读取后编辑');
    let next={...old,id:key,resourceId,revision:(old?.revision||0)+1,updatedAt:new Date(clock()).toISOString()},result;
-   if(e.action==='saveSiteWalkDraft'){
-    const value=C.draft(e.draft||{});await C.resolve(tx,resourceId,value);next.draft=value;result={ok:true,revision:next.revision};
+   if(e.action==='saveSiteWalkDraft'||e.action==='importExplorationLayout'){
+    let raw=e.draft||{};if(e.action==='importExplorationLayout'){const base=old?.draft||(old?.publishedVersionId?await C.read(tx,'site_walk_versions',old.publishedVersionId):null);if(!base)C.fail('WALK_STATE','请先保存本站观察点');raw={...base,exploration:require('../lib/exploration-core').importLayout(e.package,base.points)};}
+    const value=C.draft(raw);await C.resolve(tx,resourceId,value);next.draft=value;result={ok:true,revision:next.revision};
    } else if(e.action==='publishSiteWalk'){
     if(!old?.draft)C.fail('WALK_STATE','请先保存草稿');
     const resolved=await C.resolve(tx,resourceId,old.draft);

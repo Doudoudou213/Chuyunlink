@@ -9,3 +9,6 @@ data/
 !cloudfunctions/adminSubmissions/data/resources.v1.json
 .DS_Store
 Thumbs.db
+
+# Local exploration screenshots and playback checks
+artifacts/exploration/
