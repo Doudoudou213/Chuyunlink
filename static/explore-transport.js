@@ -1,0 +1,4 @@
+(function(){'use strict';let connection;
+async function connect(){if(window.ExplorationAdapter)return window.ExplorationAdapter;if(connection)return connection;connection=(async()=>{if(!window.cloudbase)await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://static.cloudbase.net/cloudbase-js-sdk/2.28.6/cloudbase.full.js';s.onload=ok;s.onerror=()=>no(Error('网络暂不可用，请稍后重试'));document.head.append(s);});return {async identity(){await GuideCloud.call({action:'getSiteWalk',resourceId:new URLSearchParams(location.search).get('resourceId')||'yellow-crane-tower'});const u=await GuideCloud.identity();return u?.uid||'guest';},call:data=>GuideCloud.call(data)};})();try{return await connection;}catch(e){connection=null;throw e;}}
+window.ExploreTransport={async identity(){return (await connect()).identity();},async call(data){return (await connect()).call(data);}};
+})();
