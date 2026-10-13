@@ -1917,7 +1917,7 @@ async function createSubmission(uid, userInfo, event) {
     };
   }
 
-  const visitContext = event.visitResourceId ? await require('./domains/visit-records').createVisitRecordService({db}).context(uid,{resourceId:event.visitResourceId,sessionId:event.visitSessionId}) : null;
+  const visitContext = event.visitResourceId ? await require('./domains/visit-records').createVisitRecordService({db}).context(uid,{resourceId:event.visitResourceId,sessionId:event.visitSessionId,pointId:event.visitPointId}) : null;
   if (visitContext && gapTaskContext && gapTaskContext.targetResourceId !== visitContext.resourceId) throw new Error('站点与征集任务不一致，请取消其中一个关联');
   const useStation = !!visitContext && event.useStationLocation === true;
   if(useStation && !visitContext.location) throw new Error('本站缺少可引用地点，请手动定位');
@@ -1977,7 +1977,7 @@ async function createSubmission(uid, userInfo, event) {
     supplementCount: 0,
     approvedSupplements: [],
     ...(gapTaskContext || {}),
-    ...(visitContext ? {visitSessionId:visitContext.sessionId,visitResourceId:visitContext.resourceId,locationSource:useStation?'station_reference':'user_location'} : {}),
+    ...(visitContext ? {visitSessionId:visitContext.sessionId,visitResourceId:visitContext.resourceId,...(visitContext.siteWalkId?{siteWalkId:visitContext.siteWalkId,siteWalkVersion:visitContext.siteWalkVersion,siteWalkPointId:visitContext.siteWalkPointId}:{}),locationSource:useStation?'station_reference':'user_location'} : {}),
     source: 'cloudbase_formal_web',
     createdAt: db.serverDate(),
     updatedAt: db.serverDate()
@@ -2012,6 +2012,10 @@ exports.main = async (event = {}) => {
     }
 
     const action = cleanText(event.action, 40);
+    if (require('./domains/site-walk-sessions').actions.includes(action)) {
+      requireStableAccount(userInfo);
+      return await require('./domains/site-walk-sessions').createSiteWalkSessionService({db}).handle(uid,event);
+    }
     if (['saveVisitSession','getVisitSession','listVisitSessions','visitSessionEvent','checkVisitRoute'].includes(action)) {
       requireStableAccount(userInfo);
       return await require('./domains/visit-sessions').createVisitSessionService({db,routePlanner:planRoute}).handle(uid,event);
