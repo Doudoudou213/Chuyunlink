@@ -36,7 +36,8 @@ async function resolve(db, resourceId, value) {
   if(!o?.located) fail('WALK_SOURCE','观察内容或位置已变化，请重新选取');
   points.push({id:p.id,title:p.title||g.f.title,text:o.text,locator:o.locator,direction:p.direction,photo:null,sources:g.sources,guideVersionId:p.guideVersionId});
  }
- return {points,sourceFingerprint:hash([...cache.values()].map(g=>[g.f.versionId,g.c.fingerprint,g.c.contextFingerprint])),title:value.title||String(resource.title||'景点导览').slice(0,100)};
+ const assetFingerprint=value.exploration?await require('./exploration-assets').resolve(db,value.exploration,points):null;
+ return {points,sourceFingerprint:hash(assetFingerprint?[...cache.values()].map(g=>[g.f.versionId,g.c.fingerprint,g.c.contextFingerprint]).concat([assetFingerprint]):[...cache.values()].map(g=>[g.f.versionId,g.c.fingerprint,g.c.contextFingerprint])),title:value.title||String(resource.title||'景点导览').slice(0,100)};
 }
 function review(raw, reviewer, now) {
  const checked=Date.parse(raw?.checkedAt),until=Date.parse(raw?.validUntil);

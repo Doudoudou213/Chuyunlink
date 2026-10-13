@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'../..');
 async function start(port=0){
  const fixture=await require('../test-site-walk-admin').setup();
  const sessions=require('../../cloudfunctions/appCore/domains/site-walk-sessions').createSiteWalkSessionService({db:fixture.db});
- const allowed=['explore-admin.js','site-walk-admin.css','site-walk-admin.js','site-walk.css','site-walk.js','site-walk-engine.js','visit-engine.js','guide-cloud.js','assets/longcang-editorial-v1.woff2'];
+ const allowed=['explore-assets-admin.js','explore-admin.js','site-walk-admin.css','site-walk-admin.js','site-walk.css','site-walk.js','site-walk-engine.js','visit-engine.js','guide-cloud.js','assets/longcang-editorial-v1.woff2'];
  const server=http.createServer(async(req,res)=>{res.setHeader('Cache-Control','no-store');const p=new URL(req.url,'http://local').pathname;
   try {
    if(req.method==='POST'&&['/__admin','/__session'].includes(p)){

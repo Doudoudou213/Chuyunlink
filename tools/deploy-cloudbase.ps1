@@ -210,6 +210,7 @@ try {
         (Join-Path $staticDirectory 'guide-question-transport.js'),
         (Join-Path $staticDirectory 'guide-question.js'),
         (Join-Path $staticDirectory 'guide-question.css'),
+        (Join-Path $staticDirectory 'explore-assets-admin.js'),
         (Join-Path $staticDirectory 'explore-admin.js'),
         (Join-Path $staticDirectory 'explore.css'),
         (Join-Path $staticDirectory 'explore-app.js'),

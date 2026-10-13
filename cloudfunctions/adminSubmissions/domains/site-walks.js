@@ -1,8 +1,8 @@
 'use strict';
 const C=require('../lib/site-walk-core');
-const actions=['getSiteWalkWorkspace','getSiteWalkDraft','saveSiteWalkDraft','previewSiteWalk','publishSiteWalk','pauseSiteWalk'];
+const actions=['saveExplorationAsset','revokeExplorationAsset','getExplorationAssets','getSiteWalkWorkspace','getSiteWalkDraft','saveSiteWalkDraft','previewSiteWalk','publishSiteWalk','pauseSiteWalk'];
 function createSiteWalkAdminService({db,clock=Date.now}) {
- async function prepare(){for(const name of ['site_walks','site_walk_versions','site_walk_logs']) await db.createCollection(name).catch(e=>{if(!/exist/i.test(String(e.code)+e.message))throw e;});}
+ async function prepare(){for(const name of ['site_walks','site_walk_versions','site_walk_logs','exploration_assets']) await db.createCollection(name).catch(e=>{if(!/exist/i.test(String(e.code)+e.message))throw e;});}
  async function catalog(resourceId){
   const rows=(await db.collection('guide_fragments').where({resourceId}).limit(100).get()).data||[],items=[];
   for(const r of rows) if(r.publishedVersionId) try {const g=await C.guide(db,r.publishedVersionId,resourceId); for(const o of g.observations.filter(x=>x.located)) items.push({guideVersionId:r.publishedVersionId,observationKey:o.key,title:g.f.title,text:o.text,locator:o.locator,sources:g.sources});}catch(e){if(!['WALK_SOURCE','GUIDE_SOURCE_INVALID'].includes(e.code))throw e;}
@@ -19,6 +19,7 @@ function createSiteWalkAdminService({db,clock=Date.now}) {
    return {ok:true,items,nextOffset:rows.length>30?offset+30:null};
   }
   const resourceId=C.id(e.resourceId),key=C.rootId(resourceId);
+  if(e.action==='getExplorationAssets')return {ok:true,items:(await db.collection('exploration_assets').where({resourceId}).limit(100).get()).data||[]};
   if(e.action==='getSiteWalkDraft'){const root=await C.read(db,'site_walks',key),versions=(await db.collection('site_walk_versions').where({resourceId}).limit(100).get()).data||[];const published=root?.publishedVersionId?await C.read(db,'site_walk_versions',root.publishedVersionId):null;return {ok:true,root,publishedDraft:published?{title:published.title,points:published.points,...(published.exploration?{exploration:published.exploration}:{})}:null,options:await catalog(resourceId),versions:versions.map(v=>({version:v.version,versionId:v.versionId,publishedAt:v.publishedAt,validUntil:v.review.validUntil}))};}
   if(e.action==='previewSiteWalk'){const root=await C.read(db,'site_walks',key);if(!root?.draft)C.fail('WALK_STATE','请先保存草稿');const result=await C.resolve(db,resourceId,root.draft);return {ok:true,revision:root.revision,previewFingerprint:C.hash([root.revision,root.draft,result.sourceFingerprint]),preview:result};}
   C.id(e.requestId);
@@ -26,6 +27,14 @@ function createSiteWalkAdminService({db,clock=Date.now}) {
   return db.runTransaction(async tx=>{
    const prior=await C.read(tx,'site_walk_logs',logId);
    if(prior){if(prior.signature!==signature)C.fail('WALK_REQUEST','重复请求内容不同，请重新操作');return prior.result;}
+   if(['saveExplorationAsset','revokeExplorationAsset'].includes(e.action)){
+    let result;
+    if(e.action==='saveExplorationAsset'){
+     const value=await require('../lib/exploration-assets').validate(tx,e.asset||{},resourceId,clock()),assetId='asset_'+C.hash([resourceId,reviewer,e.requestId]).slice(0,40);
+     await tx.collection('exploration_assets').doc(assetId).set({...value,id:assetId,reviewedBy:reviewer,createdAt:new Date(clock()).toISOString()});result={ok:true,assetId};
+    }else{const assetId=C.id(e.assetId),a=await C.read(tx,'exploration_assets',assetId);if(!a||a.resourceId!==resourceId)C.fail('EXPLORATION_ASSET','素材不存在');if(C.text(e.reason,500).length<4)C.fail('EXPLORATION_ASSET','请填写停用原因');await tx.collection('exploration_assets').doc(assetId).update({status:'revoked',revokedAt:new Date(clock()).toISOString(),revokedBy:reviewer,reason:C.text(e.reason,500)});result={ok:true,assetId};}
+    await tx.collection('site_walk_logs').doc(logId).set({action:e.action,resourceId,reviewer,signature,result,createdAt:new Date(clock()).toISOString()});return result;
+   }
    const ref=tx.collection('site_walks').doc(key),old=await C.read(tx,'site_walks',key);
    if((old?.revision||0)!==Number(e.revision))C.fail('WALK_CONFLICT','另一窗口已修改，请重新读取后编辑');
    let next={...old,id:key,resourceId,revision:(old?.revision||0)+1,updatedAt:new Date(clock()).toISOString()},result;
