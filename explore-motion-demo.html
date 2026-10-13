@@ -10,7 +10,11 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="static/exploration-motion-demo.css">
   <script defer src="static/assets/vendor/lucide-1.51.0.min.js"></script>
+  <script defer src="static/assets/gsap-3.15.0.min.js"></script>
   <script defer src="static/exploration-motion-scene.js"></script>
+  <script defer src="static/exploration-gilded-reveal.js"></script>
+  <script defer src="static/exploration-park-layout.js"></script>
+  <script defer src="static/exploration-park-demo.js"></script>
   <script defer src="static/exploration-motion-demo.js"></script>
 </head>
 <body>
@@ -21,10 +25,10 @@
         <img class="ground" src="static/assets/exploration-motion/hhl-ground-v1.webp" alt="手绘布局：黄鹤楼居西，古铜顶与白云阁在东侧，鹅池位于南侧；远处城市为艺术装饰" draggable="false" fetchpriority="high">
         <div class="pond-shimmer" aria-hidden="true"></div>
         <img class="cranes" src="static/assets/exploration-motion/hhl-cranes-v1.webp" alt="" draggable="false">
-        <div class="landmark tower" data-art="tower"><img src="static/assets/exploration-motion/hhl-tower-v1.webp" alt="" draggable="false"></div>
+        <div class="landmark tower" data-art="tower"><img id="motion-tower-image" src="static/assets/exploration-motion/hhl-tower-v1.webp" alt="" draggable="false"><canvas id="motion-tower-canvas" aria-hidden="true"></canvas></div>
         <div class="landmark copper" data-art="copper"><img src="static/assets/exploration-motion/hhl-copper-v1.webp" alt="" draggable="false"></div>
         <div class="landmark baiyun" data-art="baiyun"><img src="static/assets/exploration-motion/hhl-baiyun-v1.webp" alt="" draggable="false"></div>
-        <div id="motion-halo" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <div id="motion-halo" aria-hidden="true"><svg viewBox="0 0 100 100"><circle class="halo-trace" cx="50" cy="50" r="47" pathLength="1"></circle></svg><i></i><i></i><i></i><i></i><i></i></div>
         <button type="button" class="point-label point-tower" data-point="tower" aria-pressed="true" aria-label="探索黄鹤楼"><span>黄鹤楼</span></button>
         <button type="button" class="point-label point-copper" data-point="copper" aria-pressed="false" aria-label="探索古铜顶"><span>古铜顶</span></button>
         <button type="button" class="point-label point-baiyun" data-point="baiyun" aria-pressed="false" aria-label="探索白云阁"><span>白云阁</span></button>
@@ -41,6 +45,7 @@
       <button id="motion-zoom-in" class="icon-button" type="button" aria-label="放大地图"><i data-lucide="plus"></i></button>
       <button id="motion-zoom-out" class="icon-button" type="button" aria-label="缩小地图"><i data-lucide="minus"></i></button>
     </div>
+    <button id="motion-park" class="park-entry" type="button"><i data-lucide="map"></i><span>展开画卷</span></button>
     <div class="map-caption"><span id="motion-map-help">拖动画卷，看看四周</span><button id="motion-replay" class="icon-button" type="button" aria-label="重播画卷动画" title="重播动画"><i data-lucide="rotate-ccw"></i></button></div>
   </section>
 
@@ -48,7 +53,7 @@
     <p class="eyebrow" id="motion-kicker">眼前这座楼</p>
     <h2 id="motion-title">黄鹤楼</h2>
     <p id="motion-description">抬头看看飞檐，再读一段楼的故事。</p>
-    <button id="motion-details" class="text-button" type="button">看看细节 <i data-lucide="arrow-right"></i></button>
+    <div class="reading-actions"><button id="motion-details" class="text-button" type="button">看看细节 <i data-lucide="arrow-right"></i></button><button id="motion-study" class="motion-study-entry" type="button">看金线成画 <i data-lucide="sparkles"></i></button></div>
     <form id="motion-question-form" autocomplete="off">
       <label class="sr-only" for="motion-question">问问当前景物，本地固定内容演示</label>
       <input id="motion-question" name="question" maxlength="300" placeholder="想问点什么…" enterkeyhint="send">
@@ -82,6 +87,21 @@
   <dialog id="motion-notebook-dialog" aria-labelledby="notebook-title">
     <button id="motion-notebook-close" class="icon-button dialog-close" type="button" aria-label="关闭本机记录"><i data-lucide="x"></i></button>
     <div class="dialog-copy"><p class="eyebrow">这幅画里，你看过</p><h2 id="notebook-title">画卷拾记</h2><ul id="motion-viewed"></ul><p class="fine-print">仅保存在这台设备。不代表实际到访，也不会上传你的行踪。</p><button id="motion-clear-notebook" class="text-button" type="button">清空本机记录</button></div>
+  </dialog>
+
+  <dialog id="motion-study-dialog" aria-labelledby="motion-study-title">
+    <button id="motion-study-close" class="icon-button dialog-close" type="button" aria-label="关闭成画小样"><i data-lucide="x"></i></button>
+    <div class="study-heading"><p class="eyebrow">一笔金线，一层山色</p><h2 id="motion-study-title">楼阁，徐徐入画</h2></div>
+    <div class="study-art"><canvas id="motion-study-canvas" role="img" aria-label="黄鹤楼固定轮廓，金线沿飞檐逐层勾勒，原画颜色随后晕染显现"></canvas><p id="motion-study-error" hidden>画卷暂未展开。请刷新页面重试，或先查看景物资料。</p></div>
+    <div class="study-footer"><span id="motion-study-phase" role="status">勾勒飞檐 · 晕染朱金 · 收光成画</span><button id="motion-study-replay" class="icon-button" type="button" aria-label="重新播放金线成画"><i data-lucide="rotate-ccw"></i></button></div>
+  </dialog>
+
+  <dialog id="motion-park-dialog" aria-labelledby="park-title">
+    <header class="park-header"><div><p class="eyebrow">将画卷，再展开一点</p><h2 id="park-title">一卷黄鹤楼</h2></div><button id="motion-park-close" class="icon-button" type="button" aria-label="收起全园布局"><i data-lucide="x"></i></button></header>
+    <div id="motion-park-stage" tabindex="0" role="region" aria-label="可拖动的核心园区布局草图" aria-describedby="park-help"><div id="motion-park-world"><img id="park-art" src="static/assets/exploration-motion/hhl-full-park-v2.webp" alt="黄鹤楼公园核心园区手绘构图草图，西部主楼、中部白云阁、南部鹅池与东部园林；部分景物为待细化占位" draggable="false"><div id="park-points"></div></div></div>
+    <div class="park-scroll-hint"><span id="park-help">左右拖动画卷 · 点一处景物</span><span id="park-progress">画中拾景</span></div>
+    <div class="park-reading"><div><p id="park-point-region" class="eyebrow">西部主楼区</p><h3 id="park-point-title">黄鹤楼</h3></div><p id="park-point-copy">沿画卷向东看看，那里还有阁楼、园林与碑刻。</p><button id="park-open-detail" class="text-button" type="button">细看这一处 <i data-lucide="arrow-right"></i></button><a id="park-point-source" target="_blank" rel="noopener noreferrer">查看布局依据</a></div>
+    <p class="park-note">核心园区构图草图 · 空心点为待补绘的资料参考位置，首义园区东延部分待补。非实地导航。</p>
   </dialog>
 </main>
 </body>

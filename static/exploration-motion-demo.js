@@ -10,9 +10,47 @@
   let selected = 'tower', reduced = motionPreference.matches, drag = null, suppressClickUntil = 0;
   let camera = { x: 0, y: 0, scale: 1 };
   let viewed = new Set();
+  let towerReveal = null, studyReveal = null, towerLoading = null, haloTween = null;
+  let unloaded = false, lifecycle = 0;
+  const mapCovered = () => Boolean(document.querySelector('dialog[open]'));
   try { const saved = JSON.parse(localStorage.getItem(storageKey) || '[]'); if (Array.isArray(saved)) viewed = new Set(saved.filter(id => Object.hasOwn(scene, id))); } catch (_) { /* Storage is optional. */ }
 
   function announce(message) { $('motion-status').textContent = message; }
+  async function prepareReveal() {
+    if (towerReveal) return true;
+    if (towerLoading) return towerLoading;
+    const epoch = lifecycle;
+    towerLoading = (async () => {
+      const image = $('motion-tower-image');
+      try {
+        await image.decode();
+        if (unloaded || epoch !== lifecycle || !window.ChuGildedReveal) return false;
+        towerReveal = window.ChuGildedReveal.create({ canvas: $('motion-tower-canvas'), image, quality: 'compact' });
+        document.querySelector('.tower').classList.add('has-reveal');
+        return true;
+      } catch (_) { announce('动效插画暂未加载，仍可通过名称查看景物资料。'); return false; }
+    })();
+    return towerLoading;
+  }
+  function traceHalo() {
+    if (haloTween) haloTween.kill();
+    const trace = halo.querySelector('.halo-trace');
+    trace.style.strokeDashoffset = '0';
+    if (reduced || document.hidden || !window.gsap) return;
+    haloTween = window.gsap.fromTo(trace, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.65, ease: 'power1.inOut' });
+  }
+  async function showStudy() {
+    const epoch = lifecycle;
+    const ready = await prepareReveal();
+    if (epoch !== lifecycle || unloaded || !$('motion-study-dialog').open) return;
+    if (!ready) { $('motion-study-error').hidden = false; $('motion-study-phase').textContent = '插画暂未加载，请刷新页面重试。'; return; }
+    $('motion-study-error').hidden = true;
+    $('motion-study-phase').textContent = '勾勒飞檐 · 晕染朱金 · 收光成画';
+    towerReveal.pause();
+    if (studyReveal) studyReveal.destroy();
+    studyReveal = window.ChuGildedReveal.create({canvas: $('motion-study-canvas'), image: $('motion-tower-image'), width: 768});
+    studyReveal.play();
+  }
   function play(node, keyframes, options, decorative = false) {
     if (reduced || document.hidden || !node || typeof node.animate !== 'function') return null;
     const animation = node.animate(keyframes, options);
@@ -27,7 +65,7 @@
     cancel(ambient);
     play(document.querySelector('.cranes'), [{ transform: 'translate(-5px,4px) rotate(-1deg)' }, { transform: 'translate(8px,-5px) rotate(1deg)' }], { duration: 6800, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' }, true);
     play(document.querySelector('.pond-shimmer'), [{ opacity: .2, transform: 'scale(.9)' }, { opacity: .85, transform: 'scale(1.1)' }], { duration: 4900, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' }, true);
-    for (const [index, spark] of [...halo.children].entries()) {
+    for (const [index, spark] of [...halo.querySelectorAll('i')].entries()) {
       play(spark, [{ opacity: .35 }, { opacity: 1 }, { opacity: .45 }], { duration: 2600 + index * 310, iterations: Infinity, delay: index * 300, easing: 'ease-in-out' }, true);
     }
   }
@@ -79,23 +117,17 @@
     setDetail();
     if (record) remember();
     if (animate) {
-      play(halo, [
-        { transform: 'translate(-50%,-50%) scale(.25)', opacity: 0, filter: 'brightness(2)' },
-        { transform: 'translate(-50%,-50%) scale(1.09)', opacity: 1, filter: 'brightness(1.7)', offset: .6 },
-        { transform: 'translate(-50%,-50%) scale(1)', opacity: 1, filter: 'brightness(1)' }
-      ], { duration: 1050, easing: 'cubic-bezier(.2,.7,.2,1)' });
-      const art = document.querySelector('[data-art="' + id + '"]');
-      play(art, [{ clipPath: 'circle(8% at 50% 65%)', transform: 'translate(-50%,12px) scale(.95)', opacity: .25 }, { clipPath: 'circle(90% at 50% 65%)', transform: 'translate(-50%,0) scale(1)', opacity: 1 }], { duration: 980, easing: 'cubic-bezier(.16,.8,.24,1)' });
+      traceHalo();
+      if (id === 'tower') prepareReveal().then(ready => { if (ready && selected === id) { if (mapCovered()) { towerReveal.finish(); towerReveal.pause(); } else towerReveal.play(); } });
+      else if (towerReveal) towerReveal.finish();
       for (const node of [$('motion-kicker'), $('motion-description')]) play(node, [{ opacity: .2, transform: 'translateY(5px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 340, easing: 'ease-out' });
     }
     announce('已展开' + point.title + '。这只是画卷浏览，不代表实际到访。');
   }
   function opening() {
     cancel(animations);
-    for (const [index, art] of [...document.querySelectorAll('[data-art]')].entries()) {
-      play(art, [{ clipPath: 'circle(1% at 50% 65%)', opacity: .05, transform: 'translate(-50%,14px)' }, { clipPath: 'circle(95% at 50% 65%)', opacity: 1, transform: 'translate(-50%,0)' }], { duration: 1400, delay: index * 180, easing: 'cubic-bezier(.18,.68,.12,1)', fill: 'backwards' });
-    }
-    play(halo, [{ transform: 'translate(-50%,-50%) scale(.2)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.07)', opacity: 1, offset: .72 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }], { duration: 1600, easing: 'ease-out' });
+    prepareReveal().then(ready => { if (ready) { if (selected === 'tower' && !mapCovered()) towerReveal.play(); else { towerReveal.finish(); if (mapCovered()) towerReveal.pause(); } } });
+    traceHalo();
   }
   for (const button of document.querySelectorAll('[data-point]')) button.addEventListener('click', event => {
     if (performance.now() < suppressClickUntil && event.detail !== 0) return;
@@ -155,18 +187,33 @@
   stage.addEventListener('pointercancel', endPointer);
   stage.addEventListener('lostpointercapture', event => { if (pointers.has(event.pointerId)) endPointer(event); });
 
+  const park = window.ChuParkDemo?.init({onDetail(id) { $('motion-park-dialog').close(); select(id); $('motion-details').focus({preventScroll: true}); $('motion-dialog').showModal(); }});
   for (const [opener, dialog, closer] of [
     ['motion-details', 'motion-dialog', 'motion-close'],
     ['motion-sources', 'motion-sources-dialog', 'motion-sources-close'],
-    ['motion-notebook', 'motion-notebook-dialog', 'motion-notebook-close']
+    ['motion-notebook', 'motion-notebook-dialog', 'motion-notebook-close'],
+    ['motion-study', 'motion-study-dialog', 'motion-study-close'],
+    ['motion-park', 'motion-park-dialog', 'motion-park-close']
   ]) {
-    $(opener).addEventListener('click', () => { if (dialog === 'motion-notebook-dialog') paintNotebook(); $(dialog).showModal(); });
+    $(opener).addEventListener('click', () => {
+      if (dialog === 'motion-notebook-dialog') paintNotebook();
+      $(dialog).showModal();
+      towerReveal?.pause();
+      if (dialog === 'motion-study-dialog') showStudy();
+      if (dialog === 'motion-park-dialog') { towerReveal?.pause(); park?.open(); }
+    });
     $(closer).addEventListener('click', () => $(dialog).close());
-    $(dialog).addEventListener('close', () => $(opener).focus({ preventScroll: true }));
+    $(dialog).addEventListener('close', () => {
+      if (dialog === 'motion-study-dialog') studyReveal?.pause();
+      if (!mapCovered()) towerReveal?.resume();
+      $(opener).focus({ preventScroll: true });
+    });
     $(dialog).addEventListener('click', event => { if (event.target !== $(dialog)) return; const box = $(dialog).getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) $(dialog).close(); });
   }
+  $('motion-study-replay').addEventListener('click', () => { if (studyReveal) studyReveal.play(); else showStudy(); });
   $('motion-clear-notebook').addEventListener('click', () => {
     viewed.clear(); try { localStorage.removeItem(storageKey); } catch (_) { /* Optional storage. */ }
+    park?.clear();
     paintNotebook(); announce('已清空本机浏览记录。');
   });
   $('motion-question-form').addEventListener('submit', event => {
@@ -180,13 +227,14 @@
     root.dataset.paused = String(document.hidden);
     if (!document.hidden && !reduced && !ambient.size) drift();
     for (const animation of [...animations, ...ambient]) { if (document.hidden) animation.pause(); else if (!reduced) animation.play(); }
+    if (haloTween) { if (document.hidden) haloTween.pause(); else if (!reduced) haloTween.resume(); }
   }
-  function preference() { reduced = motionPreference.matches; root.dataset.reduced = String(reduced); cancel(animations); drift(); }
+  function preference() { reduced = motionPreference.matches; root.dataset.reduced = String(reduced); cancel(animations); if (reduced && haloTween) haloTween.progress(1).pause(); drift(); }
   motionPreference.addEventListener('change', preference);
   document.addEventListener('visibilitychange', visibility);
   window.addEventListener('resize', cameraUpdate);
-  window.addEventListener('pagehide', () => { cancel(animations); cancel(ambient); });
-  window.addEventListener('pageshow', event => { if (event.persisted) { drift(); visibility(); } });
+  window.addEventListener('pagehide', () => { unloaded = true; lifecycle++; cancel(animations); cancel(ambient); if (haloTween) haloTween.kill(); towerReveal?.destroy(); studyReveal?.destroy(); towerReveal = null; studyReveal = null; towerLoading = null; });
+  window.addEventListener('pageshow', event => { if (event.persisted) { unloaded = false; drift(); prepareReveal().then(ready => { if (ready) towerReveal.finish(); }); if ($('motion-study-dialog').open) showStudy(); visibility(); } });
   for (const img of document.images) {
     const missing = () => { img.style.visibility = 'hidden'; root.dataset.artwork = 'partial'; announce('部分插画尚未加载，可以继续通过景物名称查看内容。'); };
     img.addEventListener('error', missing);

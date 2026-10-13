@@ -12,7 +12,8 @@
     {"file":"hhl-tower-v1.webp","source":"hhl-tower-v1.png","width":1024,"height":1536,"layer":"tower, transparent"},
     {"file":"hhl-copper-v1.webp","source":"hhl-copper-v1.png","width":1024,"height":1536,"layer":"bronze roof finial, transparent"},
     {"file":"hhl-baiyun-v1.webp","source":"hhl-baiyun-v1.png","width":1024,"height":1536,"layer":"Baiyun pavilion, transparent"},
-    {"file":"hhl-cranes-v1.webp","source":"hhl-cranes-v1.png","width":1536,"height":1024,"layer":"decorative white cranes, transparent"}
+    {"file":"hhl-cranes-v1.webp","source":"hhl-cranes-v1.png","width":1536,"height":1024,"layer":"decorative white cranes, transparent"},
+    {"file":"hhl-full-park-v2.webp","source":"hhl-full-park-v2.png","width":1919,"height":820,"layer":"core park composition draft; four matched painted objects; remaining landmarks are explicitly pending illustration","prompt":"hhl-full-park-v2.prompt.txt"}
   ],
   "referenceUse": "Reference material was used to distinguish subjects and relative layout. Original research photographs are not bundled or republished. Typography, labels and interaction controls are separate from artwork.",
   "references": [

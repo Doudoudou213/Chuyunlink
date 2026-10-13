@@ -626,3 +626,44 @@ No actionable P0/P1/P2 finding remains in the local sample's tested scope.
 - Existing contents of this QA document and the unrelated theme visual changes were preserved. No push, merge or deployment.
 
 final result: passed
+
+---
+
+# 黄鹤楼金线成画与长画卷 · 2026-10-13 第二轮
+
+## Reference and visual comparisons
+
+- User correction overrides the first prototype's motion treatment: no scale/translation growth of a building image; draw gilded contours followed by painted color. The approved V3 still remains the palette, pond, path, city and crane reference.
+- Source video was inspected at actual frames 5.5/6/7/10 seconds. It demonstrates a moving gold rim, layered painted subject and independently moving composition. We do not claim the video proves architectural tracing or a particular rendering engine.
+- Main UI comparison: `artifacts/exploration-motion-demo/v2-reference-implementation.png`. V3 normalized proportionally from853×1844 to390×843 on the left; actual390px Edge full-page capture after6.5seconds on the right. Actual page is870px high because the added sample/atlas controls preserve44px targets. No image was stretched to fake layout agreement.
+- Motion comparison: `v2-motion-reference-comparison.png` combines actual7second reference footage with the actual3.2second tower viewport. Different subjects and framing are deliberate; comparison concerns gold-edge progression and pigment arrival, not copied characters or pixel identity.
+- Motion sequence: `v2-gilded-browser-filmstrip.png`, captured at250/1200/3200/6500ms. The tower's position/scale stays fixed. The first frame contains faint roof contours, then a light nib traces eaves, successive layers gain pigment, and the final frame is the original raster.
+- Actual8second browser Canvas recording: `gilded-reveal-study.webm`,2,729,105bytes. Native captureStream/MediaRecorder with a dark matte behind the real canvas. No interpolation or synthesized animation frames; no audio.
+- Full park: `full-park-overview-1440.png`, `full-park-entry-390.png`, `full-park-east-390.png`; other320/390/768/1440 study/park screenshots remain in the same ignored artifact folder.
+
+## Findings and corrections
+
+1. P1 movement mismatch from prior version: removed whole-building circular clip/scale/translation reveal. The new independent engine follows23 contours traced against the actual tower raster, with a fixed image registration and per-floor irregular pigment mask. Gold halo now draws along its circumference.
+2. P2 draft geography: first new wide illustration falsely wrapped a river around the park and rendered the copper relic as a pavilion. A targeted built-in imagegen revision replaced the perimeter water with urban land and the pavilion with a three-bulb bronze relic; both interior ponds retained.
+3. P1 representation risk: twelve additional source locations are not yet faithfully painted buildings. They use hollow markers, dashed labels and explicit selected-content clarification. Four painted objects are matched; no road network, GPS, real arrival or “complete80-landmark park” promise is made. Eastward Shouyi extension remains out of scope.
+4. P2 label collision: copper and millennium-bell text overlapped. The pending-art bell display anchor and poetry-corridor display anchor were separated; targeted390/1440 recapture and label-rectangle checks found zero text-label collisions across16points.
+5. P1 async lifecycle: when tower decoding completed after opening the large map it could animate behind the modal. The callback now checks current modal coverage; page lifecycle epochs prevent stale decode work from recreating old renderers after pagehide/pageshow.
+6. P2 failure disclosure: missing image or missing reveal module opened an empty study modal. It now contains a visible explanation and retains close/return functionality. Missing GSAP alone renders the static tower.
+7. Canvas readback in Edge can differ by±1 channels even without drawing; motion tests compare strict phase/progress plus bounded aggregate color differences instead of interpreting readback rounding noise as animation.
+
+## Fidelity and product scope
+
+- Local handwritten font, parchment reading region, dark jade ground, gold highlights and quiet red remain. City, white cranes, open pond and visible pale paths are preserved in the main scene.
+- Large-map art is1919×820 at its natural ratio, using an1100px minimum scrollable world. Mouse/touch/keyboard browsing is real. Sixteen local source cards and device-only browsing progress work; viewing never certifies arrival or grants rewards.
+- The new wide artwork, source data, park interaction and reusable reveal engine are separate modules. Original homepage, admin and production exploration/business modules are unchanged.
+- This pass proves the tower motion treatment and a broader composition sketch. Whole-park contour animation, exact individual art for remaining landmarks, unified depth/parallax across all assets and onsite road geometry are still follow-up work, not silently claimed complete.
+
+## Verification
+
+- Original112 local browser checks and new92 checks (including optional real recording) passed. New checks cover decoded artwork, actual pixel-stage changes with fixed box/transform, repeated replay, pause/resume, hidden state, reduced motion, pagehide/pageshow, slow decode during modal opening, missing image/library/module,4sizes, local-only requests and44px controls.
+- Existing6 exploration business/build scripts,4 exploration browser scripts and offline release checks passed.
+- Real-user in-app browser shows the upgraded local page. Independent Edge screenshots and combined comparison files were opened and inspected. No outstanding P0/P1/P2 defect remains in the delivered motion-sample/illustrative-atlas scope.
+- Not tested: physical mobile Safari/GPU/frame timing/power, actual onsite navigation, real models, speech, production cloud or live location. No push, merge, deployment or production data writes.
+- Unrelated theme CSS/font/progress changes preserved and excluded from this checkpoint.
+
+final result: passed
