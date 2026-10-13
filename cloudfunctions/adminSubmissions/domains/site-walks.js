@@ -19,7 +19,7 @@ function createSiteWalkAdminService({db,clock=Date.now}) {
    return {ok:true,items,nextOffset:rows.length>30?offset+30:null};
   }
   const resourceId=C.id(e.resourceId),key=C.rootId(resourceId);
-  if(e.action==='getSiteWalkDraft'){const root=await C.read(db,'site_walks',key),versions=(await db.collection('site_walk_versions').where({resourceId}).limit(100).get()).data||[];const published=root?.publishedVersionId?await C.read(db,'site_walk_versions',root.publishedVersionId):null;return {ok:true,root,publishedDraft:published?{title:published.title,points:published.points}:null,options:await catalog(resourceId),versions:versions.map(v=>({version:v.version,versionId:v.versionId,publishedAt:v.publishedAt,validUntil:v.review.validUntil}))};}
+  if(e.action==='getSiteWalkDraft'){const root=await C.read(db,'site_walks',key),versions=(await db.collection('site_walk_versions').where({resourceId}).limit(100).get()).data||[];const published=root?.publishedVersionId?await C.read(db,'site_walk_versions',root.publishedVersionId):null;return {ok:true,root,publishedDraft:published?{title:published.title,points:published.points,...(published.exploration?{exploration:published.exploration}:{})}:null,options:await catalog(resourceId),versions:versions.map(v=>({version:v.version,versionId:v.versionId,publishedAt:v.publishedAt,validUntil:v.review.validUntil}))};}
   if(e.action==='previewSiteWalk'){const root=await C.read(db,'site_walks',key);if(!root?.draft)C.fail('WALK_STATE','请先保存草稿');const result=await C.resolve(db,resourceId,root.draft);return {ok:true,revision:root.revision,previewFingerprint:C.hash([root.revision,root.draft,result.sourceFingerprint]),preview:result};}
   C.id(e.requestId);
   const logId=C.hash([reviewer,e.requestId]),signature=C.hash(e);

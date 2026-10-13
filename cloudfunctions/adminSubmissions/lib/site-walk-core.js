@@ -24,7 +24,7 @@ function draft(raw) {
  const points=raw.points.map(p=>({id:id(p.id),guideVersionId:id(p.guideVersionId),observationKey:id(p.observationKey),title:text(p.title,100),direction:text(p.direction),accessNote:text(p.accessNote,500)}));
  if(new Set(points.map(p=>p.id)).size!==points.length) fail('WALK_INPUT','观察点编号不能重复');
  // No arbitrary photo URL or unreviewed narrative is accepted in this editor.
- return {title:text(raw.title,100),points};
+ return {title:text(raw.title,100),points,...(raw.exploration ? {exploration:require('./exploration-core').normalize(raw.exploration,points)} : {})};
 }
 async function resolve(db, resourceId, value) {
  const resource=await read(db,'resources',id(resourceId));

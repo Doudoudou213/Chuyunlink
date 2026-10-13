@@ -235,6 +235,7 @@ const javascriptFiles = [
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const guideFiles = [
+  'explore-admin.html','static/explore-admin.js','cloudfunctions/appCore/lib/exploration-core.js','cloudfunctions/adminSubmissions/lib/exploration-core.js',
   'explore.html','static/explore.css','static/explore-app.js','static/explore-state.js','static/explore-map.js','static/explore-motion.js','static/explore-transport.js',
   'site-walk-admin.html','static/site-walk-admin.js','static/site-walk-admin.css',
   'cloudfunctions/adminSubmissions/domains/site-walks.js','cloudfunctions/adminSubmissions/lib/site-walk-core.js','cloudfunctions/adminSubmissions/lib/public-attribution.js',
