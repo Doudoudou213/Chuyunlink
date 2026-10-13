@@ -21,6 +21,7 @@ async function main(){
  const {request,result}=await publish(s);assert.equal(result.version,1);assert.deepEqual(await s.call(request),result);
  await assert.rejects(()=>s.call({...request,review:{}}),/重复请求/);
  assert((await s.publicService.get({resourceId:'r'})).available);
+ assert.equal((await createSiteWalkService({db:s.db,clock:()=>Date.now()+8*86400000}).get({resourceId:'r'})).available,false);
  const publicJson=JSON.stringify(await s.publicService.get({resourceId:'r'}));assert(!publicJson.includes('admin-test'));assert(!publicJson.includes('private-user'));assert(!publicJson.includes('固定模拟'));
  await assert.rejects(()=>s.call({action:'saveSiteWalkDraft',resourceId:'r',revision:1,requestId:'stale',draft:s.draft}),/另一窗口/);
  await s.call({action:'pauseSiteWalk',resourceId:'r',revision:2,requestId:'pause',pointId:'p1',reason:'观察点临时无法通行'});
@@ -40,6 +41,8 @@ async function main(){
  t.db.failOn('site_walk_logs');await assert.rejects(()=>t.call({...request,previewFingerprint:p.previewFingerprint}),/injected/);assert.equal(Object.keys(t.db.data().site_walk_versions).length,0,'atomic rollback');
  t.db.failOn('');await t.db.collection('submissions').doc('s').update({status:'rejected'});
  await assert.rejects(()=>t.call({...request,previewFingerprint:p.previewFingerprint}),/来源/);
+ const concurrent=await setup();const outcomes=await Promise.allSettled(['one','two'].map(requestId=>concurrent.call({action:'saveSiteWalkDraft',resourceId:'r',revision:0,requestId,draft:concurrent.draft})));
+ assert.equal(outcomes.filter(r=>r.status==='fulfilled').length,1);assert.equal(outcomes.filter(r=>r.status==='rejected'&&r.reason.code==='WALK_CONFLICT').length,1);
  console.log('Site walk administration passed: review gate, current evidence, preview binding, conflicts, retries, immutable versions, pause, withdrawal, atomic rollback and private projection.');
 }
 if(require.main===module)main().catch(e=>{console.error(e);process.exitCode=1;});module.exports={setup,publish};

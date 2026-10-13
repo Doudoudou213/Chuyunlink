@@ -235,6 +235,9 @@ const javascriptFiles = [
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const guideFiles = [
+  'site-walk-admin.html','static/site-walk-admin.js','static/site-walk-admin.css',
+  'cloudfunctions/adminSubmissions/domains/site-walks.js','cloudfunctions/adminSubmissions/lib/site-walk-core.js','cloudfunctions/adminSubmissions/lib/public-attribution.js',
+  'cloudfunctions/appCore/lib/site-walk-core.js','cloudfunctions/appCore/lib/site-walk-engine.js','cloudfunctions/appCore/domains/site-walk-sessions.js',
   'onsite.html','static/site-walk-engine.js','static/site-walk.js','static/site-walk-entry.js','static/site-walk.css','cloudfunctions/appCore/domains/site-walks.js',
   'static/guide-question-state.js','static/guide-question-transport.js','static/guide-question.js','static/guide-question.css',
   'cloudfunctions/appCore/lib/guide-question-evidence.js','cloudfunctions/appCore/lib/guide-question-client.js','cloudfunctions/appCore/lib/guide-question-contract.js','cloudfunctions/appCore/domains/guide-questions.js',

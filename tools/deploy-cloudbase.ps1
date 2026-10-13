@@ -186,6 +186,7 @@ try {
         (Join-Path $projectRoot 'themes.html'),
         (Join-Path $projectRoot 'guide.html'),
         (Join-Path $projectRoot 'onsite.html'),
+        (Join-Path $projectRoot 'site-walk-admin.html'),
         (Join-Path $projectRoot 'hubei_boundary.geojson')
       )
       $hostingStaticFiles = @(
@@ -211,6 +212,8 @@ try {
         (Join-Path $staticDirectory 'site-walk.js'),
         (Join-Path $staticDirectory 'site-walk-entry.js'),
         (Join-Path $staticDirectory 'site-walk.css'),
+        (Join-Path $staticDirectory 'site-walk-admin.js'),
+        (Join-Path $staticDirectory 'site-walk-admin.css'),
         (Join-Path $staticDirectory 'cultural-guide.js'),
         (Join-Path $staticDirectory 'visit-planner.js'),
         (Join-Path $staticDirectory 'guide-conversation.js'),

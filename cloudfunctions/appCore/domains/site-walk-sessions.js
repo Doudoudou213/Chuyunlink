@@ -11,13 +11,14 @@ function createSiteWalkSessionService({db,clock=Date.now}) {
   await db.createCollection('visit_sessions').catch(e=>{if(!/exist/i.test(String(e.code)+e.message))throw e;});
   if(e.action==='listSiteWalkSessions'){
    const offset=Math.max(0,Math.min(10000,Number(e.offset)||0));
-   const rows=(await db.collection('visit_sessions').where({userId:uid,kind:'site_walk'}).skip(offset).limit(21).get()).data||[];
+   const rows=(await db.collection('visit_sessions').where({userId:uid,kind:'site_walk',...(e.resourceId?{resourceId:C.id(e.resourceId)}:{})}).skip(offset).limit(21).get()).data||[];
    return {ok:true,items:rows.slice(0,20).map(safe),nextOffset:rows.length>20?offset+20:null};
   }
   if(e.action==='getSiteWalkSession')return {ok:true,session:safe(await owned(db,uid,e.sessionId))};
   const key=C.id(e.sessionId),requestId=C.id(e.requestId),signature=C.hash(e);
   return db.runTransaction(async tx=>{
    const old=await C.read(tx,'visit_sessions',key);
+   if(!old&&e.action==='deleteSiteWalkSession')return {ok:true,deleted:true};
    if(old&&(old.userId!==uid||old.kind!=='site_walk'))C.fail('WALK_NOT_FOUND','找不到你的景点记录');
    const prior=old?.requests?.find(r=>r.id===requestId);
    if(prior){if(prior.signature!==signature)C.fail('WALK_REQUEST','重复操作内容不同，请重新读取');return {ok:true,session:safe(old)};}
@@ -44,7 +45,7 @@ function createSiteWalkSessionService({db,clock=Date.now}) {
     }
    }
    next.revision=(old?.revision||0)+1;next.updatedAt=at;next.requests=[...(old?.requests||[]),{id:requestId,signature}].slice(-30);
-   await tx.collection('visit_sessions').doc(key).set(next);return {ok:true,session:safe(next)};
+   delete next._id;await tx.collection('visit_sessions').doc(key).set(next);return {ok:true,session:safe(next)};
   });
  }
  return {handle};
