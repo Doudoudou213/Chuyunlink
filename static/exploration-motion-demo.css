@@ -46,3 +46,9 @@ dialog{width:min(92vw,480px);max-height:88svh;padding:0;border:1px solid #c5a465
 .park-point[data-illustrated=false] span{border-style:dashed;font-size:11px;color:#dfcfac;background:#263328df}
 .park-point[data-illustrated=false][aria-pressed=true] span{border-color:#f0cd87;color:#fff0cd}
 #motion-study-error{position:absolute;inset:38% 24px auto;text-align:center;font-size:15px;line-height:1.8;color:#dec79c}
+.landmark canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}.landmark.has-reveal canvas{display:block}.landmark.has-reveal img{opacity:0}
+.pond-reveal{position:absolute;pointer-events:none;z-index:2;display:none}.pond-reveal.is-ready{display:block}
+#motion-study-dialog[data-profile=pond] .study-art{height:min(48svh,340px);min-height:190px}
+#motion-study-dialog[data-profile=pond] .study-art canvas{width:100%;height:100%;aspect-ratio:auto;object-fit:contain}
+#motion-study-canvas[hidden]{display:none}
+#park-motion-canvas{position:absolute;pointer-events:none;z-index:1}#park-motion-canvas[hidden]{display:none}#park-points{z-index:2}

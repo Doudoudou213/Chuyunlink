@@ -10,27 +10,51 @@
   let selected = 'tower', reduced = motionPreference.matches, drag = null, suppressClickUntil = 0;
   let camera = { x: 0, y: 0, scale: 1 };
   let viewed = new Set();
-  let towerReveal = null, studyReveal = null, towerLoading = null, haloTween = null;
-  let unloaded = false, lifecycle = 0;
+  const reveals = new Map(), revealLoads = new Map();
+  let studyReveal = null, haloTween = null;
+  let unloaded = false, lifecycle = 0, selectionRequest = 0, studyRequest = 0;
   const mapCovered = () => Boolean(document.querySelector('dialog[open]'));
   try { const saved = JSON.parse(localStorage.getItem(storageKey) || '[]'); if (Array.isArray(saved)) viewed = new Set(saved.filter(id => Object.hasOwn(scene, id))); } catch (_) { /* Storage is optional. */ }
 
   function announce(message) { $('motion-status').textContent = message; }
-  async function prepareReveal() {
-    if (towerReveal) return true;
-    if (towerLoading) return towerLoading;
+  async function prepareReveal(id) {
+    if (reveals.has(id)) return reveals.get(id);
+    if (revealLoads.has(id)) return revealLoads.get(id);
     const epoch = lifecycle;
-    towerLoading = (async () => {
-      const image = $('motion-tower-image');
+    const pending = (async () => {
+      const image = $('motion-' + id + '-image');
       try {
         await image.decode();
-        if (unloaded || epoch !== lifecycle || !window.ChuGildedReveal) return false;
-        towerReveal = window.ChuGildedReveal.create({ canvas: $('motion-tower-canvas'), image, quality: 'compact' });
-        document.querySelector('.tower').classList.add('has-reveal');
-        return true;
-      } catch (_) { announce('动效插画暂未加载，仍可通过名称查看景物资料。'); return false; }
+        if (unloaded || epoch !== lifecycle || !window.ChuGildedReveal) return null;
+        const profile = id === 'tower' ? undefined : window.ChuGildedProfiles?.[id];
+        if (id !== 'tower' && !profile) return null;
+        const canvas = $('motion-' + id + '-canvas');
+        const reveal = window.ChuGildedReveal.create({ canvas, image, profile, quality: 'compact' });
+        reveal.finish();
+        reveal.pause();
+        reveals.set(id, reveal);
+        if (id === 'pond') {
+          const rect = profile.sourceRect;
+          Object.assign(canvas.style, {left: rect.x / image.naturalWidth * 100 + '%', top: rect.y / image.naturalHeight * 100 + '%', width: rect.width / image.naturalWidth * 100 + '%', height: rect.height / image.naturalHeight * 100 + '%'});
+          canvas.classList.add('is-ready');
+        } else document.querySelector('[data-art="' + id + '"]').classList.add('has-reveal');
+        return reveal;
+      } catch (_) { if (epoch === lifecycle && !unloaded) announce('动效插画暂未加载，仍可通过名称查看景物资料。'); return null; }
     })();
-    return towerLoading;
+    revealLoads.set(id, pending);
+    const result = await pending;
+    if (revealLoads.get(id) === pending) revealLoads.delete(id);
+    return result;
+  }
+  async function playSelection(id) {
+    const request = ++selectionRequest;
+    for (const [other, reveal] of reveals) if (other !== id) { reveal.finish(); reveal.pause(); }
+    const reveal = await prepareReveal(id);
+    if (!reveal || request !== selectionRequest || selected !== id || unloaded) return;
+    if (mapCovered()) { reveal.finish(); reveal.pause(); } else reveal.play();
+  }
+  function pauseMap() {
+    for (const reveal of reveals.values()) reveal.pause();
   }
   function traceHalo() {
     if (haloTween) haloTween.kill();
@@ -40,15 +64,24 @@
     haloTween = window.gsap.fromTo(trace, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.65, ease: 'power1.inOut' });
   }
   async function showStudy() {
-    const epoch = lifecycle;
-    const ready = await prepareReveal();
-    if (epoch !== lifecycle || unloaded || !$('motion-study-dialog').open) return;
+    const epoch = lifecycle, request = ++studyRequest, id = selected;
+    const dialog = $('motion-study-dialog'), canvas = $('motion-study-canvas');
+    studyReveal?.destroy(); studyReveal = null;
+    canvas.hidden = true;
+    delete canvas.dataset.profile;
+    dialog.dataset.profile = id;
+    canvas.setAttribute('aria-label', scene[id].title + '固定轮廓，金线勾勒与手绘颜色逐层显现');
+    $('motion-study-title').textContent = scene[id].title + ' · 金线成画';
+    $('motion-study-error').hidden = true;
+    $('motion-study-phase').textContent = '正在展开景物…';
+    const ready = await prepareReveal(id);
+    if (epoch !== lifecycle || request !== studyRequest || unloaded || !dialog.open) return;
     if (!ready) { $('motion-study-error').hidden = false; $('motion-study-phase').textContent = '插画暂未加载，请刷新页面重试。'; return; }
     $('motion-study-error').hidden = true;
-    $('motion-study-phase').textContent = '勾勒飞檐 · 晕染朱金 · 收光成画';
-    towerReveal.pause();
-    if (studyReveal) studyReveal.destroy();
-    studyReveal = window.ChuGildedReveal.create({canvas: $('motion-study-canvas'), image: $('motion-tower-image'), width: 768});
+    $('motion-study-phase').textContent = {tower:'勾勒飞檐 · 晕染朱金 · 收光成画', copper:'描出铜箍 · 铜绿渐显 · 收光成画', baiyun:'勾勒层檐 · 青瓦朱柱 · 收光成画', pond:'描出池岸 · 水色晕开 · 波光轻漾'}[id];
+    pauseMap();
+    studyReveal = window.ChuGildedReveal.create({canvas, image: $('motion-' + id + '-image'), profile: id === 'tower' ? undefined : window.ChuGildedProfiles[id], width: 768});
+    canvas.hidden = false;
     studyReveal.play();
   }
   function play(node, keyframes, options, decorative = false) {
@@ -118,15 +151,14 @@
     if (record) remember();
     if (animate) {
       traceHalo();
-      if (id === 'tower') prepareReveal().then(ready => { if (ready && selected === id) { if (mapCovered()) { towerReveal.finish(); towerReveal.pause(); } else towerReveal.play(); } });
-      else if (towerReveal) towerReveal.finish();
+      playSelection(id);
       for (const node of [$('motion-kicker'), $('motion-description')]) play(node, [{ opacity: .2, transform: 'translateY(5px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 340, easing: 'ease-out' });
     }
     announce('已展开' + point.title + '。这只是画卷浏览，不代表实际到访。');
   }
   function opening() {
     cancel(animations);
-    prepareReveal().then(ready => { if (ready) { if (selected === 'tower' && !mapCovered()) towerReveal.play(); else { towerReveal.finish(); if (mapCovered()) towerReveal.pause(); } } });
+    playSelection(selected);
     traceHalo();
   }
   for (const button of document.querySelectorAll('[data-point]')) button.addEventListener('click', event => {
@@ -198,14 +230,14 @@
     $(opener).addEventListener('click', () => {
       if (dialog === 'motion-notebook-dialog') paintNotebook();
       $(dialog).showModal();
-      towerReveal?.pause();
+      pauseMap();
       if (dialog === 'motion-study-dialog') showStudy();
-      if (dialog === 'motion-park-dialog') { towerReveal?.pause(); park?.open(); }
+      if (dialog === 'motion-park-dialog') park?.open();
     });
     $(closer).addEventListener('click', () => $(dialog).close());
     $(dialog).addEventListener('close', () => {
-      if (dialog === 'motion-study-dialog') studyReveal?.pause();
-      if (!mapCovered()) towerReveal?.resume();
+      if (dialog === 'motion-study-dialog') { studyRequest++; studyReveal?.pause(); }
+      if (!mapCovered()) reveals.get(selected)?.resume();
       $(opener).focus({ preventScroll: true });
     });
     $(dialog).addEventListener('click', event => { if (event.target !== $(dialog)) return; const box = $(dialog).getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) $(dialog).close(); });
@@ -233,8 +265,15 @@
   motionPreference.addEventListener('change', preference);
   document.addEventListener('visibilitychange', visibility);
   window.addEventListener('resize', cameraUpdate);
-  window.addEventListener('pagehide', () => { unloaded = true; lifecycle++; cancel(animations); cancel(ambient); if (haloTween) haloTween.kill(); towerReveal?.destroy(); studyReveal?.destroy(); towerReveal = null; studyReveal = null; towerLoading = null; });
-  window.addEventListener('pageshow', event => { if (event.persisted) { unloaded = false; drift(); prepareReveal().then(ready => { if (ready) towerReveal.finish(); }); if ($('motion-study-dialog').open) showStudy(); visibility(); } });
+  window.addEventListener('pagehide', () => {
+    unloaded = true; lifecycle++; selectionRequest++; studyRequest++;
+    cancel(animations); cancel(ambient); if (haloTween) haloTween.kill();
+    for (const reveal of reveals.values()) reveal.destroy();
+    reveals.clear(); revealLoads.clear(); studyReveal?.destroy(); studyReveal = null;
+    for (const art of document.querySelectorAll('.has-reveal')) art.classList.remove('has-reveal');
+    $('motion-pond-canvas').classList.remove('is-ready');
+  });
+  window.addEventListener('pageshow', event => { if (event.persisted) { unloaded = false; drift(); playSelection(selected); if ($('motion-study-dialog').open) showStudy(); visibility(); } });
   for (const img of document.images) {
     const missing = () => { img.style.visibility = 'hidden'; root.dataset.artwork = 'partial'; announce('部分插画尚未加载，可以继续通过景物名称查看内容。'); };
     img.addEventListener('error', missing);

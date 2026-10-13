@@ -12,6 +12,29 @@
     try { const saved = JSON.parse(localStorage.getItem(key) || '[]'); if (Array.isArray(saved)) viewed = new Set(saved.filter(id => known.has(id))); } catch (_) { /* Optional private browser record. */ }
     const buttons = new Map();
     const art = $('park-art');
+    const canvas = $('park-motion-canvas'), dialog = $('motion-park-dialog');
+    let reveal = null, motionRequest = 0, unloaded = false;
+    function stopReveal() {
+      motionRequest++;
+      reveal?.destroy(); reveal = null;
+      canvas.hidden = true;
+      delete canvas.dataset.profile;
+    }
+    async function animatePoint(id) {
+      stopReveal();
+      const request = motionRequest;
+      const profile = global.ChuParkGildedProfiles?.[id];
+      if (!profile || !dialog.open || unloaded) return;
+      try {
+        await art.decode();
+        if (request !== motionRequest || unloaded || !dialog.open || !global.ChuGildedReveal) return;
+        const rect = profile.sourceRect;
+        Object.assign(canvas.style, {left: rect.x / art.naturalWidth * 100 + '%', top: rect.y / art.naturalHeight * 100 + '%', width: rect.width / art.naturalWidth * 100 + '%', height: rect.height / art.naturalHeight * 100 + '%'});
+        reveal = global.ChuGildedReveal.create({canvas, image: art, profile, quality: 'compact'});
+        canvas.hidden = false;
+        reveal.play();
+      } catch (_) { if (request === motionRequest) canvas.hidden = true; /* Labels and source links remain usable without artwork. */ }
+    }
     const sizeArt = () => { if (art.naturalWidth && art.naturalHeight) world.style.aspectRatio = art.naturalWidth + ' / ' + art.naturalHeight; };
     art.addEventListener('load', sizeArt); sizeArt();
     // Only these four illustrations have been visually matched. Other points
@@ -32,6 +55,7 @@
       $('park-point-source').href = source.url;
       $('park-point-source').textContent = '查看资料依据';
       world.dataset.selected = id;
+      animatePoint(id);
     }
     $('park-points').replaceChildren();
     for (const point of layout.points) {
@@ -67,6 +91,9 @@
       if (move[event.key]) { event.preventDefault(); stage.scrollBy(...move[event.key]); }
       if (event.key === 'Home') { event.preventDefault(); stage.scrollTo(0,0); }
     });
+    dialog.addEventListener('close', stopReveal);
+    global.addEventListener('pagehide', () => { unloaded = true; stopReveal(); });
+    global.addEventListener('pageshow', event => { if (event.persisted) { unloaded = false; if (dialog.open) animatePoint(selected.id); } });
     select('tower', false);
     return Object.freeze({
       open() {

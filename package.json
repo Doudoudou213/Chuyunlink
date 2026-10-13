@@ -39,7 +39,8 @@
     "test:exploration:browser": "node tools/test-exploration-all.js --browser",
     "preview:exploration:motion": "node tools/lib/exploration-motion-demo-preview.js 4207",
     "test:exploration:motion": "node tools/test-exploration-motion-demo-browser.js",
-    "test:exploration:reveal": "node tools/test-exploration-motion-reveal-browser.js"
+    "test:exploration:reveal": "node tools/test-exploration-motion-reveal-browser.js",
+    "test:exploration:landmarks": "node tools/test-exploration-landmark-motion-browser.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

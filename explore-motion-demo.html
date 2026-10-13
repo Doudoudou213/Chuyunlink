@@ -12,6 +12,7 @@
   <script defer src="static/assets/vendor/lucide-1.51.0.min.js"></script>
   <script defer src="static/assets/gsap-3.15.0.min.js"></script>
   <script defer src="static/exploration-motion-scene.js"></script>
+  <script defer src="static/exploration-gilded-profiles.js"></script>
   <script defer src="static/exploration-gilded-reveal.js"></script>
   <script defer src="static/exploration-park-layout.js"></script>
   <script defer src="static/exploration-park-demo.js"></script>
@@ -22,12 +23,13 @@
   <section class="map-shell" aria-label="黄鹤楼手绘探索">
     <div id="motion-stage" tabindex="0" role="region" aria-label="黄鹤楼手绘探索地图" aria-describedby="motion-map-help">
       <div id="motion-map-transform" data-scale="1">
-        <img class="ground" src="static/assets/exploration-motion/hhl-ground-v1.webp" alt="手绘布局：黄鹤楼居西，古铜顶与白云阁在东侧，鹅池位于南侧；远处城市为艺术装饰" draggable="false" fetchpriority="high">
+        <img id="motion-pond-image" class="ground" src="static/assets/exploration-motion/hhl-ground-v1.webp" alt="手绘布局：黄鹤楼居西，古铜顶与白云阁在东侧，鹅池位于南侧；远处城市为艺术装饰" draggable="false" fetchpriority="high">
         <div class="pond-shimmer" aria-hidden="true"></div>
+        <canvas id="motion-pond-canvas" class="pond-reveal" aria-hidden="true"></canvas>
         <img class="cranes" src="static/assets/exploration-motion/hhl-cranes-v1.webp" alt="" draggable="false">
         <div class="landmark tower" data-art="tower"><img id="motion-tower-image" src="static/assets/exploration-motion/hhl-tower-v1.webp" alt="" draggable="false"><canvas id="motion-tower-canvas" aria-hidden="true"></canvas></div>
-        <div class="landmark copper" data-art="copper"><img src="static/assets/exploration-motion/hhl-copper-v1.webp" alt="" draggable="false"></div>
-        <div class="landmark baiyun" data-art="baiyun"><img src="static/assets/exploration-motion/hhl-baiyun-v1.webp" alt="" draggable="false"></div>
+        <div class="landmark copper" data-art="copper"><img id="motion-copper-image" src="static/assets/exploration-motion/hhl-copper-v1.webp" alt="" draggable="false"><canvas id="motion-copper-canvas" aria-hidden="true"></canvas></div>
+        <div class="landmark baiyun" data-art="baiyun"><img id="motion-baiyun-image" src="static/assets/exploration-motion/hhl-baiyun-v1.webp" alt="" draggable="false"><canvas id="motion-baiyun-canvas" aria-hidden="true"></canvas></div>
         <div id="motion-halo" aria-hidden="true"><svg viewBox="0 0 100 100"><circle class="halo-trace" cx="50" cy="50" r="47" pathLength="1"></circle></svg><i></i><i></i><i></i><i></i><i></i></div>
         <button type="button" class="point-label point-tower" data-point="tower" aria-pressed="true" aria-label="探索黄鹤楼"><span>黄鹤楼</span></button>
         <button type="button" class="point-label point-copper" data-point="copper" aria-pressed="false" aria-label="探索古铜顶"><span>古铜顶</span></button>
@@ -98,7 +100,7 @@
 
   <dialog id="motion-park-dialog" aria-labelledby="park-title">
     <header class="park-header"><div><p class="eyebrow">将画卷，再展开一点</p><h2 id="park-title">一卷黄鹤楼</h2></div><button id="motion-park-close" class="icon-button" type="button" aria-label="收起全园布局"><i data-lucide="x"></i></button></header>
-    <div id="motion-park-stage" tabindex="0" role="region" aria-label="可拖动的核心园区布局草图" aria-describedby="park-help"><div id="motion-park-world"><img id="park-art" src="static/assets/exploration-motion/hhl-full-park-v2.webp" alt="黄鹤楼公园核心园区手绘构图草图，西部主楼、中部白云阁、南部鹅池与东部园林；部分景物为待细化占位" draggable="false"><div id="park-points"></div></div></div>
+    <div id="motion-park-stage" tabindex="0" role="region" aria-label="可拖动的核心园区布局草图" aria-describedby="park-help"><div id="motion-park-world"><img id="park-art" src="static/assets/exploration-motion/hhl-full-park-v2.webp" alt="黄鹤楼公园核心园区手绘构图草图，西部主楼、中部白云阁、南部鹅池与东部园林；部分景物为待细化占位" draggable="false"><canvas id="park-motion-canvas" hidden aria-hidden="true"></canvas><div id="park-points"></div></div></div>
     <div class="park-scroll-hint"><span id="park-help">左右拖动画卷 · 点一处景物</span><span id="park-progress">画中拾景</span></div>
     <div class="park-reading"><div><p id="park-point-region" class="eyebrow">西部主楼区</p><h3 id="park-point-title">黄鹤楼</h3></div><p id="park-point-copy">沿画卷向东看看，那里还有阁楼、园林与碑刻。</p><button id="park-open-detail" class="text-button" type="button">细看这一处 <i data-lucide="arrow-right"></i></button><a id="park-point-source" target="_blank" rel="noopener noreferrer">查看布局依据</a></div>
     <p class="park-note">核心园区构图草图 · 空心点为待补绘的资料参考位置，首义园区东延部分待补。非实地导航。</p>

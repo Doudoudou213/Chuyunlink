@@ -20,7 +20,7 @@ function allowedPath(raw) {
   if (pathname.includes('\\') || pathname.includes('\0') || pathname.split('/').some(p => p === '.' || p === '..')) return null;
   if (pathname === '/' || pathname === '/explore-motion-demo.html') return '/explore-motion-demo.html';
   if (/^\/static\/exploration-motion-[a-z0-9-]+\.(?:css|js)$/.test(pathname)) return pathname;
-  if (/^\/static\/exploration-(?:gilded-reveal|park-layout|park-demo)\.js$/.test(pathname)) return pathname;
+  if (/^\/static\/exploration-(?:gilded-reveal|gilded-profiles|park-layout|park-demo)\.js$/.test(pathname)) return pathname;
   if (pathname === '/static/assets/gsap-3.15.0.min.js') return pathname;
   if (/^\/static\/assets\/exploration-motion\/[a-zA-Z0-9._-]+\.(?:webp|png|jpe?g|avif|svg|json)$/.test(pathname)) return pathname;
   if (/^\/static\/assets\/(?:longcang-editorial-v1\.woff2|paper-fibres-soft-v1\.webp)$/.test(pathname)) return pathname;

@@ -667,3 +667,33 @@ final result: passed
 - Unrelated theme CSS/font/progress changes preserved and excluded from this checkpoint.
 
 final result: passed
+
+---
+
+# 多景物金线成画 · 2026-10-13 第三轮
+
+## Reference and actual rendering
+
+- User request: the approved tower motion was missing on the other landmarks. Preserve the approved V3 palette, original pond/paths/city/cranes and reference-video gold-edge/pigment timing; extend the treatment to copper, Baiyun and pond.
+- Actual Edge viewport captures: `artifacts/exploration-motion-demo/landmark-{copper,baiyun,pond}-{300,1450,3500,6700}ms-390.png`. Canvas pixel progression is measured at those times; the element bounds and transform remain fixed.
+- Independent studies: `landmark-{copper,baiyun,pond}-study-390.png`. Inspected all three real frames: copper bands follow the bronze silhouette, Baiyun roof tips follow the eaves, and the pond receives shoreline/pavilion strokes and a horizontal water wash. `landmarks-actual-browser-triptych.png` places these unaltered browser screenshots side by side, not an imagined redesign or synthetic motion.
+- Reduced-motion captures exist at320/390/768/1440 for each landmark. Full painting remains immediately visible; dialog titles, correct aspect ratio and44px controls stay usable. Original main-page composition, typography and controls remain unchanged.
+- Expanded-map captures: `landmark-{copper,baiyun,pond}-park-390.png`. Four illustrated landmarks use contours traced against the actual1919×820 park raster, not a pasted near-view sprite with different perspective. Their exact source rectangles control canvas percentage bounds.
+
+## Changes and boundary checks
+
+1. Added58 near-view contours and48 park contours, stored separately from the renderer. Each landmark has independent pigment arrival timing; the pond uses a feathered irregular shore mask instead of a rectangular image tile.
+2. Generalized the renderer while retaining the old tower default. Six original tower frames at0/.4/2/3.8/5.6/6.4seconds match the previous implementation pixel for pixel. Small park profiles now scale stroke/nib/glow size with their original artwork dimensions.
+3. The study opens the selected object instead of always replaying the tower. It updates its accessible description and clears a prior study before waiting for a new image. Selection/request/lifecycle guards prevent late decoded copper imagery replacing a newer Baiyun study.
+4. Inline renderers pause behind dialogs; closed studies stop drawing, background pauses and pagehide destroys buffers/listeners. Page-cache return restores the current object. Missing artwork retains an explanation and other landmarks remain usable; missing animation library falls back to static art.
+5. The expanded map hides and destroys its old reveal when selecting one of the12 pending-artwork locations. Those locations remain explicitly pending; neither a generic animation nor an unrelated building is substituted.
+6. Checked source registration numerically in the real in-app browser: park art1100×470.032 and Baiyun crop75.663×73.368 agree with132×128 pixels in1919×820. A suspected floating stroke at(130,238) in the390px screenshot is an existing gold tree branch outside the animation canvas(x160,y263.953). Overlay-on/off captures have identical pixels in[112,217,149,255]; no contour displacement was found. Evidence: `park-baiyun-suspect-with-overlay.png` and `park-baiyun-suspect-original.png`. The artwork is illustrative, not surveyed geography.
+
+## Verification
+
+- Original112 map/interaction checks,90 tower/park checks and112 new landmark checks passed. The new suite was rerun after small-park brush scaling; screenshots and real canvas pixel measurements passed again.
+- Existing6 exploration business/build scripts,4 exploration browser groups and offline release checks passed. No production API, model, speech, analytics or paid request was made.
+- Main/home/admin business pages and the other conversation's theme stylesheet/font/progress edits remain untouched. Only this prototype, its isolated preview allowlist, tests and existing unified records are part of the checkpoint.
+- Real physical-device Safari/GPU/frame-rate/power and onsite layout remain untested. Twelve remaining park locations still need accurate artwork and animation; no claim that the whole park is finished.
+
+final result: passed

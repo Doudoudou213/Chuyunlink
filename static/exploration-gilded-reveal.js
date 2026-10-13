@@ -60,7 +60,7 @@
     samples.push({ x: last[0], y: last[1], length });
     return { ...contour, samples, length };
   }
-  const paths = contours.map(prepareContour);
+  const towerPaths = contours.map(prepareContour);
 
   function makeCanvas(width, height) {
     const canvas = document.createElement('canvas');
@@ -71,21 +71,55 @@
   function create(options) {
     const { canvas, image, onComplete } = options || {};
     if (!canvas || !image || typeof canvas.getContext !== 'function') {
-      throw new TypeError('A canvas and decoded tower image are required.');
+      throw new TypeError('A canvas and decoded landmark image are required.');
     }
-    const width = Math.round(clamp(Number(options.width) || (options.quality === 'compact' ? 384 : W), 192, W));
-    const height = Math.round(width * H / W);
+    const requestedProfile = typeof options.profile === 'string'
+      ? global.ChuGildedProfiles && global.ChuGildedProfiles[options.profile]
+      : options.profile;
+    if (options.profile && !requestedProfile) throw new TypeError('Unknown landmark motion profile.');
+    const profile = requestedProfile || {};
+    const sourceWidth = Number(profile.width) || W;
+    const sourceHeight = Number(profile.height) || H;
+    const duration = Number(profile.duration) || DURATION;
+    if (!(sourceWidth > 0 && sourceHeight > 0 && duration > 0)) throw new TypeError('Invalid landmark motion dimensions.');
+    const profileId = profile.id || 'tower';
+    const paths = profile.contours ? profile.contours.map(prepareContour) : towerPaths;
+    const paintProfile = profile.paint || { kind: 'tower' };
+    const baseOpacity = clamp(Number(profile.baseOpacity) || 0);
+    const brushScale = clamp(Number(profile.brushScale) || 1,.02,5);
+    const width = Math.round(clamp(Number(options.width) || (options.quality === 'compact' ? 384 : sourceWidth), Math.min(192,sourceWidth), sourceWidth));
+    const height = Math.round(width * sourceHeight / sourceWidth);
     canvas.width = width; canvas.height = height;
+    canvas.dataset.profile = profileId;
     const context = canvas.getContext('2d', { alpha: true });
+    // Decode/crop only once, at the correct aspect ratio. Every frame is drawn
+    // at this same registration; no landmark is enlarged or shifted to appear.
+    const source = makeCanvas(width, height);
+    const sourceContext = source.getContext('2d', { alpha: true });
+    function drawOriginal(target) {
+      if (profile.sourceRect) {
+        const rect = profile.sourceRect;
+        target.drawImage(image,rect.x,rect.y,rect.width,rect.height,0,0,width,height);
+      } else target.drawImage(image,0,0,width,height);
+    }
+    drawOriginal(sourceContext);
+    const underpainting = baseOpacity ? makeCanvas(width,height) : null;
+    if (underpainting) {
+      const underContext = underpainting.getContext('2d', { alpha: true });
+      underContext.globalAlpha = baseOpacity;
+      underContext.filter = 'grayscale(1) sepia(.3) brightness(.82)';
+      underContext.drawImage(source,0,0);
+    }
     const paint = makeCanvas(width, height);
     const paintContext = paint.getContext('2d', { alpha: true });
     const maskWidth = options.quality === 'compact' ? 160 : 320;
-    const maskHeight = Math.round(maskWidth * H / W);
+    const maskHeight = Math.round(maskWidth * sourceHeight / sourceWidth);
     const mask = makeCanvas(maskWidth, maskHeight);
     const maskContext = mask.getContext('2d', { alpha: true });
     const maskData = maskContext.createImageData(maskWidth, maskHeight);
     const arrivals = new Float32Array(maskWidth * maskHeight);
     const grains = new Float32Array(arrivals.length);
+    const clipping = Array.isArray(profile.clipPoints) && profile.clipPoints.length > 2 ? makeCanvas(maskWidth,maskHeight) : null;
     const clock = { time: 0 };
     let timeline = null;
     let destroyed = false;
@@ -98,11 +132,39 @@
     const media = global.matchMedia ? global.matchMedia('(prefers-reduced-motion: reduce)') : null;
     let reduced = Boolean(options.reducedMotion || (media && media.matches));
 
+    // An opaque pond is cut around its actual shoreline and bank silhouette,
+    // with an inward feather. It can sit on the ground painting without a
+    // rectangular tile, including while the desaturated underpainting is shown.
+    if (clipping) {
+      const clipContext = clipping.getContext('2d', { alpha: true });
+      const clipData = clipContext.createImageData(maskWidth,maskHeight);
+      const polygon = profile.clipPoints;
+      const feather = Math.max(1,Number(paintProfile.feather) || 28);
+      for (let y = 0; y < maskHeight; y += 1) {
+        const py = (y+.5) / maskHeight * sourceHeight;
+        for (let x = 0; x < maskWidth; x += 1) {
+          const px = (x+.5) / maskWidth * sourceWidth;
+          let inside = false; let distance = Infinity;
+          for (let i = 0, j = polygon.length-1; i < polygon.length; j = i++) {
+            const a = polygon[j]; const b = polygon[i];
+            if ((a[1] > py) !== (b[1] > py) && px < (b[0]-a[0])*(py-a[1])/(b[1]-a[1])+a[0]) inside = !inside;
+            const dx = b[0]-a[0]; const dy = b[1]-a[1];
+            const t = clamp(((px-a[0])*dx+(py-a[1])*dy)/Math.max(.001,dx*dx+dy*dy));
+            distance = Math.min(distance,Math.hypot(px-a[0]-t*dx,py-a[1]-t*dy));
+          }
+          const offset = (y*maskWidth+x)*4;
+          clipData.data[offset] = 255; clipData.data[offset+1] = 255; clipData.data[offset+2] = 255;
+          clipData.data[offset+3] = inside ? Math.round(smooth(distance/feather)*255) : 0;
+        }
+      }
+      clipContext.putImageData(clipData,0,0);
+    }
+
     // Each floor has its own alternating brush direction. A deterministic
     // multi-frequency boundary lets pigment arrive in uneven fine washes; it
     // does not enlarge the building or reveal a rectangular/circular image tile.
     for (let y = 0; y < maskHeight; y += 1) {
-      const py = y / maskHeight * H;
+      const py = y / maskHeight * sourceHeight;
       const band = py < 352 ? 0 : py < 488 ? 1 : py < 675 ? 2 : py < 857 ? 3 : py < 1061 ? 4 : 5;
       const starts = [.95,1.6,2.15,2.72,3.28,3.88];
       for (let x = 0; x < maskWidth; x += 1) {
@@ -111,7 +173,21 @@
         const broad = Math.sin(x * .097 + Math.sin(y*.12)*1.4) * .12 + Math.cos(y*.08 + x*.046)*.11;
         const fibre = Math.sin(x*.79+y*.23)*Math.cos(y*.67-x*.15)*.042;
         const index = y*maskWidth + x;
-        arrivals[index] = starts[band] + direction * .91 + broad + fibre;
+        let arrival = starts[band] + direction * .91;
+        if (paintProfile.kind === 'bands' && Array.isArray(paintProfile.bands) && paintProfile.bands.length) {
+          const row = paintProfile.bands.find(item => py <= item.to) || paintProfile.bands[paintProfile.bands.length-1];
+          const sweep = row.direction === 'reverse' ? 1-px : px;
+          arrival = (Number(row.start)||0) + sweep * (Number(row.duration)||.91);
+        } else if (paintProfile.kind === 'vertical') {
+          arrival = (Number(paintProfile.start)||.8) + py/sourceHeight * (Number(paintProfile.duration)||3.6) + direction*.3;
+        } else if (paintProfile.kind === 'water') {
+          const origin = paintProfile.origin || [sourceWidth*.38,sourceHeight*.45];
+          const dx = (px*sourceWidth-origin[0])/sourceWidth;
+          const dy = (py-origin[1])/sourceHeight;
+          const waterTravel = Math.min(1,Math.hypot(dx,dy)*1.08);
+          arrival = (Number(paintProfile.start)||.8) + waterTravel * (Number(paintProfile.duration)||3.6) + Math.sin(py*.032)*.12;
+        }
+        arrivals[index] = arrival + broad + fibre;
         grains[index] = .81 + .19 * (.5 + .5 * Math.sin(x*9.37+y*17.41));
         maskData.data[index*4] = 255;
         maskData.data[index*4+1] = 255;
@@ -121,7 +197,7 @@
 
     function publishState() {
       canvas.dataset.phase = phase;
-      canvas.dataset.progress = String(Math.round(clamp(clock.time / DURATION) * 1000) / 1000);
+      canvas.dataset.progress = String(Math.round(clamp(clock.time / duration) * 1000) / 1000);
       canvas.dataset.paused = String(userPaused || visibilityPaused);
     }
 
@@ -149,26 +225,30 @@
         head = point; context.lineTo(point.x, point.y);
       }
       context.globalAlpha = opacity;
-      context.strokeStyle = color; context.lineWidth = lineWidth; context.stroke();
+      context.strokeStyle = color; context.lineWidth = lineWidth * brushScale; context.stroke();
       return head;
     }
 
     function render(force = false) {
       if (destroyed) return;
       const time = clock.time;
-      if (!force && Math.abs(time - lastRendered) < 1/32 && time < DURATION) return;
+      if (!force && Math.abs(time - lastRendered) < 1/32 && time < duration) return;
       lastRendered = time;
-      phase = time >= DURATION ? 'settled' : time < .35 ? 'linework' : time < 1.25 ? 'gold' : time < 5.45 ? 'wash' : 'settling';
+      const normalizedTime = time / duration * DURATION;
+      phase = time >= duration ? 'settled' : normalizedTime < .35 ? 'linework' : normalizedTime < 1.25 ? 'gold' : normalizedTime < 5.45 ? 'wash' : 'settling';
       context.setTransform(1,0,0,1,0,0);
+      context.globalAlpha = 1;
+      context.globalCompositeOperation = 'source-over';
       context.clearRect(0,0,width,height);
-      if (time >= DURATION || reduced) {
-        context.drawImage(image, 0,0,width,height);
+      if (time >= duration || reduced) {
+        drawOriginal(context);
+        applyClip();
         publishState(); return;
       }
 
       // The source image stays pixel registered for the whole sequence. Only
       // pigment opacity changes; source alpha also removes all background tiles.
-      const finalWet = smooth((time - 4.95) / .92);
+      const finalWet = smooth((normalizedTime - 4.95) / .92);
       for (let index = 0; index < arrivals.length; index += 1) {
         const age = time - arrivals[index];
         const underwash = smooth(age / .56) * .24;
@@ -179,17 +259,18 @@
       maskContext.putImageData(maskData,0,0);
       paintContext.clearRect(0,0,width,height);
       paintContext.globalCompositeOperation = 'source-over';
-      paintContext.drawImage(image,0,0,width,height);
+      paintContext.drawImage(source,0,0);
       paintContext.globalCompositeOperation = 'destination-in';
       paintContext.drawImage(mask,0,0,width,height);
       paintContext.globalCompositeOperation = 'source-over';
+      if (underpainting) context.drawImage(underpainting,0,0);
       context.drawImage(paint,0,0);
 
-      context.setTransform(width/W,0,0,height/H,0,0);
+      context.setTransform(width/sourceWidth,0,0,height/sourceHeight,0,0);
       context.lineCap = 'round'; context.lineJoin = 'round';
-      const settle = 1 - smooth((time - 4.85) / 1.5);
+      const settle = 1 - smooth((normalizedTime - 4.85) / 1.5);
       for (const path of paths) {
-        drawSegment(path,0,1,'#c69a50',1.45,.18 * (1-smooth(time/5.9)));
+        drawSegment(path,0,1,'#c69a50',1.45,.18 * (1-smooth(normalizedTime/5.9)));
         const progress = clamp((time-path.start)/path.duration);
         if (!progress) continue;
         drawSegment(path,0,progress,'#e5af54',2.2,.5 * settle);
@@ -199,24 +280,33 @@
         drawSegment(path,Math.max(0,progress-.16),progress,'#d8902e',10,.14);
         const head = drawSegment(path,Math.max(0,progress-.065),progress,'#fff0b5',3.4,.96);
         if (!head) continue;
-        const glow = context.createRadialGradient(head.x,head.y,0,head.x,head.y,24);
+        const glowRadius = 24 * brushScale;
+        const glow = context.createRadialGradient(head.x,head.y,0,head.x,head.y,glowRadius);
         glow.addColorStop(0,'rgba(255,246,206,.87)');
         glow.addColorStop(.17,'rgba(255,210,120,.6)');
         glow.addColorStop(.6,'rgba(227,150,41,.15)');
         glow.addColorStop(1,'rgba(227,150,41,0)');
         context.globalAlpha = .9; context.fillStyle = glow;
-        context.fillRect(head.x-24,head.y-24,48,48);
+        context.fillRect(head.x-glowRadius,head.y-glowRadius,glowRadius*2,glowRadius*2);
         context.globalAlpha = .9; context.fillStyle = '#fff2c1';
-        context.beginPath(); context.arc(head.x,head.y,2,0,Math.PI*2); context.fill();
+        context.beginPath(); context.arc(head.x,head.y,2*brushScale,0,Math.PI*2); context.fill();
       }
       context.globalAlpha = 1;
       context.setTransform(1,0,0,1,0,0);
+      applyClip();
       publishState();
+    }
+
+    function applyClip() {
+      if (!clipping) return;
+      context.globalCompositeOperation = 'destination-in';
+      context.drawImage(clipping,0,0,width,height);
+      context.globalCompositeOperation = 'source-over';
     }
 
     function complete() {
       if (destroyed || completed) return;
-      completed = true; clock.time = DURATION; render(true);
+      completed = true; clock.time = duration; render(true);
       if (typeof onComplete === 'function') onComplete();
     }
 
@@ -234,8 +324,8 @@
       lastRendered = -Infinity; render(true);
       if (reduced || !global.gsap || typeof global.gsap.timeline !== 'function') { finish(); return; }
       timeline = global.gsap.timeline({ paused: true, onUpdate: () => render(), onComplete: complete });
-      timeline.addLabel('linework',0).addLabel('gildedEaves',.35).addLabel('pigment',1.25).addLabel('settle',5.45);
-      timeline.to(clock,{time:DURATION,duration:DURATION,ease:'none'},0);
+      timeline.addLabel('linework',0).addLabel('gildedEaves',duration*.35/DURATION).addLabel('pigment',duration*1.25/DURATION).addLabel('settle',duration*5.45/DURATION);
+      timeline.to(clock,{time:duration,duration,ease:'none'},0);
       if (!visibilityPaused) timeline.play(0);
       publishState();
     }
@@ -249,9 +339,9 @@
     }
     function seek(seconds) {
       if (destroyed) return;
-      const target = clamp(Number(seconds)||0,0,DURATION);
+      const target = clamp(Number(seconds)||0,0,duration);
       if (timeline) timeline.pause().time(target, true);
-      clock.time = target; completed = target >= DURATION; userPaused = true;
+      clock.time = target; completed = target >= duration; userPaused = true;
       render(true);
     }
     function onVisibility() {
@@ -272,7 +362,7 @@
 
     return Object.freeze({
       play, pause, resume, finish, seek,
-      getState: () => ({phase,progress:clamp(clock.time/DURATION),paused:userPaused||visibilityPaused,complete:completed,duration:DURATION,reducedMotion:reduced,destroyed,width,height}),
+      getState: () => ({phase,progress:clamp(clock.time/duration),paused:userPaused||visibilityPaused,complete:completed,duration,reducedMotion:reduced,destroyed,width,height,profile:profileId}),
       destroy() {
         if (destroyed) return;
         destroyed = true; phase = 'destroyed';
@@ -280,6 +370,9 @@
         document.removeEventListener('visibilitychange',onVisibility);
         if (media && media.removeEventListener) media.removeEventListener('change',onMotionPreference);
         paint.width = 0; paint.height = 0; mask.width = 0; mask.height = 0;
+        source.width = 0; source.height = 0;
+        if (underpainting) { underpainting.width = 0; underpainting.height = 0; }
+        if (clipping) { clipping.width = 0; clipping.height = 0; }
         canvas.dataset.phase = 'destroyed';
       }
     });
