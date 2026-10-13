@@ -39,9 +39,16 @@ function createSiteWalkSessionService({db,clock=Date.now}) {
     }else{
      const walk=await current(tx,old.resourceId);
      if(!E.compatible(old,walk))C.fail('WALK_CONFLICT','导览已换版，旧记录保留，请重新开始');
+     if(e.eventType==='explorationConfirm'){
+      const atlas=await require('../lib/exploration-core').get(tx,old.resourceId,clock());
+      if(!atlas.available||!atlas.map.objects.some(o=>o.pointId===e.pointId)||old.status==='ended')C.fail('WALK_INPUT','请在当前探索画卷中确认观察点');
+      next={...old,status:'active',startedAt:old.startedAt||at,stops:old.stops.map(p=>p.resourceId===e.pointId?{...p,state:'visited'}:p),events:[...old.events,{type:'manual_visit',resourceId:e.pointId,at}].slice(-100)};
+      if(next.stops.every(p=>['visited','skipped'].includes(p.state))){next.status='ended';next.endedAt=at;}
+     }else{
      if(E.current(old)?.resourceId!==e.pointId)C.fail('WALK_INPUT','请只操作当前观察点');
      if(!['arrive','complete','skip'].includes(e.eventType))C.fail('WALK_INPUT','不支持的操作');
      next=E.act(old,walk,e.eventType,at);
+     }
     }
    }
    next.revision=(old?.revision||0)+1;next.updatedAt=at;next.requests=[...(old?.requests||[]),{id:requestId,signature}].slice(-30);
