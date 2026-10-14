@@ -1,7 +1,7 @@
 /* A reading edition of the shared paper palette. No shared app layout overrides. */
 @font-face {
   font-family: 'Chu Hand';
-  src: url('./assets/longcang-editorial-v1.woff2') format('woff2');
+  src: url('./assets/longcang-theme-v2.woff2') format('woff2');
   font-style: normal;
   font-weight: 400;
   font-display: swap;
