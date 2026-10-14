@@ -186,6 +186,27 @@
 .discover-paper-active #view-discover #discover-needs-section { margin-top: 22px; }
 .discover-paper-active #view-discover #discover-share-feed > article,
 .discover-paper-active #view-discover #discover-needs-feed > article { background: var(--home-surface); border-color: transparent; box-shadow: 0 4px 18px #60594409; }
+/* Quiet paper backing for community records; never overlay or filter their media. */
+.discover-paper-active #view-discover :is(#discover-share-feed, #discover-needs-feed) > .discover-post-card {
+  border-color: transparent;
+  box-shadow: 0 2px 3px #756e5e06, 0 9px 25px -16px #756e5e30;
+}
+.discover-paper-active #view-discover :is(#discover-share-feed, #discover-needs-feed) > .discover-post-card > .p-3,
+.discover-paper-active #view-discover :is(#discover-share-feed, #discover-needs-feed) > .discover-post-card.p-3 {
+  background-color: var(--home-surface);
+  background-image: linear-gradient(#fffcf5ad, #fffcf5ad), url('./assets/paper-fibres-soft-v1.webp');
+  background-size: auto, 480px auto;
+  background-position: center, left top;
+  box-shadow: inset 0 1px 0 #ffffff70, inset 0 -5px 14px -11px #756e5e24;
+}
+.discover-paper-active #view-discover :is(#discover-share-feed, #discover-needs-feed) .story-reading-card {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.discover-paper-active #view-discover :is(#discover-share-feed, #discover-needs-feed) .story-reading-card::before {
+  content: none;
+}
 @media (max-width: 767px) {
   .discover-paper-active #view-discover > :not(.paper-home-hero) { padding-left: 20px; padding-right: 20px; margin-top: 20px; }
   .paper-home-hero { min-height: 315px; padding: max(12px, env(safe-area-inset-top)) 16px 0; }

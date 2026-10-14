@@ -8,6 +8,18 @@ const types = { '.html':'text/html; charset=utf-8', '.js':'application/javascrip
   '.woff2':'font/woff2', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg',
   '.webp':'image/webp', '.svg':'image/svg+xml', '.geojson':'application/json', '.json':'application/json', '.mp3':'audio/mpeg' };
 const pages = new Set(['index.html','admin.html','themes.html','guide.html','explore.html','explore-admin.html','explore-motion-demo.html']);
+const paperPosts = `<script>
+window.addEventListener('load',()=>setTimeout(()=>{
+ const feed=document.getElementById('discover-share-feed');if(!feed)return;
+ const samples=[
+  {id:'paper-preview-photo',title:'纹样采集笔记（本地示例）',description:'仅用于查看纸纹、照片与文字的衔接，不是真实用户投稿。',assetType:'photo',thumbnailUrl:'./static/assets/community-fieldnotes-cover-v1.webp'},
+  {id:'paper-preview-audio',title:'一段口述的整理（本地示例）',description:'核对文字区域的纸纤维和轻微褶皱，音频不提供播放。',assetType:'audio'}
+ ];
+ feed.innerHTML=samples.map(item=>renderApprovedSubmissionCard({...item,feedId:'approved-'+item.id,regionName:'荆楚',contributorName:'本地示例',completeness:100,reviewedAt:'2026-10-14',storyCard:{title:'记录眼前所见',introduction:'这里展示的是排版测试文字。淡纸纹留在文字下方，图片保持原有颜色与清晰度。',sourceCount:1}})).join('');
+ window.lucide?.createIcons?.();
+ feed.scrollIntoView({block:'start'});
+},800));
+</script>`;
 const bootstrap = `<script>
 window.CHULINK_LOCAL_PREVIEW=true;
 window.cloudbase={init:()=>({
@@ -39,7 +51,10 @@ function start(port=4214){
   try{
    if(!fs.realpathSync(file).startsWith(root+path.sep))return res.writeHead(404).end();
    let body=fs.readFileSync(file);
-   if(ext==='.html')body=body.toString('utf8').replace(/<script\b[^>]*src=["']https?:[^"']+["'][^>]*>\s*<\/script>/gi,'').replace('<head>','<head>'+bootstrap);
+   if(ext==='.html'){
+    body=body.toString('utf8').replace(/<script\b[^>]*src=["']https?:[^"']+["'][^>]*>\s*<\/script>/gi,'').replace('<head>','<head>'+bootstrap);
+    if(name==='index.html'&&new URL(req.url,'http://local').searchParams.get('sample')==='paper-posts')body=body.replace('</body>',paperPosts+'</body>');
+   }
    res.setHeader('Content-Type',types[ext]||'application/octet-stream');
    res.end(req.method==='HEAD'?undefined:body);
   }catch{res.writeHead(404).end();}
