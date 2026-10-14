@@ -25,6 +25,12 @@ const requiredFiles = [
   'cloudfunctions/appCore/lib/agent-provenance.js',
   'cloudfunctions/adminSubmissions/domains/submission-moderation.js',
   'cloudfunctions/adminSubmissions/domains/submission-resources.js',
+  'cloudfunctions/appCore/domains/badges.js',
+  'cloudfunctions/appCore/domains/badge-learning.js',
+  'cloudfunctions/appCore/lib/badge-evidence.js',
+  'cloudfunctions/adminSubmissions/domains/badges.js',
+  'cloudfunctions/adminSubmissions/lib/badge-evidence.js',
+  'static/admin-badges.js', 'static/admin-badges.css',
   'guide.html','static/visit-engine.js','static/cultural-guide.js','static/guide-cloud.js','static/guide-entry.js','static/cultural-guide.css','cloudfunctions/appCore/lib/visit-engine.js','cloudfunctions/appCore/domains/visit-sessions.js',
   'cloudfunctions/appCore/domains/ai-consent.js',
   'cloudfunctions/storyWorker/lib/graph-context.js',
@@ -332,6 +338,12 @@ for (const file of badgeFiles) {
   if (!read('tools/deploy-cloudbase.ps1').includes("'" + path.basename(file) + "'")) throw Error('徽章部署清单缺少：' + file);
 }
 for (const badge of require('../static/badge-catalog.js').catalog) requiredFiles.push(badge.image.replace(/^\.\//, ''));
+for (const file of ['cloudfunctions/appCore/domains/badges.js', 'cloudfunctions/appCore/domains/badge-learning.js',
+  'cloudfunctions/appCore/lib/badge-evidence.js', 'cloudfunctions/adminSubmissions/domains/badges.js',
+  'cloudfunctions/adminSubmissions/lib/badge-evidence.js', 'static/admin-badges.js']) {
+  if (!javascriptFiles.includes(file)) javascriptFiles.push(file);
+  if (!productionTextFiles.includes(file)) productionTextFiles.push(file);
+}
 
 function read(relativePath) {
   return fs.readFileSync(path.join(projectRoot, relativePath), 'utf8');

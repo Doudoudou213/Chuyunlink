@@ -3302,6 +3302,26 @@ feedback_closed: '反馈处理',
   loadApprovedSubmissionFeed = loadCloudPublicFeed;
   handleUploadSubmit = submitToCloud;
   window.openCloudLogin = openCloudLogin;
+  // Narrow authenticated badge bridge; no generic cloud caller or user ID is exposed.
+  window.ChuBadgeTransport = Object.freeze({
+    async query(badgeId) {
+      await ensureCloudUser();
+      if (!isStableAccount(cloudUser)) return { status: 'login_required' };
+      return (await callCore({ action: 'getBadgeEligibility', badgeId })).badge;
+    },
+    async claim(badgeId, ruleVersion) {
+      await requireInteractiveAccount();
+      return (await callCore({ action: 'claimBadge', badgeId, ruleVersion })).badge;
+    },
+    async lesson(lessonId) {
+      await requireInteractiveAccount();
+      return callCore({ action: 'startBadgeLesson', lessonId });
+    },
+    async answer(lessonId, token, answer) {
+      await requireInteractiveAccount();
+      return callCore({ action: 'answerBadgeLesson', lessonId, token, answer });
+    }
+  });
   window.refreshCloudProfile = refreshCloudProfile;
   window.requestCloudAiReview = requestCloudAiReview;
   window.verifyCloudLocation = verifyCloudLocation;

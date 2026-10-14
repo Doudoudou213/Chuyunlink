@@ -32,6 +32,8 @@ const scripts = [
   'test-map-panel-exclusion.js',
   'test-paper-material.js',
   'test-badge-catalog.js',
+  'test-badge-service.js',
+  'test-badge-closure.js',
   'check-guide-content-pack.js',
   'check-all-point-guide-packs.js',
   'test-guide-pack-import.js'

@@ -1375,6 +1375,17 @@ exports.main = async (event = {}) => {
     }
 
     await ensureInteractionCollections();
+    if (['getBadgeEvidence', 'saveBadgeEvidence'].includes(action)) {
+      if (process.env.BADGES_ENABLED !== 'true') return { ok: false, error: { code: 'BADGES_NOT_ENABLED', message: '徽章服务尚未启用，请先完成集合权限配置与验收' } };
+      const badges = require('./domains/badges').createAdminBadgeService({ db });
+      const result = await badges[action === 'getBadgeEvidence' ? 'lookup' : 'save'](event, callerUid);
+      if (action === 'getBadgeEvidence' && result.fileID) {
+        const files = await app.getTempFileURL({ fileList: [{ fileID: result.fileID, maxAge: 300 }] });
+        result.fileUrl = files.fileList?.[0]?.tempFileURL || '';
+      }
+      delete result.fileID;
+      return result;
+    }
     if (['getContentEffects','getContentEffectDetail','saveContentEffectFeedback'].includes(action)) {const reports=require('./domains/content-effects').createContentEffectReport({db});return await reports[action==='getContentEffects'?'list':action==='saveContentEffectFeedback'?'feedback':'detail'](event,callerUid);}
     if (['getGuideOfficialSources','searchGuideOfficialSources','refreshGuideOfficialSources'].includes(action)) return await require('./domains/guide-official-sources').createOfficialSourceService({db}).handle(event,callerUid);
     if (require('./domains/guide-packs').actions.includes(action)) return await require('./domains/guide-packs').createGuidePackService({db}).handle(event,callerUid);

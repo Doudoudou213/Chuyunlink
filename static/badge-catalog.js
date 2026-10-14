@@ -119,15 +119,44 @@
   freeze(catalog);
   function get(id) { return catalog.find(badge => badge.id === id) || null; }
 
-  // Integration seam: replace this implementation with an authenticated, read-only
-  // server adapter in the next phase. Never infer qualification from local counters.
-  // null means unknown, NOT zero progress, ineligible, or unearned.
+  function aborted(signal) {
+    if (signal?.aborted) throw Object.assign(new Error('Eligibility check aborted'), { name: 'AbortError' });
+  }
+  function validated(badgeId, result) {
+    if (result?.status === 'login_required') return Object.freeze({ status: 'login_required', eligible: null, earned: null, progress: null });
+    const badge = get(badgeId);
+    const states = ['not_connected', 'in_progress', 'eligible', 'earned', 'needs_review'];
+    if (!result || result.badgeId !== badgeId || result.ruleVersion !== ruleVersion ||
+      result.schemaVersion !== 1 || !states.includes(result.status) ||
+      !Array.isArray(result.progress) || result.progress.length !== badge.requirements.length ||
+      result.progress.some((p, i) => !p || p.metric !== badge.requirements[i].metric || p.target !== badge.requirements[i].target ||
+        (p.current !== null && (!Number.isInteger(p.current) || p.current < 0 || p.current > p.target))) ||
+      ![true, false, null].includes(result.eligible) || ![true, false, null].includes(result.earned) ||
+      (result.status === 'earned' && (result.eligible !== true || result.earned !== true)) ||
+      (result.status === 'eligible' && (result.eligible !== true || result.earned !== false)) ||
+      (result.status === 'in_progress' && (result.eligible !== false || result.earned !== false)) ||
+      (result.eligible === true && result.progress.some(p => p.current !== p.target))) {
+      throw new Error('徽章状态暂不可用，请刷新后再试');
+    }
+    return freeze({ schemaVersion: 1, badgeId, ruleVersion, status: result.status,
+      eligible: result.eligible, earned: result.earned,
+      progress: result.progress.map(p => ({ metric: p.metric, current: p.current, target: p.target })),
+      checkedAt: result.checkedAt, earnedAt: result.earnedAt || null });
+  }
+  // No local counter is used as evidence. Cancellation discards late cloud responses.
   async function checkEligibility(badgeId, { signal } = {}) {
     if (!get(badgeId)) throw new RangeError('Unknown badge ID');
-    if (signal?.aborted) {
-      const error = new Error('Eligibility check aborted');
-      error.name = 'AbortError';
-      throw error;
+    aborted(signal);
+    const transport = typeof window !== 'undefined' && window.ChuBadgeTransport;
+    if (transport) {
+      try {
+        const result = await transport.query(badgeId);
+        aborted(signal);
+        return validated(badgeId, result);
+      } catch (error) {
+        aborted(signal);
+        if (!['BADGES_NOT_ENABLED', 'INVALID_ACTION'].includes(error.code)) throw error;
+      }
     }
     return Object.freeze({
       schemaVersion: 1, badgeId, ruleVersion,
@@ -135,5 +164,30 @@
       progress: null, checkedAt: null
     });
   }
-  return Object.freeze({ catalog, ruleVersion, get, checkEligibility });
+  async function claim(badgeId, { signal } = {}) {
+    if (!get(badgeId)) throw new RangeError('Unknown badge ID');
+    aborted(signal);
+    const transport = typeof window !== 'undefined' && window.ChuBadgeTransport;
+    if (!transport) throw new Error('徽章服务尚未连接');
+    const result = await transport.claim(badgeId, ruleVersion);
+    aborted(signal);
+    return validated(badgeId, result);
+  }
+  async function lesson(lessonId, { signal } = {}) {
+    aborted(signal);
+    const transport = typeof window !== 'undefined' && window.ChuBadgeTransport;
+    if (!transport) throw new Error('学习服务尚未连接');
+    const result = await transport.lesson(lessonId);
+    aborted(signal);
+    return result;
+  }
+  async function answer(lessonId, token, choice, { signal } = {}) {
+    aborted(signal);
+    const transport = typeof window !== 'undefined' && window.ChuBadgeTransport;
+    if (!transport) throw new Error('学习服务尚未连接');
+    const result = await transport.answer(lessonId, token, choice);
+    aborted(signal);
+    return result;
+  }
+  return Object.freeze({ catalog, ruleVersion, get, checkEligibility, claim, lesson, answer });
 });

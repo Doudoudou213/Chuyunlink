@@ -246,6 +246,8 @@ try {
         (Join-Path $staticDirectory 'badge-catalog.js'),
         (Join-Path $staticDirectory 'profile-badges.js'),
         (Join-Path $staticDirectory 'profile-badges.css'),
+          (Join-Path $staticDirectory 'admin-badges.js'),
+          (Join-Path $staticDirectory 'admin-badges.css'),
         (Join-Path $staticDirectory 'community-paper.css'),
         (Join-Path $staticDirectory 'field-paper.css'),
         (Join-Path $staticDirectory 'field-paper.js'),

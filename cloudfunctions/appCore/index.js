@@ -2016,6 +2016,19 @@ exports.main = async (event = {}) => {
       requireStableAccount(userInfo);
       return await require('./domains/site-walk-sessions').createSiteWalkSessionService({db}).handle(uid,event);
     }
+    if (['getBadgeEligibility', 'claimBadge', 'startBadgeLesson', 'answerBadgeLesson'].includes(action) && process.env.BADGES_ENABLED !== 'true') {
+      return { ok: false, error: { code: 'BADGES_NOT_ENABLED', message: '徽章获取正在准备中，图样可先浏览' } };
+    }
+    if (['startBadgeLesson', 'answerBadgeLesson'].includes(action)) {
+      requireStableAccount(userInfo);
+      const learning = require('./domains/badge-learning').createBadgeLearning({ db });
+      return await learning[action === 'startBadgeLesson' ? 'start' : 'answer'](uid, event);
+    }
+    if (['getBadgeEligibility', 'claimBadge'].includes(action)) {
+      requireStableAccount(userInfo);
+      const badges = require('./domains/badges').createBadgeService({ db });
+      return await badges[action === 'claimBadge' ? 'claim' : 'get'](uid, event);
+    }
     if (['saveVisitSession','getVisitSession','listVisitSessions','visitSessionEvent','checkVisitRoute'].includes(action)) {
       requireStableAccount(userInfo);
       return await require('./domains/visit-sessions').createVisitSessionService({db,routePlanner:planRoute}).handle(uid,event);

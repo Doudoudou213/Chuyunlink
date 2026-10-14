@@ -1,4 +1,4 @@
-/* Small paper gallery. No earning, persistence, rewards, or CloudBase writes. */
+/* Paper gallery; progress and claims are verified by the authenticated service. */
 (() => {
   'use strict';
   function initialize() {
@@ -85,7 +85,102 @@
         return li;
       }));
       const status = byId('paper-badge-dialog-status');
-      status.textContent = '图样预览 · 获取功能尚未开放';
+      status.textContent = '正在核对获取进度…';
+      status.dataset.eligibility = 'loading';
+      const render = result => {
+        status.dataset.eligibility = result.status;
+        const labels = {
+          login_required: '登录后查看你的获取进度', not_connected: '图样已收录 · 获取条件核验暂未开放',
+          in_progress: '继续记录，下一件藏品等你来点亮', eligible: '条件已达成，可以收下这枚徽章',
+          earned: '已收入你的荆楚徽章图鉴', needs_review: '相关采集状态有变化，徽章暂待复核'
+        };
+        status.replaceChildren(document.createTextNode(labels[result.status] || '暂无法查询获取状态'));
+        if (result.progress?.length) {
+          const progress = document.createElement('ul');
+          progress.className = 'paper-badge-progress';
+          result.progress.forEach((p, index) => {
+            const item = document.createElement('li');
+            item.textContent = badge.requirements[index].label + ' ' + (p.current === null ? '待接入核验' : `${p.current} / ${p.target}`);
+            progress.append(item);
+          });
+          status.append(progress);
+        }
+        if (badge.id === 'lamplight' && result.status === 'in_progress') {
+          const learn = document.createElement('button');
+          learn.type = 'button'; learn.className = 'paper-badge-claim'; learn.textContent = '开始采集小课';
+          learn.addEventListener('click', () => startLesson());
+          status.append(learn);
+        }
+        if (result.status === 'eligible' || result.status === 'login_required') {
+          const action = document.createElement('button');
+          action.type = 'button';
+          action.className = 'paper-badge-claim';
+          action.textContent = result.status === 'login_required' ? '去登录' : '收下徽章';
+          action.addEventListener('click', async () => {
+            if (result.status === 'login_required') { dialog.close(); window.openCloudLogin?.(); return; }
+            action.disabled = true;
+            action.textContent = '正在核验…';
+            try {
+              const next = await api.claim(badge.id, { signal: currentRequest.signal });
+              if (request === currentRequest && !currentRequest.signal.aborted && dialog.open) render(next);
+            } catch (error) {
+              if (request !== currentRequest || currentRequest.signal.aborted || !dialog.open) return;
+              action.disabled = false;
+              action.textContent = '重新核验并领取';
+              const notice = status.querySelector('.paper-badge-error') || document.createElement('span');
+              notice.className = 'paper-badge-error';
+              notice.textContent = '暂未完成领取，请重试；已领取的徽章不会重复发放。';
+              status.append(notice);
+            }
+          });
+          status.append(action);
+        }
+      };
+      async function startLesson(lessonId) {
+        status.textContent = '正在展开小课…';
+        try {
+          const result = await api.lesson(lessonId, { signal: currentRequest.signal });
+          if (request !== currentRequest || currentRequest.signal.aborted || !dialog.open) return;
+          if (result.complete) {
+            const checked = await api.checkEligibility(badge.id, { signal: currentRequest.signal });
+            if (request === currentRequest && !currentRequest.signal.aborted && dialog.open) render(checked);
+            return;
+          }
+          const lesson = result.lesson;
+          if (!lesson || !Array.isArray(lesson.options) || lesson.options.length > 6) throw new Error('课程暂不可用');
+          status.replaceChildren();
+          const title = document.createElement('h3'); title.textContent = lesson.title;
+          const body = document.createElement('p'); body.textContent = lesson.body;
+          const question = document.createElement('p'); question.textContent = lesson.question;
+          const options = document.createElement('div'); options.className = 'paper-badge-lesson-options';
+          const response = document.createElement('p'); response.setAttribute('role', 'status');
+          lesson.options.forEach((label, index) => {
+            const option = document.createElement('button'); option.type = 'button'; option.textContent = label;
+            option.addEventListener('click', async () => {
+              options.querySelectorAll('button').forEach(b => { b.disabled = true; });
+              response.textContent = '正在核对答案…';
+              try {
+                const checked = await api.answer(lesson.id, lesson.token, index, { signal: currentRequest.signal });
+                if (request !== currentRequest || currentRequest.signal.aborted || !dialog.open) return;
+                response.textContent = (checked.correct ? '答对了。' : '再想一想。') + checked.explanation;
+                const next = document.createElement('button'); next.type = 'button'; next.className = 'paper-badge-claim';
+                next.textContent = checked.correct ? '继续下一课' : '再学一次';
+                next.addEventListener('click', () => startLesson(checked.correct ? undefined : lesson.id));
+                status.append(next);
+              } catch (error) {
+                if (request !== currentRequest || currentRequest.signal.aborted || !dialog.open) return;
+                response.textContent = '本次答案暂未确认，可以重试。';
+                options.querySelectorAll('button').forEach(b => { b.disabled = false; });
+              }
+            });
+            options.append(option);
+          });
+          status.append(title, body, question, options, response);
+        } catch (error) {
+          if (request !== currentRequest || currentRequest.signal.aborted || !dialog.open) return;
+          status.textContent = '小课暂未载入，请稍后重新打开。';
+        }
+      }
       if (!dialog.open) {
         dialog.showModal();
         scrollLock = { html: document.documentElement.style.overflow, body: document.body.style.overflow };
@@ -97,13 +192,11 @@
       try {
         const result = await api.checkEligibility(badge.id, { signal: currentRequest.signal });
         if (request !== currentRequest || currentRequest.signal.aborted || !dialog.open) return;
-        // This release intentionally does not display eligibility/earned states,
-        // even if a later adapter is replaced before the complete award flow ships.
-        status.dataset.eligibility = result.status;
+        render(result);
       } catch (error) {
         if (error.name !== 'AbortError' && request === currentRequest && dialog.open) {
           status.dataset.eligibility = 'unavailable';
-          status.textContent = '图样预览 · 暂无法查询获取状态';
+          status.textContent = '暂无法查询获取状态，请稍后重新打开。图样仍可浏览。';
         }
       }
     }

@@ -49,6 +49,14 @@
 #paper-badge-dialog-note { margin-top: 14px; color: var(--home-muted); font-size: 12px; line-height: 1.85; }
 #paper-badge-dialog-status { margin-top: 20px; padding: 12px 0 0; border-top: 1px solid #e9e4d7; color: var(--home-muted); font-size: 12px; line-height: 1.8; }
 #paper-badge-dialog button:focus-visible { outline: 2px solid var(--home-sage); outline-offset: 2px; border-radius: 4px; }
+.paper-badge-progress { margin: 10px 0; padding-left: 18px; }
+#paper-badge-dialog .paper-badge-claim { min-height: 44px; margin-top: 10px; padding: 8px 18px; border: 0; border-radius: 4px; background: var(--home-sage); color: var(--home-surface); font: inherit; cursor: pointer; }
+.paper-badge-claim:disabled { opacity: .65; cursor: wait; }
+.paper-badge-error { display: block; margin-top: 8px; }
+.paper-badge-lesson-options { display: grid; gap: 8px; margin-top: 12px; }
+.paper-badge-lesson-options button { min-height: 44px; padding: 10px 12px; text-align: left; border: 0; border-radius: 4px; font: inherit; color: var(--home-ink); background: var(--home-paper); cursor: pointer; }
+.paper-badge-lesson-options button:disabled { opacity: .7; cursor: default; }
+#paper-badge-dialog-status[data-eligibility="earned"] { color: var(--home-sage); }
 @media (hover: hover) {
   #paper-profile-badges .paper-badge-preview-item:hover,
   #paper-badge-catalog .paper-badge-item:hover { background: #eeeddf; }

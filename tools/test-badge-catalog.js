@@ -67,5 +67,5 @@ function test(name, run) { run(); checks++; console.log('PASS ' + name); }
     assert(ui.includes('opener.focus'));
     assert(fs.readFileSync(path.join(root, 'static/profile-badges.css'), 'utf8').includes('prefers-reduced-motion: reduce'));
   });
-  console.log('Badge collection: ' + checks + ' checks passed. No backend qualification/award flow tested or enabled.');
+  console.log('Badge collection: ' + checks + ' checks passed. Server award tests are in test-badge-service.js.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
