@@ -29,8 +29,10 @@
         await art.decode();
         if (request !== motionRequest || unloaded || !dialog.open || !global.ChuGildedReveal) return;
         const rect = profile.sourceRect;
-        Object.assign(canvas.style, {left: rect.x / art.naturalWidth * 100 + '%', top: rect.y / art.naturalHeight * 100 + '%', width: rect.width / art.naturalWidth * 100 + '%', height: rect.height / art.naturalHeight * 100 + '%'});
-        reveal = global.ChuGildedReveal.create({canvas, image: art, profile, quality: 'compact'});
+        // Match the renderer's transparent bloom margin without scaling the art.
+        const padding = global.ChuGildedReveal.lightPadding;
+        Object.assign(canvas.style, {left: (rect.x-padding) / art.naturalWidth * 100 + '%', top: (rect.y-padding) / art.naturalHeight * 100 + '%', width: (rect.width+padding*2) / art.naturalWidth * 100 + '%', height: (rect.height+padding*2) / art.naturalHeight * 100 + '%'});
+        reveal = global.ChuGildedReveal.create({canvas, image: art, profile, quality: 'compact', mode: 'light-only'});
         canvas.hidden = false;
         reveal.play();
       } catch (_) { if (request === motionRequest) canvas.hidden = true; /* Labels and source links remain usable without artwork. */ }
@@ -39,7 +41,9 @@
     art.addEventListener('load', sizeArt); sizeArt();
     // Only these four illustrations have been visually matched. Other points
     // locate source material in an approximate district, not the painted prop.
-    const anchors = {tower:[23,25], copper:[34,36], baiyun:[51,37], pond:[40,65], bell:[38,24], 'poetry-corridor':[41,77]};
+    // Put the four painted subjects' captions in the surrounding open ground,
+    // leaving the illuminated roofs and water visible.
+    const anchors = {tower:[17,41], copper:[36,46], baiyun:[54,48], pond:[48,83], bell:[38,24], 'poetry-corridor':[41,77]};
     function select(id, record = true) {
       const point = known.get(id); if (!point) return;
       selected = point;
@@ -99,7 +103,8 @@
       open() {
         select(selected.id, false);
         // Initial framing holds the western tower; the scrollable world remains full size.
-        const anchor = anchors[selected.id] || [selected.x, selected.y];
+        const rect = global.ChuParkGildedProfiles?.[selected.id]?.sourceRect;
+        const anchor = rect && art.naturalWidth ? [(rect.x+rect.width/2)/art.naturalWidth*100,(rect.y+rect.height/2)/art.naturalHeight*100] : anchors[selected.id] || [selected.x, selected.y];
         stage.scrollLeft = Math.max(0, anchor[0] / 100 * world.clientWidth - stage.clientWidth * .5);
         stage.scrollTop = Math.max(0, anchor[1] / 100 * world.clientHeight - stage.clientHeight * .45);
       },

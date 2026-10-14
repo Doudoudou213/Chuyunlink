@@ -6,6 +6,7 @@
   const W = 1024;
   const H = 1536;
   const DURATION = 6.4;
+  const LIGHT_PADDING = 16;
   const clamp = (value, low = 0, high = 1) => Math.max(low, Math.min(high, value));
   const smooth = value => { const t = clamp(value); return t * t * (3 - 2 * t); };
   const contours = [
@@ -78,6 +79,9 @@
       : options.profile;
     if (options.profile && !requestedProfile) throw new TypeError('Unknown landmark motion profile.');
     const profile = requestedProfile || {};
+    // Expanded scroll: illuminate the existing painting, never repaint a crop.
+    const lightOnly = options.mode === 'light-only';
+    const padding = lightOnly ? LIGHT_PADDING : 0;
     const sourceWidth = Number(profile.width) || W;
     const sourceHeight = Number(profile.height) || H;
     const duration = Number(profile.duration) || DURATION;
@@ -87,10 +91,13 @@
     const paintProfile = profile.paint || { kind: 'tower' };
     const baseOpacity = clamp(Number(profile.baseOpacity) || 0);
     const brushScale = clamp(Number(profile.brushScale) || 1,.02,5);
-    const width = Math.round(clamp(Number(options.width) || (options.quality === 'compact' ? 384 : sourceWidth), Math.min(192,sourceWidth), sourceWidth));
-    const height = Math.round(width * sourceHeight / sourceWidth);
+    const viewportWidth = sourceWidth + padding * 2;
+    const viewportHeight = sourceHeight + padding * 2;
+    const width = Math.round(clamp(Number(options.width) || (options.quality === 'compact' ? 384 : viewportWidth), Math.min(192,viewportWidth), viewportWidth));
+    const height = Math.round(width * viewportHeight / viewportWidth);
     canvas.width = width; canvas.height = height;
     canvas.dataset.profile = profileId;
+    canvas.dataset.renderMode = lightOnly ? 'light-only' : 'pigment';
     const context = canvas.getContext('2d', { alpha: true });
     // Decode/crop only once, at the correct aspect ratio. Every frame is drawn
     // at this same registration; no landmark is enlarged or shifted to appear.
@@ -102,8 +109,8 @@
         target.drawImage(image,rect.x,rect.y,rect.width,rect.height,0,0,width,height);
       } else target.drawImage(image,0,0,width,height);
     }
-    drawOriginal(sourceContext);
-    const underpainting = baseOpacity ? makeCanvas(width,height) : null;
+    if (!lightOnly) drawOriginal(sourceContext);
+    const underpainting = !lightOnly && baseOpacity ? makeCanvas(width,height) : null;
     if (underpainting) {
       const underContext = underpainting.getContext('2d', { alpha: true });
       underContext.globalAlpha = baseOpacity;
@@ -119,7 +126,7 @@
     const maskData = maskContext.createImageData(maskWidth, maskHeight);
     const arrivals = new Float32Array(maskWidth * maskHeight);
     const grains = new Float32Array(arrivals.length);
-    const clipping = Array.isArray(profile.clipPoints) && profile.clipPoints.length > 2 ? makeCanvas(maskWidth,maskHeight) : null;
+    const clipping = !lightOnly && Array.isArray(profile.clipPoints) && profile.clipPoints.length > 2 ? makeCanvas(maskWidth,maskHeight) : null;
     const clock = { time: 0 };
     let timeline = null;
     let destroyed = false;
@@ -163,7 +170,7 @@
     // Each floor has its own alternating brush direction. A deterministic
     // multi-frequency boundary lets pigment arrive in uneven fine washes; it
     // does not enlarge the building or reveal a rectangular/circular image tile.
-    for (let y = 0; y < maskHeight; y += 1) {
+    for (let y = 0; !lightOnly && y < maskHeight; y += 1) {
       const py = y / maskHeight * sourceHeight;
       const band = py < 352 ? 0 : py < 488 ? 1 : py < 675 ? 2 : py < 857 ? 3 : py < 1061 ? 4 : 5;
       const starts = [.95,1.6,2.15,2.72,3.28,3.88];
@@ -240,6 +247,11 @@
       context.globalAlpha = 1;
       context.globalCompositeOperation = 'source-over';
       context.clearRect(0,0,width,height);
+      if (lightOnly) {
+        phase = time >= duration ? 'settled' : time / duration < .77 ? 'gold' : 'settling';
+        renderLight(time);
+        publishState(); return;
+      }
       if (time >= duration || reduced) {
         drawOriginal(context);
         applyClip();
@@ -295,6 +307,60 @@
       context.setTransform(1,0,0,1,0,0);
       applyClip();
       publishState();
+    }
+
+    function renderLight(time) {
+      const scale = width / viewportWidth;
+      context.setTransform(scale,0,0,height/viewportHeight,padding*scale,padding*height/viewportHeight);
+      context.lineCap = 'round'; context.lineJoin = 'round';
+      // Broad amber, fine gold, ivory core: three contour-bound light layers.
+      // No shadowBlur, image copy, full-object mask or full-canvas wash.
+      const quiet = reduced || time >= duration;
+      const envelope = quiet ? .2 : smooth(time/.55) * (1 - .8*smooth((time/duration-.77)/.23));
+      const stroke = Math.max(.5, brushScale*2.2);
+      function glint(point, radius, strength, star = false) {
+        const glow = context.createRadialGradient(point.x,point.y,0,point.x,point.y,radius);
+        glow.addColorStop(0,'rgba(255,251,220,.98)');
+        glow.addColorStop(.12,'rgba(255,231,153,.85)');
+        glow.addColorStop(.38,'rgba(244,183,66,.34)');
+        glow.addColorStop(1,'rgba(222,150,43,0)');
+        context.globalAlpha = strength; context.fillStyle = glow;
+        context.fillRect(point.x-radius,point.y-radius,radius*2,radius*2);
+        if (star) {
+          const r = radius*.24;
+          context.fillStyle = '#fff9d9'; context.beginPath();
+          context.moveTo(point.x,point.y-r); context.lineTo(point.x+r*.16,point.y-r*.16);
+          context.lineTo(point.x+r*.72,point.y); context.lineTo(point.x+r*.16,point.y+r*.16);
+          context.lineTo(point.x,point.y+r); context.lineTo(point.x-r*.16,point.y+r*.16);
+          context.lineTo(point.x-r*.72,point.y); context.lineTo(point.x-r*.16,point.y-r*.16);
+          context.closePath(); context.fill();
+        }
+      }
+      paths.forEach((path,index) => {
+        const progress = quiet ? 1 : clamp((time-path.start)/path.duration);
+        if (!progress) return;
+        drawSegment(path,0,progress,'#d9a044',stroke*18/brushScale,envelope*.1);
+        drawSegment(path,0,progress,'#f0bb5c',stroke*7/brushScale,envelope*.22);
+        drawSegment(path,0,progress,'#f9d78b',stroke*1.5/brushScale,envelope*.8);
+        if (quiet) return;
+        // A second narrow sweep keeps completed eaves alive until the finale.
+        const sweep = progress < 1 ? progress : clamp((time-path.start-path.duration-.2)/1.65);
+        if (sweep > 0 && sweep < 1) {
+          drawSegment(path,Math.max(0,sweep-.24),sweep,'#e9af4e',stroke*9/brushScale,envelope*.38);
+          const head = drawSegment(path,Math.max(0,sweep-.1),sweep,'#fff7d2',stroke*2.1/brushScale,envelope);
+          if (head) glint(head,Math.max(8,brushScale*34),envelope,true);
+        }
+        // Sparse glints stay ON the measured line, never float over other scenery.
+        for (let j = 0; j < 2; j++) {
+          const fraction = .18 + ((index*37+j*41)%65)/100;
+          if (fraction > progress) continue;
+          const at = path.samples.find(point => point.length >= path.length*fraction);
+          const age = time-(path.start+path.duration*fraction+.18+j*.45);
+          const pulse = Math.sin(Math.PI*clamp(age/1.4));
+          if (at && pulse > .01) glint(at,Math.max(7,brushScale*29),pulse*pulse*envelope*.85,true);
+        }
+      });
+      context.globalAlpha = 1; context.setTransform(1,0,0,1,0,0);
     }
 
     function applyClip() {
@@ -378,5 +444,5 @@
     });
   }
 
-  global.ChuGildedReveal = Object.freeze({ create, duration:DURATION, assetSize:Object.freeze({width:W,height:H}) });
+  global.ChuGildedReveal = Object.freeze({ create, duration:DURATION, lightPadding:LIGHT_PADDING, assetSize:Object.freeze({width:W,height:H}) });
 })(window);
