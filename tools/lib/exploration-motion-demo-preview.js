@@ -19,6 +19,8 @@ function allowedPath(raw) {
   catch { return null; }
   if (pathname.includes('\\') || pathname.includes('\0') || pathname.split('/').some(p => p === '.' || p === '..')) return null;
   if (pathname === '/' || pathname === '/explore-motion-demo.html') return '/explore-motion-demo.html';
+  if (pathname === '/explore-journey-demo.html') return pathname;
+  if (/^\/static\/exploration-journey-(?:demo\.(?:css|js)|state\.js)$/.test(pathname)) return pathname;
   if (/^\/static\/exploration-motion-[a-z0-9-]+\.(?:css|js)$/.test(pathname)) return pathname;
   if (/^\/static\/exploration-(?:gilded-reveal|gilded-profiles|park-layout|park-demo)\.js$/.test(pathname)) return pathname;
   if (pathname === '/static/assets/gsap-3.15.0.min.js') return pathname;
