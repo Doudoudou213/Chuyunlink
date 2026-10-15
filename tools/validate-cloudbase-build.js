@@ -241,10 +241,6 @@ const javascriptFiles = [
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const guideFiles = [
-  'static/exploration-readiness.js','static/exploration-readiness-admin.js','static/exploration-readiness.css',
-  'explore-journey.html','static/exploration-journey-live.css','static/exploration-journey-demo.css',
-  'static/exploration-journey-live.js','static/exploration-journey-content.js','static/exploration-journey-audio.js',
-  'static/exploration-gilded-profiles.js','static/exploration-gilded-reveal.js',
   'static/explore-assets-admin.js','cloudfunctions/appCore/lib/exploration-assets.js','cloudfunctions/adminSubmissions/lib/exploration-assets.js',
   'cloudfunctions/appCore/domains/exploration-questions.js','cloudfunctions/appCore/domains/exploration-recognition.js',
   'explore-admin.html','static/explore-admin.js','cloudfunctions/appCore/lib/exploration-core.js','cloudfunctions/adminSubmissions/lib/exploration-core.js',

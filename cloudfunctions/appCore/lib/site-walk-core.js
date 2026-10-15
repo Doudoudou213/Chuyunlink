@@ -34,7 +34,7 @@ async function resolve(db, resourceId, value) {
   if(!cache.has(p.guideVersionId)) cache.set(p.guideVersionId,await guide(db,p.guideVersionId,resourceId));
   const g=cache.get(p.guideVersionId),o=g.observations.find(x=>x.key===p.observationKey);
   if(!o?.located) fail('WALK_SOURCE','观察内容或位置已变化，请重新选取');
-  points.push({id:p.id,title:p.title||g.f.title,text:o.text,reading:g.f.text,locator:o.locator,direction:p.direction,photo:null,sources:g.sources,guideVersionId:p.guideVersionId});
+  points.push({id:p.id,title:p.title||g.f.title,text:o.text,locator:o.locator,direction:p.direction,photo:null,sources:g.sources,guideVersionId:p.guideVersionId});
  }
  const assetFingerprint=value.exploration?await require('./exploration-assets').resolve(db,value.exploration,points):null;
  return {points,sourceFingerprint:hash(assetFingerprint?[...cache.values()].map(g=>[g.f.versionId,g.c.fingerprint,g.c.contextFingerprint]).concat([assetFingerprint]):[...cache.values()].map(g=>[g.f.versionId,g.c.fingerprint,g.c.contextFingerprint])),title:value.title||String(resource.title||'景点导览').slice(0,100)};
