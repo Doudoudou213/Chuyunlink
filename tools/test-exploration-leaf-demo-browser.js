@@ -220,6 +220,10 @@ function check(value, description) { assert(value, description); checks++; }
       check(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'page no horizontal overflow ' + size.width);
       check(await p.locator('#leaf-canvas').evaluate(e => e.scrollWidth > e.clientWidth || innerWidth >= 1200), 'small artwork is internally scrollable ' + size.width);
       check(await p.locator('#scene-index button[data-scene]').evaluateAll(es => es.every(e => { const r = e.getBoundingClientRect(); return r.width >= 44 && r.height >= 44; })), 'scene targets at least 44px ' + size.width);
+      check(await p.locator('#scene-index button[data-scene]').evaluateAll(es => es.every(e => {
+        const range = document.createRange(); range.selectNodeContents(e.firstChild);
+        return range.getBoundingClientRect().height < parseFloat(getComputedStyle(e).lineHeight) * 1.3;
+      })), 'scene names remain on one line ' + size.width);
       await open(p, 'tower');
       // Only the reading region scrolls; the paper header and closing controls
       // remain reachable even when the viewport is short or the copy grows.
