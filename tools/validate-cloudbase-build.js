@@ -243,6 +243,7 @@ const javascriptFiles = [
 const guideFiles = [
     'static/exploration-readiness.js','static/exploration-readiness-admin.js','static/exploration-readiness.css','static/exploration-admin-simple.css',
     'static/exploration-admin-paper.js','static/exploration-admin-paper.css',
+    'static/exploration-journey-leaves.js','static/exploration-journey-leaves.css',
   'explore-journey.html','static/exploration-journey-live.css','static/exploration-journey-demo.css',
   'static/exploration-journey-live.js','static/exploration-journey-content.js','static/exploration-journey-audio.js',
   'static/exploration-gilded-profiles.js','static/exploration-gilded-reveal.js',

@@ -218,6 +218,8 @@ try {
         (Join-Path $staticDirectory 'exploration-admin-simple.css'),
         (Join-Path $staticDirectory 'exploration-admin-paper.js'),
         (Join-Path $staticDirectory 'exploration-admin-paper.css'),
+        (Join-Path $staticDirectory 'exploration-journey-leaves.js'),
+        (Join-Path $staticDirectory 'exploration-journey-leaves.css'),
         (Join-Path $staticDirectory 'explore-admin.js'),
         (Join-Path $staticDirectory 'explore-media.js'),
         (Join-Path $staticDirectory 'explore-records.js'),

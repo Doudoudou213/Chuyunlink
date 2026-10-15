@@ -12,6 +12,8 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>{if(!r.url().startsWith(s.url)&&!r.url().startsWith('https://example.com/'))external.push(r.url());});
     await p.addInitScript(()=>{const A=Audio;window.__audios=[];window.Audio=function(){const a=new A();window.__audios.push(a);return a;};});
     const go=async()=>{await p.goto(s.url+'/explore-journey.html?resourceId=r');await p.locator('#content:not([hidden])').waitFor();};
+    const openLeaf=async id=>{await p.locator('#'+id+' > .journey-leaf-trigger').click();await p.locator('#journey-leaf-dialog[data-leaf="'+id+'"][aria-busy="false"]').waitFor();await p.waitForFunction(()=>!document.getElementById('journey-leaf-dialog').getAnimations().some(a=>a.playState==='running'));};
+    const closeLeaf=async()=>{await p.locator('#journey-leaf-dialog .journey-leaf-close').click();await p.locator('#journey-leaf-dialog').waitFor({state:'hidden'});};
     const scenario=async kind=>{
       const c=await browser.newPage();await c.goto(s.url+'/preview-control.html');await c.locator('[data-kind='+kind+']').click();await c.waitForFunction(()=>document.querySelector('#result').textContent.includes('已完成'));await c.close();
     };
@@ -20,8 +22,9 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     check(await p.locator('#journey-stops button').count()===4,'published order');
     check(await p.locator('[data-art-point]').count()===4,'explicit artwork binding');
     check((await p.locator('#audio').textContent()).includes('暂未配音'),'text fallback');
-    await p.locator('#reading summary').click();check((await p.locator('#reading-copy').textContent()).includes('本地流程演示'),'approved long copy');
-    await p.locator('#sources summary').click();check((await p.locator('#source-list').textContent()).includes('本地画稿'),'published sources');
+    await openLeaf('reading');check((await p.locator('#reading-copy').textContent()).includes('本地流程演示'),'approved long copy');
+    await closeLeaf();await openLeaf('sources');check((await p.locator('#source-list').textContent()).includes('本地画稿'),'published sources');
+    await closeLeaf();
     for(const width of [320,390,768,1440]){
       await p.setViewportSize({width,height:900});
       check(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal overflow '+width);
@@ -85,12 +88,15 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     draft.exploration.objects[0].audioId=registered.assetId;await f.publish(draft);
     await p.route('https://example.com/journey.wav',r=>r.fulfill({contentType:'audio/wav',headers:{'Access-Control-Allow-Origin':'*'},body:wave()}));
     await go();check(await p.evaluate(()=>__audios.every(a=>a.paused&&!a.getAttribute('src'))),'no autoplay or preload');
+    await openLeaf('reading');
     await p.locator('#audio button').click();await p.waitForFunction(()=>document.querySelector('.audio-caption').textContent.includes('本地画稿示意'));
     check(await p.locator('#audio button').textContent()==='暂停','manual audio');
     await p.locator('#audio button').click();check(await p.locator('#audio button').textContent()==='继续听','pause');
+    await closeLeaf();
     await p.locator('[data-stop=copper]').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
     check(await p.evaluate(()=>__audios.every(a=>a.paused&&!a.getAttribute('src'))),'switch stops old audio');
     await p.locator('[data-stop=tower]').click();await p.waitForFunction(()=>document.querySelector('#audio button'));
+    await openLeaf('reading');
     await p.unroute('https://example.com/journey.wav');await p.route('https://example.com/journey.wav',r=>r.abort());
     await p.locator('#audio button').click();await p.waitForFunction(()=>/加载失败|暂时无法播放/.test(document.querySelector('#audio').textContent));
     check(await p.locator('#content').isVisible(),'media failure keeps text');
@@ -102,7 +108,7 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     const capAsset=await f.call({action:'saveExplorationAsset',resourceId:'r',requestId:'audio-caption-test',asset:withCaptions});
     draft.exploration.objects[0].audioId=capAsset.assetId;await f.publish(draft);
     await p.unroute('https://example.com/journey.wav');await p.route('https://example.com/journey.wav',r=>r.fulfill({contentType:'audio/wav',headers:{'Access-Control-Allow-Origin':'*'},body:wave()}));
-    await go();await p.locator('#audio button').click();
+    await go();await openLeaf('reading');await p.locator('#audio button').click();
     await p.waitForFunction(()=>document.querySelector('.audio-caption').textContent==='画稿展示了楼阁、水面和植物。');
     check((await p.locator('#audio').textContent()).includes('字幕摘自本版已审讲解'),'timestamped approved caption');
     await scenario('reset');await go();

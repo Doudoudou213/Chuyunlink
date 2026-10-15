@@ -8,6 +8,16 @@
   let drag=null,suppressedUntil=0,expiry=null,leaving=false;
   let entryPoint=new URLSearchParams(location.search).get('pointId'),feedbackBusy=false;
   const storageKey='chulink:journey-content:v1:'+resourceId;
+  const leaves=window.ChuJourneyLeaves?.create({
+    async verify(id){
+      if(!ready||document.hidden||leaving||(id==='trial-feedback')!==finished)return false;
+      const token=generation,selected=record.selected,wasFinished=finished;
+      await verify(token);
+      return token===generation&&ready&&!document.hidden&&!leaving&&record.selected===selected&&finished===wasFinished;
+    },
+    onOpen(){A.pause?.();renderer?.pause();},
+    onClose(){A.pause?.();if(ready&&!finished&&!document.hidden&&!leaving)renderer?.resume();}
+  });
   function text(id,value){$(id).textContent=value;}
   function button(label,fn,attrs={}){
     const b=document.createElement('button');b.type='button';b.textContent=label;
@@ -17,6 +27,8 @@
   function stopLight(){lightGeneration++;renderer?.destroy();renderer=null;canvas.hidden=true;}
   function quiet(){A.stop();stopLight();clearTimeout(expiry);}
   function gate(title,copy,retry=true){
+    const wasReading=leaves?.isOpen();
+    leaves?.dismiss({restoreFocus:false});
     ready=false;quiet();shell.setAttribute('aria-busy','false');
     $('content').hidden=true;$('finished').hidden=true;$('gate').hidden=false;
     text('gate-title',title);text('gate-copy',copy);$('retry').hidden=!retry;
@@ -24,6 +36,7 @@
     // Hide and erase old public content, not just its visible container.
     for(const id of ['journey-points','journey-stops','source-list','audio','souvenir-stops'])$(id).replaceChildren();
     for(const id of ['point-title','observation','reading-copy','review-date','souvenir-title','souvenir-note','souvenir-count'])text(id,'');
+    if(wasReading)$('gate-title').focus({preventScroll:true});
   }
   function loadSaved(){
     try{const value=JSON.parse(localStorage.getItem(storageKey)||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{};}
@@ -90,11 +103,12 @@
     try{
       await art.decode();if(token!==lightGeneration||!ready||finished||document.hidden)return;
       Object.assign(canvas.style,{left:(rect.x-pad)/1919*100+'%',top:(rect.y-pad)/820*100+'%',width:(rect.width+2*pad)/1919*100+'%',height:(rect.height+2*pad)/820*100+'%'});
-      renderer=ChuGildedReveal.create({canvas,image:art,profile,mode:'light-only',quality:'compact'});canvas.hidden=false;renderer.play();
+      renderer=ChuGildedReveal.create({canvas,image:art,profile,mode:'light-only',quality:'compact'});canvas.hidden=false;renderer.play();if(leaves?.isOpen())renderer.pause();
     }catch{if(token===lightGeneration)$('art-error').hidden=false;}
   }
   function render(){
     if(!ready)return;
+    leaves?.dismiss({restoreFocus:false});
     const point=current(),index=data.points.indexOf(point);
     $('explore-tools').href='./explore.html?resourceId='+encodeURIComponent(resourceId)+'&pointId='+encodeURIComponent(point.id);$('explore-tools').hidden=false;
     $('gate').hidden=true;$('content').hidden=finished;$('finished').hidden=!finished;
@@ -124,7 +138,7 @@
     const token=generation;A.mount($('audio'),point,()=>verify(token));light(point);
   }
   async function transition(fn){
-    if(!ready)return;const token=++generation;A.stop();stopLight();
+    if(!ready)return;leaves?.dismiss({restoreFocus:false});const token=++generation;A.stop();stopLight();
     try{await verify(token);if(token!==generation)return;fn();persist();render();(finished?$('finished-title'):$('point-title')).focus({preventScroll:true});}
     catch{/* verify has already removed stale content. */}
   }
@@ -190,8 +204,10 @@
     try{localStorage.removeItem(storageKey);}catch{text('status','浏览器未允许清除，记录没有删除；可在浏览器设置中清理此站点数据。');return;}
     record=null;load(true);
   };
-  $('sources').addEventListener('toggle',()=>{if($('sources').open&&ready)verify().catch(()=>{});});
-  $('reading').addEventListener('toggle',()=>{if($('reading').open&&ready)verify().catch(()=>{});});
+  if(!leaves){
+    $('sources').addEventListener('toggle',()=>{if($('sources').open&&ready)verify().catch(()=>{});});
+    $('reading').addEventListener('toggle',()=>{if($('reading').open&&ready)verify().catch(()=>{});});
+  }
   art.onerror=()=>$('art-error').hidden=false;
   stage.onpointerdown=e=>{if(e.pointerType==='touch'||e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:stage.scrollLeft,top:stage.scrollTop,moved:false};};
   stage.onpointermove=e=>{
@@ -202,7 +218,7 @@
   for(const name of ['pointerup','pointercancel','lostpointercapture'])stage.addEventListener(name,()=>{if(drag?.moved)suppressedUntil=performance.now()+350;drag=null;});
   stage.onkeydown=e=>{if(e.target!==stage)return;const x={ArrowLeft:-80,ArrowRight:80}[e.key];if(x){e.preventDefault();stage.scrollBy(x,0);}};
   document.addEventListener('visibilitychange',()=>{if(document.hidden){generation++;gate('暂歇，留住这一页','回到页面后会重新核对资料。',false);}else load(false);});
-  addEventListener('pagehide',()=>{leaving=true;generation++;quiet();});
+  addEventListener('pagehide',()=>{leaving=true;generation++;leaves?.dismiss({restoreFocus:false});quiet();});
   addEventListener('pageshow',e=>{if(e.persisted){leaving=false;load(false);}});
   setInterval(()=>{if(ready&&!document.hidden&&!leaving)verify().catch(()=>{});},30000);
   load();
