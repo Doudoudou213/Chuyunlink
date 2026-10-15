@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="./static/site-walk-admin.css">
 <link rel="stylesheet" href="./static/exploration-readiness.css">
 <link rel="stylesheet" href="./static/exploration-admin-simple.css">
+<link rel="stylesheet" href="./static/exploration-admin-paper.css">
 </head>
 <body class="journey-admin">
 <main class="wa-page">
@@ -84,7 +85,7 @@
 <button id="me-route" type="button">按观察顺序设置路径</button>
 <div id="me-edges">
 </div>
-<details>
+<details id="ja-layout-reuse">
 <summary>复用画卷布局</summary>
 <p>只导出已保存的图上布局。不复制来源、素材、通行依据或发布状态；新景区需使用自己的观察点重新核实。</p>
 <button id="me-export" type="button">导出布局包</button>
@@ -128,7 +129,7 @@
 </label>
 <label>切换到位置提示的音频秒数（可空）<input id="ea-cue" type="number" min="0" max="599">
 </label>
-<details>
+<details id="ja-captions">
 <summary>逐句字幕（选填）</summary>
 <p>字幕只能摘自本版已审讲解。逐条填写起止秒数，核对与录音一致；没有字幕时展示对应观察文字，不冒充逐字字幕。</p>
 <div id="ea-captions">
@@ -164,7 +165,7 @@
 <input type="checkbox" id="wa-confirm">我已核对全部观察点及通行方向，当前可以按此顺序参观</label>
 <button id="wa-publish" class="wa-primary">发布这一版导览</button>
 </section>
-<details>
+<details id="ja-history">
 <summary>维护与历史版本</summary>
 <p>某处或某段无法通行时，先暂停整条导览。修订后重新核对发布，旧版本仍保留。</p>
 <label>暂停原因<input id="wa-pause-reason" maxlength="500">
@@ -178,6 +179,7 @@
 </div>
 </main>
 <!-- site-walk-admin-adapter -->
+<script src="./static/exploration-admin-paper.js"></script>
 <script src="./static/explore-assets-admin.js">
 </script>
 <script src="./static/explore-admin.js">

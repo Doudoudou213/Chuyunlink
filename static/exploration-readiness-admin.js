@@ -28,7 +28,7 @@
         append(row,'dt',check.label+' · '+({recorded:'有记录，待人工核对',needs:'需补齐或复核',optional:'可后补'}[check.state]));
         append(row,'dd',check.note);
         const link=append(row,'a','前往处理 →');link.href='#'+check.target;
-        link.onclick=e=>{e.preventDefault();const target=document.getElementById(check.target);if(target){for(let el=target.parentElement;el;el=el.parentElement)if(el.tagName==='DETAILS')el.open=true;target.tabIndex=-1;target.scrollIntoView({block:'start'});target.focus({preventScroll:true});}};
+        link.onclick=e=>{e.preventDefault();const target=document.getElementById(check.target);if(target){if(window.JourneyAdminPaper?.openTarget(target))return;for(let el=target.parentElement;el;el=el.parentElement)if(el.tagName==='DETAILS')el.open=true;target.tabIndex=-1;target.scrollIntoView({block:'start'});target.focus({preventScroll:true});}};
       }
   }
   async function read(){
