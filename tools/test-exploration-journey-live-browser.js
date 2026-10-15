@@ -59,6 +59,7 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     // The local admin uses existing draft/review/publish controls; new artwork binding is optional.
     const admin=await browser.newPage();admin.on('pageerror',e=>errors.push(e.message));
     await admin.goto(s.url+'/explore-admin.html');await admin.locator('#wa-load').click();
+    await admin.locator('#ja-map > summary').click();await admin.locator('#ja-assets > summary').click();
     await admin.locator('[data-art-scene]').waitFor();check(await admin.locator('[data-art-scene]').inputValue()==='tower','admin reads binding');
     await admin.locator('#ea-caption-add').evaluate(e=>e.closest('details').open=true);
     await admin.locator('#ea-caption-add').click();check(await admin.locator('[data-caption-row]').count()===1,'caption editor row');

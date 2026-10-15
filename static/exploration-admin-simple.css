@@ -1,0 +1,29 @@
+/* Only the isolated journey administrator; shared handbook styles stay unchanged. */
+.journey-admin .wa-page{max-width:880px;font-family:var(--wa-ui)}
+.journey-admin .wa-heading{padding:24px 0 8px}
+.journey-admin h1{font-size:36px;margin:0 0 4px}
+.journey-admin h2{font:500 20px/1.5 var(--wa-ui)}
+.journey-admin .wa-heading p{font-size:13px}
+.journey-admin #wa-message:empty{display:none}
+.journey-admin #wa-message{margin:8px 0;font-size:13px;min-height:0}
+.journey-admin #er-panel{margin-bottom:12px;padding:8px 0 18px;border-bottom:0}
+.journey-admin #er-panel>p{margin:6px 0}
+.journey-admin .ja-section{margin-top:0;padding-top:0}
+.journey-admin .ja-section>summary{padding:16px 0;font-size:15px;font-weight:500}
+.journey-admin .ja-section>summary span{float:right;font-size:12px;font-weight:400;color:var(--wa-muted)}
+.journey-admin .ja-section>section{margin:0 0 20px}
+.journey-admin .wa-point{border-left:0;padding:16px;background:var(--wa-surface)}
+.journey-admin .wa-point h3{font:500 16px/1.7 var(--wa-ui)}
+.journey-admin #wa-review{border:0;border-top:1px solid var(--wa-line);padding:16px 0}
+.journey-admin #er-more{margin-top:12px;padding-top:8px}
+.journey-admin #er-more>summary{font-size:13px;color:var(--wa-muted)}
+.journey-admin #er-all{font-size:13px;color:var(--wa-muted);overflow-wrap:anywhere}
+.journey-admin #er-all details{margin:12px 0;padding-top:8px}
+.journey-admin #er-all dl{margin:0}
+.journey-admin #er-all dl>div{padding:12px 0}
+.journey-admin #er-all dt{color:var(--wa-ink)}
+.journey-admin #er-all dd{margin:0}
+.journey-admin #er-all a{display:inline-flex;align-items:center;min-height:44px}
+.journey-admin #er-results details{margin-top:6px;padding-top:4px}
+.journey-admin #er-results summary{font:500 14px/2.8 var(--wa-ui)}
+@media(max-width:520px){.journey-admin .ja-section>summary span{float:none;display:block;margin-left:18px}.journey-admin .wa-page{padding:16px 18px 40px}}

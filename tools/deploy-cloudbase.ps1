@@ -215,6 +215,7 @@ try {
         (Join-Path $staticDirectory 'exploration-readiness.js'),
         (Join-Path $staticDirectory 'exploration-readiness-admin.js'),
         (Join-Path $staticDirectory 'exploration-readiness.css'),
+        (Join-Path $staticDirectory 'exploration-admin-simple.css'),
         (Join-Path $staticDirectory 'explore-admin.js'),
         (Join-Path $staticDirectory 'explore-media.js'),
         (Join-Path $staticDirectory 'explore-records.js'),
