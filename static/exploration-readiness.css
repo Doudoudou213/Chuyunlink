@@ -1,0 +1,11 @@
+/* A small preparation folio inside the existing handbook, not a second dashboard. */
+#er-panel{padding:18px 0 24px;border-bottom:1px solid var(--wa-line);margin:0 0 28px}
+#er-panel h2{margin-top:0}#er-panel>p,#er-results>p,#er-results>ul{font:13px/1.9 var(--wa-ui);color:var(--wa-muted)}
+#er-panel button{border:0;border-radius:0;background:transparent;color:var(--wa-sage);padding:10px 0;text-decoration:underline;text-underline-offset:5px;margin-right:22px}
+#er-panel #er-status{color:var(--wa-ink)}#er-results{overflow-wrap:anywhere}
+#er-results details{margin:14px 0 0;padding-top:10px}#er-results summary{font-size:19px}
+#er-results dl{margin:4px 0}#er-results dl>div{padding:12px 0;display:grid;grid-template-columns:1fr auto;gap:3px 16px}
+#er-results dt{font:14px/1.7 var(--wa-ui)}#er-results dd{margin:0;grid-column:1;font:13px/1.8 var(--wa-ui);color:var(--wa-muted)}
+#er-results a{grid-column:2;grid-row:1/3;align-self:center;display:flex;align-items:center;min-height:44px;font-size:13px}
+#er-results [data-state=needs] dt{color:var(--wa-red)}
+@media(max-width:520px){#er-results dl>div{grid-template-columns:1fr}#er-results a{grid-column:1;grid-row:auto}#er-panel button{margin-right:16px}#er-results summary{font-size:17px}}

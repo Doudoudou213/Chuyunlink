@@ -48,6 +48,8 @@
     "test:exploration:journey-content": "node tools/test-exploration-journey-content.js",
     "test:exploration:journey-live": "node tools/test-exploration-journey-live-browser.js",
     "test:exploration:journey-trial": "node tools/test-exploration-journey-trial-browser.js",
+    "test:exploration:readiness": "node tools/test-exploration-readiness.js",
+    "test:exploration:readiness:browser": "node tools/test-exploration-readiness-browser.js",
     "preview:exploration:journey-live": "node tools/lib/exploration-journey-preview.js 4218"
   },
   "dependencies": {
