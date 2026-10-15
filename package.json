@@ -52,6 +52,8 @@
     "test:exploration:readiness:browser": "node tools/test-exploration-readiness-browser.js",
     "test:exploration:admin-paper": "node tools/test-exploration-admin-paper-browser.js",
     "test:exploration:journey-leaves": "node tools/test-exploration-journey-leaves-browser.js",
+    "test:exploration:leaf-demo": "node tools/test-exploration-leaf-demo-browser.js",
+    "preview:exploration:leaf-demo": "node tools/lib/exploration-leaf-preview.js 4219",
     "preview:exploration:journey-live": "node tools/lib/exploration-journey-preview.js 4218"
   },
   "dependencies": {
