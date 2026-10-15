@@ -1,0 +1,149 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {chromium}=require('playwright'),{start}=require('./lib/exploration-journey-preview');
+let checks=0;function check(value,message){assert(value,message);checks++;}
+function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32LE(b.length-8,4);b.write('WAVEfmt ',8);b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);b.writeUInt16LE(1,22);b.writeUInt32LE(16000,24);b.writeUInt32LE(32000,28);b.writeUInt16LE(2,32);b.writeUInt16LE(16,34);b.write('data',36);b.writeUInt32LE(b.length-44,40);return b;}
+(async()=>{
+  const s=await start(),browser=await chromium.launch({channel:'msedge',headless:true});
+  const out=path.join(__dirname,'../artifacts/exploration-journey-live');fs.mkdirSync(out,{recursive:true});
+  const errors=[],external=[];
+  try{
+    const p=await browser.newPage({viewport:{width:390,height:900}});
+    p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>{if(!r.url().startsWith(s.url)&&!r.url().startsWith('https://example.com/'))external.push(r.url());});
+    await p.addInitScript(()=>{const A=Audio;window.__audios=[];window.Audio=function(){const a=new A();window.__audios.push(a);return a;};});
+    const go=async()=>{await p.goto(s.url+'/explore-journey.html?resourceId=r');await p.locator('#content:not([hidden])').waitFor();};
+    const scenario=async kind=>{
+      const c=await browser.newPage();await c.goto(s.url+'/preview-control.html');await c.locator('[data-kind='+kind+']').click();await c.waitForFunction(()=>document.querySelector('#result').textContent.includes('已完成'));await c.close();
+    };
+    await go();
+    check(await p.locator('#point-title').textContent()==='黄鹤楼','approved first point');
+    check(await p.locator('#journey-stops button').count()===4,'published order');
+    check(await p.locator('[data-art-point]').count()===4,'explicit artwork binding');
+    check((await p.locator('#audio').textContent()).includes('暂未配音'),'text fallback');
+    await p.locator('#reading summary').click();check((await p.locator('#reading-copy').textContent()).includes('本地流程演示'),'approved long copy');
+    await p.locator('#sources summary').click();check((await p.locator('#source-list').textContent()).includes('本地画稿'),'published sources');
+    for(const width of [320,390,768,1440]){
+      await p.setViewportSize({width,height:900});
+      check(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal overflow '+width);
+      check(await p.locator('#observe').evaluate(e=>e.getBoundingClientRect().height>=44),'44px '+width);
+      await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:path.join(out,'reading-'+width+'.png'),fullPage:true});
+    }
+    await p.locator('#observe').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
+    check(await p.locator('[data-stop=tower]').getAttribute('data-recorded')==='true','explicit mark only');
+    await p.reload();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
+    check(await p.locator('[data-stop=copper]').getAttribute('data-recorded')==='false','no auto arrival');
+    await p.locator('#finish').click();await p.locator('#finished:not([hidden])').waitFor();
+    await p.locator('#note').fill('<img src=x onerror=alert(1)> 我的拾记');
+    check(await p.locator('#souvenir-note img').count()===0,'note XSS safe');
+    const dl=p.waitForEvent('download');await p.locator('#download').click();const download=await dl;
+    check(download.suggestedFilename()==='我的阅读拾记.txt','actual download');
+    await p.setViewportSize({width:390,height:900});await p.screenshot({path:path.join(out,'souvenir-390.png'),fullPage:true});
+    await p.locator('#return').click();await p.locator('#content:not([hidden])').waitFor();
+    await scenario('reorder');await p.locator('#refresh').click();await p.locator('#retry:not([hidden])').waitFor();
+    check((await p.locator('#gate-copy').textContent()).includes('换版'),'version update asks explicit reload');
+    check(await p.locator('#reading-copy').textContent()==='','stale body erased');
+    await p.locator('#retry').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='鹅池');
+    check(await p.locator('[data-recorded=true]').count()===0,'no old records assigned to new version');
+    check((await p.evaluate(()=>localStorage.getItem('chulink:journey-content:v1:r'))).includes('我的拾记'),'old note preserved');
+    await scenario('pause');await p.locator('#refresh').click();await p.locator('#retry:not([hidden])').waitFor();
+    check(await p.locator('#content').isHidden(),'pause hides content');
+    check(await p.locator('[data-art-point]').count()===0,'pause clears markers');
+    await p.screenshot({path:path.join(out,'paused-390.png'),fullPage:true});
+    await scenario('reset');await go();await scenario('withdraw');
+    await p.locator('#observe').click();await p.locator('#retry:not([hidden])').waitFor();
+    check(await p.locator('#content').isHidden(),'source withdrawal before record');
+    check(await p.locator('#source-list').textContent()==='','sources removed');
+    await scenario('reset');await go();await scenario('offline');await p.locator('#refresh').click();await p.locator('#retry:not([hidden])').waitFor();
+    check((await p.locator('#gate-copy').textContent()).includes('网络'),'network fail not stale fallback');
+    await scenario('reset');await p.locator('#retry').click();await p.locator('#content:not([hidden])').waitFor();
+    // The local admin uses existing draft/review/publish controls; new artwork binding is optional.
+    const admin=await browser.newPage();admin.on('pageerror',e=>errors.push(e.message));
+    await admin.goto(s.url+'/explore-admin.html');await admin.locator('#wa-load').click();
+    await admin.locator('[data-art-scene]').waitFor();check(await admin.locator('[data-art-scene]').inputValue()==='tower','admin reads binding');
+    await admin.locator('#ea-caption-add').evaluate(e=>e.closest('details').open=true);
+    await admin.locator('#ea-caption-add').click();check(await admin.locator('[data-caption-row]').count()===1,'caption editor row');
+    await admin.getByRole('button',{name:'移除这句',exact:true}).click();check(await admin.locator('[data-caption-row]').count()===0,'caption row removal');
+    await admin.locator('[data-art-scene]').selectOption('');await admin.locator('#wa-save').click();
+    await admin.waitForFunction(()=>document.querySelector('#wa-message').textContent.includes('草稿已保存'));
+    let draft=(await s.fixture.call({action:'getSiteWalkDraft',resourceId:'r'})).root.draft;
+    check(!draft.exploration.objects[0].artScene,'admin saves explicit unbound');
+    await s.fixture.publish(draft);await p.reload();await p.locator('#content:not([hidden])').waitFor();
+    check(await p.locator('[data-art-point]').count()===3,'unbound not guessed from title');
+    check((await p.locator('#binding-note').textContent()).includes('尚未绑定'),'unbound notice');
+    await admin.close();
+    // Register a licensed-in-test 4-second silent fixture, not a real narration.
+    const f=s.fixture;
+    const asset={pointId:'tower',guideVersionId:draft.points[0].guideVersionId,type:'audio',url:'https://example.com/journey.wav',
+      attribution:'本地无声测试音频，不是真人讲解',rightsKind:'own',rightsNote:'仅本地固定授权测试，不作为上线素材',
+      publicUseConfirmed:true,rightsConfirmed:true,sourceIds:['l'],validUntil:new Date(Date.now()+3600000).toISOString(),duration:4,cues:[{at:0,detailId:'observation'},{at:1,detailId:'location'}]};
+    const registered=await f.call({action:'saveExplorationAsset',resourceId:'r',requestId:'audio-test',asset});
+    draft.exploration.objects[0].audioId=registered.assetId;await f.publish(draft);
+    await p.route('https://example.com/journey.wav',r=>r.fulfill({contentType:'audio/wav',headers:{'Access-Control-Allow-Origin':'*'},body:wave()}));
+    await go();check(await p.evaluate(()=>__audios.every(a=>a.paused&&!a.getAttribute('src'))),'no autoplay or preload');
+    await p.locator('#audio button').click();await p.waitForFunction(()=>document.querySelector('.audio-caption').textContent.includes('本地画稿示意'));
+    check(await p.locator('#audio button').textContent()==='暂停','manual audio');
+    await p.locator('#audio button').click();check(await p.locator('#audio button').textContent()==='继续听','pause');
+    await p.locator('[data-stop=copper]').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
+    check(await p.evaluate(()=>__audios.every(a=>a.paused&&!a.getAttribute('src'))),'switch stops old audio');
+    await p.locator('[data-stop=tower]').click();await p.waitForFunction(()=>document.querySelector('#audio button'));
+    await p.unroute('https://example.com/journey.wav');await p.route('https://example.com/journey.wav',r=>r.abort());
+    await p.locator('#audio button').click();await p.waitForFunction(()=>/加载失败|暂时无法播放/.test(document.querySelector('#audio').textContent));
+    check(await p.locator('#content').isVisible(),'media failure keeps text');
+    await f.call({action:'revokeExplorationAsset',resourceId:'r',assetId:registered.assetId,requestId:'revoke-test',reason:'本地演示撤回许可'});
+    await p.locator('#audio button').click();await p.locator('#retry:not([hidden])').waitFor();
+    check(await p.locator('#audio').textContent()==='','revoked asset cannot replay');
+    check(await p.evaluate(()=>__audios.every(a=>a.paused&&!a.getAttribute('src'))),'revoked audio stopped');
+    const withCaptions={...asset,captions:[{start:0,end:1,text:'这段文字只用于本地流程演示。'},{start:1,end:4,text:'画稿展示了楼阁、水面和植物。'}]};
+    const capAsset=await f.call({action:'saveExplorationAsset',resourceId:'r',requestId:'audio-caption-test',asset:withCaptions});
+    draft.exploration.objects[0].audioId=capAsset.assetId;await f.publish(draft);
+    await p.unroute('https://example.com/journey.wav');await p.route('https://example.com/journey.wav',r=>r.fulfill({contentType:'audio/wav',headers:{'Access-Control-Allow-Origin':'*'},body:wave()}));
+    await go();await p.locator('#audio button').click();
+    await p.waitForFunction(()=>document.querySelector('.audio-caption').textContent==='画稿展示了楼阁、水面和植物。');
+    check((await p.locator('#audio').textContent()).includes('字幕摘自本版已审讲解'),'timestamped approved caption');
+    await scenario('reset');await go();
+    await p.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});
+    check(await p.locator('#content').isHidden(),'background hides unverified content');
+    await p.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'));});
+    await p.locator('#content:not([hidden])').waitFor();
+    await p.evaluate(()=>{
+      document.querySelector('[data-stop=copper]').click();
+      document.querySelector('[data-stop=pond]').click();
+      document.querySelector('[data-stop=baiyun]').click();
+    });
+    await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='白云阁');
+    check(await p.locator('[data-stop=baiyun]').getAttribute('aria-current')==='step','rapid selection keeps last intent');
+    // An older, delayed read must never restore the previous point.
+    let delayed=true;
+    await p.route('**/__journey',async route=>{
+      if(delayed){delayed=false;const response=await route.fetch();await new Promise(r=>setTimeout(r,350));await route.fulfill({response});}
+      else await route.continue();
+    });
+    await p.evaluate(()=>{document.querySelector('[data-stop=tower]').click();});
+    await p.locator('[data-stop=pond]').click();
+    await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='鹅池');
+    await p.waitForTimeout(450);check(await p.locator('#point-title').textContent()==='鹅池','late response ignored');
+    await p.unroute('**/__journey');
+    await s.fixture.db.collection('resources').doc('r').update({visitInfo:{status:'closed'}});
+    await p.locator('#refresh').click();await p.locator('#retry:not([hidden])').waitFor();
+    check(await p.locator('#content').isHidden(),'closed scenic resource hides directions and copy');
+    await scenario('reset');await go();
+    const C=require('../cloudfunctions/appCore/lib/site-walk-core');
+    const currentRoot=s.fixture.db.data().site_walks[C.rootId('r')];
+    await s.fixture.db.collection('site_walk_versions').doc(currentRoot.publishedVersionId).update({review:{...s.fixture.db.data().site_walk_versions[currentRoot.publishedVersionId].review,validUntil:new Date(Date.now()+1200).toISOString()}});
+    await p.locator('#refresh').click();await p.locator('#content:not([hidden])').waitFor();
+    await p.waitForFunction(()=>document.querySelector('#gate-title').textContent==='资料到了复核时间');
+    check(await p.locator('#reading-copy').textContent()==='','expiry clears content without click');
+    await scenario('reset');
+    // Reduced motion and failed images / storage / GSAP remain usable.
+    const q=await browser.newPage({viewport:{width:320,height:800},reducedMotion:'reduce'});q.on('pageerror',e=>errors.push(e.message));
+    await q.addInitScript(()=>Object.defineProperty(window,'localStorage',{get(){throw Error('blocked');}}));
+    await q.route('**/gsap-3.15.0.min.js',r=>r.abort());await q.route('**/hhl-full-park-v2.webp',r=>r.abort());
+    await q.goto(s.url+'/explore-journey.html?resourceId=r');await q.locator('#content:not([hidden])').waitFor();
+    await q.locator('#observe').click();await q.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
+    check(await q.locator('#art-error').isVisible(),'failed art notice');
+    check((await q.locator('#status').textContent()).includes('不允许保存'),'blocked storage notice');
+    check(await q.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'fallback mobile no overflow');await q.close();
+    check(errors.length===0,JSON.stringify(errors));check(external.length===0,'no external services');
+    console.log('PASS journey live browser: '+checks+' checks; four widths, source/review/order/admin, records, versions, pause/withdrawal/network, audio, fallbacks. '+out);
+  }finally{await browser.close();await s.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

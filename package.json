@@ -44,7 +44,10 @@
     "test:exploration:reveal": "node tools/test-exploration-motion-reveal-browser.js",
     "test:exploration:landmarks": "node tools/test-exploration-landmark-motion-browser.js",
     "test:exploration:journey": "node tools/test-exploration-journey.js",
-    "test:exploration:journey:browser": "node tools/test-exploration-journey-browser.js"
+    "test:exploration:journey:browser": "node tools/test-exploration-journey-browser.js",
+    "test:exploration:journey-content": "node tools/test-exploration-journey-content.js",
+    "test:exploration:journey-live": "node tools/test-exploration-journey-live-browser.js",
+    "preview:exploration:journey-live": "node tools/lib/exploration-journey-preview.js 4218"
   },
   "dependencies": {
     "cors": "^2.8.6",
