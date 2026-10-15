@@ -31,7 +31,22 @@
     if(!raw||raw.fingerprint!==data.fingerprint||!Number.isFinite(raw.updatedAt)||now-raw.updatedAt>7*86400000||raw.updatedAt>now+60000)raw={};
     return {fingerprint:data.fingerprint,selected:ids.includes(raw.selected)?raw.selected:ids[0],
       observed:Array.isArray(raw.observed)?[...new Set(raw.observed.filter(id=>ids.includes(id)))]:[],
-      note:typeof raw.note==='string'?raw.note.slice(0,120):'',updatedAt:now};
+      note:typeof raw.note==='string'?raw.note.slice(0,120):'',feedback:feedback(raw.feedback),updatedAt:now};
   }
-  return {project,record,safeLink};
+  function feedback(raw){
+    const value=raw&&typeof raw==='object'?raw:{};
+    const pick=(key,allowed)=>allowed.includes(value[key])?value[key]:'';
+    return {start:pick('start',['alone','help','lost']),reading:pick('reading',['clear','mixed','hard']),
+      memory:pick('memory',['yes','unsure','no']),obstacle:typeof value.obstacle==='string'?value.obstacle.trim().slice(0,200):''};
+  }
+  function trialReport(data,raw){
+    const clean=record(data,raw),answers=feedback(clean.feedback);
+    if(!Object.values(answers).some(Boolean))throw Error('先选一项感受，或写一句遇到的问题。');
+    // Explicit export only: omit private notes, account IDs, sources, media and any location.
+    return {schemaVersion:1,kind:'reading-trial-feedback',localTest:data.localTest===true,
+      resourceId:data.resourceId,version:data.version,fingerprint:data.fingerprint,
+      reading:{recorded:clean.observed.length,total:data.points.length},answers,
+      scope:'自愿填写的阅读试用反馈；不代表实地到访、客流统计或景区验收。'};
+  }
+  return {project,record,safeLink,feedback,trialReport};
 });

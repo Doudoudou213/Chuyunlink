@@ -11,6 +11,17 @@
 .audio-reading .audio-caption{font:15px/1.9 var(--reading);color:var(--ink);margin:10px 0}
 #content details:first-of-type{border-top:0;margin-top:4px}
 #status{overflow-wrap:anywhere}
+.journey-help{margin:0 0 22px;border-top:0;border-bottom:1px solid #6c573b28}
+.journey-help summary{color:var(--muted);font-size:13px}
+.journey-help a{display:flex;align-items:center;min-height:44px;line-height:1.8}
+.trial-feedback{margin-top:30px}.trial-feedback summary{font:22px/1.4 var(--brush)}
+.trial-feedback summary span{font:11px system-ui,sans-serif;color:var(--muted);margin-left:8px}
+.trial-feedback fieldset{margin:20px 0}.trial-feedback legend{font:14px/1.7 var(--reading);color:var(--ink)}
+.trial-options{display:flex;flex-wrap:wrap;gap:0 16px}
+.trial-options label{display:flex;align-items:center;gap:7px;min-height:44px;font-size:13px;cursor:pointer}
+.trial-options input{accent-color:var(--rust);width:17px;height:17px;margin:0}
+.trial-feedback .step-actions{margin-top:12px;gap:8px 16px}
+@media print{#trial-feedback,#journey-help{display:none!important}}
 .journey-shell[data-art=false]{grid-template-columns:1fr;max-width:760px}
 .journey-shell[data-art=false] .painting,.journey-shell[data-art=false] .souvenir-picture{display:none}
 .journey-shell[aria-busy=true] #gate-title{opacity:.65}

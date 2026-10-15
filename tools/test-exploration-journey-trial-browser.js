@@ -1,0 +1,93 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {chromium}=require('playwright'),{start}=require('./lib/exploration-journey-preview');
+let checks=0;function check(v,label){assert(v,label);checks++;}
+(async()=>{
+  const s=await start(),browser=await chromium.launch({channel:'msedge',headless:true});
+  const out=path.join(__dirname,'../artifacts/exploration-journey-live');fs.mkdirSync(out,{recursive:true});
+  const errors=[],external=[],actions=[];
+  try{
+    const p=await browser.newPage({viewport:{width:390,height:900}});
+    p.on('pageerror',e=>errors.push(e.message));
+    p.on('request',r=>{if(!r.url().startsWith(s.url))external.push(r.url());if(r.url().endsWith('/__journey'))actions.push(r.postDataJSON().action);});
+    const go=async(query='')=>{await p.goto(s.url+'/explore-journey.html?resourceId=r'+query);await p.locator('#content:not([hidden])').waitFor();};
+    const finish=async()=>{await p.locator('#finish').click();await p.locator('#finished:not([hidden])').waitFor();await p.locator('#trial-feedback summary').click();};
+    const scenario=async kind=>{const q=await browser.newPage();await q.goto(s.url+'/preview-control.html');await q.locator('[data-kind='+kind+']').click();await q.waitForFunction(()=>document.querySelector('#result').textContent.includes('已完成'));await q.close();};
+    await go('&pointId=copper');
+    check(await p.locator('#point-title').textContent()==='古铜顶','entry selects valid point');
+    check(await p.locator('[data-recorded=true]').count()===0,'link does not record reading');
+    await p.locator('#journey-help summary').click();
+    check((await p.locator('#journey-help').textContent()).includes('不判断你在哪里'),'guidance distinguishes navigation');
+    check((await p.locator('#explore-tools').getAttribute('href')).includes('pointId=copper'),'same point link');
+    await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:path.join(out,'trial-help-390.png'),fullPage:true});
+    await p.locator('#explore-tools').click();await p.waitForURL('**/explore.html?resourceId=r&pointId=copper');
+    await p.locator('#ex-card [data-action=detail]').waitFor();
+    check((await p.locator('#ex-card h2').textContent()).includes('古铜顶'),'old explorer selects same point');
+    check(await p.locator('#ex-question').isVisible(),'question preserved');
+    check(await p.locator('#ex-photo').count()===1,'photo comparison preserved');
+    check(await p.locator('#ex-account [data-start]').count()===1,'account record control preserved');
+    check(!actions.some(a=>/Session/.test(a)),'entry not an account mutation');
+    check((await p.locator('#ex-reading-link').getAttribute('href')).includes('pointId=copper'),'native new-tab href retains point');
+    for(const width of [320,390,768,1440]){
+      await p.setViewportSize({width,height:900});
+      check(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'old explorer no overflow '+width);
+      check(await p.locator('#ex-reading-link').evaluate(e=>e.getBoundingClientRect().height>=44),'old link touch target '+width);
+      await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:path.join(out,'trial-tools-'+width+'.png'),fullPage:true});
+    }
+    await p.locator('#ex-reading-link').click();await p.waitForURL('**/explore-journey.html?resourceId=r&pointId=copper');
+    await p.locator('#content:not([hidden])').waitFor();
+    check(await p.locator('#point-title').textContent()==='古铜顶','back to same scene');
+    await p.locator('#observe').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='白云阁');
+    await finish();await p.locator('#note').fill('私人游记不可出现在体验反馈里');
+    await p.locator('#trial-export').click();check((await p.locator('#trial-status').textContent()).includes('先选'),'empty report blocked');
+    await p.locator('input[name=start][value=alone]').check();await p.locator('input[name=reading][value=mixed]').check();await p.locator('input[name=memory][value=yes]').check();
+    await p.locator('#trial-obstacle').fill('<img src=x onerror=alert(1)> 希望字再大一点');
+    check(!(await p.evaluate(()=>localStorage.getItem('chulink:journey-content:v1:r'))).includes('希望字再大'),'not saved before explicit action');
+    await p.locator('#trial-form button[type=submit]').click();await p.waitForFunction(()=>document.querySelector('#trial-status').textContent.includes('已保存'));
+    check((await p.evaluate(()=>localStorage.getItem('chulink:journey-content:v1:r'))).includes('希望字再大'),'explicit local save');
+    await p.reload();await p.locator('#content:not([hidden])').waitFor();await finish();
+    check(await p.locator('input[name=start][value=alone]').isChecked(),'saved response restored');
+    check(await p.locator('#trial-feedback img').count()===0,'feedback not interpreted as markup');
+    for(const width of [320,390,768,1440]){
+      await p.setViewportSize({width,height:900});
+      check(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no overflow '+width);
+      check(await p.locator('.trial-options label').first().evaluate(e=>e.getBoundingClientRect().height>=44),'44px radio label '+width);
+      await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:path.join(out,'trial-feedback-'+width+'.png'),fullPage:true});
+    }
+    const dl=p.waitForEvent('download');await p.locator('#trial-export').click();const download=await dl;
+    const report=JSON.parse(fs.readFileSync(await download.path(),'utf8'));
+    check(download.suggestedFilename()==='画卷试用反馈.json','feedback download');
+    check(report.localTest===true,'test report labelled');
+    check(report.reading.recorded===1,'explicit reading count');
+    check(report.answers.reading==='mixed','answers exported');
+    check(!JSON.stringify(report).includes('私人游记'),'private note omitted');
+    check(!Object.hasOwn(report,'sources')&&!Object.hasOwn(report,'uid'),'no sources or identity');
+    check(actions.every(a=>a==='getSiteExploration'),'reading/feedback only read the service');
+    p.once('dialog',d=>d.dismiss());await p.locator('#trial-clear').click();check(await p.locator('input[name=start][value=alone]').isChecked(),'clear cancel preserves');
+    p.once('dialog',d=>d.accept());await p.locator('#trial-clear').click();
+    check(await p.locator('input[name=start]:checked').count()===0,'clear feedback');
+    check((await p.locator('#note').inputValue()).includes('私人游记'),'clear keeps private note');
+    await p.locator('input[name=start][value=help]').check();await p.locator('#trial-form button[type=submit]').click();await p.waitForFunction(()=>document.querySelector('#trial-status').textContent.includes('已保存'));
+    await scenario('reorder');await p.locator('#trial-export').click();await p.locator('#retry:not([hidden])').waitFor();
+    check(await p.locator('#finished').isHidden(),'changed edition blocks export');
+    await p.locator('#retry').click();await p.locator('#content:not([hidden])').waitFor();await finish();
+    check(await p.locator('#trial-form input:checked').count()===0,'new edition does not inherit feedback');
+    check((await p.evaluate(()=>localStorage.getItem('chulink:journey-content:v1:r'))).includes('"start":"help"'),'old edition feedback retained');
+    p.once('dialog',d=>d.accept());await p.locator('#clear').click();await p.locator('#content:not([hidden])').waitFor();
+    check(await p.evaluate(()=>localStorage.getItem('chulink:journey-content:v1:r'))===null,'all-edition clear removes feedback and notes');
+    await scenario('reset');await go('&pointId=invalid');check(await p.locator('#point-title').textContent()==='黄鹤楼','unknown point not trusted');
+    await scenario('pause');await p.locator('#refresh').click();await p.locator('#retry:not([hidden])').waitFor();
+    check(await p.locator('#explore-tools').isHidden(),'unavailable content hides tool link');
+    await p.goto(s.url+'/explore.html?resourceId=r');await p.locator('[data-action=retry]').waitFor();check(await p.locator('#ex-reading-link').isHidden(),'old explorer unavailable hides reading link');
+    await scenario('reset');
+    const q=await browser.newPage({viewport:{width:320,height:800},reducedMotion:'reduce'});
+    q.on('pageerror',e=>errors.push(e.message));await q.addInitScript(()=>Object.defineProperty(window,'localStorage',{get(){throw Error('blocked');}}));
+    await q.goto(s.url+'/explore-journey.html?resourceId=r');await q.locator('#content:not([hidden])').waitFor();await q.locator('#finish').click();await q.locator('#trial-feedback summary').click();
+    await q.locator('input[name=start][value=help]').check();await q.locator('#trial-form button[type=submit]').click();await q.waitForFunction(()=>document.querySelector('#trial-status').textContent.includes('未能保存'));
+    check((await q.locator('#trial-status').textContent()).includes('未能保存'),'storage failure truthful');
+    const qdl=q.waitForEvent('download');await q.locator('#trial-export').click();await qdl;check((await q.locator('#trial-status').textContent()).includes('已导出'),'export still works without storage');await q.close();
+    await go();await p.locator('.masthead a').click();check((await p.locator('h1').textContent()).includes('从一卷画开始'),'preview landing not 404');
+    check(errors.length===0,JSON.stringify(errors));check(external.length===0,JSON.stringify(external));
+    console.log('PASS journey trial browser: '+checks+' checks; entry handoff, feedback privacy/export/version/storage, four widths. '+out);
+  }finally{await browser.close();await s.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -9,3 +9,4 @@
 .ex-detail-photo{max-width:100%;max-height:100%;object-fit:contain;display:block}.ex-detail-art img{animation:none}
 
 .ex-point-list{max-width:78%;overflow:auto;scrollbar-width:thin}.ex-point-list button{flex-shrink:0}#ex-media input{width:100%;min-height:44px}#ex-media p{font-size:12px}
+.ex-reading-entry{margin:0 0 24px;color:var(--ex-ink)}.ex-reading-entry a{display:inline-flex;align-items:center;min-height:44px;color:inherit;text-underline-offset:5px}.ex-reading-entry small{display:block;color:var(--ex-muted);font-size:12px}.ex-reading-entry:has(a[hidden]){display:none}

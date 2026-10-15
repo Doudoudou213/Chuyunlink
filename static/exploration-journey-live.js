@@ -6,6 +6,7 @@
   const anchors={tower:[17,41],copper:[36,46],baiyun:[54,48],pond:[48,83]};
   let data=null,record=null,generation=0,lightGeneration=0,renderer=null,ready=false,finished=false,storageOK=true;
   let drag=null,suppressedUntil=0,expiry=null,leaving=false;
+  let entryPoint=new URLSearchParams(location.search).get('pointId'),feedbackBusy=false;
   const storageKey='chulink:journey-content:v1:'+resourceId;
   function text(id,value){$(id).textContent=value;}
   function button(label,fn,attrs={}){
@@ -19,6 +20,7 @@
     ready=false;quiet();shell.setAttribute('aria-busy','false');
     $('content').hidden=true;$('finished').hidden=true;$('gate').hidden=false;
     text('gate-title',title);text('gate-copy',copy);$('retry').hidden=!retry;
+    $('explore-tools').hidden=true;$('explore-tools').removeAttribute('href');
     // Hide and erase old public content, not just its visible container.
     for(const id of ['journey-points','journey-stops','source-list','audio','souvenir-stops'])$(id).replaceChildren();
     for(const id of ['point-title','observation','reading-copy','review-date','souvenir-title','souvenir-note','souvenir-count'])text(id,'');
@@ -31,10 +33,11 @@
     record.updatedAt=Date.now();
     try{
       const saved=loadSaved();saved[data.fingerprint]=record;
-      // Only IDs, progress and the user's note are stored, never source text/audio URLs.
+      // Only IDs, progress, private note and explicitly saved feedback; never source text/audio URLs.
       const recent=Object.values(saved).filter(r=>r&&Date.now()-r.updatedAt<7*86400000).sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,8);
       localStorage.setItem(storageKey,JSON.stringify(Object.fromEntries(recent.map(r=>[r.fingerprint,r]))));
-    }catch{storageOK=false;text('status','浏览器不允许保存，仍可阅读；关闭后拾记可能丢失。');}
+      storageOK=true;return true;
+    }catch{storageOK=false;text('status','浏览器不允许保存，仍可阅读；关闭后拾记可能丢失。');return false;}
   }
   async function fetchContent(){
     if(!/^[\w-]{1,128}$/.test(resourceId))throw Error('景点编号无效，请从景点入口重新打开。');
@@ -69,6 +72,8 @@
       if(data&&next.fingerprint!==data.fingerprint&&!acceptUpdate)throw Error('内容已换版，请重新读取。旧版拾记保留，不自动计入新版。');
       const changed=data&&next.fingerprint!==data.fingerprint;data=next;
       record=C.record(data,loadSaved()[data.fingerprint]);ready=true;finished=false;
+      if(entryPoint&&data.points.some(p=>p.id===entryPoint))record.selected=entryPoint;
+      entryPoint=null;
       shell.dataset.art=String(resourceId==='yellow-crane-tower'||data.localTest);
       text('painting-title',resourceId==='yellow-crane-tower'||data.localTest?'一卷黄鹤楼':data.title);
       text('edition',data.localTest?'本地流程样例 · 非景区审定内容':'公开第 '+data.version+' 版 · 非实时导航');
@@ -91,6 +96,7 @@
   function render(){
     if(!ready)return;
     const point=current(),index=data.points.indexOf(point);
+    $('explore-tools').href='./explore.html?resourceId='+encodeURIComponent(resourceId)+'&pointId='+encodeURIComponent(point.id);$('explore-tools').hidden=false;
     $('gate').hidden=true;$('content').hidden=finished;$('finished').hidden=!finished;
     $('journey-points').replaceChildren();$('journey-stops').replaceChildren();
     if(finished){quiet();armExpiry();souvenir();return;}
@@ -129,7 +135,39 @@
     text('souvenir-count','主动记下 '+points.length+' / '+data.points.length+' 处阅读观察 · 第 '+data.version+' 版');
     $('souvenir-stops').replaceChildren(...points.map(p=>{const li=document.createElement('li');li.textContent=p.title;return li;}));
     text('souvenir-note',record.note);$('note').value=record.note;
+    restoreFeedback();
   }
+  function restoreFeedback(){
+    const value=C.feedback(record?.feedback);$('trial-form').reset();
+    for(const input of $('trial-form').querySelectorAll('input[type=radio]'))input.checked=value[input.name]===input.value;
+    $('trial-obstacle').value=value.obstacle;text('trial-status','');
+  }
+  function saveFile(value,type,name){
+    const url=URL.createObjectURL(new Blob([value],{type})),link=document.createElement('a');
+    link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  async function saveFeedback(exportFile=false){
+    if(!ready||!finished||feedbackBusy)return;
+    const answers=C.feedback(Object.fromEntries(new FormData($('trial-form')))),token=generation;
+    feedbackBusy=true;const buttons=[...$('trial-form').querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);
+    try{
+      const report=C.trialReport(data,{...record,feedback:answers});
+      await verify(token);if(token!==generation)return;
+      record.feedback=answers;const saved=persist();
+      if(exportFile)saveFile(JSON.stringify(report,null,2),'application/json;charset=utf-8','画卷试用反馈.json');
+      text('trial-status',exportFile?(saved?'已导出反馈，并保存到本机。未发送给任何人。':'已导出反馈；浏览器未允许本机保存。未上传。'):(saved?'已保存到本机，尚未发送给我们。':'未能保存到本机，可改用导出文件保留。'));
+    }catch(error){if(token===generation)text('trial-status',error.message);}
+    finally{feedbackBusy=false;buttons.forEach(b=>b.disabled=false);}
+  }
+  $('trial-form').onsubmit=e=>{e.preventDefault();saveFeedback();};
+  $('trial-export').onclick=()=>saveFeedback(true);
+  $('trial-clear').onclick=()=>{
+    if(!ready||!finished||feedbackBusy)return;
+    if(!confirm('清空此版本保存在本机的体验反馈？私人游记和已下载文件不受影响。'))return;
+    const before=record.feedback;record.feedback=C.feedback(null);
+    if(!persist()){record.feedback=before;text('trial-status','浏览器未允许清除，已保存的反馈没有删除。');return;}
+    restoreFeedback();text('trial-status','已清空本机反馈。已下载的文件需自行删除。');
+  };
   $('retry').onclick=()=>load(true);$('refresh').onclick=()=>load(false);
   $('previous').onclick=()=>select(data.points[Math.max(0,data.points.indexOf(current())-1)].id);
   $('observe').onclick=()=>transition(()=>{
@@ -144,12 +182,11 @@
     try{
       await verify(token);if(token!==generation)return;
       const titles=data.points.filter(p=>record.observed.includes(p.id)).map(p=>p.title).join('、');
-      const blob=new Blob(['\ufeff'+data.title+'\n第 '+data.version+' 版 · 主动阅读：'+titles+'\n\n'+record.note+'\n\n阅读拾记，不是实地到访凭证。'],{type:'text/plain;charset=utf-8'});
-      const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='我的阅读拾记.txt';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      saveFile('\ufeff'+data.title+'\n第 '+data.version+' 版 · 主动阅读：'+titles+'\n\n'+record.note+'\n\n阅读拾记，不是实地到访凭证。','text/plain;charset=utf-8','我的阅读拾记.txt');
     }catch{/* gate keeps source withdrawal visible. */}
   };
   $('clear').onclick=()=>{
-    if(!confirm('清除此浏览器中这个景点各版本的阅读进度和手记？不会删除下载文件或账号记录。'))return;
+    if(!confirm('清除此浏览器中这个景点各版本的阅读进度、手记和体验反馈？不会删除下载文件或账号记录。'))return;
     try{localStorage.removeItem(storageKey);}catch{text('status','浏览器未允许清除，记录没有删除；可在浏览器设置中清理此站点数据。');return;}
     record=null;load(true);
   };

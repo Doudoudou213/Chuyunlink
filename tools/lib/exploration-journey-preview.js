@@ -43,6 +43,7 @@ async function fixture(){
 async function start(port=0){
   let f=await fixture(),offline=false;
   const extra=new Set(['explore-journey.html','explore-admin.html','static/exploration-journey-live.css','static/exploration-journey-live.js','static/exploration-journey-audio.js','static/exploration-journey-content.js',
+    'explore.html','static/explore.css','static/explore-app.js','static/explore-state.js','static/explore-map.js','static/explore-motion.js','static/explore-media.js','static/explore-records.js',
     'static/guide-cloud.js','static/explore-transport.js','static/explore-assets-admin.js','static/explore-admin.js','static/site-walk-admin.js','static/site-walk-admin.css']);
   const token=crypto.randomBytes(24).toString('hex');
   const server=http.createServer(async(req,res)=>{
@@ -55,8 +56,11 @@ async function start(port=0){
         const e=JSON.parse(body);let result;
         if(name==='/__journey'){
           if(offline)throw Error('本地网络失败演示：请稍后重试');
-          if(e.action!=='getSiteExploration')throw Error('此样例仅允许公开读取');
-          result={...await E.get(f.db,e.resourceId),localTest:true};
+          if(e.action==='getSiteExploration')result={...await E.get(f.db,e.resourceId),localTest:true};
+          else if(e.action==='getSiteWalk')result=await require('../../cloudfunctions/appCore/lib/site-walk-core').publicWalk(f.db,e.resourceId,Date.now());
+          else if(e.action==='askSiteExploration')result=await require('../../cloudfunctions/appCore/domains/exploration-questions').createExplorationQuestionService({db:f.db,config:{mode:'off'}}).ask(e,'local-reader');
+          else if(['createSiteWalkSession','getSiteWalkSession','listSiteWalkSessions','siteWalkSessionEvent','deleteSiteWalkSession'].includes(e.action))result=await require('../../cloudfunctions/appCore/domains/site-walk-sessions').createSiteWalkSessionService({db:f.db}).handle('local-reader',e);
+          else throw Error('此本地样例不支持该操作');
         }else if(name==='/__admin')result=e.action==='whoami'?{ok:true,isAdmin:true}:await f.call(e);
         else{
           if(e.kind==='reset'){f=await fixture();offline=false;}
@@ -77,14 +81,19 @@ async function start(port=0){
         res.setHeader('Content-Type','text/html;charset=utf-8');
         return res.end('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>本地流程演示</title><link rel="stylesheet" href="static/site-walk-admin.css"><main class="wa-page"><h1>本地流程演示</h1><p>只修改这个预览进程的内存数据，不连接生产。可在另一个标签打开画卷后，试试暂停、换版或来源撤回。</p><p><a href="/explore-journey.html?resourceId=r" target="_blank">打开画卷</a> · <a href="/explore-admin.html" target="_blank">打开现有管理后台</a></p>'+[['pause','暂停导览'],['withdraw','撤回来源'],['reorder','倒序并发布测试新版本'],['offline','模拟网络失败'],['reset','重置本地样例']].map(([id,label])=>'<button data-kind="'+id+'">'+label+'</button>').join('')+'<p id="result" role="status"></p><script>document.querySelectorAll("button").forEach(b=>b.onclick=async()=>{b.disabled=true;try{const r=await fetch("/__scenario",{method:"POST",headers:{"x-preview-token":"'+token+'"},body:JSON.stringify({kind:b.dataset.kind})});const v=await r.json();document.querySelector("#result").textContent=v.ok?"已完成；回到画卷检查内容更新。":v.error.message;}finally{b.disabled=false;}});</script></main></html>');
       }
+      if(['/index.html','/guide.html','/onsite.html','/trial-start.html'].includes(name)){
+        res.setHeader('Content-Type','text/html;charset=utf-8');
+        return res.end('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>画卷本地试用</title><link rel="stylesheet" href="static/site-walk-admin.css"><main class="wa-page"><h1>从一卷画开始</h1><p>这是隔离的本地试用，不连接线上账户。原首页、随行向导与完整游览记录不在本服务中模拟；正式发布文件中的入口不变。</p><p><a href="explore-journey.html?resourceId=r">纸上慢读：讲解、阅读拾记与选填反馈 →</a></p><p><a href="explore.html?resourceId=r">原探索工具：问答、照片对照与测试账号手记 →</a></p><p><a href="preview-control.html">维护测试：暂停、换版、断网与重置 →</a></p><p>测试用参考：能否独立开始？能否切换景物并找到出处？能否记住一个细节并留下手记？试用反馈在收卷后填写，可主动导出，不会上传。</p></main></html>');
+      }
       const file=name==='/'?'/explore-journey.html':name;
       if(!extra.has(file.slice(1))&&!require('./exploration-motion-demo-preview').allowedPath(file)){res.writeHead(404).end();return;}
       let content=fs.readFileSync(path.join(root,file));
       if(file.endsWith('.html')){
+        content=content.toString().replace('</head>','<style>.preview-strip{max-width:1440px;margin:auto;padding:8px 24px;color:var(--gold,var(--ex-muted,#74634d));font:12px/1.7 system-ui,sans-serif}.preview-strip a{display:inline-flex;align-items:center;min-height:44px;margin-right:16px;color:inherit}</style></head>');
         const call='async function localCall(url,data){const r=await fetch(url,{method:"POST",headers:{"x-preview-token":"'+token+'"},body:JSON.stringify(data)});const v=await r.json();if(!v.ok)throw Error(v.error?.message||"本地读取失败");return v;}';
         const adapter=file==='/explore-admin.html'?'window.SiteWalkAdminAdapter={call:data=>localCall("/__admin",data)};':'window.ExplorationAdapter={identity:async()=>"local-reader",call:data=>localCall("/__journey",{...data,resourceId:"r"})};';
         // Local URL retains r so real public projection validates matching resource IDs.
-        content=content.toString().replace(/<!-- (?:journey-local-adapter|site-walk-admin-adapter) -->/,'<script>'+call+adapter+'</script>').replace('<body>','<body><aside class="preview-strip">本地假数据库 · 审核与素材均为测试样例，不代表景区认可<br><a href="/preview-control.html" target="_blank">测试暂停 / 换版 / 断网</a><a href="/explore-admin.html" target="_blank">管理这份本地导览</a></aside>');
+        content=content.toString().replace(/<!-- (?:journey-local-adapter|site-walk-admin-adapter|exploration-local-adapter) -->/,'<script>'+call+adapter+'</script>').replace('<body>','<body><aside class="preview-strip">本地假数据库 · 审核与素材均为测试样例，不代表景区认可<br><a href="/trial-start.html">试用说明</a><a href="/preview-control.html" target="_blank">测试暂停 / 换版 / 断网</a><a href="/explore-admin.html" target="_blank">管理这份本地导览</a></aside>');
       }
       const type={'.html':'text/html;charset=utf-8','.js':'text/javascript;charset=utf-8','.css':'text/css;charset=utf-8','.webp':'image/webp','.woff2':'font/woff2','.png':'image/png'};
       res.setHeader('Content-Type',type[path.extname(file)]||'application/octet-stream');res.end(content);
