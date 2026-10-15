@@ -6,7 +6,7 @@
   const anchors={tower:[17,41],copper:[36,46],baiyun:[54,48],pond:[48,83]};
   let data=null,record=null,generation=0,lightGeneration=0,renderer=null,ready=false,finished=false,storageOK=true;
   let drag=null,suppressedUntil=0,expiry=null,leaving=false;
-  let entryPoint=new URLSearchParams(location.search).get('pointId'),feedbackBusy=false;
+  let entryPoint=new URLSearchParams(location.search).get('pointId'),feedbackBusy=false,fallbackRequest=0;
   const storageKey='chulink:journey-content:v1:'+resourceId;
   const leaves=window.ChuJourneyLeaves?.create({
     async verify(id){
@@ -15,7 +15,10 @@
       await verify(token);
       return token===generation&&ready&&!document.hidden&&!leaving&&record.selected===selected&&finished===wasFinished;
     },
+    scene(){return ready&&shell.dataset.art==='true'?current()?.artScene:null;},
+    origin(){return ready&&!finished?[...$('journey-points').children].find(el=>el.dataset.artPoint===record.selected):null;},
     onOpen(){A.pause?.();renderer?.pause();},
+    onClosing(){A.pause?.();},
     onClose(){A.pause?.();if(ready&&!finished&&!document.hidden&&!leaving)renderer?.resume();}
   });
   function text(id,value){$(id).textContent=value;}
@@ -29,6 +32,8 @@
   function gate(title,copy,retry=true){
     const wasReading=leaves?.isOpen();
     leaves?.dismiss({restoreFocus:false});
+    fallbackRequest++;
+    if(!leaves)for(const detail of document.querySelectorAll('.journal details')){detail.open=false;detail.querySelector('summary')?.removeAttribute('aria-busy');}
     ready=false;quiet();shell.setAttribute('aria-busy','false');
     $('content').hidden=true;$('finished').hidden=true;$('gate').hidden=false;
     text('gate-title',title);text('gate-copy',copy);$('retry').hidden=!retry;
@@ -116,7 +121,7 @@
     if(finished){quiet();armExpiry();souvenir();return;}
     text('position','第 '+(index+1)+' 景 / 共 '+data.points.length+' 景');
     text('point-title',point.title);text('observation',point.observation);text('reading-copy',point.reading);
-    text('binding-note',point.artScene?'画中高亮仅帮助认图；不推断你的位置或行走方向。':'这一处尚未绑定原画位置，先阅读已公开的文字。');
+    text('binding-note',point.artScene?'':'这一处尚未绑定原画位置，先阅读已公开的文字。');
     $('reading').open=false;$('sources').open=false;$('source-list').replaceChildren();
     for(const source of point.sources){
       const article=document.createElement('article'),title=document.createElement('strong'),copy=document.createElement('p'),credit=document.createElement('p');
@@ -128,21 +133,43 @@
     const date=value=>new Date(value).toLocaleString('zh-CN',{hour12:false});
     text('review-date','资料核对：'+date(data.checkedAt)+'；复核有效至：'+date(data.validUntil)+'。不是实时开放或客流信息。');
     for(const p of data.points){
-      $('journey-stops').append(button(p.title,()=>select(p.id),{'aria-current':p.id===point.id?'step':'false','data-recorded':record.observed.includes(p.id),'data-stop':p.id}));
+      $('journey-stops').append(button(p.title,()=>select(p.id,'list'),{'aria-current':p.id===point.id?'step':'false','data-recorded':record.observed.includes(p.id),'data-stop':p.id}));
       if(p.artScene&&anchors[p.artScene]){
-        const b=button(p.title,event=>{if(!event.detail||performance.now()>=suppressedUntil)select(p.id);},{'aria-pressed':p.id===point.id,'data-art-point':p.id});
+        const b=button(p.title,event=>{if(!event.detail||performance.now()>=suppressedUntil)select(p.id,'map');},{'aria-pressed':p.id===point.id,'data-art-point':p.id});
         b.className='journey-point';b.style.left=anchors[p.artScene][0]+'%';b.style.top=anchors[p.artScene][1]+'%';$('journey-points').append(b);
       }
     }
-    $('previous').disabled=index===0;text('observe',index===data.points.length-1?'记下这一景，收卷 →':'记下这一景，继续 →');
+    $('previous').disabled=index===0;$('next').disabled=index===data.points.length-1;
+    const recorded=record.observed.includes(point.id);
+    text('observe',recorded?'已记下这一景':'记下这一景');$('observe').setAttribute('aria-pressed',String(recorded));
     const token=generation;A.mount($('audio'),point,()=>verify(token));light(point);
   }
   async function transition(fn){
     if(!ready)return;leaves?.dismiss({restoreFocus:false});const token=++generation;A.stop();stopLight();
-    try{await verify(token);if(token!==generation)return;fn();persist();render();(finished?$('finished-title'):$('point-title')).focus({preventScroll:true});}
+    try{await verify(token);if(token!==generation)return;fn();text('status','');persist();render();(finished?$('finished-title'):$('point-title')).focus({preventScroll:true});return token;}
     catch{/* verify has already removed stale content. */}
   }
-  function select(id){if(data?.points.some(p=>p.id===id))transition(()=>{record.selected=id;});}
+  async function select(id,from){
+    if(!data?.points.some(p=>p.id===id))return;
+    const token=await transition(()=>{record.selected=id;});
+    if(!from||token!==generation||!ready||finished)return;
+    const container=from==='map'?$('journey-points'):$('journey-stops');
+    const originElement=[...container.children].find(el=>(el.dataset.artPoint||el.dataset.stop)===id);
+    if(leaves)await leaves.open('reading',{originElement});
+    else await openFallback('reading');
+  }
+  async function openFallback(id){
+    const detail=$(id),summary=detail.querySelector('summary');
+    if(!ready||!summary||detail.closest('[hidden]'))return;
+    const token=generation,request=++fallbackRequest;
+    for(const item of document.querySelectorAll('.journal summary[aria-busy]'))item.removeAttribute('aria-busy');
+    summary.setAttribute('aria-busy','true');A.pause?.();
+    try{
+      await verify(token);
+      if(request===fallbackRequest&&token===generation&&ready&&!document.hidden&&!leaving&&!detail.closest('[hidden]'))detail.open=true;
+    }catch{/* Verification owns the unavailable state, including this no-dialog path. */}
+    finally{if(request===fallbackRequest)summary.removeAttribute('aria-busy');}
+  }
   function souvenir(){
     text('souvenir-title',data.title);
     const points=data.points.filter(p=>record.observed.includes(p.id));
@@ -184,9 +211,9 @@
   };
   $('retry').onclick=()=>load(true);$('refresh').onclick=()=>load(false);
   $('previous').onclick=()=>select(data.points[Math.max(0,data.points.indexOf(current())-1)].id);
+  $('next').onclick=()=>{if(!ready)return;const next=data.points[data.points.indexOf(current())+1];if(next)select(next.id);};
   $('observe').onclick=()=>transition(()=>{
     record.observed=[...new Set([...record.observed,record.selected])];
-    const next=data.points[data.points.indexOf(current())+1];if(next)record.selected=next.id;else finished=true;
   });
   $('finish').onclick=()=>transition(()=>{finished=true;});
   $('return').onclick=()=>transition(()=>{finished=false;});
@@ -205,8 +232,15 @@
     record=null;load(true);
   };
   if(!leaves){
-    $('sources').addEventListener('toggle',()=>{if($('sources').open&&ready)verify().catch(()=>{});});
-    $('reading').addEventListener('toggle',()=>{if($('reading').open&&ready)verify().catch(()=>{});});
+    for(const id of ['reading','sources','journey-help','trial-feedback']){
+      const detail=$(id),summary=detail.querySelector('summary');
+      summary.addEventListener('click',event=>{
+        event.preventDefault();
+        if(detail.open||summary.getAttribute('aria-busy')==='true'){
+          fallbackRequest++;detail.open=false;summary.removeAttribute('aria-busy');A.pause?.();
+        }else openFallback(id);
+      });
+    }
   }
   art.onerror=()=>$('art-error').hidden=false;
   stage.onpointerdown=e=>{if(e.pointerType==='touch'||e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:stage.scrollLeft,top:stage.scrollTop,moved:false};};

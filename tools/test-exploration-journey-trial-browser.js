@@ -11,7 +11,7 @@ let checks=0;function check(v,label){assert(v,label);checks++;}
     p.on('pageerror',e=>errors.push(e.message));
     p.on('request',r=>{if(!r.url().startsWith(s.url))external.push(r.url());if(r.url().endsWith('/__journey'))actions.push(r.postDataJSON().action);});
     const go=async(query='')=>{await p.goto(s.url+'/explore-journey.html?resourceId=r'+query);await p.locator('#content:not([hidden])').waitFor();};
-    const openLeaf=async(id,page=p)=>{await page.locator('#'+id+' > .journey-leaf-trigger').click();await page.locator('#journey-leaf-dialog[data-leaf="'+id+'"][aria-busy="false"]').waitFor();await page.waitForFunction(()=>!document.getElementById('journey-leaf-dialog').getAnimations().some(a=>a.playState==='running'));};
+    const openLeaf=async(id,page=p)=>{if(!await page.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"]').count())await page.locator('#'+id+' > .journey-leaf-trigger').click();await page.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"][aria-busy="false"][data-state=open]').waitFor();};
     const closeLeaf=async(page=p)=>{await page.locator('#journey-leaf-dialog .journey-leaf-close').click();await page.locator('#journey-leaf-dialog').waitFor({state:'hidden'});};
     const finish=async()=>{await p.locator('#finish').click();await p.locator('#finished:not([hidden])').waitFor();};
     const scenario=async kind=>{const q=await browser.newPage();await q.goto(s.url+'/preview-control.html');await q.locator('[data-kind='+kind+']').click();await q.waitForFunction(()=>document.querySelector('#result').textContent.includes('已完成'));await q.close();};
@@ -39,7 +39,10 @@ let checks=0;function check(v,label){assert(v,label);checks++;}
     await p.locator('#ex-reading-link').click();await p.waitForURL('**/explore-journey.html?resourceId=r&pointId=copper');
     await p.locator('#content:not([hidden])').waitFor();
     check(await p.locator('#point-title').textContent()==='古铜顶','back to same scene');
-    await p.locator('#observe').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='白云阁');
+    await p.locator('#observe').click();await p.waitForFunction(()=>document.querySelector('[data-stop=copper]').dataset.recorded==='true');
+    check(await p.locator('#point-title').textContent()==='古铜顶','recording is separate from navigation');
+    await p.locator('#next').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='白云阁');
+    check(await p.locator('[data-stop=baiyun]').getAttribute('data-recorded')==='false','next leaves the following scene unrecorded');
     await finish();await p.locator('#note').fill('私人游记不可出现在体验反馈里');
     await openLeaf('trial-feedback');
     await p.locator('#trial-export').click();check((await p.locator('#trial-status').textContent()).includes('先选'),'empty report blocked');

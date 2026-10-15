@@ -12,7 +12,7 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>{if(!r.url().startsWith(s.url)&&!r.url().startsWith('https://example.com/'))external.push(r.url());});
     await p.addInitScript(()=>{const A=Audio;window.__audios=[];window.Audio=function(){const a=new A();window.__audios.push(a);return a;};});
     const go=async()=>{await p.goto(s.url+'/explore-journey.html?resourceId=r');await p.locator('#content:not([hidden])').waitFor();};
-    const openLeaf=async id=>{await p.locator('#'+id+' > .journey-leaf-trigger').click();await p.locator('#journey-leaf-dialog[data-leaf="'+id+'"][aria-busy="false"]').waitFor();await p.waitForFunction(()=>!document.getElementById('journey-leaf-dialog').getAnimations().some(a=>a.playState==='running'));};
+    const openLeaf=async id=>{if(!await p.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"]').count())await p.locator('#'+id+' > .journey-leaf-trigger').click();await p.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"][aria-busy="false"][data-state=open]').waitFor();};
     const closeLeaf=async()=>{await p.locator('#journey-leaf-dialog .journey-leaf-close').click();await p.locator('#journey-leaf-dialog').waitFor({state:'hidden'});};
     const scenario=async kind=>{
       const c=await browser.newPage();await c.goto(s.url+'/preview-control.html');await c.locator('[data-kind='+kind+']').click();await c.waitForFunction(()=>document.querySelector('#result').textContent.includes('已完成'));await c.close();
@@ -31,10 +31,19 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
       check(await p.locator('#observe').evaluate(e=>e.getBoundingClientRect().height>=44),'44px '+width);
       await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:path.join(out,'reading-'+width+'.png'),fullPage:true});
     }
-    await p.locator('#observe').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
+    await p.locator('#observe').click();await p.waitForFunction(()=>document.querySelector('[data-stop=tower]').dataset.recorded==='true');
+    check(await p.locator('#point-title').textContent()==='黄鹤楼','recording stays with current scene');
     check(await p.locator('[data-stop=tower]').getAttribute('data-recorded')==='true','explicit mark only');
+    await p.locator('#observe').evaluate(e=>e.click());await p.locator('#next').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
+    check(await p.locator('[data-recorded=true]').count()===1,'repeated record is idempotent and next does not record');
     await p.reload();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
     check(await p.locator('[data-stop=copper]').getAttribute('data-recorded')==='false','no auto arrival');
+    await p.locator('#next').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='白云阁');
+    await p.locator('#next').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='鹅池');
+    check(await p.locator('[data-recorded=true]').count()===1,'advancing through unread scenes does not mark them');
+    check(await p.locator('#next').isDisabled(),'last scene has no implicit finish action');
+    await p.locator('#observe').click();await p.waitForFunction(()=>document.querySelector('[data-stop=pond]').dataset.recorded==='true');
+    check(await p.locator('#point-title').textContent()==='鹅池'&&await p.locator('#finished').isHidden(),'recording last scene does not close the scroll');
     await p.locator('#finish').click();await p.locator('#finished:not([hidden])').waitFor();
     await p.locator('#note').fill('<img src=x onerror=alert(1)> 我的拾记');
     check(await p.locator('#souvenir-note img').count()===0,'note XSS safe');
@@ -78,6 +87,10 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     await s.fixture.publish(draft);await p.reload();await p.locator('#content:not([hidden])').waitFor();
     check(await p.locator('[data-art-point]').count()===3,'unbound not guessed from title');
     check((await p.locator('#binding-note').textContent()).includes('尚未绑定'),'unbound notice');
+    await openLeaf('reading');
+    check(await p.locator('#journey-leaf-dialog').getAttribute('data-scene')===null,'unbound scene does not borrow a guessed paper motif');
+    check(await p.locator('.journey-leaf-motif').evaluate(e=>e.childElementCount===0),'unbound paper stays undecorated rather than misrepresenting artwork');
+    await closeLeaf();
     await admin.close();
     // Register a licensed-in-test 4-second silent fixture, not a real narration.
     const f=s.fixture;
@@ -94,7 +107,9 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     await p.locator('#audio button').click();check(await p.locator('#audio button').textContent()==='继续听','pause');
     await closeLeaf();
     await p.locator('[data-stop=copper]').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
+    await openLeaf('reading');
     check(await p.evaluate(()=>__audios.every(a=>a.paused&&!a.getAttribute('src'))),'switch stops old audio');
+    await closeLeaf();
     await p.locator('[data-stop=tower]').click();await p.waitForFunction(()=>document.querySelector('#audio button'));
     await openLeaf('reading');
     await p.unroute('https://example.com/journey.wav');await p.route('https://example.com/journey.wav',r=>r.abort());
@@ -122,7 +137,10 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
       document.querySelector('[data-stop=baiyun]').click();
     });
     await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='白云阁');
+    await openLeaf('reading');
     check(await p.locator('[data-stop=baiyun]').getAttribute('aria-current')==='step','rapid selection keeps last intent');
+    check(await p.locator('#journey-leaf-title').textContent()==='白云阁','rapid selection opens only latest paper context');
+    await closeLeaf();
     // An older, delayed read must never restore the previous point.
     let delayed=true;
     await p.route('**/__journey',async route=>{
@@ -132,7 +150,10 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     await p.evaluate(()=>{document.querySelector('[data-stop=tower]').click();});
     await p.locator('[data-stop=pond]').click();
     await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='鹅池');
+    await openLeaf('reading');
     await p.waitForTimeout(450);check(await p.locator('#point-title').textContent()==='鹅池','late response ignored');
+    check(await p.locator('#journey-leaf-title').textContent()==='鹅池','late response cannot replace active paper context');
+    await closeLeaf();
     await p.unroute('**/__journey');
     await s.fixture.db.collection('resources').doc('r').update({visitInfo:{status:'closed'}});
     await p.locator('#refresh').click();await p.locator('#retry:not([hidden])').waitFor();
@@ -150,7 +171,9 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     await q.addInitScript(()=>Object.defineProperty(window,'localStorage',{get(){throw Error('blocked');}}));
     await q.route('**/gsap-3.15.0.min.js',r=>r.abort());await q.route('**/hhl-full-park-v2.webp',r=>r.abort());
     await q.goto(s.url+'/explore-journey.html?resourceId=r');await q.locator('#content:not([hidden])').waitFor();
-    await q.locator('#observe').click();await q.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
+    await q.locator('#observe').click();await q.waitForFunction(()=>document.querySelector('[data-stop=tower]').dataset.recorded==='true');
+    check(await q.locator('#point-title').textContent()==='黄鹤楼','fallback recording does not advance');
+    await q.locator('#next').click();await q.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
     check(await q.locator('#art-error').isVisible(),'failed art notice');
     check((await q.locator('#status').textContent()).includes('不允许保存'),'blocked storage notice');
     check(await q.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'fallback mobile no overflow');await q.close();

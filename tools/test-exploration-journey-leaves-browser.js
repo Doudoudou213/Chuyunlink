@@ -13,12 +13,14 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     await p.addInitScript(()=>{const interval=window.setInterval;window.__rechecks=[];window.setInterval=(fn,ms,...args)=>{if(ms===30000&&typeof fn==='function')window.__rechecks.push(()=>fn(...args));return interval(fn,ms,...args);};});
     p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>{if(r.url().endsWith('/__journey'))actions.push(r.postDataJSON().action);});
     const go=async()=>{await p.goto(s.url+'/explore-journey.html?resourceId=r');await p.locator('#content:not([hidden])').waitFor();};
-    const open=async(id,page=p)=>{await page.locator('#'+id+' > .journey-leaf-trigger').click();await page.locator('#journey-leaf-dialog[open][aria-busy=false][data-leaf="'+id+'"]').waitFor();await page.waitForFunction(()=>!document.querySelector('#journey-leaf-dialog').getAnimations().some(a=>a.playState==='running'));};
+    const open=async(id,page=p)=>{if(!await page.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"]').count())await page.locator('#'+id+' > .journey-leaf-trigger').click();await page.locator('#journey-leaf-dialog[open][aria-busy=false][data-leaf="'+id+'"][data-state=open]').waitFor();};
     const close=async(page=p)=>{await page.locator('.journey-leaf-close').click();await page.locator('#journey-leaf-dialog').waitFor({state:'hidden'});};
+    const cleanPaperMotion=async(page=p)=>page.evaluate(()=>[...document.querySelectorAll('#journey-leaf-dialog,.journey-leaf-sheet,.journey-leaf-motif,.journey-leaf-header,.journey-leaf-body,.journey-leaf-footer,.journey-leaf-light,.journey-leaf-shade,.journey-leaf-veil')].every(e=>!e.style.transform&&!e.style.willChange));
     const scenario=async kind=>{const q=await b.newPage();await q.goto(s.url+'/preview-control.html');await q.locator('[data-kind='+kind+']').click();await q.waitForFunction(()=>document.querySelector('#result').textContent.includes('已完成'));await q.close();};
     await go();
     check(await p.locator('.journal details').count()===0,'four disclosures replaced on visitor');
     check(await p.locator('.journey-leaf-trigger').count()===4,'four explicit entries');
+    check(await p.locator('#journey-leaf-dialog').isHidden(),'initial visit leaves the artwork unobstructed');
     check(await p.evaluate(()=>localStorage.getItem('chulink:journey-content:v1:r'))===null,'no auto record on enter');
     await open('reading');
     check(await p.locator('#journey-leaf-title').textContent()==='黄鹤楼','leaf context matches selected scene');
@@ -35,6 +37,34 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     check(await p.locator('#audio').evaluate(e=>!e.closest('dialog')),'audio restored on close');
     check(await p.locator('[data-recorded=true]').count()===0,'opening not counted as visit/reading record');
     check(await p.evaluate(()=>localStorage.getItem('chulink:journey-content:v1:r'))===null,'opening has no persistence');
+    // Choosing either the original artwork or its accessible list opens only the
+    // selected, reverified scene. It never records an arrival or reading credit.
+    for(const source of ['art','list']){
+      const selector=source==='art'?'[data-art-point=copper]':'[data-stop=tower]';
+      const expected=source==='art'?'古铜顶':'黄鹤楼';
+      await p.locator(selector).click();await open('reading');
+      check(await p.locator('#journey-leaf-title').textContent()===expected,source+' selection opens matching reading');
+      check(await p.locator('#journey-leaf-dialog').getAttribute('data-scene')===(source==='art'?'copper':'tower'),source+' reading motif follows explicit artwork binding');
+      check(await p.locator('[data-recorded=true]').count()===0,source+' selection does not create a recorded visit');
+      await close();
+      check(await p.locator(selector).evaluate(e=>document.activeElement===e),source+' close returns focus to current rendered trigger');
+    }
+    // The reusable choreography must remain interruptible after real verification
+    // and moving the original reading/audio nodes, not only in the static demo.
+    await p.locator('#reading > button').evaluate(e=>e.click());
+    await p.locator('#journey-leaf-dialog[open][data-state=opening][aria-busy=false]').waitFor();
+    await p.waitForTimeout(130);
+    const interruption=await p.evaluate(()=>{
+      const dialog=document.querySelector('#journey-leaf-dialog'),sheet=document.querySelector('.journey-leaf-sheet'),veil=document.querySelector('.journey-leaf-veil');
+      const pose=()=>{const r=dialog.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,opacity:+getComputedStyle(dialog).opacity,veil:+getComputedStyle(veil).opacity,sheet:getComputedStyle(sheet).transform,state:dialog.dataset.state};};
+      const before=pose();document.querySelector('.journey-leaf-close').click();return {before,after:pose()};
+    });
+    check(interruption.before.state==='opening'&&interruption.after.state==='closing','verified reading can close before arrival finishes');
+    check(['x','y','width','height'].every(k=>Math.abs(interruption.before[k]-interruption.after[k])<1),'interrupted visitor paper does not teleport');
+    check(Math.abs(interruption.before.opacity-interruption.after.opacity)<.01&&Math.abs(interruption.before.veil-interruption.after.veil)<.01&&interruption.before.sheet===interruption.after.sheet,'interrupted visitor fold and brightness are continuous');
+    await p.locator('#journey-leaf-dialog').waitFor({state:'hidden'});
+    check(await cleanPaperMotion(),'interrupted visitor paper clears transient layers');
+    check(await p.locator('#audio').evaluate(e=>!e.closest('dialog')),'interrupted close restores original audio controls');
     // Responsive screenshots: actual public fixture text, not invented historical claims.
     for(const width of [320,390,768,1440]){
       await p.setViewportSize({width,height:900});await p.evaluate(()=>scrollTo(0,0));
@@ -78,10 +108,11 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     const core=require('../cloudfunctions/appCore/lib/site-walk-core');
     const root=s.fixture.db.data().site_walks[core.rootId('r')];
     const old=s.fixture.db.data().site_walk_versions[root.publishedVersionId].review;
-    await s.fixture.db.collection('site_walk_versions').doc(root.publishedVersionId).update({review:{...old,validUntil:new Date(Date.now()+2200).toISOString()}});
+    await s.fixture.db.collection('site_walk_versions').doc(root.publishedVersionId).update({review:{...old,validUntil:new Date(Date.now()+4500).toISOString()}});
     await open('reading');await p.waitForFunction(()=>document.querySelector('#gate-title').textContent==='资料到了复核时间');
     check(await p.locator('dialog').isHidden(),'expiry closes open leaf');
     check(await p.locator('#reading-copy').textContent()==='','expiry erases moved node');
+    check(await cleanPaperMotion(),'expiry cancels paper animation without a lingering overlay');
     await scenario('reset');await go();await open('reading');
     await scenario('withdraw');await p.evaluate(()=>__rechecks.forEach(fn=>fn()));await p.locator('#retry:not([hidden])').waitFor();
     check(await p.locator('dialog').isHidden(),'periodic recheck closes withdrawn open leaf');
@@ -110,7 +141,10 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     const playhead=await p.evaluate(()=>__audios.at(-1).currentTime);await open('reading');
     check(await p.evaluate(()=>__audios.every(a=>a.paused)),'opening pauses audio');
     check(await p.evaluate(t=>__audios.length===1&&__audios[0].currentTime>=t,playhead),'original player/time kept');
-    await p.locator('#audio button').click();await p.waitForFunction(()=>__audios.some(a=>!a.paused));await close();
+    await p.locator('#audio button').click();await p.waitForFunction(()=>__audios.some(a=>!a.paused));
+    const closingAudio=await p.locator('.journey-leaf-close').evaluate(e=>{e.click();return {paused:__audios.every(a=>a.paused),state:document.querySelector('#journey-leaf-dialog').dataset.state};});
+    check(closingAudio.paused&&closingAudio.state==='closing','starting close pauses narration synchronously before the return animation');
+    await p.locator('#journey-leaf-dialog').waitFor({state:'hidden'});
     check(await p.evaluate(()=>__audios.every(a=>a.paused)),'closing pauses manually played narration');
     await open('reading');check(await p.evaluate(()=>__audios.every(a=>a.paused)),'reopening never autoplays');await close();
     // A pre-open play validation which completes late must not cause playback behind the paper.
@@ -119,14 +153,49 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     await p.locator('#audio button').click();await p.locator('#reading > button').click();await p.locator('dialog[aria-busy=true]').waitFor();
     releaseAudio();await p.locator('dialog[aria-busy=false]').waitFor();await p.waitForTimeout(200);
     check(await p.evaluate(()=>__audios.every(a=>a.paused&&!a.getAttribute('src'))),'late play canceled by open');
-    await close();await p.unroute('**/__journey');await scenario('reset');
+    await close();await p.unroute('**/__journey');
+    // A validated play response may arrive during the 700ms return. Closing must
+    // cancel that intent immediately, not wait until the paper has disappeared.
+    await go();await open('reading');
+    let releaseClosingAudio,capturedClosingAudio;
+    const closingAudioBlocked=new Promise(resolve=>{releaseClosingAudio=resolve;}),closingAudioCaptured=new Promise(resolve=>{capturedClosingAudio=resolve;});
+    await p.route('**/__journey',async route=>{const response=await route.fetch();capturedClosingAudio();await closingAudioBlocked;await route.fulfill({response});});
+    await p.locator('#audio button').click();await closingAudioCaptured;
+    const pendingClose=await p.locator('.journey-leaf-close').evaluate(e=>{e.click();return {state:document.querySelector('#journey-leaf-dialog').dataset.state,paused:__audios.every(a=>a.paused&&!a.getAttribute('src'))};});
+    check(pendingClose.state==='closing'&&pendingClose.paused,'close invalidates pending play while the paper is still visible');
+    releaseClosingAudio();await p.waitForTimeout(180);
+    check(await p.evaluate(()=>__audios.every(a=>a.paused&&!a.getAttribute('src'))),'late validation never starts audio during return animation');
+    await p.locator('#journey-leaf-dialog').waitFor({state:'hidden'});
+    check(await p.evaluate(()=>__audios.every(a=>a.paused&&!a.getAttribute('src'))),'late play remains canceled after return completes');
+    await p.unroute('**/__journey');await scenario('reset');
     check(actions.every(a=>a==='getSiteExploration'),'UI uses only existing public reads');
     const q=await b.newPage({viewport:{width:320,height:700},reducedMotion:'reduce'});q.on('pageerror',e=>errors.push(e.message));
     await q.route('**/paper-fibres-soft-v1.webp',r=>r.abort());await q.goto(s.url+'/explore-journey.html?resourceId=r');await q.locator('#content:not([hidden])').waitFor();
     await open('reading',q);check(await q.locator('dialog').evaluate(e=>getComputedStyle(e).animationName)==='none','reduced motion');
+    check(await cleanPaperMotion(q),'reduced reading has no transient transform layers');
     check(await q.locator('#reading-copy').isVisible(),'missing texture keeps copy');await q.keyboard.press('Escape');check(await q.locator('dialog').isHidden(),'reduced close immediate');await q.close();
-    const r=await b.newPage();await r.route('**/exploration-journey-leaves.js',route=>route.abort());await r.goto(s.url+'/explore-journey.html?resourceId=r');await r.locator('#content:not([hidden])').waitFor();
-    await r.locator('#reading summary').click();check(await r.locator('#reading-copy').isVisible(),'script failure keeps native fallback');await r.close();
+    for(const missing of ['exploration-leaf-motion.js','gsap-3.15.0.min.js']){
+      const fallback=await b.newPage();fallback.on('pageerror',e=>errors.push(e.message));
+      await fallback.route('**/'+missing,route=>route.abort());await fallback.goto(s.url+'/explore-journey.html?resourceId=r');await fallback.locator('#content:not([hidden])').waitFor();
+      await open('reading',fallback);check(await fallback.locator('#reading-copy').isVisible(),'missing '+missing+' retains verified reading');
+      check(await cleanPaperMotion(fallback),'missing '+missing+' has clean static paper');await close(fallback);
+      check(await fallback.evaluate(()=>!document.documentElement.classList.contains('journey-leaf-open')),'missing '+missing+' releases page scroll');await fallback.close();
+    }
+    const r=await b.newPage();r.on('pageerror',e=>errors.push(e.message));await r.route('**/exploration-journey-leaves.js',route=>route.abort());await r.goto(s.url+'/explore-journey.html?resourceId=r');await r.locator('#content:not([hidden])').waitFor();
+    await r.locator('#reading summary').click();await r.locator('#reading-copy').waitFor();check(await r.locator('#reading-copy').isVisible(),'script failure keeps native fallback');
+    await r.locator('#reading summary').click();
+    let releaseFallback,capturedFallback;
+    const fallbackBlocked=new Promise(resolve=>{releaseFallback=resolve;}),fallbackCaptured=new Promise(resolve=>{capturedFallback=resolve;});
+    await r.route('**/__journey',async route=>{const response=await route.fetch();capturedFallback();await fallbackBlocked;await route.fulfill({response});});
+    await r.locator('#reading summary').focus();await r.keyboard.press('Enter');await fallbackCaptured;
+    check(await r.locator('#reading').evaluate(e=>!e.open),'native disclosure stays closed while rechecking');
+    check(await r.locator('#reading-copy').isHidden(),'native fallback does not flash cached reading during validation');
+    releaseFallback();await r.locator('#reading-copy').waitFor();check(await r.locator('#reading-copy').isVisible(),'native fallback opens only after a valid response');
+    await r.unroute('**/__journey');await r.locator('#reading summary').click();
+    await scenario('withdraw');await r.locator('#reading summary').click();await r.locator('#retry:not([hidden])').waitFor();
+    check(await r.locator('#reading-copy').isHidden(),'native fallback never reveals withdrawn reading');
+    check(await r.locator('#reading-copy').textContent()===''&&await r.locator('#source-list').textContent()==='','native fallback erases withdrawn content and sources');
+    await r.close();await scenario('reset');
     check(errors.length===0,JSON.stringify(errors));
     console.log('PASS visitor paper leaves: '+checks+' checks; disclosure/state/focus/verification/expiry/privacy/responsive/fallback.');
   }finally{await b.close();await s.close();}
