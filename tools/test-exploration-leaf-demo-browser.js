@@ -45,8 +45,15 @@ function check(value, description) { assert(value, description); checks++; }
     await p.locator('#scene-leaf').waitFor({ state: 'hidden' });
   };
   const inside = async p => p.evaluate(() => document.querySelector('#scene-leaf').contains(document.activeElement));
+  const cleanMotion = async p => p.evaluate(() => {
+    const surfaces = document.querySelectorAll('#scene-leaf,.leaf-plane,#leaf-motif,.leaf-head,.leaf-body,.leaf-foot,#leaf-demo-note,.leaf-light,.leaf-shade,#leaf-veil');
+    return [...surfaces].every(e => !e.style.transform && !e.style.willChange) &&
+      (!window.gsap || !gsap.globalTimeline.getChildren(true, true, true).some(t => t.isActive()));
+  });
   try {
     check((await fetch(server.url + '/explore-leaf-demo.html')).status === 200, 'static demo served');
+    const motionModule = await fetch(server.url + '/static/exploration-leaf-motion.js');
+    check(motionModule.status === 200 && /javascript/.test(motionModule.headers.get('content-type')), 'isolated motion module served by explicit allowlist');
     const head = await fetch(server.url + '/', { method: 'HEAD' });
     check(head.status === 200 && (await head.text()) === '', 'HEAD has no response body');
     check((await fetch(server.url + '/explore-leaf-demo.html', { method: 'POST' })).status === 405, 'preview rejects writes');
@@ -92,6 +99,103 @@ function check(value, description) { assert(value, description); checks++; }
     await p.locator('#scene-leaf[open][data-state=open]').waitFor();
     check(await p.locator('#scene-leaf').evaluate(e => getComputedStyle(e).transform === 'none'), 'opening settles without permanent transform');
     await close(p);
+
+    await p.setViewportSize({ width: 1440, height: 960 });
+    const arrival = await p.evaluate(() => new Promise(resolve => {
+      const dialog = document.querySelector('#scene-leaf'), sheet = document.querySelector('.leaf-plane'), light = document.querySelector('.leaf-light'), frames = [];
+      const samplePose = () => {
+        const r = dialog.getBoundingClientRect();
+        frames.push({ x: r.left + r.width / 2, y: r.top + r.height / 2, fold: getComputedStyle(sheet).transform, light: +getComputedStyle(light).opacity });
+      };
+      document.querySelector('#scene-index button[data-scene=tower]').click();
+      samplePose();
+      function sample() {
+        samplePose();
+        if (dialog.dataset.state === 'open') { resolve(frames); return; }
+        requestAnimationFrame(sample);
+      }
+      requestAnimationFrame(sample);
+    }));
+    const firstPose = arrival[0], finalPose = arrival.at(-1), flightX = finalPose.x - firstPose.x, flightY = finalPose.y - firstPose.y;
+    const curveDistance = Math.max(...arrival.map(f => Math.abs(flightX * (f.y - firstPose.y) - flightY * (f.x - firstPose.x)) / Math.hypot(flightX, flightY)));
+    check(curveDistance > 8, 'paper follows a lifted arc rather than straight card translation');
+    check(arrival.some(f => f.fold.startsWith('matrix3d(')), 'paper plane has a transient perspective fold');
+    check(arrival.some(f => f.light > .15), 'paper edge receives a restrained travelling light');
+    check(await p.locator('#leaf-art').count() === 1 && await p.locator('.leaf-plane').count() === 1, 'choreography moves the same paper without cloning art overlays');
+    check(await cleanMotion(p), 'arrival ends in a quiet static reading state');
+    await close(p);
+    await p.setViewportSize({ width: 390, height: 900 });
+
+    // Sample the same JS event turn before and after cancellation. Waiting only for
+    // the final closed state misses a transform reset that visibly teleports a leaf.
+    for (const elapsed of [90, 370, 760]) {
+      const interruption = await p.evaluate(elapsed => new Promise(resolve => {
+        const dialog = document.querySelector('#scene-leaf'), sheet = document.querySelector('.leaf-plane'), veil = document.querySelector('#leaf-veil');
+        const pose = () => {
+          const r = dialog.getBoundingClientRect();
+          return { x: r.x, y: r.y, width: r.width, height: r.height, opacity: +getComputedStyle(dialog).opacity, veil: +getComputedStyle(veil).opacity,
+            sheet: getComputedStyle(sheet).transform, state: dialog.dataset.state };
+        };
+        document.querySelector('#scene-index button[data-scene=tower]').click();
+        const start = performance.now();
+        function sample(now) {
+          if (now - start < elapsed) { requestAnimationFrame(sample); return; }
+          const before = pose();
+          document.querySelector('#leaf-close').click();
+          resolve({ before, after: pose() });
+        }
+        requestAnimationFrame(sample);
+      }), elapsed);
+      check(interruption.before.state === 'opening' && interruption.after.state === 'closing', 'early close interrupts active opening at ' + elapsed + 'ms');
+      check(['x', 'y', 'width', 'height'].every(k => Math.abs(interruption.before[k] - interruption.after[k]) < 1), 'closing preserves current paper pose without teleport at ' + elapsed + 'ms');
+      check(Math.abs(interruption.before.opacity - interruption.after.opacity) < .01 && Math.abs(interruption.before.veil - interruption.after.veil) < .01, 'closing preserves paper and backdrop brightness at ' + elapsed + 'ms');
+      check(interruption.before.sheet === interruption.after.sheet, 'closing preserves current paper fold at ' + elapsed + 'ms');
+      await p.locator('#scene-leaf').waitFor({ state: 'hidden' });
+      check(await cleanMotion(p), 'interrupted close removes transient animation state at ' + elapsed + 'ms');
+    }
+
+    await open(p, 'pond');
+    const returnFlight = await p.evaluate(() => new Promise(resolve => {
+      const dialog = document.querySelector('#scene-leaf');
+      const mark = document.querySelector('.scene-point[data-scene=pond]').getBoundingClientRect();
+      const target = { x: mark.left + mark.width / 2, y: mark.top + mark.height / 2 };
+      const originalWidth = dialog.getBoundingClientRect().width, frames = [];
+      document.querySelector('#leaf-return').click();
+      function sample() {
+        if (!dialog.open) { resolve({ target, originalWidth, frames }); return; }
+        const r = dialog.getBoundingClientRect();
+        frames.push({ x: r.left + r.width / 2, y: r.top + r.height / 2, width: r.width, opacity: +getComputedStyle(dialog).opacity });
+        requestAnimationFrame(sample);
+      }
+      requestAnimationFrame(sample);
+    }));
+    check(returnFlight.frames.length > 3, 'return flight has intermediate visual poses');
+    const landed = returnFlight.frames.at(-1);
+    check(Math.hypot(landed.x - returnFlight.target.x, landed.y - returnFlight.target.y) < 16, 'return flight converges on actual painted hotspot');
+    check(landed.width / returnFlight.originalWidth < .16, 'return flight folds down toward the point rather than fading a large card');
+    check(await cleanMotion(p), 'completed return removes all temporary animation transforms');
+
+    // Programmatic re-entry exercises a stale timeline race without making the
+    // intentionally inert background interactive for real users.
+    await open(p, 'tower');
+    await p.locator('#leaf-close').evaluate(e => e.click());
+    await p.waitForTimeout(120);
+    await p.locator('#scene-index button[data-scene=baiyun]').evaluate(e => e.click());
+    await p.locator('#scene-leaf[open][data-state=open][data-scene=baiyun]').waitFor();
+    await p.waitForTimeout(300);
+    check(await p.locator('#scene-leaf[open][data-scene=baiyun]').isVisible(), 'interrupted return cannot close a newly opened scene');
+    check(await p.locator('#leaf-title').textContent() === '白云阁', 're-entry shows only new scene content');
+    check(await cleanMotion(p), 're-entry settles both paper and internal surfaces');
+    await close(p);
+
+    await p.locator('#scene-index button[data-scene=tower]').evaluate(e => e.click());
+    await p.waitForTimeout(130);
+    await p.emulateMedia({ reducedMotion: 'reduce' });
+    await p.locator('#scene-leaf[open][data-state=open]').waitFor();
+    check(await cleanMotion(p), 'changing reduced motion during opening settles every surface');
+    check(await p.locator('#leaf-copy').isVisible(), 'changing motion preference retains readable paper');
+    await close(p);
+    await p.emulateMedia({ reducedMotion: 'no-preference' });
     await open(p);
     await p.locator('#leaf-return').focus();
     await p.keyboard.press('Tab');
@@ -117,8 +221,8 @@ function check(value, description) { assert(value, description); checks++; }
       check(await p.locator('#leaf-canvas').evaluate(e => e.scrollWidth > e.clientWidth || innerWidth >= 1200), 'small artwork is internally scrollable ' + size.width);
       check(await p.locator('#scene-index button[data-scene]').evaluateAll(es => es.every(e => { const r = e.getBoundingClientRect(); return r.width >= 44 && r.height >= 44; })), 'scene targets at least 44px ' + size.width);
       await open(p, 'tower');
-      // The curled paper's decorative under-sheet intentionally extends a few pixels.
-      // Check readable content instead of treating that clipped artwork as overflow.
+      // Only the reading region scrolls; the paper header and closing controls
+      // remain reachable even when the viewport is short or the copy grows.
       check(await p.locator('.leaf-body').evaluate(e => e.scrollWidth <= e.clientWidth + 1), 'leaf copy no horizontal overflow ' + size.width);
       check(await p.locator('#leaf-close').evaluate(e => { const r = e.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.top >= 0 && r.bottom <= innerHeight; }), 'close target and reach ' + size.width);
       check(await p.locator('#leaf-return').evaluate(e => { const r = e.getBoundingClientRect(); return r.height >= 44 && r.top >= 0 && r.bottom <= innerHeight; }), 'return target and reach ' + size.width);
@@ -134,6 +238,10 @@ function check(value, description) { assert(value, description); checks++; }
       check(await p.locator('#leaf-close').evaluate(e => { const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }), 'long content keeps close reachable ' + size.width);
       check(await p.locator('#leaf-return').evaluate(e => e.getBoundingClientRect().bottom <= innerHeight), 'long content keeps return reachable ' + size.width);
       await p.locator('#leaf-copy').evaluate(e => { e.innerHTML = window.__originalLeafCopy; });
+      await p.locator('#leaf-title').evaluate(e => { window.__originalLeafTitle = e.textContent; e.textContent = '长标题布局测试'.repeat(12); });
+      check(await p.locator('#leaf-close').evaluate(e => { const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }), 'long heading keeps close reachable ' + size.width);
+      check(await p.locator('#leaf-return').evaluate(e => e.getBoundingClientRect().bottom <= innerHeight), 'long heading keeps return reachable ' + size.width);
+      await p.locator('#leaf-title').evaluate(e => { e.textContent = window.__originalLeafTitle; });
       await close(p);
     }
 
@@ -153,6 +261,7 @@ function check(value, description) { assert(value, description); checks++; }
     });
     await p.waitForFunction(() => !document.querySelector('#scene-leaf').open || document.querySelector('#scene-leaf').dataset.state === 'open');
     check(await p.evaluate(() => !window.gsap || !gsap.globalTimeline.getChildren(true, true, true).some(t => t.isActive())), 'hidden page settles or cancels motion');
+    check(await cleanMotion(p), 'background transition clears every transient paper layer');
     await p.evaluate(() => {
       Object.defineProperty(document, 'hidden', { configurable: true, value: false });
       document.dispatchEvent(new Event('visibilitychange'));
@@ -162,7 +271,14 @@ function check(value, description) { assert(value, description); checks++; }
     await p.setViewportSize({ width: 768, height: 700 });
     await p.waitForFunction(() => !document.querySelector('#scene-leaf').open || document.querySelector('#scene-leaf').dataset.state === 'open');
     check(await p.evaluate(() => !document.querySelector('#scene-leaf').open || document.querySelector('#leaf-close').getBoundingClientRect().bottom <= innerHeight), 'resize during animation stays usable');
+    check(await cleanMotion(p), 'resize during opening settles internal layers and backdrop hints');
     if (await p.locator('#scene-leaf').isVisible()) await close(p);
+    await open(p, 'pond');
+    await p.locator('#leaf-close').evaluate(e => e.click());
+    await p.setViewportSize({ width: 390, height: 900 });
+    await p.locator('#scene-leaf').waitFor({ state: 'hidden' });
+    check(await cleanMotion(p), 'resize during return fully finishes and clears motion');
+    check(await p.evaluate(() => !document.documentElement.classList.contains('leaf-is-open')), 'resize during return releases document scroll lock');
     await p.close();
 
     const reduced = await page({ reducedMotion: 'reduce', viewport: { width: 320, height: 700 } });
@@ -176,6 +292,15 @@ function check(value, description) { assert(value, description); checks++; }
     await go(fallback); await open(fallback, 'baiyun');
     check(await fallback.locator('#leaf-copy').isVisible(), 'missing GSAP retains reading');
     await close(fallback); await fallback.close();
+
+    const noMotion = await page();
+    await noMotion.route('**/exploration-leaf-motion.js', route => route.abort());
+    await go(noMotion); await open(noMotion, 'pond');
+    check(await noMotion.locator('#leaf-copy').isVisible(), 'missing isolated motion module retains reading');
+    check(await noMotion.locator('#scene-leaf').evaluate(e => getComputedStyle(e).transform === 'none'), 'missing isolated motion module opens without partial transform');
+    await close(noMotion);
+    check(await noMotion.evaluate(() => !document.documentElement.classList.contains('leaf-is-open')), 'missing motion module still unlocks page on close');
+    await noMotion.close();
 
     const noArt = await page();
     await noArt.route('**/exploration-motion/*', route => /\.(webp|png|jpe?g|avif)(\?|$)/i.test(route.request().url()) ? route.abort() : route.continue());

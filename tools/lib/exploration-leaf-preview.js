@@ -2,7 +2,7 @@
 // A static-only sandbox for the visual study. No cloud adapter, credentials or mutable fixture.
 const http=require('node:http'),fs=require('node:fs/promises'),path=require('node:path');
 const root=path.resolve(__dirname,'../..');
-const files=new Set(['explore-leaf-demo.html','static/exploration-leaf-demo.css','static/exploration-leaf-demo.js','static/exploration-gilded-profiles.js','static/assets/gsap-3.15.0.min.js','static/assets/longcang-editorial-v1.woff2','static/assets/paper-fibres-soft-v1.webp','static/assets/exploration-motion/hhl-full-park-v2.webp']);
+const files=new Set(['explore-leaf-demo.html','static/exploration-leaf-demo.css','static/exploration-leaf-demo.js','static/exploration-leaf-motion.js','static/exploration-gilded-profiles.js','static/assets/gsap-3.15.0.min.js','static/assets/longcang-editorial-v1.woff2','static/assets/paper-fibres-soft-v1.webp','static/assets/exploration-motion/hhl-full-park-v2.webp']);
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.webp':'image/webp','.woff2':'font/woff2'};
 async function start(port=0){
   if(!Number.isInteger(port)||port<0||port>65535)throw Error('Invalid local port');
