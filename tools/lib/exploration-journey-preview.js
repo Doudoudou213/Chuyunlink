@@ -46,7 +46,7 @@ async function start(port=0){
     'static/exploration-readiness.js','static/exploration-readiness-admin.js','static/exploration-readiness.css','static/exploration-admin-simple.css',
     'static/exploration-admin-paper.js','static/exploration-admin-paper.css','static/assets/paper-fibres-soft-v1.webp',
     'static/exploration-journey-leaves.js','static/exploration-journey-leaves.css',
-    'static/exploration-leaf-motion.js','static/exploration-journey-theme.css',
+    'static/exploration-leaf-motion.js','static/exploration-journey-theme.css','static/exploration-journey-navigation.js',
     'explore.html','static/explore.css','static/explore-app.js','static/explore-state.js','static/explore-map.js','static/explore-motion.js','static/explore-media.js','static/explore-records.js',
     'static/guide-cloud.js','static/explore-transport.js','static/explore-assets-admin.js','static/explore-admin.js','static/site-walk-admin.js','static/site-walk-admin.css']);
   const token=crypto.randomBytes(24).toString('hex');

@@ -26,6 +26,9 @@
     return {resourceId,title:w.title,version:w.version,fingerprint:w.fingerprint,points,
       checkedAt:response.checkedAt,validUntil:response.validUntil,localTest:response.localTest===true||w.simulated===true};
   }
+  function canResume(data,raw,now=Date.now()){
+    return !!raw&&raw.fingerprint===data.fingerprint&&Number.isFinite(raw.updatedAt)&&now-raw.updatedAt<=7*86400000&&raw.updatedAt<=now+60000&&data.points.some(p=>p.id===raw.selected);
+  }
   function record(data,raw,now=Date.now()){
     const ids=data.points.map(p=>p.id);
     if(!raw||raw.fingerprint!==data.fingerprint||!Number.isFinite(raw.updatedAt)||now-raw.updatedAt>7*86400000||raw.updatedAt>now+60000)raw={};
@@ -48,5 +51,5 @@
       reading:{recorded:clean.observed.length,total:data.points.length},answers,
       scope:'自愿填写的阅读试用反馈；不代表实地到访、客流统计或景区验收。'};
   }
-  return {project,record,safeLink,feedback,trialReport};
+  return {project,record,canResume,safeLink,feedback,trialReport};
 });

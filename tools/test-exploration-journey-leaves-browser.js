@@ -28,7 +28,7 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     check(await p.locator('#audio').evaluate(e=>!!e.closest('dialog')),'one existing audio control moved with reading');
     check(await p.locator('#audio').count()===1,'no duplicate audio');
     check(await p.locator('#journey-leaf-title').evaluate(e=>document.activeElement===e),'heading focus');
-    await p.locator('.journey-leaf-return').focus();await p.keyboard.press('Tab');
+    await p.locator('#journey-leaf-next').focus();await p.keyboard.press('Tab');
     check(await p.evaluate(()=>document.querySelector('dialog').contains(document.activeElement)),'tab stays inside');
     await p.locator('#observe').evaluate(e=>e.focus());
     check(await p.evaluate(()=>document.querySelector('dialog').contains(document.activeElement)),'background inert');

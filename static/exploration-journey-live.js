@@ -7,8 +7,19 @@
   let data=null,record=null,generation=0,lightGeneration=0,renderer=null,ready=false,finished=false,storageOK=true;
   let drag=null,suppressedUntil=0,expiry=null,leaving=false;
   let entryPoint=new URLSearchParams(location.search).get('pointId'),feedbackBusy=false,fallbackRequest=0;
+  let continuation=0,continuingClose=false,resumeAvailable=false;
   const storageKey='chulink:journey-content:v1:'+resourceId;
+  const navigation=window.ChuJourneyNavigation?.create({
+    onLanded(){if(ready&&!document.hidden&&!leaving&&(new URLSearchParams(location.search).get('resourceId')||'yellow-crane-tower')===resourceId)rememberPosition();},
+    onBack(){continuation++;A.pause?.();leaves?.close();},
+    onTraverse(){continuation++;}
+  });
   const leaves=window.ChuJourneyLeaves?.create({
+    async beforeOpen(){
+      const intent=continuation,token=generation;
+      const settled=await navigation?.settled();
+      return settled!==false&&intent===continuation&&token===generation&&ready&&!document.hidden&&!leaving;
+    },
     async verify(id){
       if(!ready||document.hidden||leaving||(id==='trial-feedback')!==finished)return false;
       const token=generation,selected=record.selected,wasFinished=finished;
@@ -17,8 +28,12 @@
     },
     scene(){return ready&&shell.dataset.art==='true'?current()?.artScene:null;},
     origin(){return ready&&!finished?[...$('journey-points').children].find(el=>el.dataset.artPoint===record.selected):null;},
-    onOpen(){A.pause?.();renderer?.pause();},
-    onClosing(){A.pause?.();},
+    next(){const next=data?.points[data.points.indexOf(current())+1];return {last:!next,title:next?.title};},
+    onContinue:continueReading,
+    onShown(){navigation?.shown();},
+    onDismissed(){if(!continuingClose)continuation++;if(document.hidden||leaving)navigation?.invalidate();else navigation?.dismissed();},
+    onOpen(){hideResume();A.pause?.();renderer?.pause();},
+    onClosing({navigation:forNext}={}){if(!forNext)continuation++;A.pause?.();},
     onClose(){A.pause?.();if(ready&&!finished&&!document.hidden&&!leaving)renderer?.resume();}
   });
   function text(id,value){$(id).textContent=value;}
@@ -30,12 +45,14 @@
   function stopLight(){lightGeneration++;renderer?.destroy();renderer=null;canvas.hidden=true;}
   function quiet(){A.stop();stopLight();clearTimeout(expiry);}
   function gate(title,copy,retry=true){
+    continuation++;navigation?.invalidate();
     const wasReading=leaves?.isOpen();
     leaves?.dismiss({restoreFocus:false});
     fallbackRequest++;
     if(!leaves)for(const detail of document.querySelectorAll('.journal details')){detail.open=false;detail.querySelector('summary')?.removeAttribute('aria-busy');}
     ready=false;quiet();shell.setAttribute('aria-busy','false');
     $('content').hidden=true;$('finished').hidden=true;$('gate').hidden=false;
+    hideResume();text('resume-label','');
     text('gate-title',title);text('gate-copy',copy);$('retry').hidden=!retry;
     $('explore-tools').hidden=true;$('explore-tools').removeAttribute('href');
     // Hide and erase old public content, not just its visible container.
@@ -89,8 +106,13 @@
       const next=await fetchContent();if(token!==generation||document.hidden||leaving)return;
       if(data&&next.fingerprint!==data.fingerprint&&!acceptUpdate)throw Error('内容已换版，请重新读取。旧版拾记保留，不自动计入新版。');
       const changed=data&&next.fingerprint!==data.fingerprint;data=next;
-      record=C.record(data,loadSaved()[data.fingerprint]);ready=true;finished=false;
-      if(entryPoint&&data.points.some(p=>p.id===entryPoint))record.selected=entryPoint;
+      const saved=loadSaved()[data.fingerprint],position=history.state?.__chuJourneyPosition;
+      record=C.record(data,saved);ready=true;finished=false;resumeAvailable=C.canResume(data,saved);
+      // A real incoming deep link wins. A reload of our own old-version address does not.
+      const staleAddress=position?.resourceId===resourceId&&position.point===entryPoint&&position.fingerprint!==data.fingerprint;
+      if(entryPoint&&!staleAddress&&data.points.some(p=>p.id===entryPoint)){
+        record.selected=entryPoint;resumeAvailable=resumeAvailable&&saved.selected===entryPoint;
+      }
       entryPoint=null;
       shell.dataset.art=String(resourceId==='yellow-crane-tower'||data.localTest);
       text('painting-title',resourceId==='yellow-crane-tower'||data.localTest?'一卷黄鹤楼':data.title);
@@ -100,6 +122,15 @@
     }catch(error){if(token===generation)gate('这份导览暂不可用',error.message);}
   }
   function current(){return data.points.find(p=>p.id===record.selected);}
+  function hideResume(){resumeAvailable=false;$('journey-resume').hidden=true;}
+  function rememberPosition(){
+    // A selected point is a public reading address, never a visit or a content cache.
+    // Replace, do not push: Back should close a leaf, not replay every selected stop.
+    try{
+      const url=new URL(location.href);url.searchParams.set('pointId',record.selected);
+      history.replaceState({...history.state,__chuJourneyPosition:{resourceId,fingerprint:data.fingerprint,point:record.selected}},'',url);
+    }catch{/* History restrictions must not block the reading flow. */}
+  }
   async function light(point){
     stopLight();const token=lightGeneration,scene=point.artScene,profile=window.ChuParkGildedProfiles?.[scene];
     if(!profile||!window.ChuGildedReveal||shell.dataset.art!=='true')return;
@@ -117,6 +148,8 @@
     const point=current(),index=data.points.indexOf(point);
     $('explore-tools').href='./explore.html?resourceId='+encodeURIComponent(resourceId)+'&pointId='+encodeURIComponent(point.id);$('explore-tools').hidden=false;
     $('gate').hidden=true;$('content').hidden=finished;$('finished').hidden=!finished;
+    $('journey-resume').hidden=!resumeAvailable||finished;
+    text('resume-label',resumeAvailable?'上次读到 · '+point.title:'');
     $('journey-points').replaceChildren();$('journey-stops').replaceChildren();
     if(finished){quiet();armExpiry();souvenir();return;}
     text('position','第 '+(index+1)+' 景 / 共 '+data.points.length+' 景');
@@ -145,9 +178,33 @@
     const token=generation;A.mount($('audio'),point,()=>verify(token));light(point);
   }
   async function transition(fn){
-    if(!ready)return;leaves?.dismiss({restoreFocus:false});const token=++generation;A.stop();stopLight();
-    try{await verify(token);if(token!==generation)return;fn();text('status','');persist();render();(finished?$('finished-title'):$('point-title')).focus({preventScroll:true});return token;}
+    if(!ready)return;continuation++;hideResume();leaves?.dismiss({restoreFocus:false});const intent=continuation,token=++generation;A.stop();stopLight();
+    try{
+      const settled=await navigation?.settled();
+      if(settled===false||token!==generation||intent!==continuation)return;
+      await verify(token);if(token!==generation||intent!==continuation)return;
+      fn();rememberPosition();text('status','');persist();render();(finished?$('finished-title'):$('point-title')).focus({preventScroll:true});return token;
+    }
     catch{/* verify has already removed stale content. */}
+  }
+  async function continueReading(){
+    if(!ready||finished||!leaves?.isOpen())return;
+    const intent=++continuation,token=generation,selected=record.selected;
+    const valid=()=>intent===continuation&&token===generation&&ready&&!finished&&!document.hidden&&!leaving&&record.selected===selected;
+    // Keep the current close control available while the next public version is checked.
+    try{await verify(token);}catch{return;}
+    if(!valid())return;
+    let closed=false;
+    continuingClose=true;
+    try{closed=await leaves.closeForNavigation();if(closed&&(await navigation?.settled())===false)closed=false;}
+    finally{continuingClose=false;}
+    if(!closed||!valid())return;
+    const next=data.points[data.points.indexOf(current())+1];
+    generation++;hideResume();A.stop();stopLight();
+    if(next)record.selected=next.id;else finished=true;
+    rememberPosition();text('status','');persist();render();
+    (finished?$('finished-title'):$('point-title')).focus({preventScroll:true});
+    if(next)await leaves.open('reading',{originElement:$('reading').querySelector('button')});
   }
   async function select(id,from){
     if(!data?.points.some(p=>p.id===id))return;
@@ -210,6 +267,10 @@
     restoreFeedback();text('trial-status','已清空本机反馈。已下载的文件需自行删除。');
   };
   $('retry').onclick=()=>load(true);$('refresh').onclick=()=>load(false);
+  $('continue-journey').onclick=()=>{
+    if(!ready||finished)return;hideResume();
+    if(leaves)leaves.open('reading',{originElement:$('reading').querySelector('button')});else openFallback('reading');
+  };
   $('previous').onclick=()=>select(data.points[Math.max(0,data.points.indexOf(current())-1)].id);
   $('next').onclick=()=>{if(!ready)return;const next=data.points[data.points.indexOf(current())+1];if(next)select(next.id);};
   $('observe').onclick=()=>transition(()=>{
@@ -252,7 +313,7 @@
   for(const name of ['pointerup','pointercancel','lostpointercapture'])stage.addEventListener(name,()=>{if(drag?.moved)suppressedUntil=performance.now()+350;drag=null;});
   stage.onkeydown=e=>{if(e.target!==stage)return;const x={ArrowLeft:-80,ArrowRight:80}[e.key];if(x){e.preventDefault();stage.scrollBy(x,0);}};
   document.addEventListener('visibilitychange',()=>{if(document.hidden){generation++;gate('暂歇，留住这一页','回到页面后会重新核对资料。',false);}else load(false);});
-  addEventListener('pagehide',()=>{leaving=true;generation++;leaves?.dismiss({restoreFocus:false});quiet();});
+  addEventListener('pagehide',()=>{leaving=true;generation++;continuation++;navigation?.invalidate();leaves?.dismiss({restoreFocus:false});quiet();});
   addEventListener('pageshow',e=>{if(e.persisted){leaving=false;load(false);}});
   setInterval(()=>{if(ready&&!document.hidden&&!leaving)verify().catch(()=>{});},30000);
   load();

@@ -18,6 +18,7 @@
   <script defer src="static/exploration-journey-audio.js"></script>
   <script defer src="static/exploration-leaf-motion.js"></script>
   <script defer src="static/exploration-journey-leaves.js"></script>
+  <script defer src="static/exploration-journey-navigation.js"></script>
   <script defer src="static/exploration-journey-live.js"></script>
 </head>
 <body class="scenic-journey">
@@ -39,6 +40,7 @@
         <button id="retry" class="primary" hidden>重新读取 →</button>
       </div>
       <div id="content" hidden>
+        <div id="journey-resume" hidden><span id="resume-label"></span><button type="button" id="continue-journey" class="quiet">继续游览 <span aria-hidden="true">→</span></button></div>
         <div class="section-top"><p id="position" class="overline"></p><button id="refresh" class="quiet">检查更新</button></div>
         <h2 id="point-title" tabindex="-1"></h2>
         <nav id="journey-stops" aria-label="按已发布顺序阅读"></nav>
@@ -53,7 +55,7 @@
         <div class="journal-secondary">
           <details id="journey-help" class="journey-help"><summary>读卷说明</summary>
             <p>点画中景物，或景物名称，先看观察提示，再读讲解与出处。音频由你手动开启。</p>
-            <p>用“上一景”“下一景”自由阅读；想留下这一处观察，再点“记下这一景”。收卷后可以留一句感受。</p>
+            <p>纸页底部可直接看下一景，最后一景可以收卷留念。想留下这一处观察，再点“记下这一景”。</p>
             <p>阅读进度与拾记仅在本机保留七天，不用注册，不记录位置。记下阅读不认证到访，也不发放积分。</p>
             <p>画中位置只帮助认图，不判断你在哪里，也不指示实际道路。实地行走请以景区标识和工作人员指引为准。</p>
             <a id="explore-tools" class="quiet" hidden>打开探索工具 →</a>

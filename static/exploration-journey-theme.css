@@ -74,6 +74,10 @@
 }
 .scenic-journey .journal > :not(dialog) { position: relative; }
 .scenic-journey .journal .section-top { min-height: 44px; }
+.scenic-journey #journey-resume { display: flex; align-items: center; gap: 12px; margin: -4px 0 12px; padding: 0 0 10px; border-bottom: 1px solid var(--rule); }
+.scenic-journey #journey-resume[hidden] { display: none; }
+.scenic-journey #resume-label { flex: 1; min-width: 0; color: var(--muted); font: 12px/1.8 var(--utility); overflow-wrap: anywhere; }
+.scenic-journey #journey-resume #continue-journey { flex: none; color: var(--rust); padding-inline: 0; font-size: 13px; }
 .scenic-journey .journal #point-title { margin: 5px 0 18px; font: 36px/1.4 var(--brush); letter-spacing: .06em; }
 .scenic-journey .journal .overline { font: 11px/1.7 var(--utility); letter-spacing: .08em; }
 .scenic-journey .journal #journey-stops { gap: 0 10px; margin-bottom: 22px; border-color: var(--rule); }
