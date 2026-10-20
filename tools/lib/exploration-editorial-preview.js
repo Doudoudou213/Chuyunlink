@@ -32,11 +32,45 @@ function validateDraft(draft) {
   }
   return draft;
 }
+function validateInquiries(inquiries, draft) {
+  const fail = () => {throw Error('待审问景必须逐段绑定本景已有事实与来源');};
+  const keys = (value, expected) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(key => expected.includes(key));
+  const unique = values => new Set(values).size === values.length;
+  const safeId = value => typeof value === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(value);
+  if (!keys(inquiries, ['schemaVersion','mode','publishAllowed','points']) || inquiries.schemaVersion !== 1 ||
+    inquiries.mode !== 'editorial-excerpts' || inquiries.publishAllowed !== false || !Array.isArray(inquiries.points) ||
+    inquiries.points.length !== draft.points.length || inquiries.points.length > 4 || !unique(inquiries.points.map(point => point?.pointId)) ||
+    JSON.stringify(inquiries).length > 16000) fail();
+  const ids = new Set();
+  for (const entry of inquiries.points) {
+    const point = draft.points.find(point => point.id === entry?.pointId);
+    if (!keys(entry, ['pointId','questions']) || !point || !Array.isArray(entry.questions) || entry.questions.length !== 2 ||
+      !unique(entry.questions.map(question => question?.label))) fail();
+    for (const question of entry.questions) {
+      if (!keys(question, ['id','label','paragraphs']) || !safeId(question.id) || ids.has(question.id) || !string(question.label) ||
+        question.label.length > 80 || /[<>\u0000-\u001f\u007f]/.test(question.label) ||
+        !Array.isArray(question.paragraphs) || !question.paragraphs.length || question.paragraphs.length > 2 ||
+        !unique(question.paragraphs.map(paragraph => paragraph?.index))) fail();
+      ids.add(question.id);
+      for (const selection of question.paragraphs) {
+        if (!keys(selection, ['index','sourceIndexes']) || !Number.isInteger(selection.index) || selection.index < 0 ||
+          selection.index >= point.paragraphs.length || !Array.isArray(selection.sourceIndexes) || !selection.sourceIndexes.length ||
+          !unique(selection.sourceIndexes) || selection.sourceIndexes.some(index => !Number.isInteger(index) || index < 0 || index >= point.sources.length)) fail();
+        const sourceIds = new Set(point.claims.filter(claim => claim.paragraphs.includes(selection.index)).flatMap(claim => claim.sourceIds));
+        const expected = point.sources.flatMap((source, index) => sourceIds.has(source.id) ? [index] : []);
+        // Exact source union, not merely any valid source belonging to this scene.
+        if (!expected.length || expected.length !== selection.sourceIndexes.length || !expected.every(index => selection.sourceIndexes.includes(index))) fail();
+      }
+    }
+  }
+  return inquiries;
+}
 function createEditorialPreview(options) {
-  const {draft, resourceId, pagePath, endpoint, noticeTitle, walkTitle, link, single = false, themes = false, fingerprintSource = draft} = options;
+  const {draft, resourceId, pagePath, endpoint, noticeTitle, walkTitle, link, single = false, themes = false, fingerprintSource = draft, inquiries = null} = options;
   if (!/^[a-z0-9-]+$/.test(resourceId) || !/^\/[a-z0-9-]+\.html$/.test(pagePath) || !/^\/__[a-z0-9-]+$/.test(endpoint) ||
     !/^http:\/\/127\.0\.0\.1:\d{4,5}\/[a-z0-9-]+\.html\?resourceId=[a-z0-9-]+$/.test(link?.url || '')) throw Error('本地样章配置不合法');
   validateDraft(draft);
+  if (inquiries) validateInquiries(inquiries, draft);
   const html = fs.readFileSync(path.join(root, 'explore-journey.html'), 'utf8');
   const assets = new Set([...html.matchAll(/(?:src|href)="(static\/[^"?#]+)"/g)].map(match => '/' + match[1]));
   assets.delete('/static/guide-cloud.js');
@@ -75,7 +109,15 @@ function createEditorialPreview(options) {
   function response(now = Date.now()) {
     validateDraft(draft);
     const fingerprint = crypto.createHash('sha256').update(JSON.stringify(fingerprintSource)).digest('hex');
+    if (inquiries) validateInquiries(inquiries, draft);
+    // Questions have their own revision: edits invalidate excerpts without
+    // throwing away the existing version-bound reading position.
+    const editorialInquiries = inquiries ? {
+      ...structuredClone(inquiries), resourceId, fingerprint,
+      revision:crypto.createHash('sha256').update(JSON.stringify([fingerprint, inquiries])).digest('hex')
+    } : null;
     return {ok:true, available:true, localTest:true, checkedAt:new Date(now).toISOString(), validUntil:new Date(now + 3600000).toISOString(),
+      ...(editorialInquiries ? {editorialInquiries} : {}),
       walk:{resourceId, version:1, fingerprint, simulated:true, title:walkTitle, points:draft.points.map(point => ({
         id:point.id, title:point.title, text:point.observation, reading:point.paragraphs.join('\n\n'),
         locator:'只看艺术画稿；尚无现场观察站位',
@@ -86,6 +128,7 @@ function createEditorialPreview(options) {
   }
   async function start(port = 0, settings = {}) {
     validateDraft(draft);
+    if (inquiries) validateInquiries(inquiries, draft);
     const preparedHTML = prepareHTML(settings.html === undefined ? html : settings.html);
     const server = http.createServer((req, res) => {
       res.setHeader('Cache-Control', 'no-store');res.setHeader('X-Content-Type-Options', 'nosniff');res.setHeader('Referrer-Policy', 'no-referrer');
@@ -117,4 +160,4 @@ function createEditorialPreview(options) {
   }
   return {response, start};
 }
-module.exports = {createEditorialPreview, validateDraft};
+module.exports = {createEditorialPreview, validateDraft, validateInquiries};

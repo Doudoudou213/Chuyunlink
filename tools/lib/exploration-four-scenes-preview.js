@@ -2,9 +2,10 @@
 // Four editorial chapters, not four published guide records or a walking route.
 const {createEditorialPreview} = require('./exploration-editorial-preview');
 const draft = require('../fixtures/four-scenes-study.json');
+const inquiries = require('../fixtures/four-scenes-inquiries.json');
 const resourceId = 'hhl-four-scenes-study';
 const preview = createEditorialPreview({
-  draft, resourceId, pagePath:'/four-scenes.html', endpoint:'/__four-scenes', themes:true,
+  draft, inquiries, resourceId, pagePath:'/four-scenes.html', endpoint:'/__four-scenes', themes:true,
   noticeTitle:'四景叙事审阅样章', walkTitle:'黄鹤楼 · ' + draft.title + '（待审样章）',
   link:{url:'http://127.0.0.1:4220/tower-study.html?resourceId=hhl-tower-study', title:'第一阶段主楼样章'}
 });

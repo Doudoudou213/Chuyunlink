@@ -61,7 +61,9 @@
     "preview:exploration:four-scenes": "node tools/lib/exploration-four-scenes-preview.js 4221",
     "test:exploration:four-scenes": "node tools/test-exploration-four-scenes.js",
     "test:exploration:four-scenes:browser": "node tools/test-exploration-four-scenes-browser.js",
-    "test:exploration:journey-comfort": "node tools/test-exploration-journey-comfort-browser.js"
+    "test:exploration:journey-comfort": "node tools/test-exploration-journey-comfort-browser.js",
+    "test:exploration:journey-inquiry": "node tools/test-exploration-journey-inquiries.js",
+    "test:exploration:journey-inquiry:browser": "node tools/test-exploration-journey-inquiry-browser.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
