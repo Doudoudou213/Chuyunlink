@@ -9,6 +9,12 @@
   let entryPoint=new URLSearchParams(location.search).get('pointId'),feedbackBusy=false,fallbackRequest=0;
   let continuation=0,continuingClose=false,resumeAvailable=false;
   const storageKey='chulink:journey-content:v1:'+resourceId;
+  const study=window.ChuJourneyStudy?.create($('journey-study'),{async verify(){
+    if(!ready||finished||document.hidden||leaving)return false;
+    const token=generation,selected=record.selected;
+    await verify(token);
+    return token===generation&&ready&&!finished&&!document.hidden&&!leaving&&record.selected===selected;
+  }});
   const navigation=window.ChuJourneyNavigation?.create({
     onLanded(){if(ready&&!document.hidden&&!leaving&&(new URLSearchParams(location.search).get('resourceId')||'yellow-crane-tower')===resourceId)rememberPosition();},
     onBack(){continuation++;A.pause?.();leaves?.close();},
@@ -32,9 +38,9 @@
     onContinue:continueReading,
     onShown(){navigation?.shown();},
     onDismissed(){if(!continuingClose)continuation++;if(document.hidden||leaving)navigation?.invalidate();else navigation?.dismissed();},
-    onOpen(){hideResume();A.pause?.();renderer?.pause();},
-    onClosing({navigation:forNext}={}){if(!forNext)continuation++;A.pause?.();},
-    onClose(){A.pause?.();if(ready&&!finished&&!document.hidden&&!leaving)renderer?.resume();}
+    onOpen(){hideResume();study?.reset();A.pause?.();renderer?.pause();},
+    onClosing({navigation:forNext}={}){if(!forNext)continuation++;study?.pause();A.pause?.();},
+    onClose(){study?.reset();A.pause?.();if(ready&&!finished&&!document.hidden&&!leaving)renderer?.resume();}
   });
   function text(id,value){$(id).textContent=value;}
   function button(label,fn,attrs={}){
@@ -51,6 +57,7 @@
     fallbackRequest++;
     if(!leaves)for(const detail of document.querySelectorAll('.journal details')){detail.open=false;detail.querySelector('summary')?.removeAttribute('aria-busy');}
     ready=false;quiet();shell.setAttribute('aria-busy','false');
+    study?.clear();
     $('content').hidden=true;$('finished').hidden=true;$('gate').hidden=false;
     hideResume();text('resume-label','');
     text('gate-title',title);text('gate-copy',copy);$('retry').hidden=!retry;
@@ -151,9 +158,10 @@
     $('journey-resume').hidden=!resumeAvailable||finished;
     text('resume-label',resumeAvailable?'上次读到 · '+point.title:'');
     $('journey-points').replaceChildren();$('journey-stops').replaceChildren();
-    if(finished){quiet();armExpiry();souvenir();return;}
+    if(finished){study?.clear();quiet();armExpiry();souvenir();return;}
     text('position','第 '+(index+1)+' 景 / 共 '+data.points.length+' 景');
     text('point-title',point.title);text('observation',point.observation);text('reading-copy',point.reading);
+    study?.mount(point,shell.dataset.art==='true');
     text('binding-note',point.artScene?'':'这一处尚未绑定原画位置，先阅读已公开的文字。');
     $('reading').open=false;$('sources').open=false;$('source-list').replaceChildren();
     for(const source of point.sources){
@@ -164,7 +172,7 @@
       $('source-list').append(article);
     }
     const date=value=>new Date(value).toLocaleString('zh-CN',{hour12:false});
-    text('review-date','资料核对：'+date(data.checkedAt)+'；复核有效至：'+date(data.validUntil)+'。不是实时开放或客流信息。');
+    text('review-date',data.localTest?'本地演示有效至：'+date(data.validUntil)+'。此期限仅控制预览，不代表正式审核、现场核对或资料授权。':'资料核对：'+date(data.checkedAt)+'；复核有效至：'+date(data.validUntil)+'。不是实时开放或客流信息。');
     for(const p of data.points){
       $('journey-stops').append(button(p.title,()=>select(p.id,'list'),{'aria-current':p.id===point.id?'step':'false','data-recorded':record.observed.includes(p.id),'data-stop':p.id}));
       if(p.artScene&&anchors[p.artScene]){
@@ -298,7 +306,7 @@
       summary.addEventListener('click',event=>{
         event.preventDefault();
         if(detail.open||summary.getAttribute('aria-busy')==='true'){
-          fallbackRequest++;detail.open=false;summary.removeAttribute('aria-busy');A.pause?.();
+          fallbackRequest++;detail.open=false;summary.removeAttribute('aria-busy');study?.reset();A.pause?.();
         }else openFallback(id);
       });
     }

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="static/exploration-journey-live.css">
   <link rel="stylesheet" href="static/exploration-journey-leaves.css">
   <link rel="stylesheet" href="static/exploration-journey-theme.css">
+  <link rel="stylesheet" href="static/exploration-journey-study.css">
   <!-- journey-local-adapter -->
   <script defer src="static/assets/gsap-3.15.0.min.js"></script>
   <script defer src="static/exploration-gilded-profiles.js"></script>
@@ -19,6 +20,7 @@
   <script defer src="static/exploration-leaf-motion.js"></script>
   <script defer src="static/exploration-journey-leaves.js"></script>
   <script defer src="static/exploration-journey-navigation.js"></script>
+  <script defer src="static/exploration-journey-study.js"></script>
   <script defer src="static/exploration-journey-live.js"></script>
 </head>
 <body class="scenic-journey">
@@ -48,7 +50,7 @@
         <p id="binding-note" class="fine"></p>
         <section id="audio" class="audio-reading" aria-label="手动播放讲解"></section>
         <div class="reading-actions">
-          <details id="reading"><summary>读这一景</summary><p id="reading-copy"></p></details>
+          <details id="reading"><summary>读这一景</summary><section id="journey-study" class="journey-study" aria-label="原画细节观察" hidden></section><p id="reading-copy"></p></details>
           <details id="sources" class="source-details"><summary>出处</summary><div id="source-list"></div><p id="review-date" class="fine"></p></details>
         </div>
         <div class="step-actions journey-paging"><button id="previous" class="quiet">上一景</button><button id="next" class="primary">下一景 →</button><button id="observe" class="quiet">记下这一景</button></div>

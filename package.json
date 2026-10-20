@@ -53,9 +53,11 @@
     "test:exploration:admin-paper": "node tools/test-exploration-admin-paper-browser.js",
     "test:exploration:journey-leaves": "node tools/test-exploration-journey-leaves-browser.js",
     "test:exploration:journey-continuation": "node tools/test-exploration-journey-continuation-browser.js",
+    "test:exploration:journey-study": "node tools/test-exploration-journey-study-browser.js",
     "test:exploration:leaf-demo": "node tools/test-exploration-leaf-demo-browser.js",
     "preview:exploration:leaf-demo": "node tools/lib/exploration-leaf-preview.js 4219",
-    "preview:exploration:journey-live": "node tools/lib/exploration-journey-preview.js 4218"
+    "preview:exploration:journey-live": "node tools/lib/exploration-journey-preview.js 4218",
+    "preview:exploration:tower-study": "node tools/lib/exploration-tower-study-preview.js 4220"
   },
   "dependencies": {
     "cors": "^2.8.6",
