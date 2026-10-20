@@ -84,12 +84,28 @@ function check(value, name) {assert(value, name);checks++;}
     check(await studyButton(p).getAttribute('aria-pressed')==='true','keyboard operates detail');
     await p.locator('#journey-leaf-next').click();
     await p.waitForFunction(()=>document.querySelector('#journey-leaf-dialog').dataset.state==='open'&&document.querySelector('#journey-leaf-title').textContent==='古铜顶');
-    check(await p.locator('#journey-study').isHidden(),'next non-tower scene has no tower study');
-    check(await p.locator('#journey-study').textContent()==='','next scene erases old study nodes');
+    check(await p.locator('#journey-study').isVisible(),'next copper scene has its own original-art study');
+    check(await p.locator('#journey-study').getAttribute('data-scene')==='copper','next scene replaces tower binding with copper');
+    check(await p.locator('#journey-study').getAttribute('data-detail')==='whole','next scene resets tower detail pose');
+    check(await p.locator('#journey-study svg').getAttribute('viewBox')==='580 188 160 160','copper window uses its own original-art crop');
+    check(await p.locator('.journey-study-lines path').count()===3,'copper has only its own registered contours');
+    check(!(await p.locator('#journey-study').textContent()).includes('层檐'),'old tower caption never remains in copper study');
+    // This older fake database deliberately gives each point the same generic
+    // non-historical copy. Compare the copper response, not a false text difference.
+    check(await p.evaluate(async()=>{
+      const response=await ExploreTransport.call({action:'getSiteExploration',resourceId:'r'});
+      const point=response.walk.points.find(item=>item.id==='copper');
+      return document.querySelector('#reading-copy').textContent===(point.reading||point.text);
+    }),'next scene uses its matching public copper response');
+    check(await p.evaluate(()=>[...document.querySelectorAll('.journey-study-lines path')].every((node,i)=>node.getAttribute('d')===ChuParkGildedProfiles.copper.contours[ChuJourneyStudyScenes.copper.contours[i]].points.map((p,j)=>(j?'L':'M')+p.join(' ')).join(' '))),'copper paths exactly match its registered source profile');
     await close(p);
     for(const scene of ['baiyun','pond']) {
       await p.locator('[data-stop='+scene+']').click();await p.locator('#journey-leaf-dialog[data-state=open][aria-busy=false]').waitFor();
-      check(await p.locator('#journey-study').isHidden(),scene+' has no guessed tower study');await close(p);
+      check(await p.locator('#journey-study').isVisible(),scene+' has an explicit original-art study');
+      check(await p.locator('#journey-study').getAttribute('data-scene')===scene,scene+' replaces previous scene binding');
+      check(await p.evaluate(id=>document.querySelector('#journey-study svg').getAttribute('viewBox')===ChuJourneyStudyScenes[id].viewBox.join(' '),scene),scene+' uses its own crop');
+      check(await p.evaluate(id=>[...document.querySelectorAll('.journey-study-lines path')].every((node,i)=>node.getAttribute('d')===ChuParkGildedProfiles[id].contours[ChuJourneyStudyScenes[id].contours[i]].points.map((p,j)=>(j?'L':'M')+p.join(' ')).join(' ')),scene),scene+' has only its own registered contours');
+      check(!(await p.locator('#journey-study').textContent()).includes('从一处层檐看起'),scene+' has no old tower caption');await close(p);
     }
     await p.close();
 
@@ -115,11 +131,11 @@ function check(value, name) {assert(value, name);checks++;}
     await reduced.emulateMedia({reducedMotion:'reduce'});
     check(await reduced.locator('.journey-study-art').evaluate(e=>!gsap.isTweening(e)&&!e.style.willChange),'motion preference change settles active detail');await reduced.close();
 
-    for(const missing of ['exploration-journey-study.js','gsap-3.15.0.min.js','hhl-full-park-v2.webp']) {
+    for(const missing of ['exploration-journey-study.js','exploration-journey-study-scenes.js','gsap-3.15.0.min.js','hhl-full-park-v2.webp']) {
       const q=await page();await q.route('**/'+missing,route=>route.abort());await go(q);await open(q);
       check(await q.locator('#reading-copy').isVisible(),'missing '+missing+' preserves reading');
       check(await q.locator('#journey-leaf-next').isEnabled(),'missing '+missing+' preserves next');
-      if(missing==='exploration-journey-study.js')check(await q.locator('#journey-study').isHidden(),'missing study script stays empty');
+      if(missing==='exploration-journey-study.js'||missing==='exploration-journey-study-scenes.js')check(await q.locator('#journey-study').isHidden(),'missing study script/config stays empty: '+missing);
       else if(missing==='gsap-3.15.0.min.js'){
         await studyButton(q).click();await q.waitForFunction(()=>document.querySelector('#journey-study').dataset.detail==='eaves');
         check(await q.locator('.journey-study-art').evaluate(e=>new DOMMatrixReadOnly(getComputedStyle(e).transform).a>1.4),'no GSAP has static detail fallback');

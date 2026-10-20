@@ -224,6 +224,7 @@ try {
         (Join-Path $staticDirectory 'exploration-journey-theme.css'),
         (Join-Path $staticDirectory 'exploration-journey-navigation.js'),
         (Join-Path $staticDirectory 'exploration-journey-study.js'),
+        (Join-Path $staticDirectory 'exploration-journey-study-scenes.js'),
         (Join-Path $staticDirectory 'exploration-journey-study.css'),
         (Join-Path $staticDirectory 'explore-admin.js'),
         (Join-Path $staticDirectory 'explore-media.js'),
