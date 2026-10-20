@@ -51,6 +51,7 @@ async function start(port=0){
     'static/exploration-journey-study-scenes.js',
     'static/exploration-journey-comfort.js','static/exploration-journey-comfort.css',
     'static/exploration-journey-inquiry.js','static/exploration-journey-inquiry-data.js','static/exploration-journey-inquiry.css',
+    'static/exploration-journey-question.js','static/exploration-journey-question-state.js','static/exploration-journey-question-data.js','static/exploration-journey-question.css',
     'explore.html','static/explore.css','static/explore-app.js','static/explore-state.js','static/explore-map.js','static/explore-motion.js','static/explore-media.js','static/explore-records.js',
     'static/guide-cloud.js','static/explore-transport.js','static/explore-assets-admin.js','static/explore-admin.js','static/site-walk-admin.js','static/site-walk-admin.css']);
   const token=crypto.randomBytes(24).toString('hex');

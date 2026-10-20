@@ -15,6 +15,12 @@ async function evidence(db,resourceId,objectId){
 }
 function createExplorationQuestionService({db,config,client,clock}){
  const base=config||configFromEnv();const scopedConfig=config||{...base,mode:process.env.EXPLORATION_QA_ENABLED==='true'?base.mode:'off'};
- return {async ask(e,uid){const objectId=C.id(e.objectId);const qa=createGuideQuestionService({db,config:scopedConfig,...(client?{client}:{}),...(clock?{clock}:{}),evidenceLoader:(d,id)=>evidence(d,id,objectId)});const r=await qa.ask(e,uid);return {...r,objectId};}};
+ function scoped(e){const objectId=C.id(e.objectId);const qa=createGuideQuestionService({db,config:scopedConfig,...(client?{client}:{}),...(clock?{clock}:{}),evidenceLoader:(d,id)=>evidence(d,id,objectId)});return {objectId,qa};}
+ return {
+  // Public read only: use the same object-scoped evidence and consent checks as
+  // ask(), without reserving quota or calling a provider.
+  async context(e){const {objectId,qa}=scoped(e);return {...await qa.context(e),objectId};},
+  async ask(e,uid){const {objectId,qa}=scoped(e);return {...await qa.ask(e,uid),objectId};}
+ };
 }
 module.exports={evidence,createExplorationQuestionService};

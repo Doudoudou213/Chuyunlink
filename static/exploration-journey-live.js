@@ -26,6 +26,15 @@
     },
     onEnter(){study?.pause();A.pause?.();}
   });
+  const question=window.ChuJourneyQuestion?.create($('journey-question'),{
+    async verify(){
+      if(!ready||finished||document.hidden||leaving)return null;
+      const token=generation,selected=record.selected;
+      await verify(token);
+      return token===generation&&ready&&!finished&&!document.hidden&&!leaving&&record.selected===selected?data.questionScopes?.[selected]||null:null;
+    },
+    onEnter(){study?.pause();A.pause?.();}
+  });
   const navigation=window.ChuJourneyNavigation?.create({
     onLanded(){if(ready&&!document.hidden&&!leaving&&(new URLSearchParams(location.search).get('resourceId')||'yellow-crane-tower')===resourceId)rememberPosition();},
     onBack(){continuation++;A.pause?.();leaves?.close();},
@@ -49,9 +58,9 @@
     onContinue:continueReading,
     onShown(){navigation?.shown();},
     onDismissed(){if(!continuingClose)continuation++;if(document.hidden||leaving)navigation?.invalidate();else navigation?.dismissed();},
-    onOpen(){hideResume();inquiry?.reset();study?.reset();A.pause?.();renderer?.pause();},
-    onClosing({navigation:forNext}={}){if(!forNext)continuation++;inquiry?.cancel();study?.pause();A.pause?.();},
-    onClose(){inquiry?.reset();study?.reset();A.pause?.();if(ready&&!finished&&!document.hidden&&!leaving)renderer?.resume();}
+    onOpen(){hideResume();inquiry?.reset();question?.reset();study?.reset();A.pause?.();renderer?.pause();},
+    onClosing({navigation:forNext}={}){if(!forNext)continuation++;inquiry?.cancel();question?.cancel();study?.pause();A.pause?.();},
+    onClose(){inquiry?.reset();question?.reset();study?.reset();A.pause?.();if(ready&&!finished&&!document.hidden&&!leaving)renderer?.resume();}
   });
   function text(id,value){$(id).textContent=value;}
   function button(label,fn,attrs={}){
@@ -68,7 +77,7 @@
     fallbackRequest++;
     if(!leaves)for(const detail of document.querySelectorAll('.journal details')){detail.open=false;detail.querySelector('summary')?.removeAttribute('aria-busy');}
     ready=false;quiet();shell.setAttribute('aria-busy','false');
-    study?.clear();inquiry?.clear();
+    study?.clear();inquiry?.clear();question?.clear();
     $('content').hidden=true;$('finished').hidden=true;$('gate').hidden=false;
     hideResume();text('resume-label','');
     text('gate-title',title);text('gate-copy',copy);$('retry').hidden=!retry;
@@ -103,6 +112,7 @@
       const next=C.project(result,resourceId);
       next.inquiries=window.ChuJourneyInquiryData?.project(result,next)||null;
       next.inquiryRevision=window.ChuJourneyInquiryData?.revision(result,next)||null;
+      next.questionScopes=next.inquiries?null:window.ChuJourneyQuestionData?.binding(result,next)||null;
       return next;
     }finally{clearTimeout(timer);}
   }
@@ -120,7 +130,7 @@
       // roll back an already accepted capability or its independent revision.
       if(request<acceptedVerification)return data;
       if(!data||next.fingerprint!==data.fingerprint)throw Error('内容已换版，请重新读取。原版拾记留在本机，不会自动计入新版。');
-      acceptedVerification=request;data=next;armExpiry();inquiry?.reconcile(data.inquiries?.[record?.selected]);return next;
+      acceptedVerification=request;data=next;armExpiry();inquiry?.reconcile(data.inquiries?.[record?.selected]);question?.reconcile(data.questionScopes?.[record?.selected]);return next;
     }catch(error){
       if(token===generation&&!leaving&&!document.hidden&&request<acceptedVerification)return data;
       if(token===generation){generation++;gate('先停一停，核对这一卷',error.message);}throw error;
@@ -182,11 +192,12 @@
     $('journey-resume').hidden=!resumeAvailable||finished;
     text('resume-label',resumeAvailable?'上次读到 · '+point.title:'');
     $('journey-points').replaceChildren();$('journey-stops').replaceChildren();
-    if(finished){study?.clear();inquiry?.clear();quiet();armExpiry();souvenir();return;}
+    if(finished){study?.clear();inquiry?.clear();question?.clear();quiet();armExpiry();souvenir();return;}
     text('position','第 '+(index+1)+' 景 / 共 '+data.points.length+' 景');
     text('point-title',point.title);text('observation',point.observation);text('reading-copy',point.reading);
     study?.mount(point,shell.dataset.art==='true');
     inquiry?.mount(data.inquiries?.[point.id]);
+    question?.mount(data.questionScopes?.[point.id]);
     text('binding-note',point.artScene?'':'这一处尚未绑定原画位置，先阅读已公开的文字。');
     $('reading').open=false;$('sources').open=false;$('source-list').replaceChildren();
     for(const source of point.sources){
@@ -331,7 +342,7 @@
       summary.addEventListener('click',event=>{
         event.preventDefault();
         if(detail.open||summary.getAttribute('aria-busy')==='true'){
-          fallbackRequest++;detail.open=false;summary.removeAttribute('aria-busy');inquiry?.reset();study?.reset();A.pause?.();
+          fallbackRequest++;detail.open=false;summary.removeAttribute('aria-busy');inquiry?.reset();question?.reset();study?.reset();A.pause?.();
         }else openFallback(id);
       });
     }
@@ -353,6 +364,6 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden){generation++;gate('暂歇，留住这一页','回到页面后会重新核对资料。',false);}else load(false);});
   addEventListener('pagehide',()=>{leaving=true;generation++;continuation++;navigation?.invalidate();leaves?.dismiss({restoreFocus:false});quiet();});
   addEventListener('pageshow',e=>{if(e.persisted){leaving=false;load(false);}});
-  setInterval(()=>{if(ready&&!document.hidden&&!leaving)verify().catch(()=>{});},30000);
+  setInterval(()=>{if(ready&&!document.hidden&&!leaving)verify().then(()=>question?.revalidate()).catch(()=>{});},30000);
   load();
 })();

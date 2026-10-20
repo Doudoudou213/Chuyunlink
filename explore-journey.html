@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="static/exploration-journey-study.css">
   <link rel="stylesheet" href="static/exploration-journey-comfort.css">
   <link rel="stylesheet" href="static/exploration-journey-inquiry.css">
+  <link rel="stylesheet" href="static/exploration-journey-question.css">
   <!-- journey-local-adapter -->
   <script defer src="static/assets/gsap-3.15.0.min.js"></script>
   <script defer src="static/exploration-gilded-profiles.js"></script>
@@ -27,6 +28,9 @@
   <script defer src="static/exploration-journey-comfort.js"></script>
   <script defer src="static/exploration-journey-inquiry-data.js"></script>
   <script defer src="static/exploration-journey-inquiry.js"></script>
+  <script defer src="static/exploration-journey-question-data.js"></script>
+  <script defer src="static/exploration-journey-question-state.js"></script>
+  <script defer src="static/exploration-journey-question.js"></script>
   <script defer src="static/exploration-journey-live.js"></script>
 </head>
 <body class="scenic-journey">
@@ -57,7 +61,7 @@
         <p id="binding-note" class="fine"></p>
         <section id="audio" class="audio-reading" aria-label="手动播放讲解"></section>
         <div class="reading-actions">
-          <details id="reading"><summary>读这一景</summary><div id="journey-reading-main"><div class="journey-reading-tools"><span id="reading-size-status" role="status"></span><button id="reading-size" type="button" aria-pressed="false" hidden>大字阅读</button></div><section id="journey-study" class="journey-study" aria-label="原画细节观察" hidden></section><p id="reading-copy"></p></div><section id="journey-inquiry" aria-label="本景研究稿摘读" hidden></section></details>
+          <details id="reading"><summary>读这一景</summary><div id="journey-reading-main"><div class="journey-reading-tools"><span id="reading-size-status" role="status"></span><button id="reading-size" type="button" aria-pressed="false" hidden>大字阅读</button></div><section id="journey-study" class="journey-study" aria-label="原画细节观察" hidden></section><p id="reading-copy"></p></div><section id="journey-inquiry" aria-label="本景研究稿摘读" hidden></section><section id="journey-question" aria-label="本景自由提问" hidden></section></details>
           <details id="sources" class="source-details"><summary>出处</summary><div id="source-list"></div><p id="review-date" class="fine"></p></details>
         </div>
         <div class="step-actions journey-paging"><button id="previous" class="quiet">上一景</button><button id="next" class="primary">下一景 →</button><button id="observe" class="quiet">记下这一景</button></div>

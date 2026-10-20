@@ -249,6 +249,7 @@ const guideFiles = [
     'static/exploration-journey-study-scenes.js',
     'static/exploration-journey-comfort.js','static/exploration-journey-comfort.css',
     'static/exploration-journey-inquiry.js','static/exploration-journey-inquiry-data.js','static/exploration-journey-inquiry.css',
+    'static/exploration-journey-question.js','static/exploration-journey-question-state.js','static/exploration-journey-question-data.js','static/exploration-journey-question.css',
   'explore-journey.html','static/exploration-journey-live.css','static/exploration-journey-demo.css',
   'static/exploration-journey-live.js','static/exploration-journey-content.js','static/exploration-journey-audio.js',
   'static/exploration-gilded-profiles.js','static/exploration-gilded-reveal.js',
@@ -368,8 +369,14 @@ for (const relativePath of requiredFiles) {
 
 for (const relativePath of productionTextFiles) {
   const content = read(relativePath);
+  // This exact statement rejects private citation hosts; it is not a local API
+  // endpoint. Exempt only this reviewed guard, not the file or other occurrences.
+  const citationHostGuard = "    if(!host||host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||host.endsWith('.internal')||";
+  const endpointContent = relativePath === 'static/exploration-journey-question-data.js'
+    ? content.replace(citationHostGuard, '    if(PRIVATE_CITATION_HOST_REJECTED||')
+    : content;
   for (const rule of forbiddenPatterns) {
-    if (rule.pattern.test(content)) {
+    if (rule.pattern.test(endpointContent)) {
       throw new Error(`${relativePath} 仍包含 ${rule.label}，已阻止部署`);
     }
   }

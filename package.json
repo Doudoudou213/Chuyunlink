@@ -63,7 +63,12 @@
     "test:exploration:four-scenes:browser": "node tools/test-exploration-four-scenes-browser.js",
     "test:exploration:journey-comfort": "node tools/test-exploration-journey-comfort-browser.js",
     "test:exploration:journey-inquiry": "node tools/test-exploration-journey-inquiries.js",
-    "test:exploration:journey-inquiry:browser": "node tools/test-exploration-journey-inquiry-browser.js"
+    "test:exploration:journey-inquiry:browser": "node tools/test-exploration-journey-inquiry-browser.js",
+    "preview:exploration:journey-question": "node tools/lib/exploration-journey-question-preview.js 4222",
+    "test:exploration:journey-question-data": "node tools/test-exploration-journey-question-data.js",
+    "test:exploration:journey-question-state": "node tools/test-exploration-journey-question-state.js",
+    "test:exploration:journey-question-service": "node tools/test-exploration-journey-question-service.js",
+    "test:exploration:journey-question:browser": "node tools/test-exploration-journey-question-browser.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

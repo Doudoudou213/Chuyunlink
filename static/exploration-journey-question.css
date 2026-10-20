@@ -1,0 +1,27 @@
+/* A single question written on the existing warm-paper leaf, not a chat panel. */
+#journey-question-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;width:100%;padding:14px 0;border-top:1px solid var(--rule);background:transparent;color:var(--rust);text-align:left;font:17px/1.7 var(--reading)}
+#journey-question-entry>span+span{font:12px/1.7 var(--utility);color:var(--muted)}
+#journey-question-back{min-height:44px;padding:6px 0;background:transparent;color:var(--muted);font:13px/1.7 var(--utility)}
+#journey-question-heading{margin:10px 0;font:30px/1.4 var(--brush);color:var(--ink)}
+#journey-question-heading:focus,#journey-question-answer:focus{outline:none}
+#journey-question .journey-question-note,#journey-question-status{font:12px/1.8 var(--utility);color:var(--muted);margin:12px 0 18px}
+#journey-question-form{margin:24px 0}
+#journey-question-form label{display:block;font:16px/1.8 var(--reading);margin-bottom:12px}
+#journey-question-input{display:block;box-sizing:border-box;width:100%;min-height:112px;max-height:260px;resize:vertical;padding:12px 0;border:0;border-bottom:1px solid var(--rule);border-radius:0;background:transparent;color:var(--ink);font:18px/1.9 var(--reading)}
+#journey-question-input::placeholder{color:var(--muted)}
+#journey-question-input:focus-visible{outline:2px solid var(--rust);outline-offset:4px}
+.journey-question-form-foot{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:8px 0}
+#journey-question-count{font:12px/1.8 var(--utility);color:var(--muted)}
+#journey-question-send{min-height:44px;min-width:84px;padding:8px 12px;color:var(--rust);background:transparent;font:17px/1.7 var(--reading)}
+.journey-question-recovery{display:flex;flex-wrap:wrap;gap:16px}
+.journey-question-recovery button,.journey-question-recovery a{min-height:44px;padding:8px 0;align-content:center;box-sizing:border-box;color:var(--rust);background:transparent;font:14px/1.7 var(--utility)}
+#journey-question-answer>p{font:18px/2.05 var(--reading);letter-spacing:.025em;margin:18px 0;white-space:pre-line}
+#journey-question-sources{list-style:none;padding:18px 0 0;margin:24px 0;border-top:1px solid var(--rule)}
+#journey-question-sources li{margin-bottom:20px}
+#journey-question-sources a,#journey-question-sources strong{display:flex;min-height:44px;align-items:center;color:var(--rust);font:14px/1.8 var(--reading);text-underline-offset:5px}
+#journey-question-sources p{font:13px/1.9 var(--utility);color:var(--muted);margin:8px 0}
+body[data-reading-size=large] #journey-question-answer>p{font-size:22px;line-height:1.95}
+body[data-reading-size=large] #journey-question-input{font-size:21px}
+body[data-reading-size=large] #journey-question-sources a,body[data-reading-size=large] #journey-question-sources strong,body[data-reading-size=large] #journey-question-sources p{font-size:17px;line-height:1.9}
+@media(max-width:600px){#journey-question-answer>p{font-size:17px}body[data-reading-size=large] #journey-question-answer>p{font-size:21px}}
+@media(max-height:500px){#journey-question-heading{font-size:26px;margin:4px 0}#journey-question-form{margin:12px 0}}
