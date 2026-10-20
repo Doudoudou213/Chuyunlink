@@ -113,7 +113,10 @@
       const next=await fetchContent();if(token!==generation||document.hidden||leaving)return;
       if(data&&next.fingerprint!==data.fingerprint&&!acceptUpdate)throw Error('内容已换版，请重新读取。旧版拾记保留，不自动计入新版。');
       const changed=data&&next.fingerprint!==data.fingerprint;data=next;
-      const saved=loadSaved()[data.fingerprint],position=history.state?.__chuJourneyPosition;
+      // Recover this tab's explicit reading choices even when browser storage is
+      // unavailable. Never carry a record into another content fingerprint.
+      const saved=[record,loadSaved()[data.fingerprint]].filter(value=>C.canResume(data,value))
+        .sort((a,b)=>b.updatedAt-a.updatedAt)[0],position=history.state?.__chuJourneyPosition;
       record=C.record(data,saved);ready=true;finished=false;resumeAvailable=C.canResume(data,saved);
       // A real incoming deep link wins. A reload of our own old-version address does not.
       const staleAddress=position?.resourceId===resourceId&&position.point===entryPoint&&position.fingerprint!==data.fingerprint;
@@ -147,7 +150,7 @@
       await art.decode();if(token!==lightGeneration||!ready||finished||document.hidden)return;
       Object.assign(canvas.style,{left:(rect.x-pad)/1919*100+'%',top:(rect.y-pad)/820*100+'%',width:(rect.width+2*pad)/1919*100+'%',height:(rect.height+2*pad)/820*100+'%'});
       renderer=ChuGildedReveal.create({canvas,image:art,profile,mode:'light-only',quality:'compact'});canvas.hidden=false;renderer.play();if(leaves?.isOpen())renderer.pause();
-    }catch{if(token===lightGeneration)$('art-error').hidden=false;}
+    }catch{if(token===lightGeneration&&!art.naturalWidth)$('art-error').hidden=false;}
   }
   function render(){
     if(!ready)return;
@@ -311,7 +314,12 @@
       });
     }
   }
-  art.onerror=()=>$('art-error').hidden=false;
+  art.addEventListener('error',()=>$('art-error').hidden=false);
+  art.addEventListener('journey:art-restored',()=>{
+    if(!ready||finished||document.hidden||leaving)return;
+    light(current());
+    if($('journey-study').dataset.artState==='failed')study?.mount(current(),shell.dataset.art==='true');
+  });
   stage.onpointerdown=e=>{if(e.pointerType==='touch'||e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:stage.scrollLeft,top:stage.scrollTop,moved:false};};
   stage.onpointermove=e=>{
     if(!drag||e.pointerId!==drag.id)return;const x=e.clientX-drag.x,y=e.clientY-drag.y;

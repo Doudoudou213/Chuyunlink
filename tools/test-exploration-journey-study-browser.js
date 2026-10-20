@@ -142,7 +142,7 @@ function check(value, name) {assert(value, name);checks++;}
       }else{
         await q.waitForFunction(()=>document.querySelector('.journey-study-caption').textContent.includes('暂未载入'));
         check(await q.locator('.journey-study-frame').isHidden(),'failed original image hides broken image');
-        check(await q.locator('.journey-study-controls').isHidden(),'failed original image has no dead controls');
+        check(await q.locator('.journey-study-controls button').isEnabled()&&(await q.locator('.journey-study-controls button').textContent()).includes('重新加载原画'),'failed original image offers one explicit recovery control');
       }
       await q.close();
     }

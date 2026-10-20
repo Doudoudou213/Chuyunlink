@@ -15,7 +15,13 @@
       if (!active) return;
       stop();
       const item = active, closer = item.closer, scene = item.scene;
-      if (item.failed) {item.caption.textContent = '原画暂未载入，下面的文字仍可阅读。';return;}
+      if (item.failed) {
+        item.caption.textContent = '原画暂未载入，下面的文字仍可阅读。';
+        item.button.textContent = '重新加载原画';
+        item.button.setAttribute('aria-label','重新加载'+scene.label+'原画');
+        item.button.setAttribute('aria-pressed','false');
+        return;
+      }
       const pose = {scale:closer ? scene.scale : 1, x:closer ? scene.shift[0] : 0, y:closer ? scene.shift[1] : 0, svgOrigin:scene.origin.join(' ')};
       const opacity = closer ? .65 : 0;
       if (root.gsap && animated && !reduce.matches) {
@@ -40,17 +46,17 @@
       revision++;
       if (!active) return;
       active.closer = false;active.pending = false;
-      active.button.disabled = !active.loaded;
+      active.button.disabled = !active.loaded && !active.failed;
       active.button.removeAttribute('aria-busy');paint();
     }
     function clear() {
       revision++;stop();
-      if (active) {active.probe.onload = null;active.probe.onerror = null;}
+      if (active) {clearTimeout(active.timer);active.probe.onload = null;active.probe.onerror = null;}
       active = null;host.replaceChildren();host.hidden = true;
-      delete host.dataset.detail;delete host.dataset.scene;
+      delete host.dataset.detail;delete host.dataset.scene;delete host.dataset.artState;
     }
     function canInteract(item) {
-      if (active !== item || !item.loaded || document.hidden || host.closest('[hidden]') || !host.getClientRects().length) return false;
+      if (active !== item || (!item.loaded && !item.failed) || document.hidden || host.closest('[hidden]') || !host.getClientRects().length) return false;
       const dialog = host.closest('dialog');
       return !dialog || (dialog.open && dialog.dataset.state !== 'closing' && dialog.getAttribute('aria-busy') === 'false');
     }
@@ -82,31 +88,55 @@
       button.setAttribute('aria-pressed','false');
       const caption = document.createElement('p');caption.className = 'journey-study-caption';caption.setAttribute('role','status');
       controls.append(credit,button);host.append(heading,frame,controls,caption);host.hidden = false;
-      const probe = new Image();
       host.dataset.scene = id;
-      const item = active = {scene,group,lines,button,caption,probe,closer:false,loaded:false,failed:false,pending:false,motion:[]};
+      const item = active = {scene,group,lines,button,caption,probe:new Image(),timer:null,closer:false,loaded:false,failed:false,pending:false,motion:[]};
       paint();
-      probe.onload = () => {if (active === item) {item.loaded = true;button.disabled = false;}};
-      probe.onerror = () => {
-        if (active !== item) return;
-        revision++;stop();item.loaded = false;item.failed = true;frame.hidden = true;controls.hidden = true;
-        caption.textContent = '原画暂未载入，下面的文字仍可阅读。';
-      };
-      probe.src = artwork;
+      function loadArt() {
+        clearTimeout(item.timer);item.probe.onload = null;item.probe.onerror = null;
+        const probe = item.probe = new Image();
+        item.loaded = false;item.failed = false;item.closer = false;
+        button.disabled = true;button.setAttribute('aria-busy','true');
+        host.dataset.artState = 'loading';
+        let settled = false;
+        const valid = () => !settled && active === item && item.probe === probe;
+        function failed() {
+          if (!valid()) return;
+          settled = true;
+          clearTimeout(item.timer);probe.onload = null;probe.onerror = null;
+          stop();item.loaded = false;item.failed = true;frame.hidden = true;
+          host.dataset.artState = 'failed';button.disabled = false;button.removeAttribute('aria-busy');paint();
+        }
+        probe.onload = () => {
+          if (!valid()) return;
+          settled = true;
+          clearTimeout(item.timer);probe.onload = null;probe.onerror = null;
+          item.loaded = true;item.failed = false;frame.hidden = false;
+          // Reassign the same authorized illustration, allowing a failed SVG
+          // image fetch to recover as well. Never introduce another image URL.
+          image.setAttribute('href',artwork);
+          host.dataset.artState = 'ready';button.disabled = false;button.removeAttribute('aria-busy');paint();
+        };
+        probe.onerror = failed;item.timer = setTimeout(failed,10000);probe.src = artwork;
+      }
+      loadArt();
       button.onclick = async () => {
         if (item.pending || !canInteract(item)) return;
         const ticket = ++revision;item.pending = true;button.disabled = true;button.setAttribute('aria-busy','true');
         try {
           const allowed = await hooks.verify?.();
           if (allowed === false || ticket !== revision || !canInteract(item)) return;
-          item.closer = !item.closer;paint(true);
+          if (item.failed) loadArt();
+          else {item.closer = !item.closer;paint(true);}
         } catch { /* Existing controller owns source withdrawal and retry UI. */ }
         finally {
-          if (active === item && ticket === revision) {item.pending = false;button.disabled = !item.loaded;button.removeAttribute('aria-busy');}
+          if (active === item && ticket === revision) {
+            item.pending = false;button.disabled = !item.loaded && !item.failed;
+            if (item.loaded || item.failed) button.removeAttribute('aria-busy');
+          }
         }
       };
     }
-    function pause() {revision++;stop();if(active){active.pending=false;active.button.disabled=!active.loaded;active.button.removeAttribute('aria-busy');}}
+    function pause() {revision++;stop();if(active){active.pending=false;active.button.disabled=!active.loaded&&!active.failed;active.button.removeAttribute('aria-busy');}}
     const settle = () => paint(false);
     reduce.addEventListener('change',settle);
     return {mount,reset,pause,clear,destroy(){clear();reduce.removeEventListener('change',settle);}};

@@ -247,6 +247,7 @@ const guideFiles = [
     'static/exploration-leaf-motion.js','static/exploration-journey-theme.css','static/exploration-journey-navigation.js',
     'static/exploration-journey-study.js','static/exploration-journey-study.css',
     'static/exploration-journey-study-scenes.js',
+    'static/exploration-journey-comfort.js','static/exploration-journey-comfort.css',
   'explore-journey.html','static/exploration-journey-live.css','static/exploration-journey-demo.css',
   'static/exploration-journey-live.js','static/exploration-journey-content.js','static/exploration-journey-audio.js',
   'static/exploration-gilded-profiles.js','static/exploration-gilded-reveal.js',

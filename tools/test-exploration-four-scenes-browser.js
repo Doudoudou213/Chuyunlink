@@ -177,7 +177,7 @@ function check(value,name) {assert(value,name);checks++;}
         check(await q.locator('.journey-study-art').evaluate(e=>new DOMMatrixReadOnly(getComputedStyle(e).transform).a>1.1),'no-GSAP original-art detail has a static fallback');
       } else {
         await q.waitForFunction(()=>document.querySelector('.journey-study-caption')?.textContent.includes('暂未载入'));
-        check(await q.locator('.journey-study-controls').isHidden(),'failed original art does not leave a dead detail button');
+        check(await q.locator('.journey-study-controls button').isEnabled()&&(await q.locator('.journey-study-controls button').textContent()).includes('重新加载原画'),'failed original art offers a usable retry instead of a dead detail button');
         check(await q.locator('.journey-study-frame').isHidden(),'failed original art does not show broken imagery');
       }
       await q.close();

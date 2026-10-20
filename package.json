@@ -60,7 +60,8 @@
     "preview:exploration:tower-study": "node tools/lib/exploration-tower-study-preview.js 4220",
     "preview:exploration:four-scenes": "node tools/lib/exploration-four-scenes-preview.js 4221",
     "test:exploration:four-scenes": "node tools/test-exploration-four-scenes.js",
-    "test:exploration:four-scenes:browser": "node tools/test-exploration-four-scenes-browser.js"
+    "test:exploration:four-scenes:browser": "node tools/test-exploration-four-scenes-browser.js",
+    "test:exploration:journey-comfort": "node tools/test-exploration-journey-comfort-browser.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

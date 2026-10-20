@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="static/exploration-journey-leaves.css">
   <link rel="stylesheet" href="static/exploration-journey-theme.css">
   <link rel="stylesheet" href="static/exploration-journey-study.css">
+  <link rel="stylesheet" href="static/exploration-journey-comfort.css">
   <!-- journey-local-adapter -->
   <script defer src="static/assets/gsap-3.15.0.min.js"></script>
   <script defer src="static/exploration-gilded-profiles.js"></script>
@@ -22,6 +23,7 @@
   <script defer src="static/exploration-journey-navigation.js"></script>
   <script defer src="static/exploration-journey-study-scenes.js"></script>
   <script defer src="static/exploration-journey-study.js"></script>
+  <script defer src="static/exploration-journey-comfort.js"></script>
   <script defer src="static/exploration-journey-live.js"></script>
 </head>
 <body class="scenic-journey">
@@ -34,7 +36,8 @@
           <div id="journey-world"><img id="journey-art" src="static/assets/exploration-motion/hhl-full-park-v2.webp" alt="黄鹤楼艺术画稿，非实测地图" draggable="false"><canvas id="journey-light" hidden aria-hidden="true"></canvas><div id="journey-points"></div></div>
         </div>
       </div>
-      <p id="painting-help">画中位置仅为艺术示意，不用作现场导航。</p><p id="art-error" hidden>画稿暂未加载，文字阅读仍可使用。</p>
+      <p id="painting-help">画中位置仅为艺术示意，不用作现场导航。</p>
+      <div id="art-error" hidden><p id="art-error-copy" role="status">画稿暂未加载，文字阅读仍可使用。</p><button id="art-retry" type="button" hidden>重新加载画稿</button></div>
     </section>
     <section class="journal" aria-label="已审内容阅读">
       <div id="gate" role="status" aria-live="polite">
@@ -51,7 +54,7 @@
         <p id="binding-note" class="fine"></p>
         <section id="audio" class="audio-reading" aria-label="手动播放讲解"></section>
         <div class="reading-actions">
-          <details id="reading"><summary>读这一景</summary><section id="journey-study" class="journey-study" aria-label="原画细节观察" hidden></section><p id="reading-copy"></p></details>
+          <details id="reading"><summary>读这一景</summary><div class="journey-reading-tools"><span id="reading-size-status" role="status"></span><button id="reading-size" type="button" aria-pressed="false" hidden>大字阅读</button></div><section id="journey-study" class="journey-study" aria-label="原画细节观察" hidden></section><p id="reading-copy"></p></details>
           <details id="sources" class="source-details"><summary>出处</summary><div id="source-list"></div><p id="review-date" class="fine"></p></details>
         </div>
         <div class="step-actions journey-paging"><button id="previous" class="quiet">上一景</button><button id="next" class="primary">下一景 →</button><button id="observe" class="quiet">记下这一景</button></div>
@@ -60,6 +63,7 @@
             <p>点画中景物，或景物名称，先看观察提示，再读讲解与出处。音频由你手动开启。</p>
             <p>纸页底部可直接看下一景，最后一景可以收卷留念。想留下这一处观察，再点“记下这一景”。</p>
             <p>阅读进度与拾记仅在本机保留七天，不用注册，不记录位置。记下阅读不认证到访，也不发放积分。</p>
+            <p>读景纸页内可切换大字；字号偏好只存本机。画稿加载失败可单独重试，文字仍可阅读；讲解仍需联网核对，不提供离线旧正文。</p>
             <p>画中位置只帮助认图，不判断你在哪里，也不指示实际道路。实地行走请以景区标识和工作人员指引为准。</p>
             <a id="explore-tools" class="quiet" hidden>打开探索工具 →</a>
             <p class="fine">探索工具提供问答、照片对照与账号手记。两个页面的阅读与到访记录分开保存，切换不会自动登记到访。</p>

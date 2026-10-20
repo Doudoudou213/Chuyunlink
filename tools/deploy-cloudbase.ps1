@@ -226,6 +226,8 @@ try {
         (Join-Path $staticDirectory 'exploration-journey-study.js'),
         (Join-Path $staticDirectory 'exploration-journey-study-scenes.js'),
         (Join-Path $staticDirectory 'exploration-journey-study.css'),
+        (Join-Path $staticDirectory 'exploration-journey-comfort.js'),
+        (Join-Path $staticDirectory 'exploration-journey-comfort.css'),
         (Join-Path $staticDirectory 'explore-admin.js'),
         (Join-Path $staticDirectory 'explore-media.js'),
         (Join-Path $staticDirectory 'explore-records.js'),
