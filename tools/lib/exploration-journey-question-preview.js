@@ -117,7 +117,7 @@ async function start(port = 4222, settings = {}) {
   // prefix fallback and no administrative, cloud, source or configuration path.
   const assets = new Set([...html.matchAll(/(?:src|href)="(static\/[^"?#]+)"/g)].map(match => '/' + match[1]));
   assets.delete('/static/guide-cloud.js');
-  for (const name of ['paper-fibres-soft-v1.webp', 'longcang-editorial-v1.woff2', 'exploration-motion/hhl-full-park-v2.webp'])
+  for (const name of ['paper-fibres-soft-v1.webp', 'longcang-editorial-v1.woff2', 'longcang-journey-v1.woff2', 'exploration-motion/hhl-full-park-v2.webp'])
     assets.add('/static/assets/' + name);
   const type = {'.css':'text/css;charset=utf-8', '.js':'text/javascript;charset=utf-8', '.webp':'image/webp', '.woff2':'font/woff2'};
   const server = http.createServer(async (req, res) => {

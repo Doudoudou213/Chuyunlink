@@ -21,7 +21,7 @@ async function disposableService(){
   for(const port of [-1,65536,NaN,'4224',0.5]){await assert.rejects(start(port),/端口/);checks++;}
   const suite=await start();
   try{
-    for(const route of ['/','/trial-suite.html','/suite.css','/suite.js','/paper.webp','/brush.woff2']){
+    for(const route of ['/','/trial-suite.html','/suite.css','/suite.js','/paper.webp','/painting.webp','/brush.woff2']){
       const get=await request(suite.url,route);check(get.status===200,'exact allowed resource '+route);
       check(get.headers['cache-control']==='no-store','no storage header '+route);
       const head=await request(suite.url,route,{method:'HEAD'});check(head.status===200&&head.body==='','HEAD body omitted '+route);

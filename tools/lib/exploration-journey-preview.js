@@ -46,7 +46,7 @@ async function start(port=0){
     'static/exploration-readiness.js','static/exploration-readiness-admin.js','static/exploration-readiness.css','static/exploration-admin-simple.css',
     'static/exploration-admin-paper.js','static/exploration-admin-paper.css','static/assets/paper-fibres-soft-v1.webp',
     'static/exploration-journey-leaves.js','static/exploration-journey-leaves.css',
-    'static/exploration-leaf-motion.js','static/exploration-journey-theme.css','static/exploration-journey-navigation.js',
+    'static/exploration-leaf-motion.js','static/exploration-journey-theme.css','static/exploration-journey-navigation.js','static/assets/longcang-journey-v1.woff2',
     'static/exploration-journey-study.js','static/exploration-journey-study.css',
     'static/exploration-journey-study-scenes.js',
     'static/exploration-journey-comfort.js','static/exploration-journey-comfort.css',

@@ -13,17 +13,22 @@
     const dialog = document.createElement('dialog');
     dialog.id = 'journey-leaf-dialog';dialog.className = 'journey-leaf-dialog';
     dialog.setAttribute('aria-labelledby', 'journey-leaf-title');
-    dialog.innerHTML = '<div class="journey-leaf-sheet"><div class="journey-leaf-motif" aria-hidden="true"></div><div class="journey-leaf-light" aria-hidden="true"></div><div class="journey-leaf-shade" aria-hidden="true"></div><header class="journey-leaf-header"><div><span class="journey-leaf-kicker"></span><h2 id="journey-leaf-title" tabindex="-1"></h2><p class="journey-leaf-context"></p></div><button type="button" class="journey-leaf-close" aria-label="合上纸页">×</button></header><p class="journey-leaf-loading" role="status">正在核对资料，稍候取阅……</p><div id="journey-leaf-body" class="journey-leaf-body" hidden></div><p class="journey-leaf-status fine" role="status" hidden></p><footer class="journey-leaf-footer"><span>楚韵链迹 · 一景一笺</span><button type="button" class="journey-leaf-return">合页，回到画卷 ↗</button><button type="button" id="journey-leaf-next" hidden disabled><span class="journey-leaf-next-label"></span></button></footer></div>';
+    dialog.innerHTML = '<div class="journey-leaf-sheet"><div class="journey-leaf-motif" aria-hidden="true"></div><div class="journey-leaf-light" aria-hidden="true"></div><div class="journey-leaf-shade" aria-hidden="true"></div><header class="journey-leaf-header"><div class="journey-leaf-heading"><span class="journey-leaf-kicker"></span><h2 id="journey-leaf-title" tabindex="-1"></h2><p class="journey-leaf-context"></p></div><div class="journey-leaf-tools"><nav class="journey-leaf-tabs" aria-label="阅读内容" hidden><button type="button" id="journey-leaf-tab-reading" aria-pressed="false">读景</button><button type="button" id="journey-leaf-tab-sources" aria-pressed="false">出处</button></nav><button type="button" class="journey-leaf-close" aria-label="合上纸页">×</button></div></header><p class="journey-leaf-loading" role="status">正在核对资料，稍候取阅……</p><div id="journey-leaf-body" class="journey-leaf-body" hidden></div><p class="journey-leaf-status fine" role="status" hidden></p><footer class="journey-leaf-footer"><span>楚韵链迹 · 一景一笺</span><button type="button" class="journey-leaf-return">合页，回到画卷 ↗</button><button type="button" id="journey-leaf-next" hidden disabled><span class="journey-leaf-next-label"></span></button></footer></div>';
     journal.append(dialog);
     const veil = document.createElement('div');veil.className = 'journey-leaf-veil';veil.setAttribute('aria-hidden','true');document.body.append(veil);
     const body = dialog.querySelector('#journey-leaf-body'),title = dialog.querySelector('h2');
     const loading = dialog.querySelector('.journey-leaf-loading'),context = dialog.querySelector('.journey-leaf-context');
     const status = dialog.querySelector('.journey-leaf-status'),motif = dialog.querySelector('.journey-leaf-motif');
     const nextButton = dialog.querySelector('#journey-leaf-next'),nextLabel = nextButton.querySelector('span');
+    const tabs = dialog.querySelector('.journey-leaf-tabs');
+    const tabButtons = new Map(['reading','sources'].map(id => [id,dialog.querySelector('#journey-leaf-tab-'+id)]));
     const reduce = matchMedia('(prefers-reduced-motion: reduce)');
     const motion = window.ChuLeafMotion?.create({dialog,sheet:dialog.querySelector('.journey-leaf-sheet'),motif,parts:[...dialog.querySelectorAll('.journey-leaf-header,.journey-leaf-body,.journey-leaf-footer')],light:dialog.querySelector('.journey-leaf-light'),shade:dialog.querySelector('.journey-leaf-shade'),veil});
     let active = null, request = 0, outsideDown = false, audioSlot = null, opener = null;
-    let navigationClose = null, continueBusy = false, shown = false, openAttempt = 0;
+    let navigationClose = null, continueBusy = false, shown = false, openAttempt = 0, presented = false;
+    // Scroll positions belong to this verified open paper only. They are not
+    // persisted and cannot leak across scenes, versions or a closed session.
+    const scrollPositions = new Map();
     dialog.dataset.state = 'closed';
     for (const [id,label,heading,hint] of spec) {
       const original = document.getElementById(id),summary = original.querySelector('summary');
@@ -49,7 +54,10 @@
       if (frame && (r.right < frame.left || r.left > frame.right || r.bottom < frame.top || r.top > frame.bottom)) return null;
       return {x:r.left+r.width/2,y:r.top+r.height/2};
     }
-    function settle() {motion?.settle();veil.style.opacity = '1';if (dialog.open) dialog.dataset.state = 'open';}
+    function settle() {
+      motion?.settle();veil.style.opacity = '1';
+      if (dialog.open) {dialog.dataset.state = 'open';updateTabs(active?.id,dialog.getAttribute('aria-busy') !== 'false');}
+    }
     function setMotif(id) {
       // Only a verified, explicitly bound original-art scene can decorate the page.
       motif.replaceChildren();dialog.removeAttribute('data-scene');
@@ -75,6 +83,13 @@
       continueBusy = false;nextButton.hidden = true;nextButton.disabled = true;
       nextLabel.textContent = '';nextButton.removeAttribute('aria-label');nextButton.removeAttribute('title');
     }
+    function updateTabs(id, busy = false) {
+      tabs.hidden = !tabButtons.has(id);
+      for (const [page,button] of tabButtons) {
+        button.setAttribute('aria-pressed',String(page === id));
+        button.disabled = busy || dialog.dataset.state !== 'open' || !visible(pages.get(page));
+      }
+    }
     function updateContinue() {
       resetContinue();
       if (active?.id !== 'reading' || dialog.getAttribute('aria-busy') !== 'false' || typeof hooks.onContinue !== 'function') return;
@@ -98,7 +113,7 @@
       title.textContent = '';context.textContent = '';status.textContent = '';motif.replaceChildren();opener = null;
       document.documentElement.classList.remove('journey-leaf-open');
       document.documentElement.style.removeProperty('--journey-scroll-gap');
-      resetContinue();
+      resetContinue();updateTabs(null);scrollPositions.clear();
       hooks.onClose?.();
       if (wasShown) hooks.onDismissed?.();
       if (restoreFocus && trigger?.getClientRects().length) trigger.focus({preventScroll:true});
@@ -108,6 +123,7 @@
       const token = ++request; // Closing during a pending read cannot reopen the leaf later.
       dialog.dataset.state = 'closing';
       nextButton.disabled = true;
+      updateTabs(active?.id,true);
       hooks.onClosing?.({navigation});
       if (token !== request || !dialog.open) return;
       const complete = () => {
@@ -118,7 +134,7 @@
         pending?.resolve(true);
       };
       if (!motion || reduce.matches) return complete();
-      motion.leave({origin:origin(),onComplete:complete});
+      motion.leave({origin:origin(),compact:navigation,onComplete:complete});
     }
     function close() {
       openAttempt++;
@@ -141,9 +157,13 @@
       beginClose({navigation:true});
       return promise;
     }
-    async function open(id,{originElement} = {}) {
+    async function open(id,{originElement,internal = false} = {}) {
       const item = pages.get(id);
       if (!visible(item)) return;
+      // The paper has one modal/history entry. Its two reading views never open
+      // a nested dialog, and cannot race a pending verification or continuation.
+      const switching = internal && dialog.open && tabButtons.has(active?.id) && tabButtons.has(id);
+      if (internal && (!switching || id === active.id || continueBusy || dialog.dataset.state !== 'open' || dialog.getAttribute('aria-busy') !== 'false')) return;
       const attempt = ++openAttempt;
       // A pending history return must finish before a new modal mutates the DOM.
       // Keep the legacy synchronous opening path when the hook is not installed.
@@ -154,7 +174,11 @@
       }
       cancelNavigation();resetContinue();
       const token = ++request,fresh = !dialog.open;
-      restore();active = item;opener = originElement || item.trigger;setMotif(null);
+      if (switching) scrollPositions.set(active.id,body.scrollTop);
+      else scrollPositions.clear();
+      restore();active = item;
+      if (!switching) opener = originElement || item.trigger;
+      setMotif(null);updateTabs(id,true);
       title.textContent = '正在取阅';context.textContent = '';
       dialog.querySelector('.journey-leaf-kicker').textContent = '一卷随行 / ' + item.heading;
       dialog.dataset.leaf = id;dialog.setAttribute('aria-busy','true');loading.hidden = false;status.hidden = true;
@@ -163,8 +187,8 @@
       if (fresh) document.documentElement.style.setProperty('--journey-scroll-gap',Math.max(0,innerWidth-document.documentElement.clientWidth)+'px');
       if (!dialog.open) {dialog.showModal();shown = true;hooks.onShown?.(id);}
       document.documentElement.classList.add('journey-leaf-open');dialog.dataset.state = 'opening';title.focus({preventScroll:true});hooks.onOpen?.();
-      if (!motion || reduce.matches) settle();
-      else motion.enter({origin:start,fresh,onComplete:() => {if (token === request) settle();}});
+      if (!motion || reduce.matches) {settle();presented = true;}
+      else motion.enter({origin:start,fresh,compact:presented,onComplete:() => {if (token === request) {settle();presented = true;}}});
       try {
         const allowed = await hooks.verify(id);
         if (token !== request) return;
@@ -173,13 +197,14 @@
         setMotif(id);
         title.textContent = id === 'reading' ? pointTitle : item.heading;
         context.textContent = id === 'trial-feedback' ? '只留建议，不上传身份与行踪' : id === 'journey-help' ? '看一处景，读一段有出处的讲解' : (id === 'reading' ? '' : pointTitle + ' · ') + document.getElementById('position').textContent;
-        item.content.hidden = false;body.append(item.content);body.hidden = false;body.scrollTop = 0;
+        item.content.hidden = false;body.append(item.content);body.hidden = false;
         // Keep manual narration controls available on the reading leaf, without a second audio player.
         if (id === 'reading') {
           const audio = document.getElementById('audio');audioSlot = document.createComment('journey-audio-home');
           audio.replaceWith(audioSlot);body.append(audio);
         }
-        loading.hidden = true;dialog.setAttribute('aria-busy','false');syncStatus();updateContinue();
+        loading.hidden = true;dialog.setAttribute('aria-busy','false');syncStatus();updateContinue();updateTabs(id);
+        body.scrollTop = switching ? scrollPositions.get(id) || 0 : 0;
       } catch {
         if (token === request) dismiss({restoreFocus:false});
         // Controller verification owns the unavailable/retry message, never a stale modal fallback.
@@ -192,6 +217,7 @@
     }
     dialog.querySelector('.journey-leaf-close').onclick = close;
     dialog.querySelector('.journey-leaf-return').onclick = close;
+    for (const [id,button] of tabButtons) button.onclick = () => open(id,{internal:true});
     nextButton.onclick = async () => {
       if (continueBusy || nextButton.hidden || nextButton.disabled || !dialog.open || dialog.dataset.state === 'closing' || dialog.getAttribute('aria-busy') !== 'false' || document.hidden) return;
       const token = request;continueBusy = true;nextButton.disabled = true;

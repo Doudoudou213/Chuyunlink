@@ -74,7 +74,10 @@
     "test:exploration:trial-review:browser": "node tools/test-exploration-trial-review-browser.js",
     "preview:exploration:trial-suite": "node tools/lib/exploration-trial-suite-preview.js 4224",
     "test:exploration:trial-suite": "node tools/test-exploration-trial-suite-server.js",
-    "test:exploration:trial-suite:browser": "node tools/test-exploration-trial-suite-browser.js"
+    "test:exploration:trial-suite:browser": "node tools/test-exploration-trial-suite-browser.js",
+    "test:exploration:reading-design": "node tools/test-exploration-reading-design-browser.js",
+    "test:exploration:reading-tabs": "node tools/test-exploration-reading-tabs-browser.js",
+    "test:exploration:font": "node tools/test-journey-font.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

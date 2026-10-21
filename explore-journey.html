@@ -54,7 +54,7 @@
       </div>
       <div id="content" hidden>
         <div id="journey-resume" hidden><span id="resume-label"></span><button type="button" id="continue-journey" class="quiet">继续游览 <span aria-hidden="true">→</span></button></div>
-        <div class="section-top"><p id="position" class="overline"></p><button id="refresh" class="quiet">检查更新</button></div>
+        <div class="section-top"><p id="position" class="overline"></p><span class="journal-imprint" aria-hidden="true">随行<br>拾景</span></div>
         <h2 id="point-title" tabindex="-1"></h2>
         <nav id="journey-stops" aria-label="按已发布顺序阅读"></nav>
         <p id="observation" class="observation"></p>
@@ -64,17 +64,8 @@
           <details id="reading"><summary>读这一景</summary><div id="journey-reading-main"><div class="journey-reading-tools"><span id="reading-size-status" role="status"></span><button id="reading-size" type="button" aria-pressed="false" hidden>大字阅读</button></div><section id="journey-study" class="journey-study" aria-label="原画细节观察" hidden></section><p id="reading-copy"></p></div><section id="journey-inquiry" aria-label="本景研究稿摘读" hidden></section><section id="journey-question" aria-label="本景自由提问" hidden></section></details>
           <details id="sources" class="source-details"><summary>出处</summary><div id="source-list"></div><p id="review-date" class="fine"></p></details>
         </div>
-        <div class="step-actions journey-paging"><button id="previous" class="quiet">上一景</button><button id="next" class="primary">下一景 →</button><button id="observe" class="quiet">记下这一景</button></div>
+        <div class="step-actions journey-paging"><button id="previous" class="quiet">← 上一景</button><button id="next" class="quiet">下一景 →</button></div>
         <div class="journal-secondary">
-          <details id="journey-help" class="journey-help"><summary>读卷说明</summary>
-            <p>点画中景物，或景物名称，先看观察提示，再读讲解与出处。音频由你手动开启。</p>
-            <p>纸页底部可直接看下一景，最后一景可以收卷留念。想留下这一处观察，再点“记下这一景”。</p>
-            <p>阅读进度与拾记仅在本机保留七天，不用注册，不记录位置。记下阅读不认证到访，也不发放积分。</p>
-            <p>读景纸页内可切换大字；字号偏好只存本机。画稿加载失败可单独重试，文字仍可阅读；讲解仍需联网核对，不提供离线旧正文。</p>
-            <p>画中位置只帮助认图，不判断你在哪里，也不指示实际道路。实地行走请以景区标识和工作人员指引为准。</p>
-            <a id="explore-tools" class="quiet" hidden>打开探索工具 →</a>
-            <p class="fine">探索工具提供问答、照片对照与账号手记。两个页面的阅读与到访记录分开保存，切换不会自动登记到访。</p>
-          </details>
           <button id="finish" class="quiet">收起这一卷</button>
         </div>
       </div>
@@ -103,7 +94,24 @@
         </details>
       </div>
       <p id="status" role="status" aria-live="polite" class="fine"></p>
-      <footer class="journal-footer"><button id="clear" class="quiet">清除本机拾记</button></footer>
+      <footer class="journal-footer">
+        <details id="journey-tools" class="journey-tools"><summary>读卷工具 <span aria-hidden="true">＋</span></summary>
+          <div class="journey-tool-list">
+          <button id="observe" class="quiet">记下这一景</button>
+          <button id="refresh" class="quiet">检查更新</button>
+          <details id="journey-help" class="journey-help"><summary>读卷说明</summary>
+            <p>点画中景物，或景物名称，先看观察提示，再读讲解与出处。音频由你手动开启。</p>
+            <p>纸页底部可直接看下一景，最后一景可以收卷留念。想留下这一处观察，再点“记下这一景”。</p>
+            <p>阅读进度与拾记仅在本机保留七天，不用注册，不记录位置。记下阅读不认证到访，也不发放积分。</p>
+            <p>读景纸页内可切换大字；字号偏好只存本机。画稿加载失败可单独重试，文字仍可阅读；讲解仍需联网核对，不提供离线旧正文。</p>
+            <p>画中位置只帮助认图，不判断你在哪里，也不指示实际道路。实地行走请以景区标识和工作人员指引为准。</p>
+            <a id="explore-tools" class="quiet" hidden>打开探索工具 →</a>
+            <p class="fine">探索工具提供问答、照片对照与账号手记。两个页面的阅读与到访记录分开保存，切换不会自动登记到访。</p>
+          </details>
+          <button id="clear" class="quiet">清除本机拾记</button>
+          </div>
+        </details>
+      </footer>
       <noscript>请启用 JavaScript 读取当前公开资料。本页不提供离线旧讲解。</noscript>
     </section>
   </main>

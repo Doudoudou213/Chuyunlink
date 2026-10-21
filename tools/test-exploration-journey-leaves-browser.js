@@ -1,4 +1,5 @@
 'use strict';
+const {showJourneyTools}=require('./lib/journey-browser-ui');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright'),{start}=require('./lib/exploration-journey-preview');
 let checks=0;function check(v,name){assert(v,name);checks++;}
@@ -13,12 +14,12 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     await p.addInitScript(()=>{const interval=window.setInterval;window.__rechecks=[];window.setInterval=(fn,ms,...args)=>{if(ms===30000&&typeof fn==='function')window.__rechecks.push(()=>fn(...args));return interval(fn,ms,...args);};});
     p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>{if(r.url().endsWith('/__journey'))actions.push(r.postDataJSON().action);});
     const go=async()=>{await p.goto(s.url+'/explore-journey.html?resourceId=r');await p.locator('#content:not([hidden])').waitFor();};
-    const open=async(id,page=p)=>{if(!await page.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"]').count())await page.locator('#'+id+' > .journey-leaf-trigger').click();await page.locator('#journey-leaf-dialog[open][aria-busy=false][data-leaf="'+id+'"][data-state=open]').waitFor();};
+    const open=async(id,page=p)=>{if(id==='journey-help')await showJourneyTools(page);if(!await page.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"]').count())await page.locator('#'+id+' > .journey-leaf-trigger').click();await page.locator('#journey-leaf-dialog[open][aria-busy=false][data-leaf="'+id+'"][data-state=open]').waitFor();};
     const close=async(page=p)=>{await page.locator('.journey-leaf-close').click();await page.locator('#journey-leaf-dialog').waitFor({state:'hidden'});};
     const cleanPaperMotion=async(page=p)=>page.evaluate(()=>[...document.querySelectorAll('#journey-leaf-dialog,.journey-leaf-sheet,.journey-leaf-motif,.journey-leaf-header,.journey-leaf-body,.journey-leaf-footer,.journey-leaf-light,.journey-leaf-shade,.journey-leaf-veil')].every(e=>!e.style.transform&&!e.style.willChange));
     const scenario=async kind=>{const q=await b.newPage();await q.goto(s.url+'/preview-control.html');await q.locator('[data-kind='+kind+']').click();await q.waitForFunction(()=>document.querySelector('#result').textContent.includes('已完成'));await q.close();};
     await go();
-    check(await p.locator('.journal details').count()===0,'four disclosures replaced on visitor');
+    check(await p.locator('.journal details:not(#journey-tools)').count()===0,'four reading disclosures replaced; tools remains native');
     check(await p.locator('.journey-leaf-trigger').count()===4,'four explicit entries');
     check(await p.locator('#journey-leaf-dialog').isHidden(),'initial visit leaves the artwork unobstructed');
     check(await p.evaluate(()=>localStorage.getItem('chulink:journey-content:v1:r'))===null,'no auto record on enter');

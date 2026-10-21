@@ -31,17 +31,26 @@ const out=path.join(__dirname,'../artifacts/exploration-journey-live/closeout-su
       check((await link.getAttribute('rel')||'').split(/\s+/).includes('noopener'),'new tab has no opener '+key);
     }
     check(new Set(Object.values(suite.links).map(url=>new URL(url).origin)).size===4,'four previews keep separate origins');
+    check(!await page.locator('#internal-tools').evaluate(e=>e.open),'internal tools closed by default');
+    check(!await page.locator('#open-admin').isVisible(),'admin tools absent from visitor first screen');
+    check(await page.locator('.entry-painting img').evaluate(e=>e.complete&&e.naturalWidth>0),'existing original art loads');
     await page.keyboard.press('Tab');
     check(await page.locator('a:focus').count()===1,'keyboard reaches portal link');
     check(await page.locator('a:focus').evaluate(e=>getComputedStyle(e).outlineStyle!=='none'),'portal focus visible');
     for(const [width,height]of [[320,900],[390,900],[768,1000],[1440,1000],[667,320]]){
       await page.setViewportSize({width,height});
       check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'portal no horizontal overflow '+width+'x'+height);
-      for(const key of ['study','question','admin','scenario','review'])check((await page.locator('#open-'+key).boundingBox()).height>=44,'44px portal target '+key+' '+width);
       await page.screenshot({path:path.join(out,'suite-'+width+'x'+height+'.png'),fullPage:true});
+      if(height>=667)check(await page.locator('#open-study').evaluate(e=>e.getBoundingClientRect().bottom<=innerHeight),'visitor primary action in first screen '+width);
+      await page.locator('#internal-tools>summary').click();
+      for(const key of ['study','question','admin','scenario','review'])check((await page.locator('#open-'+key).boundingBox()).height>=44,'44px portal target '+key+' '+width);
+      await page.screenshot({path:path.join(out,'suite-tools-'+width+'x'+height+'.png'),fullPage:true});
+      await page.locator('#internal-tools>summary').click();
+      await page.evaluate(()=>scrollTo(0,0));
     }
     await page.setViewportSize({width:390,height:900});
     const open=async key=>{
+      if(key!=='study'&&!await page.locator('#internal-tools').evaluate(e=>e.open))await page.locator('#internal-tools>summary').click();
       const wait=context.waitForEvent('page');await page.locator('#open-'+key).click();const child=await wait;
       await child.waitForLoadState('domcontentloaded');
       check(child.url()===suite.links[key],'clicked actual portal destination '+key);

@@ -71,6 +71,8 @@ const requiredFiles = [
   'static/assets/gsap-3.15.0.min.js',
   'static/assets/longcang-editorial-v1.woff2',
   'static/assets/longcang-theme-v2.woff2',
+  'static/assets/longcang-journey-v1.woff2',
+  'static/assets/longcang-journey-v1-source.txt',
   'static/assets/paper-fibres-soft-v1.webp',
   'static/assets/longcang-OFL.txt',
   'static/assets/community-river-collage-v3.webp',

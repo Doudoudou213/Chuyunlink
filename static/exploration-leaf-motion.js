@@ -27,10 +27,25 @@
       const state={t:0},at=curve(start,end,bow);
       timeline.to(state,{t:1,duration,ease,onUpdate(){const p=at(state.t);G.set(dialog,{x:p.x,y:p.y});}},0);
     }
-    function enter({origin,fresh,onComplete}){
+    function enter({origin,fresh,compact=false,onComplete}){
       stop();
       if(!G||matchMedia('(prefers-reduced-motion: reduce)').matches){settle();onComplete?.();return;}
       try{
+        // One atmospheric first pull, then quiet, shorter entrances. In-paper
+        // read/source changes keep the sheet still: only its contents turn.
+        if(!fresh || compact){
+          clear();
+          if(fresh){G.set(dialog,{y:16,scale:.975,opacity:0});G.set(sheet,{rotationX:2,transformPerspective:1200});}
+          else G.set(parts,{y:4,opacity:.35});
+          G.set(fresh ? [dialog,sheet] : parts,{willChange:'transform,opacity'});
+          timeline=G.timeline({onComplete(){settle();onComplete?.();}});
+          if(fresh){
+            timeline.to(dialog,{y:0,scale:1,opacity:1,duration:.48,ease:'power2.out'},0)
+              .to(sheet,{rotationX:0,duration:.48,ease:'sine.out'},0)
+              .to(veil,{opacity:1,duration:.32,ease:'sine.out'},0);
+          }else timeline.to(parts,{y:0,opacity:1,duration:.22,ease:'sine.out'},0);
+          return;
+        }
         const base=baseCenter(),dx=origin?origin.x-base.x:0,dy=origin?origin.y-base.y:32,side=dx<0?-1:1;
         if(fresh){
           G.set(dialog,{x:dx,y:dy,scale:origin ? .12 : .96,rotation:side*5,opacity:0});
@@ -54,14 +69,14 @@
           .to(light,{opacity:0,duration:.55,ease:'sine.inOut'},.65);
       }catch{settle();onComplete?.();}
     }
-    function leave({origin,onComplete}){
+    function leave({origin,compact=false,onComplete}){
       // Killing the timeline preserves the current pose, including a half-open sheet.
       stop();
       if(!G||matchMedia('(prefers-reduced-motion: reduce)').matches){reset();onComplete?.();return;}
       try{
         const base=baseCenter(),start={x:value(dialog,'x'),y:value(dialog,'y')};
         const end=origin?{x:origin.x-base.x,y:origin.y-base.y}:{x:0,y:26};
-        const side=end.x<0?-1:1,duration=.38+.32*Math.min(1,value(dialog,'scaleX',1));
+        const side=end.x<0?-1:1,duration=compact ? .38 : .38+.32*Math.min(1,value(dialog,'scaleX',1));
         G.set([dialog,sheet],{willChange:'transform'});G.set(veil,{willChange:'opacity'});
         timeline=G.timeline({onComplete(){reset();onComplete?.();}});
         travel(start,end,duration,origin?24:3,'power2.inOut');

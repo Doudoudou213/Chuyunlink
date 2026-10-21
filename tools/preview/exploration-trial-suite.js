@@ -11,7 +11,7 @@
       return [id,u.href];
     });
     for(const [id,url]of checked){const a=document.getElementById('open-'+id);a.href=url;a.removeAttribute('aria-disabled');}
-    status.textContent='本机入口已就绪 · 测试资料互不混用，不连接线上账号。';
+    status.textContent='本机入口已就绪';
   } catch {
     status.textContent='入口未准备好，请重新启动本地试用服务后刷新。没有连接线上服务。';
   }

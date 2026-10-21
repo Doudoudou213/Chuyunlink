@@ -178,7 +178,10 @@ const storageKey='chulink:journey-content:v1:r';
       check(await responsive.locator('#journey-leaf-next').evaluate(e=>{const r=e.getBoundingClientRect();return r.width>=44&&r.height>=44&&r.bottom<=innerHeight;}),'next target remains reachable '+width);
       check(await responsive.locator('.journey-leaf-return').evaluate(e=>{const r=e.getBoundingClientRect();return r.width>=44&&r.height>=44&&r.bottom<=innerHeight;}),'return remains reachable '+width);
       await responsive.locator('#journey-leaf-next').focus();await responsive.keyboard.press('Tab');
-      check(await responsive.locator('.journey-leaf-close').evaluate(e=>e===document.activeElement),'last continuation control traps focus '+width);
+      check(await responsive.locator('#journey-leaf-dialog').evaluate(dialog=>{
+        const first=[...dialog.querySelectorAll('button,a[href],input,textarea,[tabindex="0"]')].find(node=>!node.disabled&&node.getClientRects().length);
+        return Boolean(first)&&first===document.activeElement;
+      }),'last continuation control traps focus at the first enabled visible control '+width);
       await responsive.screenshot({path:path.join(out,'continuation-paper-'+width+'.png')});await close(responsive);
     }
     await responsive.close();

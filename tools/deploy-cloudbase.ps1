@@ -298,6 +298,8 @@ try {
       )
       Copy-Item -LiteralPath $hostingRootFiles -Destination $hostingDirectory
       Copy-Item -LiteralPath $hostingStaticFiles -Destination $hostingStaticDirectory
+      # Includes longcang-journey-v1.woff2 with its source record and OFL license;
+      # the build gate verifies this scoped scenic heading font before copying.
       Copy-Item -LiteralPath (Join-Path $staticDirectory 'assets') -Destination $hostingStaticDirectory -Recurse
 
       Write-Host 'Deploying static hosting...'

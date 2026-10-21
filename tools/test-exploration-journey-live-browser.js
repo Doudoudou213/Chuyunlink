@@ -1,4 +1,5 @@
 'use strict';
+const {showJourneyTools,toolClick}=require('./lib/journey-browser-ui');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright'),{start}=require('./lib/exploration-journey-preview');
 let checks=0;function check(value,message){assert(value,message);checks++;}
@@ -12,7 +13,7 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>{if(!r.url().startsWith(s.url)&&!r.url().startsWith('https://example.com/'))external.push(r.url());});
     await p.addInitScript(()=>{const A=Audio;window.__audios=[];window.Audio=function(){const a=new A();window.__audios.push(a);return a;};});
     const go=async()=>{await p.goto(s.url+'/explore-journey.html?resourceId=r');await p.locator('#content:not([hidden])').waitFor();};
-    const openLeaf=async id=>{if(!await p.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"]').count())await p.locator('#'+id+' > .journey-leaf-trigger').click();await p.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"][aria-busy="false"][data-state=open]').waitFor();};
+    const openLeaf=async id=>{if(id==='journey-help')await showJourneyTools(p);if(!await p.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"]').count())await p.locator('#'+id+' > .journey-leaf-trigger').click();await p.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"][aria-busy="false"][data-state=open]').waitFor();};
     const closeLeaf=async()=>{await p.locator('#journey-leaf-dialog .journey-leaf-close').click();await p.locator('#journey-leaf-dialog').waitFor({state:'hidden'});};
     const scenario=async kind=>{
       const c=await browser.newPage();await c.goto(s.url+'/preview-control.html');await c.locator('[data-kind='+kind+']').click();await c.waitForFunction(()=>document.querySelector('#result').textContent.includes('已完成'));await c.close();
@@ -28,10 +29,11 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     for(const width of [320,390,768,1440]){
       await p.setViewportSize({width,height:900});
       check(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal overflow '+width);
+      await showJourneyTools(p);
       check(await p.locator('#observe').evaluate(e=>e.getBoundingClientRect().height>=44),'44px '+width);
       await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:path.join(out,'reading-'+width+'.png'),fullPage:true});
     }
-    await p.locator('#observe').click();await p.waitForFunction(()=>document.querySelector('[data-stop=tower]').dataset.recorded==='true');
+    await toolClick(p,'#observe');await p.waitForFunction(()=>document.querySelector('[data-stop=tower]').dataset.recorded==='true');
     check(await p.locator('#point-title').textContent()==='黄鹤楼','recording stays with current scene');
     check(await p.locator('[data-stop=tower]').getAttribute('data-recorded')==='true','explicit mark only');
     await p.locator('#observe').evaluate(e=>e.click());await p.locator('#next').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
@@ -42,7 +44,7 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     await p.locator('#next').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='鹅池');
     check(await p.locator('[data-recorded=true]').count()===1,'advancing through unread scenes does not mark them');
     check(await p.locator('#next').isDisabled(),'last scene has no implicit finish action');
-    await p.locator('#observe').click();await p.waitForFunction(()=>document.querySelector('[data-stop=pond]').dataset.recorded==='true');
+    await toolClick(p,'#observe');await p.waitForFunction(()=>document.querySelector('[data-stop=pond]').dataset.recorded==='true');
     check(await p.locator('#point-title').textContent()==='鹅池'&&await p.locator('#finished').isHidden(),'recording last scene does not close the scroll');
     await p.locator('#finish').click();await p.locator('#finished:not([hidden])').waitFor();
     await p.locator('#note').fill('<img src=x onerror=alert(1)> 我的拾记');
@@ -51,21 +53,21 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     check(download.suggestedFilename()==='我的阅读拾记.txt','actual download');
     await p.setViewportSize({width:390,height:900});await p.screenshot({path:path.join(out,'souvenir-390.png'),fullPage:true});
     await p.locator('#return').click();await p.locator('#content:not([hidden])').waitFor();
-    await scenario('reorder');await p.locator('#refresh').click();await p.locator('#retry:not([hidden])').waitFor();
+    await scenario('reorder');await toolClick(p,'#refresh');await p.locator('#retry:not([hidden])').waitFor();
     check((await p.locator('#gate-copy').textContent()).includes('换版'),'version update asks explicit reload');
     check(await p.locator('#reading-copy').textContent()==='','stale body erased');
     await p.locator('#retry').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='鹅池');
     check(await p.locator('[data-recorded=true]').count()===0,'no old records assigned to new version');
     check((await p.evaluate(()=>localStorage.getItem('chulink:journey-content:v1:r'))).includes('我的拾记'),'old note preserved');
-    await scenario('pause');await p.locator('#refresh').click();await p.locator('#retry:not([hidden])').waitFor();
+    await scenario('pause');await toolClick(p,'#refresh');await p.locator('#retry:not([hidden])').waitFor();
     check(await p.locator('#content').isHidden(),'pause hides content');
     check(await p.locator('[data-art-point]').count()===0,'pause clears markers');
     await p.screenshot({path:path.join(out,'paused-390.png'),fullPage:true});
     await scenario('reset');await go();await scenario('withdraw');
-    await p.locator('#observe').click();await p.locator('#retry:not([hidden])').waitFor();
+    await toolClick(p,'#observe');await p.locator('#retry:not([hidden])').waitFor();
     check(await p.locator('#content').isHidden(),'source withdrawal before record');
     check(await p.locator('#source-list').textContent()==='','sources removed');
-    await scenario('reset');await go();await scenario('offline');await p.locator('#refresh').click();await p.locator('#retry:not([hidden])').waitFor();
+    await scenario('reset');await go();await scenario('offline');await toolClick(p,'#refresh');await p.locator('#retry:not([hidden])').waitFor();
     check((await p.locator('#gate-copy').textContent()).includes('网络'),'network fail not stale fallback');
     await scenario('reset');await p.locator('#retry').click();await p.locator('#content:not([hidden])').waitFor();
     // The local admin uses existing draft/review/publish controls; new artwork binding is optional.
@@ -156,13 +158,13 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     await closeLeaf();
     await p.unroute('**/__journey');
     await s.fixture.db.collection('resources').doc('r').update({visitInfo:{status:'closed'}});
-    await p.locator('#refresh').click();await p.locator('#retry:not([hidden])').waitFor();
+    await toolClick(p,'#refresh');await p.locator('#retry:not([hidden])').waitFor();
     check(await p.locator('#content').isHidden(),'closed scenic resource hides directions and copy');
     await scenario('reset');await go();
     const C=require('../cloudfunctions/appCore/lib/site-walk-core');
     const currentRoot=s.fixture.db.data().site_walks[C.rootId('r')];
     await s.fixture.db.collection('site_walk_versions').doc(currentRoot.publishedVersionId).update({review:{...s.fixture.db.data().site_walk_versions[currentRoot.publishedVersionId].review,validUntil:new Date(Date.now()+1200).toISOString()}});
-    await p.locator('#refresh').click();await p.locator('#content:not([hidden])').waitFor();
+    await toolClick(p,'#refresh');await p.locator('#content:not([hidden])').waitFor();
     await p.waitForFunction(()=>document.querySelector('#gate-title').textContent==='资料到了复核时间');
     check(await p.locator('#reading-copy').textContent()==='','expiry clears content without click');
     await scenario('reset');
@@ -171,7 +173,7 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     await q.addInitScript(()=>Object.defineProperty(window,'localStorage',{get(){throw Error('blocked');}}));
     await q.route('**/gsap-3.15.0.min.js',r=>r.abort());await q.route('**/hhl-full-park-v2.webp',r=>r.abort());
     await q.goto(s.url+'/explore-journey.html?resourceId=r');await q.locator('#content:not([hidden])').waitFor();
-    await q.locator('#observe').click();await q.waitForFunction(()=>document.querySelector('[data-stop=tower]').dataset.recorded==='true');
+    await toolClick(q,'#observe');await q.waitForFunction(()=>document.querySelector('[data-stop=tower]').dataset.recorded==='true');
     check(await q.locator('#point-title').textContent()==='黄鹤楼','fallback recording does not advance');
     await q.locator('#next').click();await q.waitForFunction(()=>document.querySelector('#point-title').textContent==='古铜顶');
     check(await q.locator('#art-error').isVisible(),'failed art notice');

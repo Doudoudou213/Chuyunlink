@@ -1,4 +1,5 @@
 'use strict';
+const {showJourneyTools,toolClick}=require('./lib/journey-browser-ui');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright'),{start}=require('./lib/exploration-journey-preview');
 let checks=0;function check(v,label){assert(v,label);checks++;}
@@ -11,7 +12,7 @@ let checks=0;function check(v,label){assert(v,label);checks++;}
     p.on('pageerror',e=>errors.push(e.message));
     p.on('request',r=>{if(!r.url().startsWith(s.url))external.push(r.url());if(r.url().endsWith('/__journey'))actions.push(r.postDataJSON().action);});
     const go=async(query='')=>{await p.goto(s.url+'/explore-journey.html?resourceId=r'+query);await p.locator('#content:not([hidden])').waitFor();};
-    const openLeaf=async(id,page=p)=>{if(!await page.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"]').count())await page.locator('#'+id+' > .journey-leaf-trigger').click();await page.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"][aria-busy="false"][data-state=open]').waitFor();};
+    const openLeaf=async(id,page=p)=>{if(id==='journey-help')await showJourneyTools(page);if(!await page.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"]').count())await page.locator('#'+id+' > .journey-leaf-trigger').click();await page.locator('#journey-leaf-dialog[open][data-leaf="'+id+'"][aria-busy="false"][data-state=open]').waitFor();};
     const closeLeaf=async(page=p)=>{await page.locator('#journey-leaf-dialog .journey-leaf-close').click();await page.locator('#journey-leaf-dialog').waitFor({state:'hidden'});};
     const finish=async()=>{await p.locator('#finish').click();await p.locator('#finished:not([hidden])').waitFor();};
     const scenario=async kind=>{const q=await browser.newPage();await q.goto(s.url+'/preview-control.html');await q.locator('[data-kind='+kind+']').click();await q.waitForFunction(()=>document.querySelector('#result').textContent.includes('已完成'));await q.close();};
@@ -39,7 +40,7 @@ let checks=0;function check(v,label){assert(v,label);checks++;}
     await p.locator('#ex-reading-link').click();await p.waitForURL('**/explore-journey.html?resourceId=r&pointId=copper');
     await p.locator('#content:not([hidden])').waitFor();
     check(await p.locator('#point-title').textContent()==='古铜顶','back to same scene');
-    await p.locator('#observe').click();await p.waitForFunction(()=>document.querySelector('[data-stop=copper]').dataset.recorded==='true');
+    await toolClick(p,'#observe');await p.waitForFunction(()=>document.querySelector('[data-stop=copper]').dataset.recorded==='true');
     check(await p.locator('#point-title').textContent()==='古铜顶','recording is separate from navigation');
     await p.locator('#next').click();await p.waitForFunction(()=>document.querySelector('#point-title').textContent==='白云阁');
     check(await p.locator('[data-stop=baiyun]').getAttribute('data-recorded')==='false','next leaves the following scene unrecorded');
@@ -80,10 +81,10 @@ let checks=0;function check(v,label){assert(v,label);checks++;}
     check(await p.locator('#trial-form input:checked').count()===0,'new edition does not inherit feedback');
     check((await p.evaluate(()=>localStorage.getItem('chulink:journey-content:v1:r'))).includes('"start":"help"'),'old edition feedback retained');
     await closeLeaf();
-    p.once('dialog',d=>d.accept());await p.locator('#clear').click();await p.locator('#content:not([hidden])').waitFor();
+    p.once('dialog',d=>d.accept());await toolClick(p,'#clear');await p.locator('#content:not([hidden])').waitFor();
     check(await p.evaluate(()=>localStorage.getItem('chulink:journey-content:v1:r'))===null,'all-edition clear removes feedback and notes');
     await scenario('reset');await go('&pointId=invalid');check(await p.locator('#point-title').textContent()==='黄鹤楼','unknown point not trusted');
-    await scenario('pause');await p.locator('#refresh').click();await p.locator('#retry:not([hidden])').waitFor();
+    await scenario('pause');await toolClick(p,'#refresh');await p.locator('#retry:not([hidden])').waitFor();
     check(await p.locator('#explore-tools').isHidden(),'unavailable content hides tool link');
     await p.goto(s.url+'/explore.html?resourceId=r');await p.locator('[data-action=retry]').waitFor();check(await p.locator('#ex-reading-link').isHidden(),'old explorer unavailable hides reading link');
     await scenario('reset');

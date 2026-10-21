@@ -7,7 +7,8 @@ const files=new Map([
   ['/suite.css',['tools/preview/exploration-trial-suite.css','text/css;charset=utf-8']],
   ['/suite.js',['tools/preview/exploration-trial-suite.js','text/javascript;charset=utf-8']],
   ['/paper.webp',['static/assets/paper-fibres-soft-v1.webp','image/webp']],
-  ['/brush.woff2',['static/assets/longcang-editorial-v1.woff2','font/woff2']]
+  ['/painting.webp',['static/assets/exploration-motion/hhl-full-park-v2.webp','image/webp']],
+  ['/brush.woff2',['static/assets/longcang-journey-v1.woff2','font/woff2']]
 ]);
 function defaultFactories(){return {
   study:()=>require('./exploration-four-scenes-preview').start(0),

@@ -1,6 +1,6 @@
 /* One quiet reading control on the existing leaf, not another settings panel. */
-.journey-reading-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:-8px 0 8px}
-.journey-reading-tools #reading-size{min-width:80px;min-height:44px;padding:6px 0 6px 12px;background:transparent;color:var(--muted);font:13px/1.7 system-ui,sans-serif;text-decoration:underline;text-underline-offset:5px;text-decoration-color:transparent}
+.journey-reading-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:0 0 8px;clear:both}
+.journey-reading-tools #reading-size{min-width:80px;min-height:44px;padding:6px 0 6px 12px;background:transparent;color:var(--muted);font:14px/1.7 var(--utility,system-ui);text-decoration:underline;text-underline-offset:5px;text-decoration-color:transparent}
 .journey-reading-tools #reading-size:hover,.journey-reading-tools #reading-size[aria-pressed=true]{color:var(--rust);text-decoration-color:currentColor}
 #reading-size-status{font:11px/1.6 system-ui,sans-serif;color:var(--muted)}
 #art-error{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 12px;padding:4px 12px 8px;color:var(--paper);font:12px/1.8 system-ui,sans-serif;text-align:center}
@@ -17,5 +17,5 @@ body[data-reading-size=large] #journey-help a,
 body[data-reading-size=large] .journey-leaf-dialog[data-leaf=journey-help] .journey-leaf-content p,
 body[data-reading-size=large] .journey-leaf-dialog[data-leaf=journey-help] .journey-leaf-content a{font-size:18px;line-height:1.95}
 body[data-reading-size=large] #review-date{font-size:15px;line-height:1.9}
-@media(max-width:600px){body[data-reading-size=large] #reading-copy{font-size:21px}.journey-reading-tools{margin-top:-6px}}
+@media(max-width:600px){body[data-reading-size=large] #reading-copy{font-size:21px}}
 @media(max-height:500px){.journey-reading-tools{margin-top:0;margin-bottom:4px}}

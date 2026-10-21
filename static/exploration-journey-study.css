@@ -1,28 +1,33 @@
 /* A detail window cut from the same scroll. All pigments and type are inherited. */
-.journey-study { margin: 0 0 22px; }
+.journey-study { margin: 0 0 16px; }
 .journey-study[hidden], .journey-study [hidden] { display: none; }
-.journey-leaf-content .journey-study-heading { margin: 0 0 10px; color: var(--ink); font: 21px/1.5 var(--brush); }
+.journey-leaf-content .journey-study-heading { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
 .journey-study-frame { overflow: hidden; position: relative; background: var(--paper-light); border-radius: 2px; isolation: isolate; }
-.journey-study-frame svg { width: 100%; display: block; max-height: 230px; background: var(--night); }
+.journey-study-frame svg { width: 100%; display: block; max-height: 156px; background: var(--night); }
 .journey-study-frame::after { content: ''; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 18px 4px var(--paper-light); }
 .journey-study-lines { stroke: var(--gold); stroke-width: 1.4px; stroke-linecap: round; stroke-linejoin: round; fill: none; }
 .journey-study-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px; }
-.journey-study-controls span { color: var(--muted); font: 10px/1.6 var(--utility); }
-.journey-study-controls button { flex: none; min-height: 44px; padding: 8px 0 8px 12px; background: transparent; color: var(--rust); font: 13px/1.6 var(--utility); border: 0; border-radius: 4px; }
+.journey-study-controls span { color: var(--muted); font: 12px/1.6 var(--utility); }
+.journey-study-controls button { flex: none; min-height: 44px; padding: 8px 0 8px 12px; background: transparent; color: var(--rust); font: 14px/1.6 var(--utility); border: 0; border-radius: 3px; }
 .journey-study-controls button:disabled { opacity: .6; cursor: wait; }
 .journey-study-controls button:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
-.journey-leaf-content .journey-study-caption { margin: 0; color: var(--muted); font: 12px/1.85 var(--reading); min-height: 2em; }
+.journey-leaf-content .journey-study-caption { margin: 0; color: var(--muted); font: 13px/1.7 var(--reading); }
 .journey-leaf-content #reading-copy { white-space: pre-line; }
 .reading-actions:has(details[open]) .journey-study { margin-top: 14px; }
-@media(max-width:600px) { .journey-study-frame svg { max-height: 208px; } }
-@media(max-height:500px) {
-  .journey-study-frame svg { max-height: 110px; }
-  .journey-leaf-dialog[data-leaf=reading]:has(.journey-study:not([hidden])) { max-height: calc(100dvh - 16px); }
-  .journey-leaf-dialog[data-leaf=reading]:has(.journey-study:not([hidden])) .journey-leaf-sheet { max-height: calc(100dvh - 16px); min-height: 0; padding-top: 8px; }
-  .journey-leaf-dialog[data-leaf=reading]:has(.journey-study:not([hidden])) .journey-leaf-header { padding-bottom: 4px; align-items: center; }
-  .journey-leaf-dialog[data-leaf=reading]:has(.journey-study:not([hidden])) .journey-leaf-header>div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 14px; }
-  .journey-leaf-dialog[data-leaf=reading]:has(.journey-study:not([hidden])) .journey-leaf-kicker { display: none; }
-  .journey-leaf-dialog[data-leaf=reading]:has(.journey-study:not([hidden])) .journey-leaf-header h2 { margin: 0; }
-  .journey-leaf-dialog[data-leaf=reading]:has(.journey-study:not([hidden])) .journey-leaf-footer { padding-block: 4px; }
+@media(max-width:600px) { .journey-study-frame svg { max-height: 132px; } }
+@media(min-width:680px), (max-height:650px) and (min-width:500px) {
+  .journey-study { float: right; width: 42%; margin: 0 0 16px 24px; }
+  .journey-study-controls { flex-wrap: wrap; gap: 0; }
+  .journey-study-controls button { padding-left: 0; }
+}
+@media(max-height:650px) {
+  .journey-study-frame svg { max-height: 100px; }
+  .journey-leaf-content .journey-study-caption { font-size: 12px; }
+}
+@media(max-height:650px) and (max-width:499px) {
+  .journey-study { margin-bottom: 12px; }
+  .journey-study-frame { display: none; }
+  .journey-study[data-detail]:not([data-detail=whole]) .journey-study-frame { display: block; }
+  .journey-study-controls { padding-top: 0; }
 }
 @media print { .journey-study-controls button { display: none; } }

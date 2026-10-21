@@ -1,4 +1,5 @@
 'use strict';
+const {toolClick}=require('./lib/journey-browser-ui');
 // A fresh, local-only browser. Network failures below are synthetic, not a claim
 // about field reception, real-device accessibility or approved scenic guidance.
 const assert = require('node:assert/strict');
@@ -71,7 +72,7 @@ function check(value,name) {assert(value,name);checks++;}
     const originalText=await p.locator('#reading-copy').textContent();
     const originalSources=await p.locator('#source-list').textContent();
     const standardObservation=await font(p.locator('#observation'));
-    check(await font(p.locator('#reading-copy'))===17,'standard mobile reading keeps established 17px text');
+    check(await font(p.locator('#reading-copy'))===18,'standard mobile reading uses the refined 18px text baseline');
     check(await size(p).getAttribute('type')==='button','font switch cannot submit a form');
     check(await size(p).getAttribute('aria-pressed')==='false','font switch exposes its original state');
     const keysBefore=await p.evaluate(()=>Object.keys(localStorage));
@@ -118,7 +119,7 @@ function check(value,name) {assert(value,name);checks++;}
       await q.locator('#sources > .journey-leaf-trigger').click();await opened(q);
       await q.screenshot({path:path.join(output,'large-sources-'+viewport.width+'x'+viewport.height+'.png')});
       check(await q.locator('#journey-leaf-body').evaluate(node=>node.scrollWidth<=node.clientWidth+1),'larger sources wrap '+viewport.width);
-      await close(q);await q.locator('#journey-help > .journey-leaf-trigger').click();await opened(q);
+      await close(q);await toolClick(q,'#journey-help > .journey-leaf-trigger');await opened(q);
       check(await q.locator('#journey-leaf-dialog').getAttribute('data-leaf')==='journey-help','help is tested in its actual moved paper '+viewport.width);
       check(await font(q.locator('#journey-leaf-body .journey-leaf-content p').first())===18,'real help paper inherits 18px large text '+viewport.width);
       check(await q.locator('#journey-leaf-body').evaluate(node=>node.scrollWidth<=node.clientWidth+1),'large help paper wraps '+viewport.width);
@@ -143,7 +144,7 @@ function check(value,name) {assert(value,name);checks++;}
       },{key:sharedKey,fingerprint,selected,note,offset});
     }
     async function checkSharedRecord(label) {
-      await shared.locator('#refresh').click();await shared.locator('#content:not([hidden])').waitFor();
+      await toolClick(shared,'#refresh');await shared.locator('#content:not([hidden])').waitFor();
       check(await shared.locator('#point-title').textContent()===expected('copper').title,label+' keeps the newest valid selected chapter');
       await shared.locator('#finish').click();await shared.locator('#finished:not([hidden])').waitFor();
       check(await shared.locator('#note').inputValue()==='另一个标签新保存的测试拾记',label+' keeps the newest valid private note');
@@ -158,18 +159,18 @@ function check(value,name) {assert(value,name);checks++;}
     await shared.close();
 
     const memory=await page();await noStorage(memory);await go(memory);await select(memory,'pond');await chooseLarge(memory);await close(memory);
-    await memory.locator('#observe').click();await memory.locator('[data-stop=pond][data-recorded=true]').waitFor();
+    await toolClick(memory,'#observe');await memory.locator('[data-stop=pond][data-recorded=true]').waitFor();
     check(await memory.locator('[data-recorded=true]').count()===1,'explicit observation works without storage');
     await memory.locator('#finish').click();await memory.locator('#finished:not([hidden])').waitFor();
     await memory.locator('#note').fill('本机测试拾记，不含个人资料');
     await memory.locator('#return').click();await memory.locator('#content:not([hidden])').waitFor();
-    await memory.locator('#refresh').click();await memory.locator('#content:not([hidden])').waitFor();
+    await toolClick(memory,'#refresh');await memory.locator('#content:not([hidden])').waitFor();
     check(await memory.locator('#point-title').textContent()===expected('pond').title,'same-version refresh preserves in-memory position when storage is blocked');
     check(await memory.locator('[data-recorded=true]').count()===1,'same-version refresh preserves explicit in-memory observation');
     await open(memory);
     check(await size(memory).getAttribute('aria-pressed')==='true','blocked storage does not stop current-session text sizing');await close(memory);
     const failRead=route=>route.abort();
-    await memory.route(apiPattern,failRead);await memory.locator('#refresh').click();await memory.locator('#retry:not([hidden])').waitFor();
+    await memory.route(apiPattern,failRead);await toolClick(memory,'#refresh');await memory.locator('#retry:not([hidden])').waitFor();
     check(await memory.locator('#reading-copy').textContent()==='','failed authority check does not retain readable stale prose');
     await memory.unroute(apiPattern,failRead);await memory.locator('#retry').click();await memory.locator('#content:not([hidden])').waitFor();
     check(await memory.locator('#point-title').textContent()===expected('pond').title,'same-version retry returns to the same in-memory chapter');
@@ -181,7 +182,7 @@ function check(value,name) {assert(value,name);checks++;}
       const value=preview.response();value.walk.version++;value.walk.fingerprint+='-comfort-new';
       return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(value)});
     });
-    await memory.locator('#refresh').click();await memory.locator('#retry:not([hidden])').waitFor();await memory.locator('#retry').click();await memory.locator('#content:not([hidden])').waitFor();
+    await toolClick(memory,'#refresh');await memory.locator('#retry:not([hidden])').waitFor();await memory.locator('#retry').click();await memory.locator('#content:not([hidden])').waitFor();
     check(await memory.locator('#point-title').textContent()===expected('tower').title,'new version does not inherit stale chapter position');
     check(await memory.locator('[data-recorded=true]').count()===0,'new version does not inherit old observations');
     await memory.locator('#finish').click();await memory.locator('#finished:not([hidden])').waitFor();

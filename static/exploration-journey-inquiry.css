@@ -13,7 +13,7 @@
 #journey-inquiry-options button[aria-busy=true]{color:var(--muted);cursor:wait}
 #journey-inquiry #journey-inquiry-status{font:12px/1.8 var(--utility);color:var(--muted);margin:0 0 18px}
 #journey-inquiry-answer h4{margin:8px 0 16px;font:600 18px/1.8 var(--reading);color:var(--ink)}
-#journey-inquiry-answer>p{font:18px/2.05 var(--reading);letter-spacing:.025em;margin:0 0 20px;white-space:pre-line}
+#journey-inquiry-answer>p{font:18px/1.85 var(--reading);letter-spacing:.01em;margin:0 0 16px;white-space:pre-line}
 #journey-inquiry-sources{list-style:none;padding:18px 0 0;margin:20px 0 26px;border-top:1px solid var(--rule)}
 #journey-inquiry-sources li{margin:0 0 20px}
 #journey-inquiry-sources a{display:flex;min-height:44px;align-items:center;color:var(--rust);font:14px/1.8 var(--reading);text-underline-offset:5px}
@@ -23,5 +23,5 @@ body[data-reading-size=large] #journey-inquiry-options button,
 body[data-reading-size=large] #journey-inquiry-answer h4{font-size:20px}
 body[data-reading-size=large] #journey-inquiry-sources a,
 body[data-reading-size=large] #journey-inquiry-sources p{font-size:17px;line-height:1.9}
-@media(max-width:600px){#journey-inquiry-answer>p{font-size:17px}body[data-reading-size=large] #journey-inquiry-answer>p{font-size:21px}}
+@media(max-width:600px){body[data-reading-size=large] #journey-inquiry-answer>p{font-size:21px}}
 @media(max-height:500px){#journey-inquiry-heading{font-size:26px;margin-top:4px}#journey-inquiry-options{margin:12px 0}}
