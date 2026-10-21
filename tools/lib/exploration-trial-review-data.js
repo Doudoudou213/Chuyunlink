@@ -164,5 +164,30 @@
           totalReports, includedReports, excludedReports, possibleDuplicateReports, counts};
       })};
   }
-  return {MAX_BYTES, MAX_ENTRIES, SCOPE, LIMITATIONS, parse, group, summary};
+  function reportText(groups, options = {}) {
+    if (typeof options.exampleOnly !== 'boolean') fail('请明确是否为演示摘要。');
+    const clean = summary(groups);
+    const rows = ['楚韵链迹 · 画卷试用复盘',
+      options.exampleOnly ? '【仅示例】以下为演示记录，不是真实试用结果。' : '【本地文件摘要】来源未核实，不代表独立游客或景区验收。',
+      '本报告仅含计数和版本依据，不包含游客原话、账号字段或原文件名。', ''];
+    if (!clean.groups.length) rows.push('尚未读入反馈，暂无可复盘记录。', '');
+    const columns = [
+      ['start', '能否开始', [['alone', '能自己开始'], ['help', '需要提示'], ['lost', '没找到入口'], ['unanswered', '未回答']]],
+      ['reading', '是否读懂', [['clear', '清楚易懂'], ['mixed', '部分费解'], ['hard', '不易理解'], ['unanswered', '未回答']]],
+      ['memory', '有无记住', [['yes', '记住了'], ['unsure', '不确定'], ['no', '还没有'], ['unanswered', '未回答']]]
+    ];
+    clean.groups.forEach((g, i) => {
+      rows.push('第 ' + (i + 1) + ' 组 · 地点编号 ' + g.resourceId + ' · 资料第 ' + g.version + ' 版',
+        '文件声明：' + (g.localTest ? '本地测试' : '非本地测试（未核实）'),
+        '内容指纹：' + g.fingerprint,
+        '已读入 ' + g.totalReports + ' 份；计入 ' + g.includedReports + ' 份；暂不计入 ' + g.excludedReports + ' 份。',
+        '其中 ' + g.possibleDuplicateReports + ' 份内容相同，仅供人工核对，不自动删除。');
+      for (const [key, title, values] of columns) rows.push(title + '：' + values.map(([value, label]) => label + ' ' + g.counts[key][value] + ' 份').join('；') + '。');
+      rows.push('');
+    });
+    rows.push('如何使用这份报告', '先核对版本和可能重复的文件，再对照本机原话决定需要改善的内容。',
+      '计数不能替代现场核验、内容审核、真实用户试用或上线授权。', '', '范围与限制', ...clean.limitations.map(line => '· ' + line));
+    return rows.join('\n');
+  }
+  return {MAX_BYTES, MAX_ENTRIES, SCOPE, LIMITATIONS, parse, group, summary, reportText};
 });

@@ -17,8 +17,15 @@ const csp = ["default-src 'none'", "script-src 'self'", "style-src 'self'",
   "base-uri 'none'", "form-action 'none'", "frame-src 'none'", "frame-ancestors 'none'",
   "worker-src 'none'", "media-src 'none'"].join('; ');
 
-async function start(port = 0) {
+async function start(port = 0, {trustedNavigationOrigins = []} = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw Error('本机预览端口不合法');
+  if (!Array.isArray(trustedNavigationOrigins) || trustedNavigationOrigins.length > 4) throw Error('本机入口来源不合法');
+  const navigationOrigins = new Set(trustedNavigationOrigins.map(value => {
+    let u;try {u = new URL(value);} catch {throw Error('本机入口来源不合法');}
+    if (u.protocol !== 'http:' || !['127.0.0.1', 'localhost'].includes(u.hostname) || !/^\d+$/.test(u.port) ||
+        u.username || u.password || value !== u.origin) throw Error('本机入口来源不合法');
+    return u.origin;
+  }));
   const realRoot = fs.realpathSync(root);
   const server = http.createServer((req, res) => {
     res.setHeader('Cache-Control', 'no-store');
@@ -33,7 +40,13 @@ async function start(port = 0) {
     const hosts = ['127.0.0.1:' + server.address().port, 'localhost:' + server.address().port];
     if (!hosts.includes(req.headers.host)) return finish(421);
     if (req.headers.origin && req.headers.origin !== 'http://' + req.headers.host) return finish(403);
-    if (req.headers['sec-fetch-site'] && !['same-origin', 'none'].includes(req.headers['sec-fetch-site'])) return finish(403);
+    let trustedNavigation = false;
+    if (['GET', 'HEAD'].includes(req.method) && ['/', '/trial-review.html'].includes(String(req.url || '').split('?')[0]) &&
+        req.headers['sec-fetch-site'] === 'same-site' && req.headers['sec-fetch-mode'] === 'navigate' &&
+        req.headers['sec-fetch-dest'] === 'document') {
+      try {trustedNavigation = navigationOrigins.has(new URL(req.headers.referer).origin);} catch {}
+    }
+    if (req.headers['sec-fetch-site'] && !['same-origin', 'none'].includes(req.headers['sec-fetch-site']) && !trustedNavigation) return finish(403);
     if (!['GET', 'HEAD'].includes(req.method)) return finish(405, {Allow:'GET, HEAD'});
     // Check the raw target before any URL normalization. No percent-encoded
     // routes, dot segments, absolute targets or backslashes are accepted.

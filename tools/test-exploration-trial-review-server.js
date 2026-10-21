@@ -74,6 +74,40 @@ function request(url, target, {method = 'GET', headers = {}} = {}) {
       const source = fs.readFileSync(path.join(__dirname, name), 'utf8');
       check(!source.includes('exploration-trial-review'), 'tool omitted from formal ' + name);
     }
+    const hubOrigin = 'http://127.0.0.1:4224';
+    const navigationHeaders = {'Sec-Fetch-Site':'same-site', 'Sec-Fetch-Mode':'navigate',
+      'Sec-Fetch-Dest':'document', Referer:hubOrigin + '/trial-suite.html'};
+    check((await request(server.url, '/trial-review.html', {headers:navigationHeaders})).status === 403,
+      'standalone default rejects cross-port document navigation');
+    for (const origins of [null, 'http://127.0.0.1:4224', ['https://127.0.0.1:4224'],
+      ['http://127.0.0.1'], ['http://evil.example:4224'], ['http://127.0.0.1:4224/'],
+      ['http://localhost:4224/a'], ['http://u@localhost:4224'], Array(5).fill(hubOrigin)]) {
+      await assert.rejects(start(0, {trustedNavigationOrigins:origins}), /来源/);checks++;
+    }
+    const trusted = await start(0, {trustedNavigationOrigins:[hubOrigin]});
+    try {
+      for (const target of ['/', '/trial-review.html', '/trial-review.html?preview=local-review']) {
+        for (const method of ['GET', 'HEAD']) {
+          const r = await request(trusted.url, target, {method, headers:navigationHeaders});
+          check(r.status === 200 && (method !== 'HEAD' || !r.body.length), 'known hub can open only review document');
+        }
+      }
+      for (const headers of [
+        {...navigationHeaders, Referer:'http://127.0.0.1:4225/trial-suite.html'},
+        {...navigationHeaders, Referer:'https://evil.example/'},
+        {...navigationHeaders, Referer:'invalid'},
+        {...navigationHeaders, Referer:''},
+        {...navigationHeaders, Origin:'https://evil.example'},
+        {...navigationHeaders, 'Sec-Fetch-Site':'cross-site'},
+        {...navigationHeaders, 'Sec-Fetch-Mode':'cors'},
+        {...navigationHeaders, 'Sec-Fetch-Dest':'script'},
+        {...navigationHeaders, 'Sec-Fetch-Dest':''}
+      ]) check((await request(trusted.url, '/trial-review.html', {headers})).status === 403, 'reject non-navigation or unknown source');
+      for (const target of ['/review.js', '/review.css', '/paper.webp', '/brush.woff2', '/review-data.js'])
+        check((await request(trusted.url, target, {headers:navigationHeaders})).status === 403, 'trusted navigation does not open assets');
+      for (const method of ['POST', 'PUT', 'DELETE'])
+        check((await request(trusted.url, '/trial-review.html', {method, headers:navigationHeaders})).status !== 200, 'trusted navigation never permits writes');
+    } finally {await trusted.close();}
     console.log('Trial review local server: ' + checks + ' checks passed.');
   } finally {await server.close();}
 })().catch(error => {console.error(error);process.exitCode = 1;});

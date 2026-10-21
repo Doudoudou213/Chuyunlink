@@ -109,6 +109,18 @@ function reject(edit) { const value = report(); edit(value); check(() => assert.
   check(() => assert.throws(() => R.summary([{...groups[0], includedReports: 50}]), /计数不一致/));
   check(() => assert.throws(() => R.summary([{...groups[0], counts: {}}]), /份数/));
   check(() => assert.deepEqual(R.summary([]).groups, []));
+  const human = R.reportText(groups, {exampleOnly: true});
+  for (const term of ['【仅示例】', '不是人数', '能否开始', '是否读懂', '有无记住', '能自己开始 1 份', '内容指纹：', '地点编号、资料版本和指纹']) check(() => assert(human.includes(term), term));
+  for (const term of ['private-file.json', 'private-name', 'obstacles', 'duplicateOf', report().answers.obstacle]) check(() => assert(!human.includes(term)));
+  const normal = R.reportText(groups, {exampleOnly: false});
+  check(() => assert(normal.includes('来源未核实')));
+  check(() => assert(!normal.includes('【仅示例】')));
+  check(() => assert(normal.includes('非本地测试（未核实）')));
+  check(() => assert(normal.includes('第 5 组')));
+  check(() => assert(R.reportText(allExcluded, {exampleOnly: false}).includes('计入 0 份；暂不计入 1 份')));
+  check(() => assert(R.reportText([], {exampleOnly: false}).includes('尚未读入反馈')));
+  for (const options of [{}, {exampleOnly: 'false'}]) check(() => assert.throws(() => R.reportText(groups, options), /反馈文件无效/));
+  check(() => assert.throws(() => R.reportText([{...groups[0], includedReports: 50}], {exampleOnly: false}), /计数不一致/));
   const browser = {TextEncoder}; vm.createContext(browser);
   vm.runInContext(fs.readFileSync(require.resolve('./lib/exploration-trial-review-data'), 'utf8'), browser);
   check(() => assert.equal(browser.ChuTrialReviewData.parse(JSON.stringify(report())).version, 1));

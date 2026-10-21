@@ -24,11 +24,19 @@ const upload=(value,name='画卷试用反馈.json')=>({name,mimeType:'applicatio
     const text=id=>page.locator('#'+id).textContent();
     const importFiles=async files=>{await page.locator('#files').setInputFiles(files);await page.waitForFunction(()=>!document.querySelector('#import').disabled);};
     const download=async()=>{const wait=page.waitForEvent('download');await page.locator('#export').click();const file=await wait;const data=JSON.parse(fs.readFileSync(await file.path(),'utf8'));return {file,data};};
+    const humanDownload=async()=>{const wait=page.waitForEvent('download');await page.locator('#download-report').click();const file=await wait;return {file,text:fs.readFileSync(await file.path(),'utf8').replace(/^\uFEFF/,'')};};
+    const printPreview=async()=>{await page.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));await page.emulateMedia({media:'print'});};
+    const screen=async()=>{await page.emulateMedia({media:'screen'});};
     const clear=async accept=>{page.once('dialog',dialog=>accept?dialog.accept():dialog.dismiss());await page.locator('#clear').click();};
     await goto();
     check(await page.locator('#empty').isVisible(),'empty state shown without imported data');
     check(!await page.locator('#workspace').isVisible(),'no fabricated report statistics');
     check(await page.locator('#records input').count()===0,'no automatic sample load');
+    await printPreview();
+    check(await page.locator('#report-text').isVisible(),'print surface exists for empty page');
+    check(!await page.locator('main').isVisible(),'empty print hides interactive workspace');
+    check(!(await text('report-text')).includes('hhl-review-example'),'empty print does not invent sample records');
+    await screen();
     await page.keyboard.press('Tab');
     check(await page.locator('#sample').evaluate(e=>e===document.activeElement),'keyboard begins with example action');
     check(await page.locator('#sample').evaluate(e=>getComputedStyle(e).outlineStyle!=='none'),'keyboard focus visible');
@@ -61,11 +69,28 @@ const upload=(value,name='画卷试用反馈.json')=>({name,mimeType:'applicatio
     check(!JSON.stringify(sampleDownload.data).includes('希望能更快'),'summary omits opinions');
     check(!JSON.stringify(sampleDownload.data).includes('record-'),'summary omits UI entry identifiers');
     check(!JSON.stringify(sampleDownload.data).includes('duplicateOf'),'summary omits individual record links');
+    const sampleHuman=await humanDownload();
+    check(sampleHuman.file.suggestedFilename().endsWith('.txt'),'human report is plain text');
+    check(/示例|演示/.test(sampleHuman.text),'human example report explicitly marked');
+    check(sampleHuman.text.includes('hhl-review-example'),'human report retains version metadata');
+    check(sampleHuman.text.includes('a'.repeat(64))&&sampleHuman.text.includes('b'.repeat(64)),'human report includes all versions, not just selected group');
+    check(/能否开始/.test(sampleHuman.text)&&/是否读懂/.test(sampleHuman.text),'human report uses readable Chinese question labels');
+    check(!sampleHuman.text.includes('希望能更快'),'human report omits raw example opinions');
+    check(!sampleHuman.text.includes('record-'),'human report omits internal entry IDs');
+    await printPreview();
+    check(await page.locator('#report-text').isVisible(),'print shows safe summary');
+    check(!await page.locator('main').isVisible(),'print hides all review and free-text sections');
+    check((await text('report-text')).replace(/^\uFEFF/,'')===sampleHuman.text,'print and download share the same complete summary');
+    await page.screenshot({path:path.join(out,'closeout-print-summary.png'),fullPage:true});
+    await screen();
+    await page.evaluate(()=>{window.printCount=0;window.print=()=>{window.printCount++;window.dispatchEvent(new Event('beforeprint'));};});
+    await page.locator('#print-report-button').click();
+    check(await page.evaluate(()=>window.printCount===1),'print button explicitly opens browser print');
     for(const [width,height]of [[320,900],[390,900],[768,1000],[1440,1000],[667,320]]){
       await page.setViewportSize({width,height});
       await page.locator('#groups').selectOption({index:0});
       check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal overflow '+width+'x'+height);
-      for(const selector of ['#sample','#import','#groups','#basis-toggle','#export','#clear','#records label']){
+      for(const selector of ['#sample','#import','#groups','#basis-toggle','#download-report','#print-report-button','#export','#clear','#records label']){
         const bounds=await page.locator(selector).first().boundingBox();
         check(bounds.height>=44,'44px target '+selector+' '+width+'x'+height);
       }
@@ -78,6 +103,9 @@ const upload=(value,name='画卷试用反馈.json')=>({name,mimeType:'applicatio
     await clear(true);
     check(await page.locator('#empty').isVisible(),'clear accepted restores empty state');
     check(await page.locator('#import').evaluate(e=>e===document.activeElement),'clear restores import focus');
+    await printPreview();
+    check(!(await text('report-text')).includes('hhl-review-example'),'clear removes stale print data');
+    await screen();
     const injected='<img src="https://example.invalid/leak" onerror="window.injectionRan=true">';
     const original=report(),html=report({answers:{...original.answers,obstacle:injected}}),local=report({localTest:true}),other=report({fingerprint:'b'.repeat(64)});
     await importFiles([upload(original,'PRIVATE_FILENAME.json'),upload(html),upload(local),upload(other)]);
@@ -96,6 +124,14 @@ const upload=(value,name='画卷试用反馈.json')=>({name,mimeType:'applicatio
     check(realDownload.data.groups.length===3,'all three imported groups summarized');
     check(!JSON.stringify(realDownload.data).includes('测试意见仅留本机'),'summary excludes imported opinion');
     check(!JSON.stringify(realDownload.data).includes('example.invalid'),'summary excludes malicious free text');
+    const importedHuman=await humanDownload();
+    check(importedHuman.text.includes('reading-trial-test'),'imported human report retains resource metadata');
+    check(/未核实/.test(importedHuman.text),'human report does not certify import authenticity');
+    for(const term of ['PRIVATE_FILENAME','PRIVATE_NOTE_NOT_EXPORTED','测试意见仅留本机','example.invalid'])check(!importedHuman.text.includes(term),'human export omits '+term);
+    await printPreview();
+    check(!(await text('report-text')).includes('example.invalid'),'print does not leak HTML-shaped opinion');
+    check(!await page.locator('#notes').isVisible(),'raw opinions hidden from print');
+    await screen();
     const before=await text('totals');
     await importFiles([upload('{bad json}'),upload({...original,uid:'TEST_FIELD_NOT_ALLOWED'}),{name:'oversize.json',mimeType:'application/json',buffer:Buffer.alloc(65537,32)}]);
     check((await text('status')).includes('读入 0 份，未读入 3 份'),'bad unknown-field oversized files separately rejected');
@@ -122,9 +158,13 @@ const upload=(value,name='画卷试用反馈.json')=>({name,mimeType:'applicatio
     };});
     await page.locator('#files').setInputFiles([upload(other)]);
     await page.waitForFunction(()=>!!window.pendingTrialReader);
-    for(const id of ['sample','import','export','clear','files','groups'])check(await page.locator('#'+id).isDisabled(),'busy prevents '+id);
+    for(const id of ['sample','import','download-report','print-report-button','export','clear','files','groups'])check(await page.locator('#'+id).isDisabled(),'busy prevents '+id);
     check(await page.locator('#records input').first().isDisabled(),'busy prevents record changes');
     check(await page.locator('#cancel').isVisible(),'cancel reading remains available');
+    await printPreview();
+    check(!(await text('report-text')).includes('reading-trial-test'),'busy print does not hand off stale report');
+    check(/读取|完成/.test(await text('report-text')),'busy print tells reader to wait');
+    await screen();
     await page.locator('#cancel').click();
     check((await text('status')).includes('读取已取消'),'cancel reports current batch not counted');
     check(await page.locator('#import').evaluate(e=>e===document.activeElement),'cancel restores keyboard focus');
@@ -143,6 +183,9 @@ const upload=(value,name='画卷试用反馈.json')=>({name,mimeType:'applicatio
     check(await page.evaluate(()=>localStorage.length===0&&sessionStorage.length===0),'no persistent browser storage');
     await page.reload();await page.locator('#import').waitFor();
     check(await page.locator('#empty').isVisible(),'refresh forgets imported feedback');
+    await printPreview();
+    check(!(await text('report-text')).includes('reading-trial-test'),'refresh print does not recover imported metadata');
+    await screen();
     check(await page.evaluate(()=>localStorage.length===0&&sessionStorage.length===0),'refresh leaves storage empty');
     check(external.length===0,'no external network requests');
     check(!requests.some(r=>r.method!=='GET'),'no uploads or cloud writes');

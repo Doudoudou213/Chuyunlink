@@ -561,3 +561,32 @@ option{
     transition:background-color .16s,color .16s
   }
 }
+.report-actions{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+}
+.machine-export{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:4px 16px;
+  margin-top:12px;
+}
+.machine-export button{
+  padding-left:0;
+}
+.machine-export p{
+  margin:0;
+}
+.print-report{
+  display:none;
+}
+@media print{
+  @page{size:A4;margin:16mm}
+  body{background:white;color:black;font:11pt/1.7 serif}
+  body>.masthead,body>main{display:none!important}
+  body>.print-report{display:block!important}
+  #report-text{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
+}

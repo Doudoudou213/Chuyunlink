@@ -5,7 +5,10 @@
   let entries=[],groups=[],selected='',sequence=0,demo=false,busy=false,epoch=0,pendingRead=null;
   function el(tag,text,className){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
   function status(text){$('status').textContent=text;}
-  function setBusy(value){busy=value;$('cancel').hidden=!value;for(const id of ['sample','import','export','clear','files','groups'])$(id).disabled=value;for(const checkbox of $('records').querySelectorAll('input'))checkbox.disabled=value;}
+  function setBusy(value){busy=value;$('cancel').hidden=!value;for(const id of ['sample','import','export','download-report','print-report-button','clear','files','groups'])$(id).disabled=value;for(const checkbox of $('records').querySelectorAll('input'))checkbox.disabled=value;if(D)prepareReport();}
+  function prepareReport(){
+    $('report-text').textContent=busy?'正在读取反馈，本次不打印计数。请等读取完成或取消后重试。':D.reportText(groups,{exampleOnly:demo});
+  }
   function readFile(file){return new Promise((resolve,reject)=>{
     const reader=new FileReader();let done=false,timer;
     const finish=(error,text)=>{if(done)return;done=true;clearTimeout(timer);reader.onload=reader.onerror=reader.onabort=null;if(pendingRead===cancel)pendingRead=null;error?reject(error):resolve(text);};
@@ -16,6 +19,7 @@
   });}
   function render(){
     groups=D.group(entries.map(({id,report,excluded})=>({id,report,excluded})));if(!groups.some(g=>g.key===selected))selected=groups[0]?.key||'';
+    prepareReport();
     $('workspace').hidden=!groups.length;$('empty').hidden=!!groups.length;$('sample-notice').hidden=!demo;
     $('groups').replaceChildren(...groups.map((g,i)=>{const option=el('option',`${i+1} · ${g.resourceId} / 第${g.version}版`);option.value=g.key;option.selected=g.key===selected;return option;}));
     const group=groups.find(g=>g.key===selected);if(!group)return;
@@ -76,13 +80,22 @@
     [a,a,sample('a',{obstacle:'【示例】出处很清楚，想在读完后再回看一遍。'}),sample('b',{reading:'',memory:'unsure',obstacle:'【示例】这份是另一内容版本，不应混在一起汇总。'})].forEach(r=>add(D.parse(JSON.stringify(r))));
     render();status('已载入 4 份演示记录、2 个内容版本；仅用于体验本页。');
   };
+  function download(text,type,name){
+    const url=URL.createObjectURL(new Blob([text],{type}));
+    const link=el('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
   $('export').onclick=()=>{
     if(busy||!entries.length)return;
-    const summary={...D.summary(groups),exampleOnly:demo};
-    const url=URL.createObjectURL(new Blob([JSON.stringify(summary,null,2)],{type:'application/json;charset=utf-8'}));
-    const link=el('a');link.href=url;link.download=demo?'画卷复盘计数-仅示例.json':'画卷复盘计数.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    download(JSON.stringify({...D.summary(groups),exampleOnly:demo},null,2),'application/json;charset=utf-8',demo?'画卷复盘计数-仅示例.json':'画卷复盘计数.json');
     status('计数摘要已交给浏览器下载；不含原始意见，记录仍保留在本页。');
   };
+  $('download-report').onclick=()=>{
+    if(busy||!entries.length)return;
+    download('\ufeff'+D.reportText(groups,{exampleOnly:demo}),'text/plain;charset=utf-8',demo?'画卷复盘报告-仅示例.txt':'画卷复盘报告.txt');
+    status('中文报告已交给浏览器下载，可直接打开阅读；不包含游客原话。');
+  };
+  $('print-report-button').onclick=()=>{if(busy||!entries.length)return;prepareReport();window.print();};
+  window.addEventListener('beforeprint',()=>{if(D)prepareReport();});
   if(!D){status('本地复盘模块未加载，请刷新或重新启动预览。');setBusy(true);$('cancel').hidden=true;return;}
   render();
 })();
