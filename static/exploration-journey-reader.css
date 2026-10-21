@@ -1,0 +1,26 @@
+/* The original paper remains the surface. Controls read like margin notes. */
+.scenic-journey .journey-reader-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 10px;color:var(--muted);font:13px/1.6 var(--utility)}
+.scenic-journey .journey-reader-top[hidden],.scenic-journey .journey-reader-bottom[hidden],.scenic-journey .journey-reader-paging[hidden]{display:none}
+.scenic-journey :is(.journey-reader-top,.journey-reader-bottom) button{min-width:44px;min-height:44px;padding:8px 4px;border:0;border-radius:0;background:transparent;color:var(--rust);font:14px/1.6 var(--utility);cursor:pointer}
+.scenic-journey :is(.journey-reader-top,.journey-reader-bottom) button:disabled{opacity:.5;cursor:default}
+.scenic-journey :is(.journey-reader-top,.journey-reader-bottom) button:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+.scenic-journey #reading-copy:has(.journey-reader-paragraph){white-space:normal;min-height:5.4em}
+.scenic-journey .journey-reader-paragraph{display:block;white-space:pre-wrap}
+.scenic-journey .journey-reader-paragraph[hidden]{display:none}
+.scenic-journey .journey-reader-paragraph:not([hidden])~.journey-reader-paragraph:not([hidden]){margin-top:1em}
+.scenic-journey .journey-reader-bottom{clear:both;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 16px;padding-top:4px;border-top:1px solid var(--rule)}
+.scenic-journey .journey-reader-paging{display:flex;align-items:center;gap:4px}
+.scenic-journey #journey-reader-keep{margin-left:auto;color:var(--muted)}
+.scenic-journey #journey-reader-keep[aria-pressed=true]{color:var(--rust)}
+.scenic-journey .journey-reader-top:has(+ #reading-copy){position:relative}
+.scenic-journey #journey-entry-note{color:var(--muted);font:13px/1.7 var(--utility);margin:0 0 10px}
+.scenic-journey #journey-reading-progress{color:var(--muted);font:12px/1.7 var(--utility);margin:6px 0 0}
+.scenic-journey #souvenir-details{padding-left:1.2em;margin:8px 0;font:14px/1.8 var(--reading);color:var(--muted)}
+.scenic-journey #souvenir-details:empty,.scenic-journey #journey-entry-note:empty{display:none}
+.scenic-journey .souvenir-actions{display:flex;flex-wrap:wrap;gap:8px 18px}
+.scenic-journey .souvenir-actions #download-image{min-height:50px;flex:1 0 180px}
+.scenic-journey .souvenir-actions #download{flex:0 0 auto;white-space:nowrap;background:transparent;color:var(--muted);font:14px/1.6 var(--utility);box-shadow:none;padding-inline:0}
+.scenic-journey #souvenir-export-status{font:13px/1.8 var(--utility);color:var(--muted)}
+.scenic-journey #souvenir-export-status:empty{display:none}
+@media(max-width:600px){.scenic-journey .journey-reader-top{clear:both}.scenic-journey .journey-reader-bottom{gap:6px}.scenic-journey .journey-reader-bottom button{font-size:13px}.scenic-journey .souvenir-actions #download-image{flex-basis:100%}}
+@media(prefers-reduced-motion:reduce){.scenic-journey #reading-copy{transform:none!important;opacity:1!important}}

@@ -4,4 +4,5 @@ const browser=process.argv.includes('--browser'),tests=browser?['test-exploratio
 tests.push(...(browser?['test-exploration-trial-review-browser','test-exploration-trial-suite-browser']:['test-exploration-trial-review-data','test-exploration-trial-review-server','test-exploration-trial-suite-server']));
 tests.push(...(browser?['test-exploration-reading-tabs-browser','test-exploration-reading-design-browser']:['test-journey-font']));
 if(browser)tests.push('test-exploration-preview-disclosure-browser','test-exploration-reading-polish-browser');
+tests.push(...(browser?['test-exploration-observation-browser','test-exploration-reader-browser','test-exploration-souvenir-browser']:['test-exploration-observation','test-exploration-reader-record','test-exploration-souvenir']));
 for(const name of tests){const result=spawnSync(process.execPath,[path.join(__dirname,name+'.js')],{stdio:'inherit',env:process.env});if(result.error)throw result.error;if(result.status!==0)process.exit(result.status||1);}console.log('Exploration suite passed: '+tests.length+' '+(browser?'browser':'business/build')+' scripts; local only.');

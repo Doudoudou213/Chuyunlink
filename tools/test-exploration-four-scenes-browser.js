@@ -40,7 +40,7 @@ function check(value,name) {assert(value,name);checks++;}
   const opened = async p => p.locator('#journey-leaf-dialog[open][data-state=open][aria-busy=false]').waitFor();
   const open = async p => {await p.locator('#reading > .journey-leaf-trigger').click();await opened(p);};
   const close = async p => {await p.locator('.journey-leaf-close').click();await p.locator('#journey-leaf-dialog').waitFor({state:'hidden'});};
-  const detail = p => p.locator('#journey-study button');
+  const detail = p => p.locator('#journey-study .journey-study-controls button');
   const idle = async p => p.waitForFunction(() => {
     const art=document.querySelector('.journey-study-art'),line=document.querySelector('.journey-study-lines');
     return art&&!art.style.willChange&&(!window.gsap||(!gsap.isTweening(art)&&!gsap.isTweening(line)));

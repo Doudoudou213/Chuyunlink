@@ -1,0 +1,37 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const api=require('../static/exploration-journey-souvenir');
+let checks=0;const check=(value,label)=>{assert(value,label);checks++;};
+const base={title:'黄鹤楼 · 一楼四景（待审样章）',version:1,localTest:true,points:[{id:'tower',title:'黄鹤楼主楼'},{id:'pond',title:'鹅池'}],observed:['tower'],note:'檐角向上，水色向远。\n把眼前所见，留进共同图鉴。',details:[{pointId:'tower',label:'层檐曲线'}]};
+const projected=api.project(base);
+check(projected.note===base.note,'exact private note retained only in returned composition data');
+check(JSON.stringify(projected)===JSON.stringify(base),'canonical payload preserves approved fields');
+check(projected!==base&&projected.points!==base.points&&projected.details!==base.details,'payload detached from caller');
+const dirty={...base,observed:['tower','no-such','tower'],details:[...base.details,...base.details,{pointId:'no-such',label:'错配'},{pointId:'pond',label:''}],uid:'private',url:'https://bad.example/a.png',feedback:'private feedback'};
+const clean=api.project(dirty);
+check(JSON.stringify(clean.observed)==='["tower"]','unbound and duplicate observed IDs excluded');
+check(clean.details.length===1,'invalid and duplicate detail labels excluded');
+check(!('uid'in clean)&&!('url'in clean)&&!('feedback'in clean),'account, supplied media and feedback not exported');
+check(api.project({...base,observed:[]}).observed.length===0,'zero observations never auto-marked');
+check(api.project({...base,localTest:'true'}).localTest===false,'draft flag explicit boolean');
+check(api.project({...base,details:undefined}).details.length===0,'legacy payload without detail record supported');
+for(const value of [null,{...base,points:[]},{...base,points:[base.points[0],base.points[0]]},{...base,points:[{id:'<img>',title:'假'}]},{...base,title:'x'.repeat(161)},{...base,note:'x'.repeat(121)},{...base,version:0},{...base,version:'1'},{...base,details:{}},{...base,note:'\0'}]){
+  assert.throws(()=>api.project(value));checks++;
+}
+const note='檐角𠀋，🪶e\u0301与👨‍👩‍👧‍👦';
+const wrapped=api.wrap(note,value=>Array.from(value).length,4);
+check(wrapped.join('')===note,'wrapping does not drop or add graphemes');
+check(wrapped.some(line=>line.includes('👨‍👩‍👧‍👦')),'family emoji cluster stays intact');
+check(wrapped.some(line=>line.includes('e\u0301')),'combining mark stays attached');
+check(wrapped.every(line=>!/^[\udc00-\udfff]/.test(line)&&!/[\ud800-\udbff]$/.test(line)),'no split surrogate pair');
+check(JSON.stringify(api.wrap('第一行\n\n第三行',value=>value.length,10))==='["第一行","","第三行"]','explicit blank line retained');
+check(api.wrap('abc',value=>value.length,1).join('')==='abc','long words wrap without ellipsis');
+check(api.wrap('',value=>value.length,1).length===1,'empty note layout safe');
+assert.throws(()=>api.wrap('x',value=>value.length,0));checks++;
+const source=fs.readFileSync(path.join(__dirname,'../static/exploration-journey-souvenir.js'),'utf8');
+check(!/\b(?:localStorage|sessionStorage|fetch|XMLHttpRequest|sendBeacon)\b/.test(source),'export module has no persistence or network data transport');
+check(source.includes("link.download='我的画卷拾记.png'"),'stable filename never contains private note');
+check(source.includes('AI 辅助创作')&&source.includes('待审样章 · 非现场导览')&&source.includes('非到访凭证'),'artwork origin and limits retained');
+check(api.create({})===null,'missing host safely unavailable');
+console.log('Souvenir data/layout: '+checks+' checks passed');

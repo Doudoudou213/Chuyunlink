@@ -79,7 +79,13 @@
     "test:exploration:reading-tabs": "node tools/test-exploration-reading-tabs-browser.js",
     "test:exploration:font": "node tools/test-journey-font.js",
     "test:exploration:preview-disclosure": "node tools/test-exploration-preview-disclosure-browser.js",
-    "test:exploration:reading-polish": "node tools/test-exploration-reading-polish-browser.js"
+    "test:exploration:reading-polish": "node tools/test-exploration-reading-polish-browser.js",
+    "test:exploration:observation": "node tools/test-exploration-observation-browser.js",
+    "test:exploration:reader": "node tools/test-exploration-reader-browser.js",
+    "test:exploration:reader-record": "node tools/test-exploration-reader-record.js",
+    "test:exploration:observation-data": "node tools/test-exploration-observation.js",
+    "test:exploration:souvenir": "node tools/test-exploration-souvenir.js",
+    "test:exploration:souvenir:browser": "node tools/test-exploration-souvenir-browser.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

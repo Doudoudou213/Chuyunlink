@@ -10,12 +10,31 @@
   let continuation=0,continuingClose=false,resumeAvailable=false;
   let verificationSequence=0,acceptedVerification=0;
   const storageKey='chulink:journey-content:v1:'+resourceId;
-  const study=window.ChuJourneyStudy?.create($('journey-study'),{async verify(){
+  async function verifyReading(){
     if(!ready||finished||document.hidden||leaving)return false;
     const token=generation,selected=record.selected;
     await verify(token);
     return token===generation&&ready&&!finished&&!document.hidden&&!leaving&&record.selected===selected;
-  }});
+  }
+  const study=window.ChuJourneyStudy?.create($('journey-study'),{verify:verifyReading,
+    onObservation(value){
+      if(!ready||finished||value.pointId!==record.selected||value.sceneId!==current().artScene||!validDetail(value))return false;
+      record.details=C.details(data,[...(record.details||[]),value]);
+      keepReading();return true;
+    }
+  });
+  const reader=window.ChuJourneyReader?.create($('reading-copy'),{verify:verifyReading,
+    recorded:()=>record?.observed.includes(record.selected),onKeep:keepReading});
+  const souvenirExport=window.ChuJourneySouvenir?.create({button:$('download-image'),status:$('souvenir-export-status'),
+    canInteract:()=>ready&&finished&&shell.dataset.art==='true'&&!document.hidden&&!leaving,
+    async verify(){
+      if(!ready||!finished||shell.dataset.art!=='true'||document.hidden||leaving)return false;
+      const token=generation;await verify(token);
+      return token===generation&&ready&&finished&&shell.dataset.art==='true'&&!document.hidden&&!leaving;
+    },
+    getData:()=>ready&&finished?{title:data.title,version:data.version,localTest:data.localTest,
+      points:data.points.map(({id,title})=>({id,title})),observed:[...record.observed],note:record.note,details:savedDetails()}:null
+  });
   const inquiry=window.ChuJourneyInquiry?.create($('journey-inquiry'),{
     revision:()=>data?.inquiryRevision,
     async verify(){
@@ -58,8 +77,8 @@
     onContinue:continueReading,
     onShown(){navigation?.shown();},
     onDismissed(){if(!continuingClose)continuation++;if(document.hidden||leaving)navigation?.invalidate();else navigation?.dismissed();},
-    onOpen(){hideResume();inquiry?.reset();question?.reset();study?.reset();A.pause?.();renderer?.pause();},
-    onClosing({navigation:forNext}={}){if(!forNext)continuation++;inquiry?.cancel();question?.cancel();study?.pause();A.pause?.();},
+    onOpen(){hideResume();reader?.cancel();inquiry?.reset();question?.reset();study?.reset();A.pause?.();renderer?.pause();},
+    onClosing({navigation:forNext}={}){if(!forNext)continuation++;reader?.cancel();inquiry?.cancel();question?.cancel();study?.pause();A.pause?.();},
     onClose(){inquiry?.reset();question?.reset();study?.reset();A.pause?.();if(ready&&!finished&&!document.hidden&&!leaving)renderer?.resume();}
   });
   function text(id,value){$(id).textContent=value;}
@@ -89,14 +108,14 @@
     fallbackRequest++;
     if(!leaves)for(const detail of document.querySelectorAll('.journal details')){detail.open=false;detail.querySelector('summary')?.removeAttribute('aria-busy');}
     ready=false;quiet();shell.setAttribute('aria-busy','false');
-    study?.clear();inquiry?.clear();question?.clear();
+    study?.clear();reader?.clear();souvenirExport?.reset();inquiry?.clear();question?.clear();
     $('content').hidden=true;$('finished').hidden=true;$('gate').hidden=false;
     hideResume();text('resume-label','');
     text('gate-title',title);text('gate-copy',copy);$('retry').hidden=!retry;
     $('explore-tools').hidden=true;$('explore-tools').removeAttribute('href');
     // Hide and erase old public content, not just its visible container.
-    for(const id of ['journey-points','journey-stops','source-list','audio','souvenir-stops'])$(id).replaceChildren();
-    for(const id of ['point-title','observation','reading-copy','review-date','souvenir-title','souvenir-note','souvenir-count'])text(id,'');
+    for(const id of ['journey-points','journey-stops','source-list','audio','souvenir-stops','souvenir-details'])$(id).replaceChildren();
+    for(const id of ['point-title','observation','reading-copy','review-date','souvenir-title','souvenir-note','souvenir-count','journey-entry-note','journey-reading-progress'])text(id,'');
     if(wasReading)focusPanel($('gate-title'),true);
   }
   function loadSaved(){
@@ -104,6 +123,7 @@
     catch{return {};}
   }
   function persist(){
+    record.details=C.details(data,record.details).filter(value=>validDetail(value));
     record.updatedAt=Date.now();
     try{
       const saved=loadSaved();saved[data.fingerprint]=record;
@@ -160,7 +180,7 @@
       // unavailable. Never carry a record into another content fingerprint.
       const saved=[record,loadSaved()[data.fingerprint]].filter(value=>C.canResume(data,value))
         .sort((a,b)=>b.updatedAt-a.updatedAt)[0],position=history.state?.__chuJourneyPosition;
-      record=C.record(data,saved);ready=true;finished=false;resumeAvailable=C.canResume(data,saved);
+      record=C.record(data,saved);record.details=record.details.filter(validDetail);ready=true;finished=false;resumeAvailable=C.canResume(data,saved);
       // A real incoming deep link wins. A reload of our own old-version address does not.
       const staleAddress=position?.resourceId===resourceId&&position.point===entryPoint&&position.fingerprint!==data.fingerprint;
       if(entryPoint&&!staleAddress&&data.points.some(p=>p.id===entryPoint)){
@@ -197,6 +217,8 @@
   }
   function render(){
     if(!ready)return;
+    souvenirExport?.reset();
+    $('download-image').hidden=!souvenirExport||shell.dataset.art!=='true';
     leaves?.dismiss({restoreFocus:false});
     const point=current(),index=data.points.indexOf(point);
     $('explore-tools').href='./explore.html?resourceId='+encodeURIComponent(resourceId)+'&pointId='+encodeURIComponent(point.id);$('explore-tools').hidden=false;
@@ -204,10 +226,13 @@
     $('journey-resume').hidden=!resumeAvailable||finished;
     text('resume-label',resumeAvailable?'上次读到 · '+point.title:'');
     $('journey-points').replaceChildren();$('journey-stops').replaceChildren();
-    if(finished){study?.clear();inquiry?.clear();question?.clear();quiet();armExpiry();souvenir();return;}
+    if(finished){study?.clear();reader?.clear();inquiry?.clear();question?.clear();quiet();armExpiry();souvenir();return;}
     text('position','第 '+(index+1)+' 景 / 共 '+data.points.length+' 景');
     text('point-title',point.title);text('observation',point.observation);text('reading-copy',point.reading);
-    study?.mount(point,shell.dataset.art==='true');
+    reader?.mount(point.reading);
+    study?.mount(point,shell.dataset.art==='true',record.details);
+    text('journey-entry-note',resumeAvailable?'接着读，不必从头开始。':record.observed.length?'也可以任选一景，不必按顺序。':'从这一景开始，也可以点画中别处。');
+    updateReadingProgress();
     inquiry?.mount(data.inquiries?.[point.id]);
     question?.mount(data.questionScopes?.[point.id]);
     text('binding-note',point.artScene?'':'这一处尚未绑定原画位置，先阅读已公开的文字。');
@@ -275,6 +300,7 @@
   async function openFallback(id){
     const detail=$(id),summary=detail.querySelector('summary');
     if(!ready||!summary||detail.closest('[hidden]'))return;
+    reader?.cancel();
     const token=generation,request=++fallbackRequest;
     for(const item of document.querySelectorAll('.journal summary[aria-busy]'))item.removeAttribute('aria-busy');
     summary.setAttribute('aria-busy','true');A.pause?.();
@@ -289,8 +315,29 @@
     const points=data.points.filter(p=>record.observed.includes(p.id));
     text('souvenir-count','主动记下 '+points.length+' / '+data.points.length+' 处阅读观察 · 第 '+data.version+' 版');
     $('souvenir-stops').replaceChildren(...points.map(p=>{const li=document.createElement('li');li.textContent=p.title;return li;}));
+    $('souvenir-details').replaceChildren(...savedDetails().map(value=>{const li=document.createElement('li');li.textContent=data.points.find(p=>p.id===value.pointId).title+' · '+value.label;return li;}));
     text('souvenir-note',record.note);$('note').value=record.note;
     restoreFeedback();
+  }
+  function savedDetails(){
+    return (record?.details||[]).flatMap(value=>{
+      const scene=window.ChuJourneyStudyScenes?.[value.sceneId],point=data.points.find(p=>p.id===value.pointId&&p.artScene===value.sceneId);
+      const detail=scene?.looks?.find(item=>item.key===value.detailKey);
+      return point&&detail?[{pointId:point.id,label:detail.label}]:[];
+    });
+  }
+  function validDetail(value){
+    return data?.points.some(point=>point.id===value.pointId&&point.artScene===value.sceneId)&&
+      window.ChuJourneyStudyScenes?.[value.sceneId]?.looks?.some(item=>item.key===value.detailKey);
+  }
+  function updateReadingProgress(){
+    text('journey-reading-progress',record.observed.length?'已记下 '+record.observed.length+' 景 · 收卷后可留作游记':'');
+  }
+  function keepReading(){
+    if(!ready||finished)return;
+    record.observed=[...new Set([...record.observed,record.selected])];persist();
+    text('observe','已记下这一景');$('observe').setAttribute('aria-pressed','true');reader?.refresh();updateReadingProgress();
+    for(const el of $('journey-stops').children)el.dataset.recorded=String(record.observed.includes(el.dataset.stop));
   }
   function restoreFeedback(){
     const value=C.feedback(record?.feedback);$('trial-form').reset();
@@ -355,7 +402,7 @@
       summary.addEventListener('click',event=>{
         event.preventDefault();
         if(detail.open||summary.getAttribute('aria-busy')==='true'){
-          fallbackRequest++;detail.open=false;summary.removeAttribute('aria-busy');inquiry?.reset();question?.reset();study?.reset();A.pause?.();
+          fallbackRequest++;detail.open=false;summary.removeAttribute('aria-busy');reader?.cancel();inquiry?.reset();question?.reset();study?.reset();A.pause?.();
         }else openFallback(id);
       });
     }
@@ -364,7 +411,7 @@
   art.addEventListener('journey:art-restored',()=>{
     if(!ready||finished||document.hidden||leaving)return;
     light(current());
-    if($('journey-study').dataset.artState==='failed')study?.mount(current(),shell.dataset.art==='true');
+    if($('journey-study').dataset.artState==='failed')study?.mount(current(),shell.dataset.art==='true',record.details);
   });
   stage.onpointerdown=e=>{if(e.pointerType==='touch'||e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:stage.scrollLeft,top:stage.scrollTop,moved:false};};
   stage.onpointermove=e=>{
@@ -375,7 +422,7 @@
   for(const name of ['pointerup','pointercancel','lostpointercapture'])stage.addEventListener(name,()=>{if(drag?.moved)suppressedUntil=performance.now()+350;drag=null;});
   stage.onkeydown=e=>{if(e.target!==stage)return;const x={ArrowLeft:-80,ArrowRight:80}[e.key];if(x){e.preventDefault();stage.scrollBy(x,0);}};
   document.addEventListener('visibilitychange',()=>{if(document.hidden){generation++;gate('暂歇，留住这一页','回到页面后会重新核对资料。',false);}else load(false);});
-  addEventListener('pagehide',()=>{leaving=true;generation++;continuation++;navigation?.invalidate();leaves?.dismiss({restoreFocus:false});quiet();});
+  addEventListener('pagehide',()=>{leaving=true;generation++;continuation++;reader?.cancel();souvenirExport?.reset();navigation?.invalidate();leaves?.dismiss({restoreFocus:false});quiet();});
   addEventListener('pageshow',e=>{if(e.persisted){leaving=false;load(false);}});
   setInterval(()=>{if(ready&&!document.hidden&&!leaving)verify().then(()=>question?.revalidate()).catch(()=>{});},30000);
   load();

@@ -43,7 +43,10 @@ function wave(){const b=Buffer.alloc(44+16000*2*4);b.write('RIFF');b.writeUInt32
     for(const source of ['art','list']){
       const selector=source==='art'?'[data-art-point=copper]':'[data-stop=tower]';
       const expected=source==='art'?'古铜顶':'黄鹤楼';
-      await p.locator(selector).click();await open('reading');
+      // Selection already opens a verified leaf asynchronously. Do not race
+      // that operation by clicking the now-inert background entry a second time.
+      await p.locator(selector).click();
+      await p.locator('#journey-leaf-dialog[open][aria-busy=false][data-leaf=reading][data-state=open]').waitFor();
       check(await p.locator('#journey-leaf-title').textContent()===expected,source+' selection opens matching reading');
       check(await p.locator('#journey-leaf-dialog').getAttribute('data-scene')===(source==='art'?'copper':'tower'),source+' reading motif follows explicit artwork binding');
       check(await p.locator('[data-recorded=true]').count()===0,source+' selection does not create a recorded visit');

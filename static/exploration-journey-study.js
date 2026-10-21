@@ -11,10 +11,23 @@
       active.motion.forEach(tween => tween.kill());active.motion = [];
       active.group.style.removeProperty('will-change');
     }
+    function syncControls(item) {
+      const unavailable = item.pending || (!item.loaded && !item.failed);
+      item.button.disabled = unavailable;
+      for (const button of item.lookButtons) button.disabled = item.pending || !item.loaded;
+      item.keep.disabled = item.pending || !item.loaded || !item.looks[item.look] || item.recorded.has(item.looks[item.look]?.key);
+      item.choices.hidden = !item.closer || !item.loaded || !item.looks.length;
+      item.keepRow.hidden = !item.closer || !item.loaded || !item.looks.length || typeof hooks.onObservation !== 'function';
+      const recorded = item.recorded.has(item.looks[item.look]?.key);
+      item.keep.textContent = recorded ? '已留在游记' : '记下这处细节';
+      item.keep.setAttribute('aria-label', (recorded ? '已留在游记：' : '记下原画细节：') + (item.looks[item.look]?.label || item.scene.action));
+      for (const [index,button] of item.lookButtons.entries()) button.setAttribute('aria-pressed',String(index===item.look));
+    }
     function paint(animated = false) {
       if (!active) return;
       stop();
       const item = active, closer = item.closer, scene = item.scene;
+      syncControls(item);
       if (item.failed) {
         item.caption.textContent = '原画暂未载入，下面的文字仍可阅读。';
         item.button.textContent = '重新加载原画';
@@ -22,8 +35,10 @@
         item.button.setAttribute('aria-pressed','false');
         return;
       }
-      const pose = {scale:closer ? scene.scale : 1, x:closer ? scene.shift[0] : 0, y:closer ? scene.shift[1] : 0, svgOrigin:scene.origin.join(' ')};
+      const look = item.looks[item.look], focus = closer && look ? look : scene;
+      const pose = {scale:closer ? focus.scale : 1, x:closer ? focus.shift[0] : 0, y:closer ? focus.shift[1] : 0, svgOrigin:focus.origin.join(' ')};
       const opacity = closer ? .65 : 0;
+      [...item.lines.children].forEach((line,index) => {line.style.opacity = !closer || !look || look.contours.includes(scene.contours[index]) ? '1' : '.16';});
       if (root.gsap && animated && !reduce.matches) {
         item.group.style.willChange = 'transform';
         item.motion.push(root.gsap.to(item.group, {...pose,duration:1.1,ease:'power2.inOut',overwrite:true,
@@ -33,19 +48,19 @@
         root.gsap.set(item.group,pose);root.gsap.set(item.lines,{opacity});
       } else {
         const s = pose.scale;
-        item.group.setAttribute('transform',`matrix(${s} 0 0 ${s} ${scene.origin[0]*(1-s)+pose.x} ${scene.origin[1]*(1-s)+pose.y})`);
+        item.group.setAttribute('transform',`matrix(${s} 0 0 ${s} ${focus.origin[0]*(1-s)+pose.x} ${focus.origin[1]*(1-s)+pose.y})`);
         item.lines.style.opacity = String(opacity);
       }
       item.button.textContent = closer ? '回看整景 ↙' : scene.action+' ↗';
       item.button.setAttribute('aria-pressed',String(closer));
       item.button.setAttribute('aria-label',closer ? '回看'+scene.label+'整景' : scene.action+'，'+scene.label+'原画局部');
-      host.dataset.detail = closer ? scene.detail : 'whole';
-      item.caption.textContent = closer ? scene.closer : scene.whole;
+      host.dataset.detail = closer ? (look?.key || scene.detail) : 'whole';
+      item.caption.textContent = closer ? (look?.caption || scene.closer) : scene.whole;
     }
     function reset() {
       revision++;
       if (!active) return;
-      active.closer = false;active.pending = false;
+      active.closer = false;active.look = 0;active.pending = false;
       active.button.disabled = !active.loaded && !active.failed;
       active.button.removeAttribute('aria-busy');paint();
     }
@@ -60,13 +75,44 @@
       const dialog = host.closest('dialog');
       return !dialog || (dialog.open && dialog.dataset.state !== 'closing' && dialog.getAttribute('aria-busy') === 'false');
     }
-    function mount(point, enabled = false) {
+    function setRecorded(details = []) {
+      if (!active) return;
+      active.recorded = new Set((Array.isArray(details) ? details : []).filter(item =>
+        item?.pointId === active.pointId && item?.sceneId === active.id && active.looks.some(look => look.key === item.detailKey)).map(item => item.detailKey));
+      syncControls(active);
+    }
+    async function verified(item, action) {
+      if (item.pending || !canInteract(item)) return;
+      const ticket = ++revision;
+      item.pending = true;syncControls(item);item.button.setAttribute('aria-busy','true');
+      try {
+        const allowed = await hooks.verify?.();
+        if (allowed !== true || ticket !== revision || !canInteract(item)) return;
+        await action(() => ticket === revision && canInteract(item));
+      } catch { /* Existing controller owns source withdrawal and retry UI. */ }
+      finally {
+        if (active === item && ticket === revision) {
+          item.pending = false;syncControls(item);
+          if (item.loaded || item.failed) item.button.removeAttribute('aria-busy');
+        }
+      }
+    }
+    function mount(point, enabled = false, recordedDetails = []) {
       clear();
       // A reviewed explicit original-art binding is required. Names and point IDs
       // must never be used to guess that a different building is this illustration.
       const id = point?.artScene, scene = root.ChuJourneyStudyScenes?.[id], profile = root.ChuParkGildedProfiles?.[id];
       if (!enabled || !scene || !profile || !['x','y','width','height'].every((key,i)=>profile.sourceRect?.[key]===scene.rect[i])) return;
       if (!scene.contours.every(i => Array.isArray(profile.contours?.[i]?.points))) return;
+      // A look is a registered crop/contour selection, never a new statement
+      // about the physical building. Invalid configuration disables this layer.
+      const looks = Array.isArray(scene.looks) && scene.looks.length === 2 && scene.looks.every(look =>
+        /^[a-z][a-z0-9-]{0,39}$/.test(look.key) && typeof look.label === 'string' && typeof look.caption === 'string' &&
+        Number.isFinite(look.scale) && look.scale >= 1 && look.scale <= 2.5 &&
+        Array.isArray(look.origin) && look.origin.length === 2 && look.origin.every(Number.isFinite) &&
+        Array.isArray(look.shift) && look.shift.length === 2 && look.shift.every(Number.isFinite) &&
+        Array.isArray(look.contours) && look.contours.length && look.contours.every(index => scene.contours.includes(index))) &&
+        new Set(scene.looks.map(look=>look.key)).size === 2 ? scene.looks : [];
       const heading = document.createElement('p');heading.className = 'journey-study-heading';heading.textContent = scene.heading;
       const frame = document.createElement('div');frame.className = 'journey-study-frame';
       const svg = document.createElementNS(NS,'svg');svg.setAttribute('viewBox',scene.viewBox.join(' '));
@@ -87,14 +133,25 @@
       const button = document.createElement('button');button.type = 'button';button.disabled = true;
       button.setAttribute('aria-pressed','false');
       const caption = document.createElement('p');caption.className = 'journey-study-caption';caption.setAttribute('role','status');
-      controls.append(credit,button);host.append(heading,frame,controls,caption);host.hidden = false;
+      const choices = document.createElement('div');choices.className = 'journey-study-looks';choices.hidden = true;
+      choices.setAttribute('role','group');choices.setAttribute('aria-label','选择原画观察细节');
+      const lookButtons = looks.map(look => {
+        const option = document.createElement('button');option.type = 'button';option.textContent = look.label;
+        option.dataset.look = look.key;option.setAttribute('aria-pressed','false');choices.append(option);return option;
+      });
+      const keepRow = document.createElement('div');keepRow.className = 'journey-study-keep';keepRow.hidden = true;
+      const keep = document.createElement('button');keep.type = 'button';keep.textContent = '记下这处细节';
+      const boundary = document.createElement('span');boundary.textContent = '原画观察，不记作到访';
+      keepRow.append(keep,boundary);
+      controls.append(credit,button);host.append(heading,frame,controls,choices,caption,keepRow);host.hidden = false;
       host.dataset.scene = id;
-      const item = active = {scene,group,lines,button,caption,probe:new Image(),timer:null,closer:false,loaded:false,failed:false,pending:false,motion:[]};
+      const item = active = {id,pointId:point.id,scene,group,lines,button,caption,looks,choices,lookButtons,look:0,keepRow,keep,recorded:new Set(),probe:new Image(),timer:null,closer:false,loaded:false,failed:false,pending:false,motion:[]};
+      setRecorded(recordedDetails);
       paint();
       function loadArt() {
         clearTimeout(item.timer);item.probe.onload = null;item.probe.onerror = null;
         const probe = item.probe = new Image();
-        item.loaded = false;item.failed = false;item.closer = false;
+        item.loaded = false;item.failed = false;item.closer = false;item.look = 0;
         button.disabled = true;button.setAttribute('aria-busy','true');
         host.dataset.artState = 'loading';
         let settled = false;
@@ -119,27 +176,31 @@
         probe.onerror = failed;item.timer = setTimeout(failed,10000);probe.src = artwork;
       }
       loadArt();
-      button.onclick = async () => {
-        if (item.pending || !canInteract(item)) return;
-        const ticket = ++revision;item.pending = true;button.disabled = true;button.setAttribute('aria-busy','true');
-        try {
-          const allowed = await hooks.verify?.();
-          if (allowed === false || ticket !== revision || !canInteract(item)) return;
-          if (item.failed) loadArt();
-          else {item.closer = !item.closer;paint(true);}
-        } catch { /* Existing controller owns source withdrawal and retry UI. */ }
-        finally {
-          if (active === item && ticket === revision) {
-            item.pending = false;button.disabled = !item.loaded && !item.failed;
-            if (item.loaded || item.failed) button.removeAttribute('aria-busy');
-          }
-        }
+      button.onclick = () => verified(item, () => {
+        if (item.failed) loadArt();
+        else {item.closer = !item.closer;item.look = 0;paint(true);}
+      });
+      lookButtons.forEach((option,index) => {option.onclick = () => {
+        if (!item.closer || item.look === index || !item.loaded) return;
+        return verified(item, () => {item.look = index;paint(true);});
+      };});
+      keep.onclick = () => {
+        const look = item.looks[item.look];
+        if (!item.closer || !item.loaded || !look || item.recorded.has(look.key) || typeof hooks.onObservation !== 'function') return;
+        return verified(item, async current => {
+          const saved = await hooks.onObservation({pointId:item.pointId,sceneId:item.id,detailKey:look.key});
+          if (!current()) return;
+          if (saved === true) {
+            item.recorded.add(look.key);item.caption.textContent = '已记下「'+look.label+'」，收卷时可以一起带走。';
+          } else item.caption.textContent = '暂时没有记下，可以稍后再试。';
+          syncControls(item);
+        });
       };
     }
-    function pause() {revision++;stop();if(active){active.pending=false;active.button.disabled=!active.loaded&&!active.failed;active.button.removeAttribute('aria-busy');}}
+    function pause() {revision++;stop();if(active){active.pending=false;syncControls(active);active.button.removeAttribute('aria-busy');}}
     const settle = () => paint(false);
     reduce.addEventListener('change',settle);
-    return {mount,reset,pause,clear,destroy(){clear();reduce.removeEventListener('change',settle);}};
+    return {mount,setRecorded,reset,pause,clear,destroy(){clear();reduce.removeEventListener('change',settle);}};
   }
   root.ChuJourneyStudy = {create};
 })(window);

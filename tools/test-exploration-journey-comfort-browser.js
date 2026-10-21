@@ -198,13 +198,13 @@ function check(value,name) {assert(value,name);checks++;}
     const mainSource=await failedArt.locator('#journey-art').getAttribute('src');
     const artTitle=await failedArt.locator('#point-title').textContent();
     await open(failedArt);
-    await failedArt.waitForFunction(()=>document.querySelector('#journey-study button')?.textContent.includes('重新加载原画'));
-    check(await failedArt.locator('#journey-study button').isEnabled(),'paper original-art failure has one usable retry');
+    await failedArt.waitForFunction(()=>document.querySelector('#journey-study .journey-study-controls button')?.textContent.includes('重新加载原画'));
+    check(await failedArt.locator('#journey-study .journey-study-controls button').isEnabled(),'paper original-art failure has one usable retry');
     check(await failedArt.locator('#reading-copy').textContent()===expected('baiyun').paragraphs.join('\n\n'),'failed illustration preserves available current prose');
     const beforeReads=reads(failedArt);artBlocked=false;
-    await failedArt.locator('#journey-study button').click();
+    await failedArt.locator('#journey-study .journey-study-controls button').click();
     await failedArt.locator('.journey-study-frame').waitFor({state:'visible'});
-    await failedArt.waitForFunction(()=>!document.querySelector('#journey-study button').disabled&&!document.querySelector('#journey-study button').textContent.includes('重新加载'));
+    await failedArt.waitForFunction(()=>!document.querySelector('#journey-study .journey-study-controls button').disabled&&!document.querySelector('#journey-study .journey-study-controls button').textContent.includes('重新加载'));
     check(reads(failedArt)>beforeReads,'paper retry rechecks authority before showing original art');
     check(await failedArt.locator('#journey-study').getAttribute('data-detail')==='whole','recovered paper starts at whole-art pose');
     check(await failedArt.locator('.journey-study-art image').getAttribute('href')===mainSource,'paper recovery uses the same original artwork URL');
@@ -255,8 +255,8 @@ function check(value,name) {assert(value,name);checks++;}
         await go(lateImage,'&pointId=pond');await lateImage.locator('#art-error:not([hidden])').waitFor();
         if(scenario==='paper-closed') {
           await open(lateImage);
-          await lateImage.waitForFunction(()=>document.querySelector('#journey-study button')?.textContent.includes('重新加载原画'));
-          mode='hold';await lateImage.locator('#journey-study button').click();await seen;
+          await lateImage.waitForFunction(()=>document.querySelector('#journey-study .journey-study-controls button')?.textContent.includes('重新加载原画'));
+          mode='hold';await lateImage.locator('#journey-study .journey-study-controls button').click();await seen;
           await close(lateImage);
           const focusBefore=await lateImage.evaluate(()=>document.activeElement.outerHTML);
           release();await lateImage.waitForFunction(()=>document.querySelector('#journey-study')?.dataset.artState==='ready');

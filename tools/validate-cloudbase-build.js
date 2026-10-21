@@ -250,6 +250,7 @@ const guideFiles = [
     'static/exploration-journey-study.js','static/exploration-journey-study.css',
     'static/exploration-journey-study-scenes.js',
     'static/exploration-journey-comfort.js','static/exploration-journey-comfort.css',
+    'static/exploration-journey-reader.js','static/exploration-journey-reader.css','static/exploration-journey-souvenir.js',
     'static/exploration-journey-inquiry.js','static/exploration-journey-inquiry-data.js','static/exploration-journey-inquiry.css',
     'static/exploration-journey-question.js','static/exploration-journey-question-state.js','static/exploration-journey-question-data.js','static/exploration-journey-question.css',
   'explore-journey.html','static/exploration-journey-live.css','static/exploration-journey-demo.css',

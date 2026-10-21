@@ -60,7 +60,12 @@ const viewports = [{width:320,height:740},{width:390,height:844},{width:768,heig
     if(prose) {
       const metrics = await page.locator('#reading-copy').evaluate(node=>{
         const body=document.querySelector('#journey-leaf-body').getBoundingClientRect();
-        const text=[...node.childNodes].find(child=>child.nodeType===Node.TEXT_NODE);
+        // Paragraph controls preserve original newlines as direct text nodes.
+        // Measure actual visible prose, not the blank separator between spans.
+        const walker=document.createTreeWalker(node,NodeFilter.SHOW_TEXT,{
+          acceptNode:child=>child.textContent.trim()&&!child.parentElement.closest('[hidden]')?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP
+        });
+        const text=walker.nextNode();
         const range=document.createRange();range.selectNodeContents(text||node);
         const rows=[...range.getClientRects()].filter(r=>r.width>0&&r.height>0);
         const tops=new Set();const lines=rows.filter(r=>{const key=Math.round(r.top);if(tops.has(key))return false;tops.add(key);return true;});

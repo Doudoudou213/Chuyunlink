@@ -26,7 +26,7 @@ function check(value, name) {assert(value, name);checks++;}
     await p.locator('#journey-leaf-dialog[open][data-leaf=reading][data-state=open][aria-busy=false]').waitFor();
   };
   const close = async p => {await p.locator('.journey-leaf-close').click();await p.locator('#journey-leaf-dialog').waitFor({state:'hidden'});};
-  const studyButton = p => p.locator('#journey-study button');
+  const studyButton = p => p.locator('#journey-study .journey-study-controls button');
   const idle = async p => p.waitForFunction(() => {
     const group=document.querySelector('.journey-study-art');
     return group && !group.style.willChange && (!window.gsap || (!gsap.isTweening(group) && !gsap.isTweening(document.querySelector('.journey-study-lines'))));
@@ -54,7 +54,7 @@ function check(value, name) {assert(value, name);checks++;}
     check(await p.locator('#journey-study').isHidden(),'pending verification never reveals study');
     held.release();await held.clear();await p.locator('#journey-leaf-dialog[aria-busy=false][data-state=open]').waitFor();
     await studyButton(p).waitFor({state:'visible'});
-    await p.waitForFunction(()=>!document.querySelector('#journey-study button').disabled);
+    await p.waitForFunction(()=>!document.querySelector('#journey-study .journey-study-controls button').disabled);
     check(await p.locator('#journey-study svg image').count()===1,'one original-image crop, no sticker image');
     check((await p.locator('#journey-study svg image').getAttribute('href')).endsWith('hhl-full-park-v2.webp'),'study uses current original artwork');
     check(await p.locator('.journey-study-lines path').count()===4,'registered painting contours only');

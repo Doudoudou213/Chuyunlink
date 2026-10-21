@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="static/exploration-journey-comfort.css">
   <link rel="stylesheet" href="static/exploration-journey-inquiry.css">
   <link rel="stylesheet" href="static/exploration-journey-question.css">
+  <link rel="stylesheet" href="static/exploration-journey-reader.css">
   <!-- journey-local-adapter -->
   <script defer src="static/assets/gsap-3.15.0.min.js"></script>
   <script defer src="static/exploration-gilded-profiles.js"></script>
@@ -31,6 +32,8 @@
   <script defer src="static/exploration-journey-question-data.js"></script>
   <script defer src="static/exploration-journey-question-state.js"></script>
   <script defer src="static/exploration-journey-question.js"></script>
+  <script defer src="static/exploration-journey-reader.js"></script>
+  <script defer src="static/exploration-journey-souvenir.js"></script>
   <script defer src="static/exploration-journey-live.js"></script>
 </head>
 <body class="scenic-journey">
@@ -59,6 +62,7 @@
         <nav id="journey-stops" aria-label="按已发布顺序阅读"></nav>
         <p id="observation" class="observation"></p>
         <p id="binding-note" class="fine"></p>
+        <p id="journey-entry-note"></p>
         <section id="audio" class="audio-reading" aria-label="手动播放讲解"></section>
         <div class="reading-actions">
           <details id="reading"><summary>读这一景</summary><div id="journey-reading-main"><div class="journey-reading-tools"><span id="reading-size-status" role="status"></span><button id="reading-size" type="button" aria-pressed="false" hidden>大字阅读</button></div><section id="journey-study" class="journey-study" aria-label="原画细节观察" hidden></section><p id="reading-copy"></p></div><section id="journey-inquiry" aria-label="本景研究稿摘读" hidden></section><section id="journey-question" aria-label="本景自由提问" hidden></section></details>
@@ -68,12 +72,14 @@
         <div class="journal-secondary">
           <button id="finish" class="quiet">收起这一卷</button>
         </div>
+        <p id="journey-reading-progress"></p>
       </div>
       <div id="finished" hidden>
         <p class="overline">收卷 / 阅读拾记</p><h2 tabindex="-1" id="finished-title">把这一程，留在纸上</h2>
-        <article class="souvenir"><div class="souvenir-picture" role="img" aria-label="艺术画卷"></div><div class="souvenir-copy"><span class="seal">阅读<br>拾记</span><h3 id="souvenir-title"></h3><p id="souvenir-count"></p><ul id="souvenir-stops"></ul><p id="souvenir-note"></p><small>仅记录主动阅读 · 非实地到访凭证</small></div></article>
+        <article class="souvenir"><div class="souvenir-picture" role="img" aria-label="艺术画卷"></div><div class="souvenir-copy"><span class="seal">阅读<br>拾记</span><h3 id="souvenir-title"></h3><p id="souvenir-count"></p><ul id="souvenir-stops"></ul><ul id="souvenir-details" aria-label="主动留下的画中细节"></ul><p id="souvenir-note"></p><small>仅记录主动阅读 · 非实地到访凭证</small></div></article>
         <label class="note-label" for="note">留一句感受 <span>本机保存，最多120字</span></label><textarea id="note" maxlength="120" rows="2"></textarea>
-        <div class="step-actions"><button id="download" class="primary">保存游记文字</button><button id="return" class="quiet">回卷继续看</button></div>
+        <div class="step-actions souvenir-actions"><button id="download-image" type="button" class="primary" hidden>保存图文游记</button><button id="download" class="primary">保存游记文字</button><button id="return" class="quiet">回卷继续看</button></div>
+        <p id="souvenir-export-status" role="status" aria-live="polite"></p>
         <details id="trial-feedback" class="trial-feedback"><summary>帮我们把这一卷做得更顺手 <span>选填</span></summary>
           <p class="fine">只评价刚才的阅读体验，不评价现场路线。不上传、不收集身份或定位；请勿填写联系方式和个人隐私。</p>
           <form id="trial-form">
@@ -102,6 +108,7 @@
           <details id="journey-help" class="journey-help"><summary>读卷说明</summary>
             <p>点画中景物，或景物名称，先看观察提示，再读讲解与出处。音频由你手动开启。</p>
             <p>纸页底部可直接看下一景，最后一景可以收卷留念。想留下这一处观察，再点“记下这一景”。</p>
+            <p>讲解可分段读，也可切换连贯阅读。原画细看中的细节可自愿记下，不是答题或到访认证。收卷后可把画稿、已记下的细节与感受保存为图片；只下载到本机，不自动分享。</p>
             <p>阅读进度与拾记仅在本机保留七天，不用注册，不记录位置。记下阅读不认证到访，也不发放积分。</p>
             <p>读景纸页内可切换大字；字号偏好只存本机。画稿加载失败可单独重试，文字仍可阅读；讲解仍需联网核对，不提供离线旧正文。</p>
             <p>画中位置只帮助认图，不判断你在哪里，也不指示实际道路。实地行走请以景区标识和工作人员指引为准。</p>
