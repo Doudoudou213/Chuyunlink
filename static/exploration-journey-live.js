@@ -63,6 +63,18 @@
     onClose(){inquiry?.reset();question?.reset();study?.reset();A.pause?.();if(ready&&!finished&&!document.hidden&&!leaving)renderer?.resume();}
   });
   function text(id,value){$(id).textContent=value;}
+  function focusPanel(title,reveal=false){
+    title.focus({preventScroll:true});
+    if(!reveal)return;
+    const token=generation,intent=continuation;
+    // Native history restores its old scroll after popstate, later than the
+    // settled() microtask. Reveal the result in the next task without changing
+    // ordinary Back restoration or stealing a newer navigation/focus intent.
+    setTimeout(()=>{
+      if(token===generation&&intent===continuation&&!document.hidden&&!leaving&&document.activeElement===title&&title.getClientRects().length)
+        title.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
+    },0);
+  }
   function button(label,fn,attrs={}){
     const b=document.createElement('button');b.type='button';b.textContent=label;
     for(const [key,value]of Object.entries(attrs))b.setAttribute(key,String(value));
@@ -85,7 +97,7 @@
     // Hide and erase old public content, not just its visible container.
     for(const id of ['journey-points','journey-stops','source-list','audio','souvenir-stops'])$(id).replaceChildren();
     for(const id of ['point-title','observation','reading-copy','review-date','souvenir-title','souvenir-note','souvenir-count'])text(id,'');
-    if(wasReading)$('gate-title').focus({preventScroll:true});
+    if(wasReading)focusPanel($('gate-title'),true);
   }
   function loadSaved(){
     try{const value=JSON.parse(localStorage.getItem(storageKey)||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{};}
@@ -227,7 +239,8 @@
       const settled=await navigation?.settled();
       if(settled===false||token!==generation||intent!==continuation)return;
       await verify(token);if(token!==generation||intent!==continuation)return;
-      fn();rememberPosition();text('status','');persist();render();(finished?$('finished-title'):$('point-title')).focus({preventScroll:true});return token;
+      const wasFinished=finished;
+      fn();rememberPosition();text('status','');persist();render();focusPanel(finished?$('finished-title'):$('point-title'),finished!==wasFinished);return token;
     }
     catch{/* verify has already removed stale content. */}
   }
@@ -247,7 +260,7 @@
     generation++;hideResume();A.stop();stopLight();
     if(next)record.selected=next.id;else finished=true;
     rememberPosition();text('status','');persist();render();
-    (finished?$('finished-title'):$('point-title')).focus({preventScroll:true});
+    focusPanel(finished?$('finished-title'):$('point-title'),finished);
     if(next)await leaves.open('reading',{originElement:$('reading').querySelector('button')});
   }
   async function select(id,from){

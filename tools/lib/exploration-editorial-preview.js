@@ -77,7 +77,20 @@ function createEditorialPreview(options) {
   for (const name of ['paper-fibres-soft-v1.webp', 'exploration-motion/hhl-full-park-v2.webp', 'longcang-editorial-v1.woff2', 'longcang-journey-v1.woff2']) assets.add('/static/assets/' + name);
   const themeMap = Object.fromEntries(draft.points.map(point => [point.id, point.theme || '']));
   const themeCode = themes ? `document.addEventListener("DOMContentLoaded",function(){const themes=${scriptJSON(themeMap)},node=document.getElementById("study-preview-theme"),stops=document.getElementById("journey-stops"),content=document.getElementById("content");function update(){const selected=stops.querySelector('[aria-current="step"]'),value=!content.hidden&&selected?themes[selected.dataset.stop]||"":"";node.textContent=value;node.hidden=!value;}const observer=new MutationObserver(update);observer.observe(stops,{childList:true,subtree:true,attributes:true,attributeFilter:["aria-current"]});observer.observe(content,{attributes:true,attributeFilter:["hidden"]});update();});` : '';
-  const adapterCode = `window.ExplorationAdapter={call:async function(e){if(e.action!=="getSiteExploration"||e.resourceId!==${scriptJSON(resourceId)})throw Error("只读样章不支持业务操作");const r=await fetch(${scriptJSON(endpoint)},{cache:"no-store"});if(!r.ok)throw Error("样章暂不可读");return r.json();}};` + themeCode;
+  // Keep the local disclosure within the same exact-hash script as the adapter.
+  // An open reading dialog owns Escape; this background notice must never steal
+  // its cancel event or its return focus. Outside clicks need no focus transfer.
+  const noticeCode = `document.addEventListener("DOMContentLoaded",function(){
+    const details=document.querySelector(".study-preview-notice details"),summary=details.querySelector("summary");
+    document.addEventListener("click",function(event){
+      if(details.open&&!details.contains(event.target))details.open=false;
+    });
+    document.addEventListener("keydown",function(event){
+      if(event.key!=="Escape"||event.defaultPrevented||!details.open||document.querySelector("dialog[open]"))return;
+      event.preventDefault();details.open=false;summary.focus({preventScroll:true});
+    });
+  });`;
+  const adapterCode = `window.ExplorationAdapter={call:async function(e){if(e.action!=="getSiteExploration"||e.resourceId!==${scriptJSON(resourceId)})throw Error("只读样章不支持业务操作");const r=await fetch(${scriptJSON(endpoint)},{cache:"no-store"});if(!r.ok)throw Error("样章暂不可读");return r.json();}};` + themeCode + noticeCode;
   const csp = ["default-src 'self'", "connect-src 'self'",
     "script-src 'self' 'sha256-" + crypto.createHash('sha256').update(adapterCode).digest('base64') + "'",
     "style-src 'self' 'unsafe-inline'", "img-src 'self' data:", "font-src 'self'", "media-src 'self'",

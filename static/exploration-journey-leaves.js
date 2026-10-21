@@ -22,6 +22,8 @@
     const nextButton = dialog.querySelector('#journey-leaf-next'),nextLabel = nextButton.querySelector('span');
     const tabs = dialog.querySelector('.journey-leaf-tabs');
     const tabButtons = new Map(['reading','sources'].map(id => [id,dialog.querySelector('#journey-leaf-tab-'+id)]));
+    const readingTools = document.querySelector('#journey-reading-main > .journey-reading-tools');
+    let readingToolsHome = null;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)');
     const motion = window.ChuLeafMotion?.create({dialog,sheet:dialog.querySelector('.journey-leaf-sheet'),motif,parts:[...dialog.querySelectorAll('.journey-leaf-header,.journey-leaf-body,.journey-leaf-footer')],light:dialog.querySelector('.journey-leaf-light'),shade:dialog.querySelector('.journey-leaf-shade'),veil});
     let active = null, request = 0, outsideDown = false, audioSlot = null, opener = null;
@@ -71,9 +73,22 @@
       motif.append(photo);
     }
     function restore() {
+      // Return the one preference control before detaching a page. Its listener,
+      // live status and selected size survive moves; help never inherits it.
+      if (readingToolsHome) {
+        readingToolsHome.replaceWith(readingTools);readingToolsHome = null;
+        readingTools.classList.remove('journey-leaf-reading-tools');
+      }
       if (audioSlot) {audioSlot.replaceWith(document.getElementById('audio'));audioSlot = null;}
       if (active) {active.content.hidden = true;active.source.append(active.content);}
       body.replaceChildren();body.hidden = true;
+    }
+    function mountReadingTools(id) {
+      if (!tabButtons.has(id) || !readingTools || readingToolsHome || readingTools.querySelector('#reading-size')?.hidden !== false) return;
+      readingToolsHome = document.createComment('journey-reading-tools-home');
+      readingTools.replaceWith(readingToolsHome);
+      readingTools.classList.add('journey-leaf-reading-tools');
+      dialog.querySelector('.journey-leaf-tools').insertBefore(readingTools,dialog.querySelector('.journey-leaf-close'));
     }
     function cancelNavigation() {
       const pending = navigationClose;navigationClose = null;
@@ -198,6 +213,9 @@
         title.textContent = id === 'reading' ? pointTitle : item.heading;
         context.textContent = id === 'trial-feedback' ? '只留建议，不上传身份与行踪' : id === 'journey-help' ? '看一处景，读一段有出处的讲解' : (id === 'reading' ? '' : pointTitle + ' · ') + document.getElementById('position').textContent;
         item.content.hidden = false;body.append(item.content);body.hidden = false;
+        // Reading and source text share the existing size preference, but only
+        // after this paper passes verification. Pending/closed pages keep it home.
+        mountReadingTools(id);
         // Keep manual narration controls available on the reading leaf, without a second audio player.
         if (id === 'reading') {
           const audio = document.getElementById('audio');audioSlot = document.createComment('journey-audio-home');

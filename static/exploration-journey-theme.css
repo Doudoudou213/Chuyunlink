@@ -84,6 +84,21 @@
 .scenic-journey .journal .audio-reading .audio-caption{font:18px/1.8 var(--reading)}
 .scenic-journey .journal .souvenir{background:var(--paper-light);border-radius:var(--corner)}
 .scenic-journey .journal .souvenir-copy{padding:22px}
+.scenic-journey :is(#finished-title,#point-title,#gate-title){scroll-margin-top:20px}
+.scenic-journey #finished-title{font-size:30px;text-wrap:balance}
+.scenic-journey .journal .souvenir-picture{position:relative;border-radius:3px 7px 0 0}
+.scenic-journey .journal .souvenir-picture::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,var(--paper-light),transparent 34%)}
+.scenic-journey .journal .souvenir-copy h3{margin-top:0;font-size:26px;overflow-wrap:anywhere}
+.scenic-journey #souvenir-count{font:14px/1.7 var(--utility);letter-spacing:0}
+.scenic-journey #souvenir-stops{line-height:1.8;margin-block:12px}
+.scenic-journey .journal .souvenir-copy small{display:block;font:12px/1.8 var(--utility)}
+.scenic-journey #finished .note-label{font:15px/1.8 var(--reading)}
+.scenic-journey #finished .note-label span{display:block;margin-left:0;font:12px/1.7 var(--utility)}
+.scenic-journey #finished>.step-actions{margin-top:18px}
+.scenic-journey #finished #download{min-height:50px;justify-content:center}
+.scenic-journey #finished #trial-feedback{margin-top:18px}
+.scenic-journey #finished #trial-feedback .journey-leaf-trigger{font:18px/1.7 var(--reading)}
+.scenic-journey #finished #trial-feedback .journey-leaf-entry-hint{font:12px/1.6 var(--utility)}
 .scenic-journey .journal textarea{border-radius:3px;background:#f3e6ca70;font-size:16px;line-height:1.8}
 .scenic-journey #gate{min-height:300px;padding-top:16px}
 .scenic-journey #gate .intro{font:18px/1.8 var(--reading)}
