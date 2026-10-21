@@ -68,7 +68,10 @@
     "test:exploration:journey-question-data": "node tools/test-exploration-journey-question-data.js",
     "test:exploration:journey-question-state": "node tools/test-exploration-journey-question-state.js",
     "test:exploration:journey-question-service": "node tools/test-exploration-journey-question-service.js",
-    "test:exploration:journey-question:browser": "node tools/test-exploration-journey-question-browser.js"
+    "test:exploration:journey-question:browser": "node tools/test-exploration-journey-question-browser.js",
+    "preview:exploration:trial-review": "node tools/lib/exploration-trial-review-preview.js 4223",
+    "test:exploration:trial-review": "node tools/test-exploration-trial-review-data.js && node tools/test-exploration-trial-review-server.js",
+    "test:exploration:trial-review:browser": "node tools/test-exploration-trial-review-browser.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

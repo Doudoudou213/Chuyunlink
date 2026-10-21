@@ -1,0 +1,152 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {chromium}=require('playwright');
+const {start}=require('./lib/exploration-trial-review-preview');
+const C=require('../static/exploration-journey-content');
+let checks=0;
+function check(value,message){assert(value,message);checks++;}
+const out=path.join(__dirname,'../artifacts/exploration-trial-review');
+function report(patch={}){
+  const data={resourceId:'reading-trial-test',version:2,fingerprint:'a'.repeat(64),localTest:false,points:[{id:'tower'},{id:'pond'}]};
+  return {...C.trialReport(data,{fingerprint:data.fingerprint,updatedAt:Date.now(),selected:'tower',observed:['tower'],note:'PRIVATE_NOTE_NOT_EXPORTED',feedback:{start:'alone',reading:'clear',memory:'yes',obstacle:'测试意见仅留本机'}}),...patch};
+}
+const upload=(value,name='画卷试用反馈.json')=>({name,mimeType:'application/json',buffer:Buffer.from(typeof value==='string'?value:JSON.stringify(value))});
+(async()=>{
+  fs.mkdirSync(out,{recursive:true});
+  const server=await start();
+  const browser=await chromium.launch({channel:'msedge',headless:true});
+  const errors=[],external=[],requests=[];
+  try{
+    const page=await browser.newPage({viewport:{width:390,height:900},acceptDownloads:true,reducedMotion:'reduce'});
+    page.on('pageerror',error=>errors.push(error.message));
+    page.on('request',request=>{requests.push({url:request.url(),method:request.method()});if(!request.url().startsWith(server.url)&&!request.url().startsWith('blob:'))external.push(request.url());});
+    const goto=async()=>{await page.goto(server.url+'/trial-review.html');await page.locator('#import').waitFor();};
+    const text=id=>page.locator('#'+id).textContent();
+    const importFiles=async files=>{await page.locator('#files').setInputFiles(files);await page.waitForFunction(()=>!document.querySelector('#import').disabled);};
+    const download=async()=>{const wait=page.waitForEvent('download');await page.locator('#export').click();const file=await wait;const data=JSON.parse(fs.readFileSync(await file.path(),'utf8'));return {file,data};};
+    const clear=async accept=>{page.once('dialog',dialog=>accept?dialog.accept():dialog.dismiss());await page.locator('#clear').click();};
+    await goto();
+    check(await page.locator('#empty').isVisible(),'empty state shown without imported data');
+    check(!await page.locator('#workspace').isVisible(),'no fabricated report statistics');
+    check(await page.locator('#records input').count()===0,'no automatic sample load');
+    await page.keyboard.press('Tab');
+    check(await page.locator('#sample').evaluate(e=>e===document.activeElement),'keyboard begins with example action');
+    check(await page.locator('#sample').evaluate(e=>getComputedStyle(e).outlineStyle!=='none'),'keyboard focus visible');
+    await page.keyboard.press('Enter');
+    await page.locator('#workspace:not([hidden])').waitFor();
+    check(await page.locator('#sample-notice').isVisible(),'sample disclaimer shown');
+    check(await page.locator('#groups option').count()===2,'example separates two fingerprints');
+    check((await text('totals')).includes('计入 3 份'),'first sample group includes three reports');
+    check((await text('duplicates')).includes('2 份内容相同'),'duplicate answers flagged not auto removed');
+    check(await page.locator('#notes article').count()===3,'all three included opinions shown');
+    check((await page.locator('#notes article').first().textContent()).includes('希望能更快找到下一景'),'difficulty opinions first');
+    const first=page.locator('#records input').first();
+    await first.uncheck();
+    check((await text('totals')).includes('计入 2 份 · 暂不计入 1 份'),'manual exclusion updates counts');
+    check(await page.locator('#records input').first().evaluate(e=>e===document.activeElement),'exclusion restores keyboard focus');
+    check(await page.locator('#notes article').count()===2,'excluded opinion omitted');
+    await page.locator('#records input').first().check();
+    check((await text('totals')).includes('计入 3 份 · 暂不计入 0 份'),'manual exclusion reversible');
+    await page.locator('#basis-toggle').click();
+    check(await page.locator('#basis').isVisible(),'version basis explicitly disclosed');
+    check((await text('basis')).includes('a'.repeat(64)),'full fingerprint not just version number');
+    await page.locator('#groups').selectOption({index:1});
+    check((await text('totals')).includes('计入 1 份'),'second version independent count');
+    check(!await page.locator('#basis').isVisible(),'changing version collapses old basis');
+    check(await page.locator('#answers section:nth-child(2) dd').last().textContent()==='1','unanswered counted separately');
+    const sampleDownload=await download();
+    check(sampleDownload.file.suggestedFilename()==='画卷复盘计数-仅示例.json','sample filename explicit');
+    check(sampleDownload.data.exampleOnly===true,'summary identifies examples');
+    check(sampleDownload.data.groups.length===2,'summary preserves both versions');
+    check(!JSON.stringify(sampleDownload.data).includes('希望能更快'),'summary omits opinions');
+    check(!JSON.stringify(sampleDownload.data).includes('record-'),'summary omits UI entry identifiers');
+    check(!JSON.stringify(sampleDownload.data).includes('duplicateOf'),'summary omits individual record links');
+    for(const [width,height]of [[320,900],[390,900],[768,1000],[1440,1000],[667,320]]){
+      await page.setViewportSize({width,height});
+      await page.locator('#groups').selectOption({index:0});
+      check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal overflow '+width+'x'+height);
+      for(const selector of ['#sample','#import','#groups','#basis-toggle','#export','#clear','#records label']){
+        const bounds=await page.locator(selector).first().boundingBox();
+        check(bounds.height>=44,'44px target '+selector+' '+width+'x'+height);
+      }
+      await page.evaluate(()=>scrollTo(0,0));
+      await page.screenshot({path:path.join(out,'review-sample-'+width+'x'+height+'.png'),fullPage:true});
+    }
+    await page.setViewportSize({width:390,height:900});
+    await clear(false);
+    check(await page.locator('#workspace').isVisible(),'clear canceled retains reports');
+    await clear(true);
+    check(await page.locator('#empty').isVisible(),'clear accepted restores empty state');
+    check(await page.locator('#import').evaluate(e=>e===document.activeElement),'clear restores import focus');
+    const injected='<img src="https://example.invalid/leak" onerror="window.injectionRan=true">';
+    const original=report(),html=report({answers:{...original.answers,obstacle:injected}}),local=report({localTest:true}),other=report({fingerprint:'b'.repeat(64)});
+    await importFiles([upload(original,'PRIVATE_FILENAME.json'),upload(html),upload(local),upload(other)]);
+    check((await text('status')).includes('读入 4 份'),'actual current exporter reports accepted');
+    check(await page.locator('#groups option').count()===3,'localTest and fingerprint partition report groups');
+    check((await text('group-kind')).includes('来源未核实'),'nonlocal declaration not asserted authentic');
+    check(!await page.locator('#sample-notice').isVisible(),'real import not labeled sample');
+    check(!await page.locator('body').textContent().then(v=>v.includes('PRIVATE_FILENAME')),'original filename not echoed');
+    check(!await page.locator('body').textContent().then(v=>v.includes('PRIVATE_NOTE_NOT_EXPORTED')),'private note excluded by actual exporter');
+    check((await text('notes')).includes(injected),'literal malicious markup preserved as inert opinion text');
+    check(await page.locator('#notes img').count()===0,'injected image not created');
+    check(!await page.evaluate(()=>window.injectionRan),'injected handler not executed');
+    const realDownload=await download();
+    check(realDownload.data.exampleOnly===false,'imported summary not example');
+    check(realDownload.file.suggestedFilename()==='画卷复盘计数.json','normal summary filename');
+    check(realDownload.data.groups.length===3,'all three imported groups summarized');
+    check(!JSON.stringify(realDownload.data).includes('测试意见仅留本机'),'summary excludes imported opinion');
+    check(!JSON.stringify(realDownload.data).includes('example.invalid'),'summary excludes malicious free text');
+    const before=await text('totals');
+    await importFiles([upload('{bad json}'),upload({...original,uid:'TEST_FIELD_NOT_ALLOWED'}),{name:'oversize.json',mimeType:'application/json',buffer:Buffer.alloc(65537,32)}]);
+    check((await text('status')).includes('读入 0 份，未读入 3 份'),'bad unknown-field oversized files separately rejected');
+    check(await page.locator('#errors li').count()===3,'three failures visible');
+    check(await text('totals')===before,'failed imports preserve prior records');
+    check(!await page.locator('body').textContent().then(v=>v.includes('TEST_FIELD_NOT_ALLOWED')),'invalid report fields not echoed');
+    await importFiles(Array.from({length:101},()=>upload(original)));
+    check((await text('status')).includes('最多读入 100 份'),'100 report capacity enforced');
+    check(await text('totals')===before,'over-capacity selection atomic');
+    page.once('dialog',dialog=>dialog.dismiss());await page.locator('#sample').click();
+    check(!await page.locator('#sample-notice').isVisible(),'canceling example replacement preserves imported reports');
+    page.once('dialog',dialog=>dialog.accept());await page.locator('#sample').click();
+    check(await page.locator('#sample-notice').isVisible(),'explicit example replacement');
+    await importFiles([upload('{')]);
+    check(await page.locator('#sample-notice').isVisible(),'failed import leaves example clearly marked');
+    await importFiles([upload(original)]);
+    check(!await page.locator('#sample-notice').isVisible(),'successful import removes examples');
+    check(await page.locator('#groups option').count()===1,'imported report never mixed with sample groups');
+    check((await text('totals')).includes('计入 1 份'),'sample replaced rather than appended');
+    // Hold a FileReader to exercise controls and cancellation without real slow files.
+    await page.evaluate(()=>{window.nativeFileReader=FileReader;window.FileReader=class {
+      readAsText(file){window.pendingTrialReader=this;this.file=file;this.lateLoad=this.onload;}
+      abort(){this.onabort?.();}
+    };});
+    await page.locator('#files').setInputFiles([upload(other)]);
+    await page.waitForFunction(()=>!!window.pendingTrialReader);
+    for(const id of ['sample','import','export','clear','files','groups'])check(await page.locator('#'+id).isDisabled(),'busy prevents '+id);
+    check(await page.locator('#records input').first().isDisabled(),'busy prevents record changes');
+    check(await page.locator('#cancel').isVisible(),'cancel reading remains available');
+    await page.locator('#cancel').click();
+    check((await text('status')).includes('读取已取消'),'cancel reports current batch not counted');
+    check(await page.locator('#import').evaluate(e=>e===document.activeElement),'cancel restores keyboard focus');
+    await page.evaluate(async()=>{const r=window.pendingTrialReader;r.result=await r.file.text();r.lateLoad();});
+    check(await page.locator('#groups option').count()===1,'late read cannot mutate after cancellation');
+    await page.evaluate(()=>{window.pendingTrialReader=null;});
+    await page.locator('#files').setInputFiles([upload(other)]);
+    await page.waitForFunction(()=>!!window.pendingTrialReader);
+    await page.evaluate(async()=>{const r=window.pendingTrialReader;r.result=await r.file.text();r.onload();});
+    await page.waitForFunction(()=>!document.querySelector('#import').disabled);
+    check(await page.locator('#groups option').count()===2,'held read completes consistently');
+    await page.evaluate(()=>{window.pendingTrialReader=null;const schedule=window.setTimeout;window.setTimeout=(fn,ms,...args)=>schedule(fn,ms===8000?20:ms,...args);});
+    await importFiles([upload(original)]);
+    check((await text('status')).includes('读入 0 份，未读入 1 份'),'stalled FileReader times out without counting file');
+    check(await page.locator('#groups option').count()===2,'timeout preserves prior groups');
+    check(await page.evaluate(()=>localStorage.length===0&&sessionStorage.length===0),'no persistent browser storage');
+    await page.reload();await page.locator('#import').waitFor();
+    check(await page.locator('#empty').isVisible(),'refresh forgets imported feedback');
+    check(await page.evaluate(()=>localStorage.length===0&&sessionStorage.length===0),'refresh leaves storage empty');
+    check(external.length===0,'no external network requests');
+    check(!requests.some(r=>r.method!=='GET'),'no uploads or cloud writes');
+    check(errors.length===0,'no browser runtime errors: '+errors.join('; '));
+    console.log('trial review browser: '+checks+' checks passed; screenshots '+out);
+  }finally{await browser.close();await server.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});
