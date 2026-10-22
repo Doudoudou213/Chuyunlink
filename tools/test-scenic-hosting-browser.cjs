@@ -54,7 +54,7 @@ function safeCode(error) {
   if (error?.name === 'TimeoutError') return 'UI_TIMEOUT';
   const value = String(error?.message || '');
   if (/ERR_NAME_NOT_RESOLVED|ERR_CONNECTION|ERR_NETWORK|ERR_CERT|ERR_TIMED_OUT/.test(value)) return 'STATIC_NETWORK_FAILED';
-  if (value === 'INVALID_ARGUMENT' || value === 'INVALID_RELEASE' || value.startsWith('OUTPUT_')) return value;
+  if (value === 'INVALID_ARGUMENT' || value === 'INVALID_RELEASE' || value.startsWith('OUTPUT_') || /^HOSTING_NOTICE_(?:BUTTON_UNAVAILABLE|LOOP)$/.test(value)) return value;
   return 'STATIC_UI_CHECK_FAILED';
 }
 
@@ -78,7 +78,7 @@ async function run(options) {
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   try {
     for (const width of [390, 1440]) {
-      const row = { width, height: width === 390 ? 844 : 1000, checks: [], screenshots: [], blocked: {}, allowedStaticRequests: 0, staticFailureCount: 0, pageErrorCount: 0, failures: [] };
+      const row = { width, height: width === 390 ? 844 : 1000, checks: [], screenshots: [], blocked: {}, allowedStaticRequests: 0, staticFailureCount: 0, hostingNoticeCount: 0, warnings: [], pageErrorCount: 0, failures: [] };
       summary.viewports.push(row);
       const check = (name, ok) => row.checks.push({ name, ok: !!ok });
       const context = await browser.newContext({ viewport: { width, height: row.height }, reducedMotion: 'reduce', serviceWorkers: 'block' });
@@ -105,14 +105,53 @@ async function run(options) {
         try { Object.defineProperty(navigator, 'sendBeacon', { value: () => false, configurable: false }); } catch {}
       });
       const page = await context.newPage();
+      const pendingDocument404s = new Set();
       page.setDefaultTimeout(20000);
       page.on('pageerror', () => { row.pageErrorCount++; });
       page.on('response', response => {
-        if (staticRequest(response.request()) === 'static' && response.status() >= 400) row.staticFailureCount++;
+        if (staticRequest(response.request()) !== 'static' || response.status() < 400) return;
+        // A known Tencent test-domain notice is itself served as a document 404.
+        // Defer only document 404 classification until its rendered UI is checked.
+        // Unknown document 404s and all missing application assets remain failures.
+        if (response.status() === 404 && response.request().resourceType() === 'document') pendingDocument404s.add(response);
+        else row.staticFailureCount++;
       });
       page.on('requestfailed', request => {
         if (staticRequest(request) === 'static') row.staticFailureCount++;
       });
+      async function acknowledgeHostingNotice(response) {
+        if (!response || response.status() !== 404 || response.request().resourceType() !== 'document') return response;
+        const url = new URL(page.url());
+        if (url.origin !== origin || !['/', '/index.html', '/explore-journey.html'].includes(url.pathname)) return response;
+        const known = await page.evaluate(() => document.title.trim() === '风险提醒'
+          && document.body.innerText.includes('页面访问提示') && document.body.innerText.includes('测试域名')
+          && !document.querySelector('.page-view, #gate'));
+        if (!known) return response;
+        const button = page.getByText(/^确定访问(?:\s*[（(]\s*\d+\s*s?\s*[)）])?$/);
+        if (await button.count() !== 1 || !(await button.isVisible())) throw Error('HOSTING_NOTICE_BUTTON_UNAVAILABLE');
+        pendingDocument404s.delete(response);
+        row.hostingNoticeCount++;
+        row.warnings.push({ code: 'CLOUDBASE_TEST_DOMAIN_NOTICE', path: url.pathname, status: 404 });
+        // Let the real countdown finish and use the visible control. Never inject
+        // a bypass cookie, change notice DOM, or loosen the network allowlist.
+        for (let attempt = 0; attempt < 40; attempt++) {
+          if ((await button.innerText()).trim() === '确定访问' && await button.isEnabled()) break;
+          if (attempt === 39) throw Error('HOSTING_NOTICE_BUTTON_UNAVAILABLE');
+          await page.waitForTimeout(250);
+        }
+        const [next] = await Promise.all([
+          page.waitForResponse(value => value.request().resourceType() === 'document'
+            && new URL(value.url()).origin === origin && new URL(value.url()).pathname === url.pathname, { timeout: 45000 }),
+          button.click()
+        ]);
+        await page.waitForLoadState('load');
+        if (next.status() === 404 && (await page.title()).trim() === '风险提醒') throw Error('HOSTING_NOTICE_LOOP');
+        return next;
+      }
+      async function openPublic(url) {
+        const response = await page.goto(url, { waitUntil: 'load', timeout: 45000 });
+        return acknowledgeHostingNotice(response);
+      }
       async function shot(name) {
         const filename = name + '-' + width + '.png', target = path.join(options.output, filename);
         if (fs.existsSync(target) && fs.lstatSync(target).isSymbolicLink()) throw Error('OUTPUT_LINK_REJECTED');
@@ -126,7 +165,7 @@ async function run(options) {
       }
       try {
         try {
-          const response = await page.goto(publicUrl('/index.html', options.release, { view: 'discover' }), { waitUntil: 'load', timeout: 45000 });
+          const response = await openPublic(publicUrl('/index.html', options.release, { view: 'discover' }));
           check('main-http-success', response?.ok());
           await page.locator('#chu-startup').waitFor({ state: 'detached' });
           await page.waitForFunction(() => typeof window.switchTab === 'function' && !!window.ChuScenicEntry);
@@ -147,7 +186,7 @@ async function run(options) {
         } catch (error) { row.failures.push({ stage: 'main', code: safeCode(error) }); }
 
         try {
-          const response = await page.goto(publicUrl('/explore-journey.html', options.release, { resourceId: 'yellow-crane-tower' }), { waitUntil: 'load', timeout: 45000 });
+          const response = await openPublic(publicUrl('/explore-journey.html', options.release, { resourceId: 'yellow-crane-tower' }));
           check('journey-http-success', response?.ok());
           // Require actual production failure handling, not a mocked available:false response.
           await page.waitForFunction(() => document.getElementById('gate-title')?.textContent === '这一卷还在整理');
@@ -165,13 +204,20 @@ async function run(options) {
           check('journey-visible-return', await back.isVisible() && (await back.textContent()).includes('返回地图'));
           check('journey-return-stays-on-main-map', await back.getAttribute('href') === '/index.html?view=map');
           await shot('journey-unavailable');
-          await back.click();
+          const [backResponse] = await Promise.all([
+            page.waitForResponse(value => value.request().resourceType() === 'document'
+              && new URL(value.url()).origin === origin && new URL(value.url()).pathname === '/index.html'),
+            back.click()
+          ]);
+          await page.waitForLoadState('load');
+          await acknowledgeHostingNotice(backResponse);
           await page.waitForURL(url => url.origin === origin && url.pathname === '/index.html' && url.searchParams.get('view') === 'map');
           await page.locator('#chu-startup').waitFor({ state: 'detached' });
           await page.locator('#view-map:not(.hidden)').waitFor();
           check('journey-return-works', true);
           await noEntries('return-map-scenic-entrance-hidden');
         } catch (error) { row.failures.push({ stage: 'journey-unavailable', code: safeCode(error) }); }
+        row.staticFailureCount += pendingDocument404s.size;
         check('no-unhandled-page-errors', row.pageErrorCount === 0);
         check('no-missing-published-static-assets', row.staticFailureCount === 0);
       } finally { await context.close(); }
