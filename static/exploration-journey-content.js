@@ -26,12 +26,25 @@
     return {resourceId,title:w.title,version:w.version,fingerprint:w.fingerprint,points,
       checkedAt:response.checkedAt,validUntil:response.validUntil,localTest:response.localTest===true||w.simulated===true};
   }
+  function canResume(data,raw,now=Date.now()){
+    return !!raw&&raw.fingerprint===data.fingerprint&&Number.isFinite(raw.updatedAt)&&now-raw.updatedAt<=7*86400000&&raw.updatedAt<=now+60000&&data.points.some(p=>p.id===raw.selected);
+  }
   function record(data,raw,now=Date.now()){
     const ids=data.points.map(p=>p.id);
     if(!raw||raw.fingerprint!==data.fingerprint||!Number.isFinite(raw.updatedAt)||now-raw.updatedAt>7*86400000||raw.updatedAt>now+60000)raw={};
     return {fingerprint:data.fingerprint,selected:ids.includes(raw.selected)?raw.selected:ids[0],
       observed:Array.isArray(raw.observed)?[...new Set(raw.observed.filter(id=>ids.includes(id)))]:[],
+      details:details(data,raw.details),
       note:typeof raw.note==='string'?raw.note.slice(0,120):'',feedback:feedback(raw.feedback),updatedAt:now};
+  }
+  function details(data,raw){
+    if(!Array.isArray(raw))return [];
+    const seen=new Set();
+    return raw.filter(value=>{
+      if(!value||typeof value!=='object'||!data.points.some(p=>p.id===value.pointId&&p.artScene&&p.artScene===value.sceneId)||
+        typeof value.detailKey!=='string'||!/^[a-z][a-z0-9-]{0,39}$/.test(value.detailKey))return false;
+      const key=value.pointId+':'+value.detailKey;if(seen.has(key))return false;seen.add(key);return true;
+    }).slice(0,24).map(({pointId,sceneId,detailKey})=>({pointId,sceneId,detailKey}));
   }
   function feedback(raw){
     const value=raw&&typeof raw==='object'?raw:{};
@@ -48,5 +61,5 @@
       reading:{recorded:clean.observed.length,total:data.points.length},answers,
       scope:'自愿填写的阅读试用反馈；不代表实地到访、客流统计或景区验收。'};
   }
-  return {project,record,safeLink,feedback,trialReport};
+  return {project,record,canResume,safeLink,feedback,trialReport,details};
 });

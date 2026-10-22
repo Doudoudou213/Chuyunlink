@@ -6,6 +6,14 @@
   <title>一卷随行 · 楚韵链迹</title><link rel="icon" href="data:,">
   <link rel="stylesheet" href="static/exploration-journey-demo.css">
   <link rel="stylesheet" href="static/exploration-journey-live.css">
+  <link rel="stylesheet" href="static/exploration-journey-leaves.css">
+  <link rel="stylesheet" href="static/exploration-journey-theme.css">
+  <link rel="stylesheet" href="static/exploration-journey-study.css">
+  <link rel="stylesheet" href="static/exploration-journey-comfort.css">
+  <link rel="stylesheet" href="static/exploration-journey-inquiry.css">
+  <link rel="stylesheet" href="static/exploration-journey-question.css">
+  <link rel="stylesheet" href="static/exploration-journey-reader.css">
+  <link rel="stylesheet" href="static/scenic-reading-fallback.css">
   <!-- journey-local-adapter -->
   <script defer src="static/assets/gsap-3.15.0.min.js"></script>
   <script defer src="static/exploration-gilded-profiles.js"></script>
@@ -14,49 +22,68 @@
   <script defer src="static/explore-transport.js"></script>
   <script defer src="static/exploration-journey-content.js"></script>
   <script defer src="static/exploration-journey-audio.js"></script>
+  <script defer src="static/exploration-leaf-motion.js"></script>
+  <script defer src="static/exploration-journey-leaves.js"></script>
+  <script defer src="static/exploration-journey-navigation.js"></script>
+  <script defer src="static/exploration-journey-study-scenes.js"></script>
+  <script defer src="static/exploration-journey-study.js"></script>
+  <script defer src="static/exploration-journey-comfort.js"></script>
+  <script defer src="static/exploration-journey-inquiry-data.js"></script>
+  <script defer src="static/exploration-journey-inquiry.js"></script>
+  <script defer src="static/exploration-journey-question-data.js"></script>
+  <script defer src="static/exploration-journey-question-state.js"></script>
+  <script defer src="static/exploration-journey-question.js"></script>
+  <script defer src="static/exploration-journey-reader.js"></script>
+  <script defer src="static/exploration-journey-souvenir.js"></script>
+  <script defer src="static/scenic-return.js"></script>
+  <script defer src="static/scenic-reading-fallback.js"></script>
   <script defer src="static/exploration-journey-live.js"></script>
 </head>
-<body>
+<body class="scenic-journey">
   <header class="masthead"><a href="./index.html">楚韵链迹 <span>／ 一卷随行</span></a><span id="edition" class="prototype">正在核对当前公开版本</span></header>
   <main class="journey-shell">
     <section class="painting" aria-label="艺术画卷">
-      <div class="painting-heading"><span>看一处景 · 读一段有出处的讲解</span><h1 id="painting-title">一卷黄鹤楼</h1></div>
-      <div id="journey-stage" tabindex="0" role="region" aria-label="左右滚动画卷">
-        <div id="journey-world"><img id="journey-art" src="static/assets/exploration-motion/hhl-full-park-v2.webp" alt="黄鹤楼艺术画稿，非实测地图" draggable="false"><canvas id="journey-light" hidden aria-hidden="true"></canvas><div id="journey-points"></div></div>
+      <div class="painting-heading"><h1 id="painting-title">一卷黄鹤楼</h1><span>左右移卷 · 点景取阅</span></div>
+      <div class="journey-map-edge">
+        <div id="journey-stage" tabindex="0" role="region" aria-label="左右滚动画卷">
+          <div id="journey-world"><img id="journey-art" src="static/assets/exploration-motion/hhl-full-park-v2.webp" alt="黄鹤楼艺术画稿，非实测地图" draggable="false"><canvas id="journey-light" hidden aria-hidden="true"></canvas><div id="journey-points"></div></div>
+        </div>
       </div>
-      <p id="painting-help">画中位置仅为艺术示意，不用作现场导航。</p><p id="art-error" hidden>画稿暂未加载，文字阅读仍可使用。</p>
+      <p id="painting-help">画中位置仅为艺术示意，不用作现场导航。</p>
+      <div id="art-error" hidden><p id="art-error-copy" role="status">画稿暂未加载，文字阅读仍可使用。</p><button id="art-retry" type="button" hidden>重新加载画稿</button></div>
     </section>
     <section class="journal" aria-label="已审内容阅读">
       <div id="gate" role="status" aria-live="polite">
         <p class="overline">启卷 / 内容核对</p><h2 id="gate-title" tabindex="-1">正在展卷</h2>
-        <p id="gate-copy" class="intro">读取当前可公开的讲解与素材，不显示过期缓存。</p>
+        <p id="gate-copy" class="intro">正在核对当前公开资料。</p>
         <button id="retry" class="primary" hidden>重新读取 →</button>
+        <section id="scenic-reading-fallback" hidden aria-label="已有公开介绍"></section>
       </div>
       <div id="content" hidden>
-        <details id="journey-help" class="journey-help"><summary>第一次来？这样读这一卷</summary>
-          <p>点画中景物，或下方景物名称，先看观察提示，再读讲解与出处。音频由你手动开启。</p>
-          <p>想留下阅读进度，就点“记下这一景”；想歇一歇，直接收卷。刷新后可继续，七天内留在本机，不用注册。</p>
-          <p>这是读画工具，不判断你在哪里，也不指示实际道路。实地行走请看景区标识。</p>
-          <a id="explore-tools" class="quiet" hidden>打开探索工具：问答、照片对照与账号手记 →</a>
-          <p class="fine">两个页面的阅读与到访记录分开保存；切换不会自动登记到访。</p>
-        </details>
-        <div class="section-top"><p id="position" class="overline"></p><button id="refresh" class="quiet">检查内容更新</button></div>
+        <div id="journey-resume" hidden><span id="resume-label"></span><button type="button" id="continue-journey" class="quiet">继续游览 <span aria-hidden="true">→</span></button></div>
+        <div class="section-top"><p id="position" class="overline"></p><span class="journal-imprint" aria-hidden="true">随行<br>拾景</span></div>
         <h2 id="point-title" tabindex="-1"></h2>
         <nav id="journey-stops" aria-label="按已发布顺序阅读"></nav>
-        <p class="prompt-label">先看一眼</p><p id="observation" class="observation"></p>
+        <p id="observation" class="observation"></p>
         <p id="binding-note" class="fine"></p>
+        <p id="journey-entry-note"></p>
         <section id="audio" class="audio-reading" aria-label="手动播放讲解"></section>
-        <details id="reading"><summary>继续读讲解</summary><p id="reading-copy"></p></details>
-        <details id="sources" class="source-details"><summary>出处与资料核对时间</summary><div id="source-list"></div><p id="review-date" class="fine"></p></details>
-        <div class="step-actions"><button id="previous" class="quiet">上一景</button><button id="observe" class="primary">记下这一景，继续 →</button></div>
-        <p class="fine">记下的是阅读观察，不认证到访、不发放积分。现场以景区标识和工作人员指引为准。</p>
-        <button id="finish" class="quiet">先收起这一卷</button>
+        <div class="reading-actions">
+          <details id="reading"><summary>读这一景</summary><div id="journey-reading-main"><div class="journey-reading-tools"><span id="reading-size-status" role="status"></span><button id="reading-size" type="button" aria-pressed="false" hidden>大字阅读</button></div><section id="journey-study" class="journey-study" aria-label="原画细节观察" hidden></section><p id="reading-copy"></p></div><section id="journey-inquiry" aria-label="本景研究稿摘读" hidden></section><section id="journey-question" aria-label="本景自由提问" hidden></section></details>
+          <details id="sources" class="source-details"><summary>出处</summary><div id="source-list"></div><p id="review-date" class="fine"></p></details>
+        </div>
+        <div class="step-actions journey-paging"><button id="previous" class="quiet">← 上一景</button><button id="next" class="quiet">下一景 →</button></div>
+        <div class="journal-secondary">
+          <button id="finish" class="quiet">收起这一卷</button>
+        </div>
+        <p id="journey-reading-progress"></p>
       </div>
       <div id="finished" hidden>
         <p class="overline">收卷 / 阅读拾记</p><h2 tabindex="-1" id="finished-title">把这一程，留在纸上</h2>
-        <article class="souvenir"><div class="souvenir-picture" role="img" aria-label="艺术画卷"></div><div class="souvenir-copy"><span class="seal">阅读<br>拾记</span><h3 id="souvenir-title"></h3><p id="souvenir-count"></p><ul id="souvenir-stops"></ul><p id="souvenir-note"></p><small>仅记录主动阅读 · 非实地到访凭证</small></div></article>
+        <article class="souvenir"><div class="souvenir-picture" role="img" aria-label="艺术画卷"></div><div class="souvenir-copy"><span class="seal">阅读<br>拾记</span><h3 id="souvenir-title"></h3><p id="souvenir-count"></p><ul id="souvenir-stops"></ul><ul id="souvenir-details" aria-label="主动留下的画中细节"></ul><p id="souvenir-note"></p><small>仅记录主动阅读 · 非实地到访凭证</small></div></article>
         <label class="note-label" for="note">留一句感受 <span>本机保存，最多120字</span></label><textarea id="note" maxlength="120" rows="2"></textarea>
-        <div class="step-actions"><button id="download" class="primary">保存游记文字</button><button id="return" class="quiet">回卷继续看</button></div>
+        <div class="step-actions souvenir-actions"><button id="download-image" type="button" class="primary" hidden>保存图文游记</button><button id="download" class="primary">保存游记文字</button><button id="return" class="quiet">回卷继续看</button></div>
+        <p id="souvenir-export-status" role="status" aria-live="polite"></p>
         <details id="trial-feedback" class="trial-feedback"><summary>帮我们把这一卷做得更顺手 <span>选填</span></summary>
           <p class="fine">只评价刚才的阅读体验，不评价现场路线。不上传、不收集身份或定位；请勿填写联系方式和个人隐私。</p>
           <form id="trial-form">
@@ -77,7 +104,25 @@
         </details>
       </div>
       <p id="status" role="status" aria-live="polite" class="fine"></p>
-      <footer class="journal-footer"><span>进度仅留本机 · 不记录位置</span><button id="clear" class="quiet">清除本机拾记</button></footer>
+      <footer class="journal-footer">
+        <details id="journey-tools" class="journey-tools"><summary>读卷工具 <span aria-hidden="true">＋</span></summary>
+          <div class="journey-tool-list">
+          <button id="observe" class="quiet">记下这一景</button>
+          <button id="refresh" class="quiet">检查更新</button>
+          <details id="journey-help" class="journey-help"><summary>读卷说明</summary>
+            <p>点画中景物，或景物名称，先看观察提示，再读讲解与出处。音频由你手动开启。</p>
+            <p>纸页底部可直接看下一景，最后一景可以收卷留念。想留下这一处观察，再点“记下这一景”。</p>
+            <p>讲解可分段读，也可切换连贯阅读。原画细看中的细节可自愿记下，不是答题或到访认证。收卷后可把画稿、已记下的细节与感受保存为图片；只下载到本机，不自动分享。</p>
+            <p>阅读进度与拾记仅在本机保留七天，不用注册，不记录位置。记下阅读不认证到访，也不发放积分。</p>
+            <p>读景纸页内可切换大字；字号偏好只存本机。画稿加载失败可单独重试，文字仍可阅读；讲解仍需联网核对，不提供离线旧正文。</p>
+            <p>画中位置只帮助认图，不判断你在哪里，也不指示实际道路。实地行走请以景区标识和工作人员指引为准。</p>
+            <a id="explore-tools" class="quiet" hidden>打开探索工具 →</a>
+            <p class="fine">探索工具提供问答、照片对照与账号手记。两个页面的阅读与到访记录分开保存，切换不会自动登记到访。</p>
+          </details>
+          <button id="clear" class="quiet">清除本机拾记</button>
+          </div>
+        </details>
+      </footer>
       <noscript>请启用 JavaScript 读取当前公开资料。本页不提供离线旧讲解。</noscript>
     </section>
   </main>

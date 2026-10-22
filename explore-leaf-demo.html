@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>一景一笺 · 楚韵链迹视觉小样</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="static/exploration-leaf-demo.css">
+  <script defer src="static/assets/gsap-3.15.0.min.js"></script>
+  <script defer src="static/exploration-gilded-profiles.js"></script>
+  <script defer src="static/exploration-leaf-motion.js"></script>
+  <script defer src="static/exploration-leaf-demo.js"></script>
+</head>
+<body>
+  <header class="demo-masthead"><span class="demo-brand">楚韵链迹<span>一景一笺</span></span><span class="demo-label">视觉小样 · 不保存记录</span></header>
+  <main class="demo-scroll">
+    <div class="demo-intro"><h1>从画中，借一页。</h1><p>点一处景，取阅一笺。<br><span>左右移动画卷，慢慢看。</span></p></div>
+    <section class="canvas-frame" aria-label="黄鹤楼手绘画卷">
+      <div id="leaf-canvas" tabindex="0" aria-label="可左右移动的艺术画卷，按左右方向键移动">
+        <div id="leaf-world">
+          <img id="leaf-art" src="static/assets/exploration-motion/hhl-full-park-v2.webp" alt="黄鹤楼园区艺术画稿，包含楼阁、古铜顶、水面与树林；不是实地导航地图" draggable="false">
+          <button class="scene-point" data-scene="tower" style="--x:23.7%;--y:40.8%" aria-haspopup="dialog" aria-controls="scene-leaf"><i aria-hidden="true"></i><span>黄鹤楼</span></button>
+          <button class="scene-point" data-scene="copper" style="--x:34.4%;--y:42.3%" aria-haspopup="dialog" aria-controls="scene-leaf"><i aria-hidden="true"></i><span>古铜顶</span></button>
+          <button class="scene-point" data-scene="baiyun" style="--x:51.3%;--y:47.8%" aria-haspopup="dialog" aria-controls="scene-leaf"><i aria-hidden="true"></i><span>白云阁</span></button>
+          <button class="scene-point" data-scene="pond" style="--x:41.2%;--y:78%" aria-haspopup="dialog" aria-controls="scene-leaf"><i aria-hidden="true"></i><span>鹅池</span></button>
+        </div>
+      </div>
+      <p id="art-failure" role="status" hidden>画稿未能加载。仍可从下方选择景物，试阅纸笺。</p>
+      <div class="canvas-caption"><span>黄鹤楼 · 手绘画稿</span><span>艺术示意，非现场导航</span></div>
+    </section>
+    <nav id="scene-index" aria-label="选择一景取阅"><span class="index-label">取阅</span><button data-scene="tower" aria-haspopup="dialog" aria-controls="scene-leaf">黄鹤楼<span>层檐</span></button><button data-scene="copper" aria-haspopup="dialog" aria-controls="scene-leaf">古铜顶<span>古铜</span></button><button data-scene="baiyun" aria-haspopup="dialog" aria-controls="scene-leaf">白云阁<span>树影</span></button><button data-scene="pond" aria-haspopup="dialog" aria-controls="scene-leaf">鹅池<span>水纹</span></button></nav>
+    <footer class="demo-footer"><span>沿用现有画稿 · 仅演示纸页与转场</span><span>画景作引，文字留白。</span></footer>
+    <p id="demo-status" class="sr-only" role="status"></p>
+    <noscript><p class="no-script">请开启 JavaScript 体验纸页动效。此页只作视觉小样，不收集或保存任何记录。</p></noscript>
+  </main>
+  <div id="leaf-veil" aria-hidden="true"></div>
+  <dialog id="scene-leaf" aria-labelledby="leaf-title" aria-describedby="leaf-demo-note">
+    <article class="borrowed-leaf leaf-plane">
+      <div class="paper-fibres" aria-hidden="true"></div><div class="paper-crease" aria-hidden="true"></div>
+      <div id="leaf-motif" aria-hidden="true"></div>
+      <div class="leaf-light" aria-hidden="true"></div><div class="leaf-shade" aria-hidden="true"></div>
+      <header class="leaf-head"><div class="leaf-heading"><p class="leaf-overline">楚韵链迹 / 随行札记</p><h2 id="leaf-title" tabindex="-1">黄鹤楼</h2><p id="leaf-subtitle">层檐入画</p></div><button id="leaf-close" type="button" aria-label="合上纸笺">×</button></header>
+      <div class="leaf-body" tabindex="0" aria-label="纸笺正文，可滚动阅读">
+        <div id="leaf-copy"></div>
+      </div>
+      <p id="leaf-demo-note">画稿观察示例 · 非历史讲解或现场指引</p>
+      <footer class="leaf-foot"><span id="leaf-pagination"></span><button id="leaf-return" type="button">回到画中 <span aria-hidden="true">↗</span></button></footer>
+    </article>
+  </dialog>
+</body>
+</html>

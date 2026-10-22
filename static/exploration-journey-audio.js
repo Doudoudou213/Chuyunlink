@@ -1,13 +1,13 @@
 (function(){
   'use strict';
-  let cleanup=()=>{};
-  function stop(){cleanup();cleanup=()=>{};}
+  let cleanup=()=>{},pauseCurrent=()=>{};
+  function stop(){cleanup();cleanup=()=>{};pauseCurrent=()=>{};}
   function mount(host,point,validate){
     stop();host.replaceChildren();
     const hint=document.createElement('p');host.append(hint);
     const asset=point.audio;
-    if(!asset){hint.textContent='这一景暂未配音，可以展开阅读讲解。';return;}
-    let alive=true,pending=false,started=false;
+    if(!asset){hint.textContent='这一景暂未配音，文字讲解仍可阅读。';return;}
+    let alive=true,pending=false,started=false,intent=0;
     const a=new Audio();a.preload='none';a.crossOrigin='anonymous';
     const row=document.createElement('div'),play=document.createElement('button'),seek=document.createElement('input');
     const caption=document.createElement('p'),credit=document.createElement('p');
@@ -24,6 +24,7 @@
       caption.textContent=asset.captions?.length?(line?.text||''):(cue?.detailId==='location'?point.locator:point.observation);caption.hidden=!caption.textContent;
     };
     cleanup=()=>{alive=false;a.pause();a.removeAttribute('src');a.load();play.disabled=true;seek.disabled=true;caption.textContent='';};
+    pauseCurrent=()=>{intent++;a.pause();if(started)play.textContent='继续听';};
     a.addEventListener('timeupdate',update);
     a.addEventListener('loadedmetadata',()=>{
       if(!alive)return;
@@ -36,12 +37,12 @@
     play.onclick=async()=>{
       if(!alive||pending)return;
       if(!a.paused){a.pause();play.textContent='继续听';return;}
-      pending=true;play.disabled=true;
+      pending=true;play.disabled=true;const token=++intent;
       try{
-        await validate();if(!alive)return;
+        await validate();if(!alive||token!==intent)return;
         if(!started){a.src=asset.url;started=true;}
-        await a.play();if(alive){play.textContent='暂停';update();}
-      }catch(error){if(alive){a.pause();play.textContent='重试播放';hint.textContent='音频暂时无法播放，请重试或先阅读文字。';}}
+        await a.play();if(token!==intent){a.pause();return;}if(alive){play.textContent='暂停';update();}
+      }catch(error){if(alive&&token===intent){a.pause();play.textContent='重试播放';hint.textContent='音频暂时无法播放，请重试或先阅读文字。';}}
       finally{pending=false;if(alive)play.disabled=false;}
     };
     seek.oninput=async()=>{
@@ -51,5 +52,5 @@
       finally{pending=false;if(alive)play.disabled=false;}
     };
   }
-  window.ChuJourneyAudio={mount,stop};
+  window.ChuJourneyAudio={mount,stop,pause:()=>pauseCurrent()};
 })();

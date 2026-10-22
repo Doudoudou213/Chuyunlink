@@ -42,8 +42,17 @@ async function fixture(){
 }
 async function start(port=0){
   let f=await fixture(),offline=false;
-  const extra=new Set(['explore-journey.html','explore-admin.html','static/exploration-journey-live.css','static/exploration-journey-live.js','static/exploration-journey-audio.js','static/exploration-journey-content.js',
-    'static/exploration-readiness.js','static/exploration-readiness-admin.js','static/exploration-readiness.css',
+  const extra=new Set(['static/scenic-return.js','static/scenic-reading-fallback.js','static/scenic-reading-fallback.css','explore-journey.html','explore-admin.html','static/exploration-journey-live.css','static/exploration-journey-live.js','static/exploration-journey-audio.js','static/exploration-journey-content.js',
+    'static/exploration-readiness.js','static/exploration-readiness-admin.js','static/exploration-readiness.css','static/exploration-admin-simple.css',
+    'static/exploration-admin-paper.js','static/exploration-admin-paper.css','static/assets/paper-fibres-soft-v1.webp',
+    'static/exploration-journey-leaves.js','static/exploration-journey-leaves.css',
+    'static/exploration-leaf-motion.js','static/exploration-journey-theme.css','static/exploration-journey-navigation.js','static/assets/longcang-journey-v1.woff2',
+    'static/exploration-journey-study.js','static/exploration-journey-study.css',
+    'static/exploration-journey-study-scenes.js',
+    'static/exploration-journey-comfort.js','static/exploration-journey-comfort.css',
+    'static/exploration-journey-reader.js','static/exploration-journey-reader.css','static/exploration-journey-souvenir.js',
+    'static/exploration-journey-inquiry.js','static/exploration-journey-inquiry-data.js','static/exploration-journey-inquiry.css',
+    'static/exploration-journey-question.js','static/exploration-journey-question-state.js','static/exploration-journey-question-data.js','static/exploration-journey-question.css',
     'explore.html','static/explore.css','static/explore-app.js','static/explore-state.js','static/explore-map.js','static/explore-motion.js','static/explore-media.js','static/explore-records.js',
     'static/guide-cloud.js','static/explore-transport.js','static/explore-assets-admin.js','static/explore-admin.js','static/site-walk-admin.js','static/site-walk-admin.css']);
   const token=crypto.randomBytes(24).toString('hex');
@@ -94,7 +103,7 @@ async function start(port=0){
         const call='async function localCall(url,data){const r=await fetch(url,{method:"POST",headers:{"x-preview-token":"'+token+'"},body:JSON.stringify(data)});const v=await r.json();if(!v.ok)throw Error(v.error?.message||"本地读取失败");return v;}';
         const adapter=file==='/explore-admin.html'?'window.SiteWalkAdminAdapter={call:data=>localCall("/__admin",data)};':'window.ExplorationAdapter={identity:async()=>"local-reader",call:data=>localCall("/__journey",{...data,resourceId:"r"})};';
         // Local URL retains r so real public projection validates matching resource IDs.
-        content=content.toString().replace(/<!-- (?:journey-local-adapter|site-walk-admin-adapter|exploration-local-adapter) -->/,'<script>'+call+adapter+'</script>').replace('<body>','<body><aside class="preview-strip">本地假数据库 · 审核与素材均为测试样例，不代表景区认可<br><a href="/trial-start.html">试用说明</a><a href="/preview-control.html" target="_blank">测试暂停 / 换版 / 断网</a><a href="/explore-admin.html" target="_blank">管理这份本地导览</a></aside>');
+        content=content.toString().replace(/<!-- (?:journey-local-adapter|site-walk-admin-adapter|exploration-local-adapter) -->/,'<script>'+call+adapter+'</script>').replace(/<body([^>]*)>/,'<body$1><aside class="preview-strip">本地假数据库 · 审核与素材均为测试样例，不代表景区认可<br><a href="/trial-start.html">试用说明</a><a href="/preview-control.html" target="_blank">测试暂停 / 换版 / 断网</a><a href="/explore-admin.html" target="_blank">管理这份本地导览</a></aside>');
       }
       const type={'.html':'text/html;charset=utf-8','.js':'text/javascript;charset=utf-8','.css':'text/css;charset=utf-8','.webp':'image/webp','.woff2':'font/woff2','.png':'image/png'};
       res.setHeader('Content-Type',type[path.extname(file)]||'application/octet-stream');res.end(content);

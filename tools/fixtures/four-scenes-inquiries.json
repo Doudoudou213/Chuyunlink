@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "mode": "editorial-excerpts",
+  "publishAllowed": false,
+  "points": [
+    {
+      "pointId": "tower",
+      "questions": [
+        {"id":"tower-origin","label":"黄鹤楼的历史从什么时候开始？","paragraphs":[{"index":1,"sourceIndexes":[0]}]},
+        {"id":"tower-current","label":"今天的主楼是哪一次重建的？","paragraphs":[{"index":1,"sourceIndexes":[0]}]}
+      ]
+    },
+    {
+      "pointId": "copper",
+      "questions": [
+        {"id":"copper-survivor","label":"铜顶是怎样留下来的？","paragraphs":[{"index":0,"sourceIndexes":[0]}]},
+        {"id":"copper-repair","label":"留下来的铜顶，后来修过吗？","paragraphs":[{"index":1,"sourceIndexes":[0]}]}
+      ]
+    },
+    {
+      "pointId": "baiyun",
+      "questions": [
+        {"id":"baiyun-museum","label":"白云阁除了建筑，还有什么可读？","paragraphs":[{"index":0,"sourceIndexes":[0]}]},
+        {"id":"baiyun-painting","label":"它与《坐看云起时》有什么联系？","paragraphs":[{"index":1,"sourceIndexes":[1]}]}
+      ]
+    },
+    {
+      "pointId": "pond",
+      "questions": [
+        {"id":"pond-renewal","label":"鹅池的生态改造从何时开始？","paragraphs":[{"index":0,"sourceIndexes":[0]}]},
+        {"id":"pond-care","label":"一池风景，需要怎样的日常照料？","paragraphs":[{"index":1,"sourceIndexes":[0]}]}
+      ]
+    }
+  ]
+}

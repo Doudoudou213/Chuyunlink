@@ -22,6 +22,11 @@ let count=0;function check(fn){fn();count++;}
   check(()=>assert.throws(()=>E.normalize({...f.draft.exploration,objects:f.draft.exploration.objects.map(o=>({...o,artScene:'tower'}))},f.draft.points),/重复/));
   check(()=>assert(!JSON.stringify(E.exportLayout(f.draft.exploration,f.draft.points)).includes('artScene')));
   const fresh=C.record(data,null),old={...fresh,observed:['tower','tower','bad'],note:'字'.repeat(200)};
+  check(()=>assert.equal(C.canResume(data,null),false));
+  check(()=>assert.equal(C.canResume(data,{...fresh,selected:'copper'}),true));
+  for(const raw of [{...fresh,fingerprint:'old'},{...fresh,selected:'not-a-stop'},{...fresh,updatedAt:Date.now()-8*86400000},{...fresh,updatedAt:Date.now()+120000},{...fresh,updatedAt:'today'}]){
+    check(()=>assert.equal(C.canResume(data,raw),false));
+  }
   check(()=>assert.deepEqual(C.record(data,old).observed,['tower']));
   check(()=>assert.equal(C.record(data,old).note.length,120));
   check(()=>assert.deepEqual(C.record({...data,fingerprint:'new'},old).observed,[]));

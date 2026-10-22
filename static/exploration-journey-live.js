@@ -6,9 +6,97 @@
   const anchors={tower:[17,41],copper:[36,46],baiyun:[54,48],pond:[48,83]};
   let data=null,record=null,generation=0,lightGeneration=0,renderer=null,ready=false,finished=false,storageOK=true;
   let drag=null,suppressedUntil=0,expiry=null,leaving=false;
-  let entryPoint=new URLSearchParams(location.search).get('pointId'),feedbackBusy=false;
+  let entryPoint=new URLSearchParams(location.search).get('pointId'),feedbackBusy=false,fallbackRequest=0;
+  let continuation=0,continuingClose=false,resumeAvailable=false;
+  let verificationSequence=0,acceptedVerification=0;
   const storageKey='chulink:journey-content:v1:'+resourceId;
+  const publicReading=window.ChuScenicReadingFallback?.create($('scenic-reading-fallback'),{
+    resourceId,call:request=>ExploreTransport.call(request)
+  });
+  async function verifyReading(){
+    if(!ready||finished||document.hidden||leaving)return false;
+    const token=generation,selected=record.selected;
+    await verify(token);
+    return token===generation&&ready&&!finished&&!document.hidden&&!leaving&&record.selected===selected;
+  }
+  const study=window.ChuJourneyStudy?.create($('journey-study'),{verify:verifyReading,
+    onObservation(value){
+      if(!ready||finished||value.pointId!==record.selected||value.sceneId!==current().artScene||!validDetail(value))return false;
+      record.details=C.details(data,[...(record.details||[]),value]);
+      keepReading();return true;
+    }
+  });
+  const reader=window.ChuJourneyReader?.create($('reading-copy'),{verify:verifyReading,
+    recorded:()=>record?.observed.includes(record.selected),onKeep:keepReading});
+  const souvenirExport=window.ChuJourneySouvenir?.create({button:$('download-image'),status:$('souvenir-export-status'),
+    canInteract:()=>ready&&finished&&shell.dataset.art==='true'&&!document.hidden&&!leaving,
+    async verify(){
+      if(!ready||!finished||shell.dataset.art!=='true'||document.hidden||leaving)return false;
+      const token=generation;await verify(token);
+      return token===generation&&ready&&finished&&shell.dataset.art==='true'&&!document.hidden&&!leaving;
+    },
+    getData:()=>ready&&finished?{title:data.title,version:data.version,localTest:data.localTest,
+      points:data.points.map(({id,title})=>({id,title})),observed:[...record.observed],note:record.note,details:savedDetails()}:null
+  });
+  const inquiry=window.ChuJourneyInquiry?.create($('journey-inquiry'),{
+    revision:()=>data?.inquiryRevision,
+    async verify(){
+      if(!ready||finished||document.hidden||leaving)return null;
+      const token=generation,selected=record.selected;
+      await verify(token);
+      return token===generation&&ready&&!finished&&!document.hidden&&!leaving&&record.selected===selected?data.inquiries?.[selected]||null:null;
+    },
+    onEnter(){study?.pause();A.pause?.();}
+  });
+  const question=window.ChuJourneyQuestion?.create($('journey-question'),{
+    async verify(){
+      if(!ready||finished||document.hidden||leaving)return null;
+      const token=generation,selected=record.selected;
+      await verify(token);
+      return token===generation&&ready&&!finished&&!document.hidden&&!leaving&&record.selected===selected?data.questionScopes?.[selected]||null:null;
+    },
+    onEnter(){study?.pause();A.pause?.();}
+  });
+  const navigation=window.ChuJourneyNavigation?.create({
+    onLanded(){if(ready&&!document.hidden&&!leaving&&(new URLSearchParams(location.search).get('resourceId')||'yellow-crane-tower')===resourceId)rememberPosition();},
+    onBack(){continuation++;A.pause?.();leaves?.close();},
+    onTraverse(){continuation++;}
+  });
+  const leaves=window.ChuJourneyLeaves?.create({
+    async beforeOpen(){
+      const intent=continuation,token=generation;
+      const settled=await navigation?.settled();
+      return settled!==false&&intent===continuation&&token===generation&&ready&&!document.hidden&&!leaving;
+    },
+    async verify(id){
+      if(!ready||document.hidden||leaving||(id==='trial-feedback')!==finished)return false;
+      const token=generation,selected=record.selected,wasFinished=finished;
+      await verify(token);
+      return token===generation&&ready&&!document.hidden&&!leaving&&record.selected===selected&&finished===wasFinished;
+    },
+    scene(){return ready&&shell.dataset.art==='true'?current()?.artScene:null;},
+    origin(){return ready&&!finished?[...$('journey-points').children].find(el=>el.dataset.artPoint===record.selected):null;},
+    next(){const next=data?.points[data.points.indexOf(current())+1];return {last:!next,title:next?.title};},
+    onContinue:continueReading,
+    onShown(){navigation?.shown();},
+    onDismissed(){if(!continuingClose)continuation++;if(document.hidden||leaving)navigation?.invalidate();else navigation?.dismissed();},
+    onOpen(){hideResume();reader?.cancel();inquiry?.reset();question?.reset();study?.reset();A.pause?.();renderer?.pause();},
+    onClosing({navigation:forNext}={}){if(!forNext)continuation++;reader?.cancel();inquiry?.cancel();question?.cancel();study?.pause();A.pause?.();},
+    onClose(){inquiry?.reset();question?.reset();study?.reset();A.pause?.();if(ready&&!finished&&!document.hidden&&!leaving)renderer?.resume();}
+  });
   function text(id,value){$(id).textContent=value;}
+  function focusPanel(title,reveal=false){
+    title.focus({preventScroll:true});
+    if(!reveal)return;
+    const token=generation,intent=continuation;
+    // Native history restores its old scroll after popstate, later than the
+    // settled() microtask. Reveal the result in the next task without changing
+    // ordinary Back restoration or stealing a newer navigation/focus intent.
+    setTimeout(()=>{
+      if(token===generation&&intent===continuation&&!document.hidden&&!leaving&&document.activeElement===title&&title.getClientRects().length)
+        title.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
+    },0);
+  }
   function button(label,fn,attrs={}){
     const b=document.createElement('button');b.type='button';b.textContent=label;
     for(const [key,value]of Object.entries(attrs))b.setAttribute(key,String(value));
@@ -17,19 +105,29 @@
   function stopLight(){lightGeneration++;renderer?.destroy();renderer=null;canvas.hidden=true;}
   function quiet(){A.stop();stopLight();clearTimeout(expiry);}
   function gate(title,copy,retry=true){
+    publicReading?.clear();
+    continuation++;navigation?.invalidate();
+    const wasReading=leaves?.isOpen();
+    leaves?.dismiss({restoreFocus:false});
+    fallbackRequest++;
+    if(!leaves)for(const detail of document.querySelectorAll('.journal details')){detail.open=false;detail.querySelector('summary')?.removeAttribute('aria-busy');}
     ready=false;quiet();shell.setAttribute('aria-busy','false');
+    study?.clear();reader?.clear();souvenirExport?.reset();inquiry?.clear();question?.clear();
     $('content').hidden=true;$('finished').hidden=true;$('gate').hidden=false;
+    hideResume();text('resume-label','');
     text('gate-title',title);text('gate-copy',copy);$('retry').hidden=!retry;
     $('explore-tools').hidden=true;$('explore-tools').removeAttribute('href');
     // Hide and erase old public content, not just its visible container.
-    for(const id of ['journey-points','journey-stops','source-list','audio','souvenir-stops'])$(id).replaceChildren();
-    for(const id of ['point-title','observation','reading-copy','review-date','souvenir-title','souvenir-note','souvenir-count'])text(id,'');
+    for(const id of ['journey-points','journey-stops','source-list','audio','souvenir-stops','souvenir-details'])$(id).replaceChildren();
+    for(const id of ['point-title','observation','reading-copy','review-date','souvenir-title','souvenir-note','souvenir-count','journey-entry-note','journey-reading-progress'])text(id,'');
+    if(wasReading)focusPanel($('gate-title'),true);
   }
   function loadSaved(){
     try{const value=JSON.parse(localStorage.getItem(storageKey)||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{};}
     catch{return {};}
   }
   function persist(){
+    record.details=C.details(data,record.details).filter(value=>validDetail(value));
     record.updatedAt=Date.now();
     try{
       const saved=loadSaved();saved[data.fingerprint]=record;
@@ -47,7 +145,11 @@
         ExploreTransport.call({action:'getSiteExploration',resourceId}),
         new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('读取超时，请检查网络后重试。')),12000);})
       ]);
-      return C.project(result,resourceId);
+      const next=C.project(result,resourceId);
+      next.inquiries=window.ChuJourneyInquiryData?.project(result,next)||null;
+      next.inquiryRevision=window.ChuJourneyInquiryData?.revision(result,next)||null;
+      next.questionScopes=next.inquiries?null:window.ChuJourneyQuestionData?.binding(result,next)||null;
+      return next;
     }finally{clearTimeout(timer);}
   }
   function armExpiry(){
@@ -56,12 +158,19 @@
     expiry=setTimeout(()=>{generation++;gate('资料到了复核时间','暂不展示旧讲解与音频。请重新读取当前公开版本。');},Math.max(0,until-Date.now()+10));
   }
   async function verify(token=generation){
+    const request=++verificationSequence;
     try{
       const next=await fetchContent();
       if(token!==generation||leaving||document.hidden)throw Error('阅读状态已变化');
+      // Concurrent reads may finish out of order. An earlier response must not
+      // roll back an already accepted capability or its independent revision.
+      if(request<acceptedVerification)return data;
       if(!data||next.fingerprint!==data.fingerprint)throw Error('内容已换版，请重新读取。原版拾记留在本机，不会自动计入新版。');
-      data=next;armExpiry();return next;
-    }catch(error){if(token===generation){generation++;gate('先停一停，核对这一卷',error.message);}throw error;}
+      acceptedVerification=request;data=next;armExpiry();inquiry?.reconcile(data.inquiries?.[record?.selected]);question?.reconcile(data.questionScopes?.[record?.selected]);return next;
+    }catch(error){
+      if(token===generation&&!leaving&&!document.hidden&&request<acceptedVerification)return data;
+      if(token===generation){generation++;gate('先停一停，核对这一卷',error.message);}throw error;
+    }
   }
   async function load(acceptUpdate=false){
     const token=++generation;
@@ -71,17 +180,37 @@
       const next=await fetchContent();if(token!==generation||document.hidden||leaving)return;
       if(data&&next.fingerprint!==data.fingerprint&&!acceptUpdate)throw Error('内容已换版，请重新读取。旧版拾记保留，不自动计入新版。');
       const changed=data&&next.fingerprint!==data.fingerprint;data=next;
-      record=C.record(data,loadSaved()[data.fingerprint]);ready=true;finished=false;
-      if(entryPoint&&data.points.some(p=>p.id===entryPoint))record.selected=entryPoint;
+      // Recover this tab's explicit reading choices even when browser storage is
+      // unavailable. Never carry a record into another content fingerprint.
+      const saved=[record,loadSaved()[data.fingerprint]].filter(value=>C.canResume(data,value))
+        .sort((a,b)=>b.updatedAt-a.updatedAt)[0],position=history.state?.__chuJourneyPosition;
+      record=C.record(data,saved);record.details=record.details.filter(validDetail);ready=true;finished=false;resumeAvailable=C.canResume(data,saved);
+      // A real incoming deep link wins. A reload of our own old-version address does not.
+      const staleAddress=position?.resourceId===resourceId&&position.point===entryPoint&&position.fingerprint!==data.fingerprint;
+      if(entryPoint&&!staleAddress&&data.points.some(p=>p.id===entryPoint)){
+        record.selected=entryPoint;resumeAvailable=resumeAvailable&&saved.selected===entryPoint;
+      }
       entryPoint=null;
       shell.dataset.art=String(resourceId==='yellow-crane-tower'||data.localTest);
       text('painting-title',resourceId==='yellow-crane-tower'||data.localTest?'一卷黄鹤楼':data.title);
       text('edition',data.localTest?'本地流程样例 · 非景区审定内容':'公开第 '+data.version+' 版 · 非实时导航');
       shell.setAttribute('aria-busy','false');$('gate').hidden=true;armExpiry();render();
       if(changed)text('status','已读取新版本。旧版拾记仍保留在本机，新版从头记起。');
-    }catch(error){if(token===generation)gate('这份导览暂不可用',error.message);}
+    }catch(error){if(token===generation){
+      gate('这一卷还在整理',error.message);
+      if(!document.hidden&&!leaving&&/^[\w-]{1,128}$/.test(resourceId))publicReading?.show();
+    }}
   }
   function current(){return data.points.find(p=>p.id===record.selected);}
+  function hideResume(){resumeAvailable=false;$('journey-resume').hidden=true;}
+  function rememberPosition(){
+    // A selected point is a public reading address, never a visit or a content cache.
+    // Replace, do not push: Back should close a leaf, not replay every selected stop.
+    try{
+      const url=new URL(location.href);url.searchParams.set('pointId',record.selected);
+      history.replaceState({...history.state,__chuJourneyPosition:{resourceId,fingerprint:data.fingerprint,point:record.selected}},'',url);
+    }catch{/* History restrictions must not block the reading flow. */}
+  }
   async function light(point){
     stopLight();const token=lightGeneration,scene=point.artScene,profile=window.ChuParkGildedProfiles?.[scene];
     if(!profile||!window.ChuGildedReveal||shell.dataset.art!=='true')return;
@@ -90,19 +219,30 @@
     try{
       await art.decode();if(token!==lightGeneration||!ready||finished||document.hidden)return;
       Object.assign(canvas.style,{left:(rect.x-pad)/1919*100+'%',top:(rect.y-pad)/820*100+'%',width:(rect.width+2*pad)/1919*100+'%',height:(rect.height+2*pad)/820*100+'%'});
-      renderer=ChuGildedReveal.create({canvas,image:art,profile,mode:'light-only',quality:'compact'});canvas.hidden=false;renderer.play();
-    }catch{if(token===lightGeneration)$('art-error').hidden=false;}
+      renderer=ChuGildedReveal.create({canvas,image:art,profile,mode:'light-only',quality:'compact'});canvas.hidden=false;renderer.play();if(leaves?.isOpen())renderer.pause();
+    }catch{if(token===lightGeneration&&!art.naturalWidth)$('art-error').hidden=false;}
   }
   function render(){
     if(!ready)return;
+    souvenirExport?.reset();
+    $('download-image').hidden=!souvenirExport||shell.dataset.art!=='true';
+    leaves?.dismiss({restoreFocus:false});
     const point=current(),index=data.points.indexOf(point);
     $('explore-tools').href='./explore.html?resourceId='+encodeURIComponent(resourceId)+'&pointId='+encodeURIComponent(point.id);$('explore-tools').hidden=false;
     $('gate').hidden=true;$('content').hidden=finished;$('finished').hidden=!finished;
+    $('journey-resume').hidden=!resumeAvailable||finished;
+    text('resume-label',resumeAvailable?'上次读到 · '+point.title:'');
     $('journey-points').replaceChildren();$('journey-stops').replaceChildren();
-    if(finished){quiet();armExpiry();souvenir();return;}
+    if(finished){study?.clear();reader?.clear();inquiry?.clear();question?.clear();quiet();armExpiry();souvenir();return;}
     text('position','第 '+(index+1)+' 景 / 共 '+data.points.length+' 景');
     text('point-title',point.title);text('observation',point.observation);text('reading-copy',point.reading);
-    text('binding-note',point.artScene?'画中高亮仅帮助认图；不推断你的位置或行走方向。':'这一处尚未绑定原画位置，先阅读已公开的文字。');
+    reader?.mount(point.reading);
+    study?.mount(point,shell.dataset.art==='true',record.details);
+    text('journey-entry-note',resumeAvailable?'接着读，不必从头开始。':record.observed.length?'也可以任选一景，不必按顺序。':'从这一景开始，也可以点画中别处。');
+    updateReadingProgress();
+    inquiry?.mount(data.inquiries?.[point.id]);
+    question?.mount(data.questionScopes?.[point.id]);
+    text('binding-note',point.artScene?'':'这一处尚未绑定原画位置，先阅读已公开的文字。');
     $('reading').open=false;$('sources').open=false;$('source-list').replaceChildren();
     for(const source of point.sources){
       const article=document.createElement('article'),title=document.createElement('strong'),copy=document.createElement('p'),credit=document.createElement('p');
@@ -112,30 +252,99 @@
       $('source-list').append(article);
     }
     const date=value=>new Date(value).toLocaleString('zh-CN',{hour12:false});
-    text('review-date','资料核对：'+date(data.checkedAt)+'；复核有效至：'+date(data.validUntil)+'。不是实时开放或客流信息。');
+    text('review-date',data.localTest?'本地演示有效至：'+date(data.validUntil)+'。此期限仅控制预览，不代表正式审核、现场核对或资料授权。':'资料核对：'+date(data.checkedAt)+'；复核有效至：'+date(data.validUntil)+'。不是实时开放或客流信息。');
     for(const p of data.points){
-      $('journey-stops').append(button(p.title,()=>select(p.id),{'aria-current':p.id===point.id?'step':'false','data-recorded':record.observed.includes(p.id),'data-stop':p.id}));
+      $('journey-stops').append(button(p.title,()=>select(p.id,'list'),{'aria-current':p.id===point.id?'step':'false','data-recorded':record.observed.includes(p.id),'data-stop':p.id}));
       if(p.artScene&&anchors[p.artScene]){
-        const b=button(p.title,event=>{if(!event.detail||performance.now()>=suppressedUntil)select(p.id);},{'aria-pressed':p.id===point.id,'data-art-point':p.id});
+        const b=button(p.title,event=>{if(!event.detail||performance.now()>=suppressedUntil)select(p.id,'map');},{'aria-pressed':p.id===point.id,'data-art-point':p.id});
         b.className='journey-point';b.style.left=anchors[p.artScene][0]+'%';b.style.top=anchors[p.artScene][1]+'%';$('journey-points').append(b);
       }
     }
-    $('previous').disabled=index===0;text('observe',index===data.points.length-1?'记下这一景，收卷 →':'记下这一景，继续 →');
+    $('previous').disabled=index===0;$('next').disabled=index===data.points.length-1;
+    const recorded=record.observed.includes(point.id);
+    text('observe',recorded?'已记下这一景':'记下这一景');$('observe').setAttribute('aria-pressed',String(recorded));
     const token=generation;A.mount($('audio'),point,()=>verify(token));light(point);
   }
   async function transition(fn){
-    if(!ready)return;const token=++generation;A.stop();stopLight();
-    try{await verify(token);if(token!==generation)return;fn();persist();render();(finished?$('finished-title'):$('point-title')).focus({preventScroll:true});}
+    if(!ready)return;continuation++;hideResume();leaves?.dismiss({restoreFocus:false});const intent=continuation,token=++generation;A.stop();stopLight();
+    try{
+      const settled=await navigation?.settled();
+      if(settled===false||token!==generation||intent!==continuation)return;
+      await verify(token);if(token!==generation||intent!==continuation)return;
+      const wasFinished=finished;
+      fn();rememberPosition();text('status','');persist();render();focusPanel(finished?$('finished-title'):$('point-title'),finished!==wasFinished);return token;
+    }
     catch{/* verify has already removed stale content. */}
   }
-  function select(id){if(data?.points.some(p=>p.id===id))transition(()=>{record.selected=id;});}
+  async function continueReading(){
+    if(!ready||finished||!leaves?.isOpen())return;
+    const intent=++continuation,token=generation,selected=record.selected;
+    const valid=()=>intent===continuation&&token===generation&&ready&&!finished&&!document.hidden&&!leaving&&record.selected===selected;
+    // Keep the current close control available while the next public version is checked.
+    try{await verify(token);}catch{return;}
+    if(!valid())return;
+    let closed=false;
+    continuingClose=true;
+    try{closed=await leaves.closeForNavigation();if(closed&&(await navigation?.settled())===false)closed=false;}
+    finally{continuingClose=false;}
+    if(!closed||!valid())return;
+    const next=data.points[data.points.indexOf(current())+1];
+    generation++;hideResume();A.stop();stopLight();
+    if(next)record.selected=next.id;else finished=true;
+    rememberPosition();text('status','');persist();render();
+    focusPanel(finished?$('finished-title'):$('point-title'),finished);
+    if(next)await leaves.open('reading',{originElement:$('reading').querySelector('button')});
+  }
+  async function select(id,from){
+    if(!data?.points.some(p=>p.id===id))return;
+    const token=await transition(()=>{record.selected=id;});
+    if(!from||token!==generation||!ready||finished)return;
+    const container=from==='map'?$('journey-points'):$('journey-stops');
+    const originElement=[...container.children].find(el=>(el.dataset.artPoint||el.dataset.stop)===id);
+    if(leaves)await leaves.open('reading',{originElement});
+    else await openFallback('reading');
+  }
+  async function openFallback(id){
+    const detail=$(id),summary=detail.querySelector('summary');
+    if(!ready||!summary||detail.closest('[hidden]'))return;
+    reader?.cancel();
+    const token=generation,request=++fallbackRequest;
+    for(const item of document.querySelectorAll('.journal summary[aria-busy]'))item.removeAttribute('aria-busy');
+    summary.setAttribute('aria-busy','true');A.pause?.();
+    try{
+      await verify(token);
+      if(request===fallbackRequest&&token===generation&&ready&&!document.hidden&&!leaving&&!detail.closest('[hidden]'))detail.open=true;
+    }catch{/* Verification owns the unavailable state, including this no-dialog path. */}
+    finally{if(request===fallbackRequest)summary.removeAttribute('aria-busy');}
+  }
   function souvenir(){
     text('souvenir-title',data.title);
     const points=data.points.filter(p=>record.observed.includes(p.id));
     text('souvenir-count','主动记下 '+points.length+' / '+data.points.length+' 处阅读观察 · 第 '+data.version+' 版');
     $('souvenir-stops').replaceChildren(...points.map(p=>{const li=document.createElement('li');li.textContent=p.title;return li;}));
+    $('souvenir-details').replaceChildren(...savedDetails().map(value=>{const li=document.createElement('li');li.textContent=data.points.find(p=>p.id===value.pointId).title+' · '+value.label;return li;}));
     text('souvenir-note',record.note);$('note').value=record.note;
     restoreFeedback();
+  }
+  function savedDetails(){
+    return (record?.details||[]).flatMap(value=>{
+      const scene=window.ChuJourneyStudyScenes?.[value.sceneId],point=data.points.find(p=>p.id===value.pointId&&p.artScene===value.sceneId);
+      const detail=scene?.looks?.find(item=>item.key===value.detailKey);
+      return point&&detail?[{pointId:point.id,label:detail.label}]:[];
+    });
+  }
+  function validDetail(value){
+    return data?.points.some(point=>point.id===value.pointId&&point.artScene===value.sceneId)&&
+      window.ChuJourneyStudyScenes?.[value.sceneId]?.looks?.some(item=>item.key===value.detailKey);
+  }
+  function updateReadingProgress(){
+    text('journey-reading-progress',record.observed.length?'已记下 '+record.observed.length+' 景 · 收卷后可留作游记':'');
+  }
+  function keepReading(){
+    if(!ready||finished)return;
+    record.observed=[...new Set([...record.observed,record.selected])];persist();
+    text('observe','已记下这一景');$('observe').setAttribute('aria-pressed','true');reader?.refresh();updateReadingProgress();
+    for(const el of $('journey-stops').children)el.dataset.recorded=String(record.observed.includes(el.dataset.stop));
   }
   function restoreFeedback(){
     const value=C.feedback(record?.feedback);$('trial-form').reset();
@@ -169,10 +378,14 @@
     restoreFeedback();text('trial-status','已清空本机反馈。已下载的文件需自行删除。');
   };
   $('retry').onclick=()=>load(true);$('refresh').onclick=()=>load(false);
+  $('continue-journey').onclick=()=>{
+    if(!ready||finished)return;hideResume();
+    if(leaves)leaves.open('reading',{originElement:$('reading').querySelector('button')});else openFallback('reading');
+  };
   $('previous').onclick=()=>select(data.points[Math.max(0,data.points.indexOf(current())-1)].id);
+  $('next').onclick=()=>{if(!ready)return;const next=data.points[data.points.indexOf(current())+1];if(next)select(next.id);};
   $('observe').onclick=()=>transition(()=>{
     record.observed=[...new Set([...record.observed,record.selected])];
-    const next=data.points[data.points.indexOf(current())+1];if(next)record.selected=next.id;else finished=true;
   });
   $('finish').onclick=()=>transition(()=>{finished=true;});
   $('return').onclick=()=>transition(()=>{finished=false;});
@@ -190,9 +403,23 @@
     try{localStorage.removeItem(storageKey);}catch{text('status','浏览器未允许清除，记录没有删除；可在浏览器设置中清理此站点数据。');return;}
     record=null;load(true);
   };
-  $('sources').addEventListener('toggle',()=>{if($('sources').open&&ready)verify().catch(()=>{});});
-  $('reading').addEventListener('toggle',()=>{if($('reading').open&&ready)verify().catch(()=>{});});
-  art.onerror=()=>$('art-error').hidden=false;
+  if(!leaves){
+    for(const id of ['reading','sources','journey-help','trial-feedback']){
+      const detail=$(id),summary=detail.querySelector('summary');
+      summary.addEventListener('click',event=>{
+        event.preventDefault();
+        if(detail.open||summary.getAttribute('aria-busy')==='true'){
+          fallbackRequest++;detail.open=false;summary.removeAttribute('aria-busy');reader?.cancel();inquiry?.reset();question?.reset();study?.reset();A.pause?.();
+        }else openFallback(id);
+      });
+    }
+  }
+  art.addEventListener('error',()=>$('art-error').hidden=false);
+  art.addEventListener('journey:art-restored',()=>{
+    if(!ready||finished||document.hidden||leaving)return;
+    light(current());
+    if($('journey-study').dataset.artState==='failed')study?.mount(current(),shell.dataset.art==='true',record.details);
+  });
   stage.onpointerdown=e=>{if(e.pointerType==='touch'||e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:stage.scrollLeft,top:stage.scrollTop,moved:false};};
   stage.onpointermove=e=>{
     if(!drag||e.pointerId!==drag.id)return;const x=e.clientX-drag.x,y=e.clientY-drag.y;
@@ -202,8 +429,8 @@
   for(const name of ['pointerup','pointercancel','lostpointercapture'])stage.addEventListener(name,()=>{if(drag?.moved)suppressedUntil=performance.now()+350;drag=null;});
   stage.onkeydown=e=>{if(e.target!==stage)return;const x={ArrowLeft:-80,ArrowRight:80}[e.key];if(x){e.preventDefault();stage.scrollBy(x,0);}};
   document.addEventListener('visibilitychange',()=>{if(document.hidden){generation++;gate('暂歇，留住这一页','回到页面后会重新核对资料。',false);}else load(false);});
-  addEventListener('pagehide',()=>{leaving=true;generation++;quiet();});
+  addEventListener('pagehide',()=>{leaving=true;generation++;continuation++;publicReading?.clear();reader?.cancel();souvenirExport?.reset();navigation?.invalidate();leaves?.dismiss({restoreFocus:false});quiet();});
   addEventListener('pageshow',e=>{if(e.persisted){leaving=false;load(false);}});
-  setInterval(()=>{if(ready&&!document.hidden&&!leaving)verify().catch(()=>{});},30000);
+  setInterval(()=>{if(ready&&!document.hidden&&!leaving)verify().then(()=>question?.revalidate()).catch(()=>{});},30000);
   load();
 })();

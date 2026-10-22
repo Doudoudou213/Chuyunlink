@@ -207,6 +207,12 @@ try {
         (Join-Path $staticDirectory 'visit-route.js'),
         (Join-Path $staticDirectory 'guide-cloud.js'),
         (Join-Path $staticDirectory 'guide-entry.js'),
+        (Join-Path $staticDirectory 'scenic-entry.js'),
+        (Join-Path $staticDirectory 'scenic-entry.css'),
+        (Join-Path $staticDirectory 'scenic-return.js'),
+        (Join-Path $staticDirectory 'scenic-host.js'),
+        (Join-Path $staticDirectory 'scenic-reading-fallback.js'),
+        (Join-Path $staticDirectory 'scenic-reading-fallback.css'),
         (Join-Path $staticDirectory 'guide-question-state.js'),
         (Join-Path $staticDirectory 'guide-question-transport.js'),
         (Join-Path $staticDirectory 'guide-question.js'),
@@ -215,6 +221,29 @@ try {
         (Join-Path $staticDirectory 'exploration-readiness.js'),
         (Join-Path $staticDirectory 'exploration-readiness-admin.js'),
         (Join-Path $staticDirectory 'exploration-readiness.css'),
+        (Join-Path $staticDirectory 'exploration-admin-simple.css'),
+        (Join-Path $staticDirectory 'exploration-admin-paper.js'),
+        (Join-Path $staticDirectory 'exploration-admin-paper.css'),
+        (Join-Path $staticDirectory 'exploration-journey-leaves.js'),
+        (Join-Path $staticDirectory 'exploration-journey-leaves.css'),
+        (Join-Path $staticDirectory 'exploration-leaf-motion.js'),
+        (Join-Path $staticDirectory 'exploration-journey-theme.css'),
+        (Join-Path $staticDirectory 'exploration-journey-navigation.js'),
+        (Join-Path $staticDirectory 'exploration-journey-study.js'),
+        (Join-Path $staticDirectory 'exploration-journey-study-scenes.js'),
+        (Join-Path $staticDirectory 'exploration-journey-study.css'),
+        (Join-Path $staticDirectory 'exploration-journey-comfort.js'),
+        (Join-Path $staticDirectory 'exploration-journey-comfort.css'),
+        (Join-Path $staticDirectory 'exploration-journey-reader.js'),
+        (Join-Path $staticDirectory 'exploration-journey-reader.css'),
+        (Join-Path $staticDirectory 'exploration-journey-souvenir.js'),
+        (Join-Path $staticDirectory 'exploration-journey-inquiry.js'),
+        (Join-Path $staticDirectory 'exploration-journey-inquiry-data.js'),
+        (Join-Path $staticDirectory 'exploration-journey-inquiry.css'),
+        (Join-Path $staticDirectory 'exploration-journey-question.js'),
+        (Join-Path $staticDirectory 'exploration-journey-question-state.js'),
+        (Join-Path $staticDirectory 'exploration-journey-question-data.js'),
+        (Join-Path $staticDirectory 'exploration-journey-question.css'),
         (Join-Path $staticDirectory 'explore-admin.js'),
         (Join-Path $staticDirectory 'explore-media.js'),
         (Join-Path $staticDirectory 'explore-records.js'),
@@ -278,6 +307,8 @@ try {
       )
       Copy-Item -LiteralPath $hostingRootFiles -Destination $hostingDirectory
       Copy-Item -LiteralPath $hostingStaticFiles -Destination $hostingStaticDirectory
+      # Includes longcang-journey-v1.woff2 with its source record and OFL license;
+      # the build gate verifies this scoped scenic heading font before copying.
       Copy-Item -LiteralPath (Join-Path $staticDirectory 'assets') -Destination $hostingStaticDirectory -Recurse
 
       Write-Host 'Deploying static hosting...'

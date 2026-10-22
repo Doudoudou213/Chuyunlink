@@ -1,0 +1,15 @@
+Long Cang scenic-reading subset, 2026-10-21
+
+Upstream: https://github.com/google/fonts/tree/main/ofl/longcang
+Source: https://raw.githubusercontent.com/google/fonts/main/ofl/longcang/LongCang-Regular.ttf
+Source SHA-256: e5bf2c3f24ef2327c6f136d8f73e2f9dfdf44896fdbeb35a9515f44777bb91bc
+Copyright 2018 The Long Cang Project Authors (https://github.com/googlefonts/longcang)
+License: SIL Open Font License 1.1; see longcang-OFL.txt in this directory.
+
+Build: tools/build-journey-font.py, fontTools 4.60.1, Brotli 1.2.0.
+Coverage check without build dependencies: node tools/test-journey-font.js.
+The existing editorial/theme subsets remain unchanged. This new subset covers
+the current scenic interface and research-sample text. Use only for short
+headings; body and controls retain their readable serif/system faces.
+New dynamic titles outside the verified repertoire must use the declared serif
+fallback or a reviewed font rebuild; do not claim coverage for arbitrary text.

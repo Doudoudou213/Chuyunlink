@@ -1,0 +1,18 @@
+/* One quiet paper leaf: no second navigation, modal, or route claim. */
+.scenic-reading-fallback{--scenic-paper:var(--paper,#eee1c7);--scenic-ink:var(--ink,#2b2421);--scenic-muted:var(--muted,#776a57);--scenic-rust:var(--rust,#934332);color:var(--scenic-ink);max-width:720px;margin:24px auto 0;text-align:left}
+.scenic-reading-fallback[hidden]{display:none}
+.scenic-reading-fallback .scenic-reading-paper{padding:clamp(20px,4vw,38px);background:var(--scenic-paper);border-radius:3px 7px 4px 2px;box-shadow:0 8px 26px #211a1214,inset 0 0 28px #91754b09}
+.scenic-reading-fallback .scenic-reading-eyebrow{margin:0 0 4px;font:12px/1.6 var(--utility,system-ui);letter-spacing:.14em;color:var(--scenic-muted)}
+.scenic-reading-fallback .scenic-reading-heading{margin:0 0 20px;font:30px/1.25 var(--brush,serif);color:var(--scenic-ink)}
+.scenic-reading-fallback .scenic-reading-title{margin:0 0 18px;font:21px/1.6 var(--reading,serif);font-weight:400;overflow-wrap:anywhere}
+.scenic-reading-fallback .scenic-reading-copy{white-space:pre-wrap;overflow-wrap:anywhere;font:18px/1.9 var(--reading,serif);letter-spacing:.01em}
+.scenic-reading-fallback :is(.scenic-reading-status,.scenic-reading-notice,.scenic-reading-boundary){font:13px/1.8 var(--utility,system-ui);color:var(--scenic-muted);overflow-wrap:anywhere}
+.scenic-reading-fallback .scenic-reading-boundary{margin:18px 0 0}
+.scenic-reading-fallback .scenic-reading-tools{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px 20px;margin-top:18px}
+.scenic-reading-fallback :is(button,a){min-height:44px;min-width:44px;display:inline-flex;align-items:center;padding:8px 2px;border:0;border-radius:0;background:transparent;color:var(--scenic-rust);font:14px/1.7 var(--utility,system-ui);text-decoration:none;cursor:pointer;box-shadow:none}
+.scenic-reading-fallback button:disabled{opacity:.45;cursor:default}
+.scenic-reading-fallback :is(button,a,.scenic-reading-copy):focus-visible{outline:2px solid var(--scenic-rust);outline-offset:4px}
+.scenic-reading-fallback .scenic-reading-paging{display:flex;align-items:center;gap:12px;font:12px/1.6 var(--utility,system-ui);color:var(--scenic-muted)}
+.scenic-reading-fallback .scenic-reading-sources{padding-top:14px;border-top:1px solid var(--rule,#6c573b28);margin-top:8px;font:15px/1.9 var(--reading,serif);overflow-wrap:anywhere}
+.scenic-reading-fallback .scenic-reading-source-item{margin:12px 0 20px}.scenic-reading-fallback .scenic-reading-source-item strong{font-weight:400}.scenic-reading-fallback .scenic-reading-source-item p{margin:6px 0}.scenic-reading-fallback .scenic-reading-source-item small{display:block;color:var(--scenic-muted);font:12px/1.8 var(--utility,system-ui)}
+@media(max-width:380px){.scenic-reading-fallback .scenic-reading-tools{gap:6px}.scenic-reading-fallback .scenic-reading-paging{gap:6px}.scenic-reading-fallback .scenic-reading-copy{font-size:18px}}

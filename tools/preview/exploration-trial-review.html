@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>一卷回音 · 本地试用复盘</title>
+  <link rel="stylesheet" href="/review.css">
+  <script src="/review-data.js" defer></script>
+  <script src="/review.js" defer></script>
+</head>
+<body>
+  <header class="masthead"><span>楚韵链迹 · 画卷试用</span><span>本地工具 / 不上传</span></header>
+  <main>
+    <header class="page-heading"><div><p class="eyebrow">读过一卷，留下一笔</p><h1>一卷回音</h1><p>把试用中的不顺手，留给下一次打磨。</p></div><button id="sample" type="button" class="text-button">先看一份示例 ↗</button></header>
+    <section class="paper" aria-label="试用反馈复盘">
+      <div class="import-row"><div><h2>读入反馈文件</h2><p>选择游客主动导出的「画卷试用反馈.json」。只在当前页面处理，刷新即清空。</p></div><button id="import" class="primary" type="button">选择文件 <span aria-hidden="true">＋</span></button><input id="files" type="file" accept=".json,application/json" multiple hidden></div>
+      <p class="fineprint">JSON 是程序读取的反馈文件，不必打开或手动改字，直接选择即可。最多 100 份，每份 64 KB；不读取账号、行踪或私人手记。自由意见可能含个人信息，请在本机查看，不向外转发原文件。</p>
+      <p id="status" role="status" aria-live="polite"></p><button id="cancel" type="button" class="text-button" hidden>取消本次读取</button>
+      <ul id="errors" class="errors" aria-label="未读入的文件" hidden></ul>
+      <div id="empty" class="empty"><span class="seal" aria-hidden="true">阅</span><h2>先听见一条试用建议</h2><p>收卷后，游客可以在体验建议中导出文件。<br>这里不自动收集，也不把文件数当作游客数。</p></div>
+      <div id="workspace" hidden>
+        <div id="sample-notice" class="notice" hidden>正在看演示记录，不是真实试用反馈。选择文件时会先移除示例。</div>
+        <div class="review-grid">
+          <aside class="edition"><label for="groups">分开看每一版</label><select id="groups"></select><p id="group-kind" class="kind"></p><p id="identity"></p><p class="fineprint">同一版本号仍可能对应不同内容；按景点、内容指纹与导出类型分别汇总。</p><button id="basis-toggle" class="text-button" type="button" aria-expanded="false" aria-controls="basis">查看版本依据</button><p id="basis" class="basis" hidden></p></aside>
+          <section class="review-body" aria-labelledby="review-heading"><div class="section-heading"><h2 id="review-heading">这版读起来怎样</h2><p id="totals"></p></div><p class="fineprint">以下是自愿回答的份数，不是人数、准确率或现场到访证明。</p><div id="answers" class="answers"></div>
+            <div class="section-heading notes-heading"><h2>先看不顺手的地方</h2><span id="notes-count"></span></div><p class="fineprint">保留原话；卡住或读不懂的意见优先，未填写意见不等于没有问题。</p><div id="notes"></div>
+          </section>
+        </div>
+        <section class="record-section" aria-labelledby="records-heading"><div class="section-heading"><h2 id="records-heading">核对本版记录</h2><span id="duplicates"></span></div><p class="fineprint">内容相同只提示可能重复，不会自动删除：不同的人也可能作出同样的回答。取消勾选可暂不计入，随时可恢复。</p><div id="records"></div></section>
+        <footer class="actions"><div class="report-actions"><button id="download-report" class="primary" type="button">下载中文报告 ↗</button><button id="print-report-button" class="text-button" type="button">打印 / 存为 PDF</button></div><p>中文报告可以直接阅读，含所有版本的计数，不含原始意见。<br>分享前仍需人工核对；打印时仅输出这份摘要。</p><button id="clear" class="text-button" type="button">清空本页记录</button></footer>
+        <div class="machine-export"><button id="export" class="text-button" type="button">另存程序用摘要（JSON）</button><p class="fineprint">给程序或开发人员做数据核对；不是游客原始反馈，不能再作为反馈导入。</p></div>
+      </div>
+    </section>
+    <footer class="page-footer">独立本地试用工具 · 不连接线上后台 · 不改变审核、发布和问答开关</footer>
+  </main>
+  <section class="print-report" aria-label="可打印中文摘要"><pre id="report-text">尚未读入反馈，暂无可打印记录。</pre></section>
+</body>
+</html>

@@ -71,6 +71,8 @@ const requiredFiles = [
   'static/assets/gsap-3.15.0.min.js',
   'static/assets/longcang-editorial-v1.woff2',
   'static/assets/longcang-theme-v2.woff2',
+  'static/assets/longcang-journey-v1.woff2',
+  'static/assets/longcang-journey-v1-source.txt',
   'static/assets/paper-fibres-soft-v1.webp',
   'static/assets/longcang-OFL.txt',
   'static/assets/community-river-collage-v3.webp',
@@ -241,7 +243,18 @@ const javascriptFiles = [
   'cloudfunctions/materialWorker/lib/tencent-ocr-client.js'
 ];
 const guideFiles = [
-  'static/exploration-readiness.js','static/exploration-readiness-admin.js','static/exploration-readiness.css',
+    'static/exploration-readiness.js','static/exploration-readiness-admin.js','static/exploration-readiness.css','static/exploration-admin-simple.css',
+    'static/exploration-admin-paper.js','static/exploration-admin-paper.css',
+    'static/exploration-journey-leaves.js','static/exploration-journey-leaves.css',
+    'static/exploration-leaf-motion.js','static/exploration-journey-theme.css','static/exploration-journey-navigation.js',
+    'static/exploration-journey-study.js','static/exploration-journey-study.css',
+    'static/exploration-journey-study-scenes.js',
+    'static/exploration-journey-comfort.js','static/exploration-journey-comfort.css',
+    'static/exploration-journey-reader.js','static/exploration-journey-reader.css','static/exploration-journey-souvenir.js',
+    'static/exploration-journey-inquiry.js','static/exploration-journey-inquiry-data.js','static/exploration-journey-inquiry.css',
+    'static/exploration-journey-question.js','static/exploration-journey-question-state.js','static/exploration-journey-question-data.js','static/exploration-journey-question.css',
+  'static/scenic-entry.js','static/scenic-entry.css','static/scenic-return.js','static/scenic-host.js',
+  'static/scenic-reading-fallback.js','static/scenic-reading-fallback.css',
   'explore-journey.html','static/exploration-journey-live.css','static/exploration-journey-demo.css',
   'static/exploration-journey-live.js','static/exploration-journey-content.js','static/exploration-journey-audio.js',
   'static/exploration-gilded-profiles.js','static/exploration-gilded-reveal.js',
@@ -361,8 +374,14 @@ for (const relativePath of requiredFiles) {
 
 for (const relativePath of productionTextFiles) {
   const content = read(relativePath);
+  // This exact statement rejects private citation hosts; it is not a local API
+  // endpoint. Exempt only this reviewed guard, not the file or other occurrences.
+  const citationHostGuard = "    if(!host||host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||host.endsWith('.internal')||";
+  const endpointContent = relativePath === 'static/exploration-journey-question-data.js'
+    ? content.replace(citationHostGuard, '    if(PRIVATE_CITATION_HOST_REJECTED||')
+    : content;
   for (const rule of forbiddenPatterns) {
-    if (rule.pattern.test(content)) {
+    if (rule.pattern.test(endpointContent)) {
       throw new Error(`${relativePath} 仍包含 ${rule.label}，已阻止部署`);
     }
   }
