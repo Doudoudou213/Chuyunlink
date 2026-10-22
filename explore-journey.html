@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="static/exploration-journey-inquiry.css">
   <link rel="stylesheet" href="static/exploration-journey-question.css">
   <link rel="stylesheet" href="static/exploration-journey-reader.css">
+  <link rel="stylesheet" href="static/scenic-reading-fallback.css">
   <!-- journey-local-adapter -->
   <script defer src="static/assets/gsap-3.15.0.min.js"></script>
   <script defer src="static/exploration-gilded-profiles.js"></script>
@@ -34,6 +35,8 @@
   <script defer src="static/exploration-journey-question.js"></script>
   <script defer src="static/exploration-journey-reader.js"></script>
   <script defer src="static/exploration-journey-souvenir.js"></script>
+  <script defer src="static/scenic-return.js"></script>
+  <script defer src="static/scenic-reading-fallback.js"></script>
   <script defer src="static/exploration-journey-live.js"></script>
 </head>
 <body class="scenic-journey">
@@ -54,6 +57,7 @@
         <p class="overline">启卷 / 内容核对</p><h2 id="gate-title" tabindex="-1">正在展卷</h2>
         <p id="gate-copy" class="intro">正在核对当前公开资料。</p>
         <button id="retry" class="primary" hidden>重新读取 →</button>
+        <section id="scenic-reading-fallback" hidden aria-label="已有公开介绍"></section>
       </div>
       <div id="content" hidden>
         <div id="journey-resume" hidden><span id="resume-label"></span><button type="button" id="continue-journey" class="quiet">继续游览 <span aria-hidden="true">→</span></button></div>

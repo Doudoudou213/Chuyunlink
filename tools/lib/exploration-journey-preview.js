@@ -42,7 +42,7 @@ async function fixture(){
 }
 async function start(port=0){
   let f=await fixture(),offline=false;
-  const extra=new Set(['explore-journey.html','explore-admin.html','static/exploration-journey-live.css','static/exploration-journey-live.js','static/exploration-journey-audio.js','static/exploration-journey-content.js',
+  const extra=new Set(['static/scenic-return.js','static/scenic-reading-fallback.js','static/scenic-reading-fallback.css','explore-journey.html','explore-admin.html','static/exploration-journey-live.css','static/exploration-journey-live.js','static/exploration-journey-audio.js','static/exploration-journey-content.js',
     'static/exploration-readiness.js','static/exploration-readiness-admin.js','static/exploration-readiness.css','static/exploration-admin-simple.css',
     'static/exploration-admin-paper.js','static/exploration-admin-paper.css','static/assets/paper-fibres-soft-v1.webp',
     'static/exploration-journey-leaves.js','static/exploration-journey-leaves.css',

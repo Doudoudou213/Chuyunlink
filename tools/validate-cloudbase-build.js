@@ -253,6 +253,8 @@ const guideFiles = [
     'static/exploration-journey-reader.js','static/exploration-journey-reader.css','static/exploration-journey-souvenir.js',
     'static/exploration-journey-inquiry.js','static/exploration-journey-inquiry-data.js','static/exploration-journey-inquiry.css',
     'static/exploration-journey-question.js','static/exploration-journey-question-state.js','static/exploration-journey-question-data.js','static/exploration-journey-question.css',
+  'static/scenic-entry.js','static/scenic-entry.css','static/scenic-return.js','static/scenic-host.js',
+  'static/scenic-reading-fallback.js','static/scenic-reading-fallback.css',
   'explore-journey.html','static/exploration-journey-live.css','static/exploration-journey-demo.css',
   'static/exploration-journey-live.js','static/exploration-journey-content.js','static/exploration-journey-audio.js',
   'static/exploration-gilded-profiles.js','static/exploration-gilded-reveal.js',

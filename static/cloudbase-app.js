@@ -302,6 +302,14 @@ feedback_closed: '反馈处理',
   };
   window.ChuGuideQuestionIdentity = async () => { const user=await ensureCloudUser(); return String(user.uid || user.id); };
 
+  // Read-only capability bridge; reuse the signed-in/anonymous CloudBase session.
+  window.ChuScenicApi = data => {
+    if (data?.action !== 'getSiteExploration' || !/^[\w-]{1,128}$/.test(data.resourceId || '')) {
+      throw Error('不支持的画卷读取请求');
+    }
+    return callCore({ action: 'getSiteExploration', resourceId: data.resourceId });
+  };
+
   async function planCloudRoute(payload = {}) {
     return callCore({
       action: 'planRoute',

@@ -10,6 +10,9 @@
   let continuation=0,continuingClose=false,resumeAvailable=false;
   let verificationSequence=0,acceptedVerification=0;
   const storageKey='chulink:journey-content:v1:'+resourceId;
+  const publicReading=window.ChuScenicReadingFallback?.create($('scenic-reading-fallback'),{
+    resourceId,call:request=>ExploreTransport.call(request)
+  });
   async function verifyReading(){
     if(!ready||finished||document.hidden||leaving)return false;
     const token=generation,selected=record.selected;
@@ -102,6 +105,7 @@
   function stopLight(){lightGeneration++;renderer?.destroy();renderer=null;canvas.hidden=true;}
   function quiet(){A.stop();stopLight();clearTimeout(expiry);}
   function gate(title,copy,retry=true){
+    publicReading?.clear();
     continuation++;navigation?.invalidate();
     const wasReading=leaves?.isOpen();
     leaves?.dismiss({restoreFocus:false});
@@ -192,7 +196,10 @@
       text('edition',data.localTest?'本地流程样例 · 非景区审定内容':'公开第 '+data.version+' 版 · 非实时导航');
       shell.setAttribute('aria-busy','false');$('gate').hidden=true;armExpiry();render();
       if(changed)text('status','已读取新版本。旧版拾记仍保留在本机，新版从头记起。');
-    }catch(error){if(token===generation)gate('这份导览暂不可用',error.message);}
+    }catch(error){if(token===generation){
+      gate('这一卷还在整理',error.message);
+      if(!document.hidden&&!leaving&&/^[\w-]{1,128}$/.test(resourceId))publicReading?.show();
+    }}
   }
   function current(){return data.points.find(p=>p.id===record.selected);}
   function hideResume(){resumeAvailable=false;$('journey-resume').hidden=true;}
@@ -422,7 +429,7 @@
   for(const name of ['pointerup','pointercancel','lostpointercapture'])stage.addEventListener(name,()=>{if(drag?.moved)suppressedUntil=performance.now()+350;drag=null;});
   stage.onkeydown=e=>{if(e.target!==stage)return;const x={ArrowLeft:-80,ArrowRight:80}[e.key];if(x){e.preventDefault();stage.scrollBy(x,0);}};
   document.addEventListener('visibilitychange',()=>{if(document.hidden){generation++;gate('暂歇，留住这一页','回到页面后会重新核对资料。',false);}else load(false);});
-  addEventListener('pagehide',()=>{leaving=true;generation++;continuation++;reader?.cancel();souvenirExport?.reset();navigation?.invalidate();leaves?.dismiss({restoreFocus:false});quiet();});
+  addEventListener('pagehide',()=>{leaving=true;generation++;continuation++;publicReading?.clear();reader?.cancel();souvenirExport?.reset();navigation?.invalidate();leaves?.dismiss({restoreFocus:false});quiet();});
   addEventListener('pageshow',e=>{if(e.persisted){leaving=false;load(false);}});
   setInterval(()=>{if(ready&&!document.hidden&&!leaving)verify().then(()=>question?.revalidate()).catch(()=>{});},30000);
   load();

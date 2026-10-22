@@ -12,6 +12,7 @@ for (const name of ['deploy-cloudbase.yml', 'initialize-story-worker.yml']) {
 }
 const scripts = [
   'validate-cloudbase-build.js',
+  'test-scenic-integration.js',
   'test-exploration-all.js',
   'test-site-walk.js',
   'test-site-walk-admin.js',

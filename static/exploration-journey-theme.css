@@ -10,6 +10,7 @@
 }
 .scenic-journey .masthead{max-width:1360px;padding:16px 32px;gap:24px}
 .scenic-journey .masthead>a{font:23px/1.4 var(--brush)}
+.scenic-journey .masthead>a.scenic-return-link{display:inline-flex;align-items:center;min-height:44px;font-family:var(--utility);font-size:15px}
 .scenic-journey .masthead a span{margin-left:14px;font:13px/1.5 var(--reading)}
 .scenic-journey .prototype{max-width:45%;font:12px/1.5 var(--utility);text-align:right}
 .scenic-journey .journey-shell{max-width:1360px;gap:32px;padding:0 32px 32px;grid-template-columns:minmax(0,1.65fr) minmax(350px,1fr)}

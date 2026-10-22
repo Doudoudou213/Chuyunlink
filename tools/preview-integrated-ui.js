@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const types = { '.html':'text/html; charset=utf-8', '.js':'application/javascript', '.css':'text/css',
   '.woff2':'font/woff2', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg',
   '.webp':'image/webp', '.svg':'image/svg+xml', '.geojson':'application/json', '.json':'application/json', '.mp3':'audio/mpeg' };
-const pages = new Set(['index.html','admin.html','themes.html','guide.html','explore.html','explore-admin.html','explore-motion-demo.html']);
+const pages = new Set(['index.html','admin.html','themes.html','guide.html','explore.html','explore-journey.html','explore-admin.html','explore-motion-demo.html']);
 const paperPosts = `<script>
 window.addEventListener('load',()=>setTimeout(()=>{
  const feed=document.getElementById('discover-share-feed');if(!feed)return;

@@ -1,6 +1,11 @@
 {
   "scripts": {
     "check:release": "node tools/check-release.js",
+    "test:scenic-integration": "node tools/test-scenic-integration.js",
+    "test:scenic-entry:browser": "node tools/test-scenic-entry-browser.js && node tools/test-scenic-host-browser.js",
+    "test:scenic-guide:browser": "node tools/test-scenic-guide-browser.js",
+    "test:scenic-fallback": "node tools/test-scenic-reading-fallback.js",
+    "check:scenic-cloud": "node tools/check-scenic-cloud-preflight.cjs",
     "test:stability:browser": "node tools/test-stability-browser.js",
     "test:badges": "node tools/test-badge-catalog.js",
     "test:badge-service": "node tools/test-badge-service.js",

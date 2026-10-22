@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>楚韵链迹 - 荆楚物质文化遗产众包采集系统</title>
   <link rel="icon" href="data:,">
+  <script src="./static/scenic-return.js"></script>
   <link rel="preload" as="image" href="./static/assets/loading-gold-weave.webp">
   <style>
     #chu-startup {
@@ -51,6 +52,8 @@
   <script>
     // Independent of the UI/CDN libraries so startup failures cannot trap the visitor.
     (() => {
+      // A verified same-tab return resumes the page instead of replaying the cover.
+      if (window.ChuScenicReturn?.read(new URLSearchParams(location.search).get('scenicReturn'))) return;
       const overlay = document.createElement('div');
       overlay.id = 'chu-startup';
       overlay.setAttribute('aria-label', '正在载入楚韵链迹');
@@ -9193,6 +9196,7 @@
       drawer.classList.remove('translate-y-[200px]');
       drawer.classList.add('is-open');
       drawer.setAttribute('aria-hidden', 'false');
+      window.ChuScenicEntry?.onLandmark(item);
       window.lucide?.createIcons?.();
     }
 
@@ -12224,5 +12228,9 @@
 <script src="./static/assets/gsap-3.15.0.min.js"></script>
 <script src="./static/paper-motion.js"></script>
 <script src="./static/navigation-motion.js"></script>
+<link rel="stylesheet" href="./static/scenic-entry.css">
+<script src="./static/exploration-journey-content.js"></script>
+<script src="./static/scenic-entry.js"></script>
+<script src="./static/scenic-host.js"></script>
 </body>
 </html>
